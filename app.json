@@ -3,28 +3,28 @@
     "name": "canabro",
     "slug": "canabro",
     "version": "1.0.0",
-
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "experiments": {
       "tsconfigPaths": true
     },
-
-    "plugins": [],
-
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-
     "userInterfaceStyle": "light",
-
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -33,6 +33,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
+    },
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://xjzhtjeiohjqktibztpk.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqemh0amVpb2hqcWt0aWJ6dHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwMjg3MDcsImV4cCI6MjA1NzYwNDcwN30.rjuZ-tjJsqjHJbEMWN6gMJr8Sp211fgJ3EUl3tOqWmo"
     }
   }
 }
