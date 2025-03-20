@@ -8,11 +8,11 @@ export class Notification extends Model {
 
   @text('notification_id') notificationId!: string;
   @text('user_id') userId!: string;
-  @text('title') title!: string;
-  @text('message') message!: string;
+  @text('sender_id') senderId?: string;
   @text('type') type!: string;
-  @field('is_read') isRead: boolean = false;
-  @text('related_id') relatedId?: string;
+  @text('content') content?: string;
+  @text('related_post_id') relatedPostId?: string;
+  @text('related_comment_id') relatedCommentId?: string;
+  @field('is_read') isRead!: boolean;
   @readonly @date('created_at') createdAt!: Date;
-  @readonly @date('updated_at') updatedAt!: Date;
 }

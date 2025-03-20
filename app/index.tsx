@@ -1,8 +1,10 @@
+import React from 'react';
 import { Redirect } from 'expo-router';
 
-export default function Index() {
-  // For now, redirect to auth/login
-  // Later, this will check if the user is authenticated
-  // and redirect accordingly
-  return <Redirect href="/(auth)/login" />;
-}
+const Index = () => {
+  // Redirect to the main app or to the auth flow depending on authentication status
+  // This will be updated later to check auth state
+  return <Redirect href="/(tabs)" />;
+};
+
+export default Index;

@@ -4,7 +4,7 @@ import { Collection } from '@nozbe/watermelondb';
 import { Plant } from '../lib/models/Plant';
 import { DiaryEntry } from '../lib/models/DiaryEntry';
 import { Profile } from '../lib/models/Profile';
-import { supabase } from '../lib/supabase';
+import supabase from '../lib/supabase';
 
 export function useDatabase() {
   const [plants, setPlants] = useState<Collection<Plant>>(database.get<Plant>('plants'));

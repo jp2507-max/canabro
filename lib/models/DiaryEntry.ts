@@ -4,7 +4,7 @@ import { field, date, readonly, text, relation } from '@nozbe/watermelondb/decor
 export class DiaryEntry extends Model {
   static table = 'diary_entries';
   static associations = {
-    plants: { type: 'belongs_to', key: 'plant_id' },
+    plants: { type: "belongs_to" as const, key: 'plant_id' },
   };
 
   @text('plant_id') plantId!: string;

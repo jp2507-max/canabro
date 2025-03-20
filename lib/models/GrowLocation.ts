@@ -13,7 +13,7 @@ export class GrowLocation extends Model {
   @text('description') description?: string;
   @field('latitude') latitude?: number;
   @field('longitude') longitude?: number;
-  @field('is_indoor') isIndoor: boolean = true;
+  @field('is_indoor') isIndoor!: boolean;
   @field('area') area?: number;
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;

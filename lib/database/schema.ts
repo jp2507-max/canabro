@@ -4,6 +4,24 @@ export const plantSchema = appSchema({
   version: 1,
   tables: [
     tableSchema({
+      name: 'plants',
+      columns: [
+        { name: 'plant_id', type: 'string' },
+        { name: 'journal_id', type: 'string', isIndexed: true },
+        { name: 'name', type: 'string' },
+        { name: 'strain', type: 'string' },
+        { name: 'planted_date', type: 'string' },
+        { name: 'growth_stage', type: 'string' },
+        { name: 'height', type: 'number', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'image_url', type: 'string', isOptional: true },
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'location_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
       name: 'profiles',
       columns: [
         { name: 'user_id', type: 'string', isIndexed: true },
@@ -99,6 +117,19 @@ export const plantSchema = appSchema({
         { name: 'related_comment_id', type: 'string', isOptional: true },
         { name: 'is_read', type: 'boolean' },
         { name: 'created_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'diary_entries',
+      columns: [
+        { name: 'entry_id', type: 'string' },
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'plant_id', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string' },
+        { name: 'content', type: 'string' },
+        { name: 'image_url', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
       ],
     }),
   ],
