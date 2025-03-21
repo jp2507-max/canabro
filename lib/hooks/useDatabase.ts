@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import database, { synchronizeWithSupabase } from '../lib/database/database';
+import database, { synchronizeWithSupabase } from '../database/database';
 import { Collection } from '@nozbe/watermelondb';
-import { Plant } from '../lib/models/Plant';
-import { DiaryEntry } from '../lib/models/DiaryEntry';
-import { Profile } from '../lib/models/Profile';
-import supabase from '../lib/supabase';
+import { Plant } from '../models/Plant';
+import { DiaryEntry } from '../models/DiaryEntry';
+import { Profile } from '../models/Profile';
+import supabase from '../supabase';
 
 export function useDatabase() {
   const [plants, setPlants] = useState<Collection<Plant>>(database.get<Plant>('plants'));

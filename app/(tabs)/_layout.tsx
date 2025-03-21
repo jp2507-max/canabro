@@ -1,7 +1,21 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
+import { View, ActivityIndicator } from 'react-native';
 
 export default function TabsLayout() {
+  // Protect all tab routes
+  const { isLoading } = useProtectedRoute();
+
+  // Show loading indicator while checking authentication
+  if (isLoading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#16a34a" />
+      </View>
+    );
+  }
+
   return (
     <Tabs
       screenOptions={{

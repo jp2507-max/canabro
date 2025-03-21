@@ -68,3 +68,28 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export default supabase;
+
+/**
+ * Initialize database schema if it doesn't exist
+ * This helps ensure that all required tables are created
+ */
+export async function initializeDatabase() {
+  try {
+    // Check if profiles table exists
+    const { error: profilesError } = await supabase
+      .from('profiles')
+      .select('id')
+      .limit(1);
+      
+    // If profiles table doesn't exist, create it
+    if (profilesError && profilesError.code === 'PGRST104') {
+      console.log('Creating profiles table...');
+      const { error } = await supabase.rpc('initialize_schema');
+      if (error) {
+        console.error('Error initializing schema:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking database schema:', error);
+  }
+}

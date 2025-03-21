@@ -5,6 +5,7 @@ import { Model } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import { schemaMigrations } from '@nozbe/watermelondb/Schema/migrations';
 import Constants from 'expo-constants';
+import { authConfig, isExpoGo } from '../config'; 
 
 // Define the mock schema and model before the try block
 const mockSchema = {
@@ -93,15 +94,18 @@ const migrations = schemaMigrations({
   migrations: []
 });
 
-// Check if running in Expo Go (development) or in a proper build
-const isExpoGo = Constants.appOwnership === 'expo';
-
-// Create appropriate adapter based on environment
+// Create appropriate adapter based on configuration
 let adapter: any;
 
+// In Expo Go, we MUST use mock adapter because SQLite with JSI is not supported
 if (isExpoGo) {
-  // In Expo Go, use a mock adapter
-  console.log('Running in Expo Go with mock database adapter');
+  if (!authConfig.useMockAdapter) {
+    console.log('Note: Even though auth bypass is disabled, SQLite with JSI is not supported in Expo Go.');
+    console.log('Using mock database adapter due to Expo Go technical limitations.');
+  } else {
+    console.log('Using mock database adapter as configured');
+  }
+  
   adapter = {
     schema: plantSchema,
     tableName: (name: string) => name,
@@ -113,10 +117,16 @@ if (isExpoGo) {
     getDeletedRecords: async () => [],
     destroyDeletedRecords: async () => {},
     unsafeResetDatabase: async () => {},
+    // Add missing methods for sync
+    getLocal: async () => ({}),
+    create: async () => ({}),
+    update: async () => ({}),
+    markAsDeleted: async () => ({}),
+    syncChanges: async () => ({})
   };
 } else {
-  // In production builds, use the real SQLiteAdapter
-  console.log('Running in production build with SQLite adapter');
+  // In production or development build, use the real SQLiteAdapter
+  console.log('Using SQLite adapter with real database');
   adapter = new SQLiteAdapter({
     schema: plantSchema,
     migrations,
@@ -142,6 +152,12 @@ const database = new Database({
 
 // Sync function for WatermelonDB
 export async function synchronizeWithSupabase() {
+  // Skip sync in Expo Go environment
+  if (isExpoGo) {
+    console.log('Sync skipped in Expo Go environment');
+    return;
+  }
+  
   if (!supabase.auth.getSession()) {
     console.log('No active session, sync skipped');
     return;

@@ -32,6 +32,12 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const sync = async () => {
     if (isSyncing) return;
     
+    // Skip sync in Expo Go
+    if (Constants.appOwnership === 'expo') {
+      console.log('Sync skipped in Expo Go');
+      return;
+    }
+    
     try {
       setIsSyncing(true);
       await synchronizeWithSupabase();
@@ -43,6 +49,11 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const checkUnsyncedChanges = async () => {
+    // Always return false in Expo Go
+    if (Constants.appOwnership === 'expo') {
+      return false;
+    }
+    
     try {
       return await hasUnsyncedChanges({ database });
     } catch (error) {

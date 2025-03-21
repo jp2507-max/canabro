@@ -8,7 +8,21 @@
     "prebuild": "expo prebuild",
     "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" && prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
     "format": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix && prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "supabase": "npx supabase",
+    "supabase:login": "npx supabase login",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:status": "npx supabase status",
+    "supabase:migration:new": "npx supabase migration new",
+    "supabase:migration:up": "npx supabase migration up",
+    "test:db": "npx supabase test db",
+    "test:db:sample": "npx supabase test db supabase/tests/sample_test.sql",
+    "test:db:remote": "node scripts/run-remote-test.js",
+    "test:db:remote:sample": "node scripts/run-remote-test.js supabase/tests/sample_test.sql",
+    "test:db:setup": "node scripts/setup-db-url.js",
+    "clear-auth": "node scripts/clearAuthStorage.js",
+    "debug-auth": "node scripts/debugAuth.js"
   },
   "dependencies": {
     "@nozbe/watermelondb": "^0.27.1",
@@ -53,6 +67,7 @@
     "eslint-config-universe": "^12.0.1",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
+    "supabase": "^1.148.6",
     "tailwindcss": "^3.4.0",
     "typescript": "~5.3.3"
   },

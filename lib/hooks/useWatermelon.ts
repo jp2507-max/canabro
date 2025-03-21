@@ -1,6 +1,7 @@
-import { useDatabase } from '../lib/contexts/DatabaseProvider';
+import { useDatabase } from '../contexts/DatabaseProvider';
 import withObservables from '@nozbe/with-observables';
 import { Database, Model, Q } from '@nozbe/watermelondb';
+import { ComponentType } from 'react';
 
 // Hook to get the database instance
 export function useWatermelon() {
@@ -8,14 +9,15 @@ export function useWatermelon() {
 }
 
 // Helper function to create a HOC that observes models
-export function withWatermelonModels<T>(
-  Component: React.ComponentType<T>,
+export function withWatermelonModels<T extends Record<string, any>>(
+  Component: ComponentType<T>,
   getModels: (props: any, database: Database) => Record<string, any>
 ) {
+  // Using type assertion to handle the complex typing of withObservables
   return withObservables(['id'], (props: any) => {
     const { database } = useWatermelon();
     return getModels(props, database);
-  })(Component);
+  })(Component as ComponentType<any>);
 }
 
 // Helper function to create a query for a model
