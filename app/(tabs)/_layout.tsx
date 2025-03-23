@@ -22,7 +22,17 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#16a34a', // green-600
         tabBarInactiveTintColor: '#6b7280', // gray-500
       }}
+      initialRouteName="plants" // Set plants as the initial screen
     >
+      <Tabs.Screen
+        name="plants"
+        options={{
+          title: 'My Plants',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="leaf" size={size} color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
@@ -46,7 +56,7 @@ export default function TabsLayout() {
         options={{
           title: 'Diagnosis',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="leaf" size={size} color={color} />
+            <Ionicons name="medkit" size={size} color={color} />
           ),
         }}
       />

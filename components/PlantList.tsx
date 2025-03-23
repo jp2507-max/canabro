@@ -1,6 +1,8 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useDatabase } from '../hooks/useDatabase';
+import { useDatabase } from '../lib/contexts/DatabaseProvider';
 import withObservables from '@nozbe/with-observables';
 import { Plant } from '../lib/models/Plant';
 import { router } from 'expo-router';
