@@ -23,7 +23,7 @@ export async function initializeNotifications() {
 }
 
 // Setup notification channels for Android
-async function setupNotificationChannels() {
+export async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('plant-care', {
       name: 'Plant Care',
@@ -50,6 +50,9 @@ async function setupNotificationChannels() {
     });
   }
 }
+
+// For backward compatibility
+export const registerNotificationChannels = setupNotificationChannels;
 
 // Register for push notifications
 export async function registerForPushNotificationsAsync() {
@@ -78,12 +81,26 @@ export async function registerForPushNotificationsAsync() {
       return null;
     }
     
-    // Get the token that uniquely identifies this device
-    token = await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig?.extra?.eas?.projectId,
-    });
-    
-    console.log('Push token:', token);
+    try {
+      // Get the token that uniquely identifies this device
+      // For development builds, we use the EAS project ID
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId || 'f04ff5d3-6a5d-4abf-8ac4-e471877b69e3';
+      
+      if (!projectId) {
+        console.error('No projectId found for push notifications');
+        return null;
+      }
+      
+      token = await Notifications.getExpoPushTokenAsync({
+        projectId: projectId,
+      });
+      
+      console.log('Push token:', token);
+    } catch (error) {
+      console.error('Error getting push token:', error);
+      // Continue without push notification functionality
+      return null;
+    }
   } else {
     console.log('Must use physical device for push notifications');
   }

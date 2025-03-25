@@ -12,7 +12,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ]
     ],
     "scheme": "canabro",
     "orientation": "portrait",
@@ -27,17 +34,25 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.canabro.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.canabro.app"
     },
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "https://xjzhtjeiohjqktibztpk.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqemh0amVpb2hqcWt0aWJ6dHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwMjg3MDcsImV4cCI6MjA1NzYwNDcwN30.rjuZ-tjJsqjHJbEMWN6gMJr8Sp211fgJ3EUl3tOqWmo"
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhqemh0amVpb2hqcWt0aWJ6dHBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwMjg3MDcsImV4cCI6MjA1NzYwNDcwN30.rjuZ-tjJsqjHJbEMWN6gMJr8Sp211fgJ3EUl3tOqWmo",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "f04ff5d3-6a5d-4abf-8ac4-e471877b69e3"
+      }
     },
     "newArchEnabled": true
   }
