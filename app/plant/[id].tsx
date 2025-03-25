@@ -208,6 +208,10 @@ export default function PlantDetailsScreen() {
           onPress: () => setIsEditing(true) 
         },
         { 
+          text: 'View Diary', 
+          onPress: () => router.push(`/plant/diary/${id}`) 
+        },
+        { 
           text: 'View Gallery', 
           onPress: () => console.log('View gallery') 
         },
@@ -340,6 +344,58 @@ export default function PlantDetailsScreen() {
             <View className="flex-1">
               <Text className="font-semibold text-lg text-neutral-900">I'm good to go</Text>
               <Text className="text-neutral-500">All caught up on plant care!</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        {!isEditing && (
+          <View className="mx-4 my-2">
+            <Text className="font-semibold text-lg text-neutral-800 mb-2">Quick Actions</Text>
+            <View className="flex-row flex-wrap">
+              <TouchableOpacity 
+                className="bg-white p-3 rounded-xl m-1 flex-row items-center shadow"
+                style={[{ width: '48%' }, theme.shadows.sm]}
+                onPress={() => router.push(`/plant/diary/${id}`)}
+              >
+                <View className="h-10 w-10 bg-primary-100 rounded-full justify-center items-center mr-2">
+                  <Ionicons name="journal-outline" size={20} color={theme.colors.primary[500]} />
+                </View>
+                <Text className="font-medium text-neutral-800">Plant Diary</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                className="bg-white p-3 rounded-xl m-1 flex-row items-center shadow"
+                style={[{ width: '48%' }, theme.shadows.sm]}
+                onPress={() => console.log('Water plant')}
+              >
+                <View className="h-10 w-10 bg-blue-100 rounded-full justify-center items-center mr-2">
+                  <Ionicons name="water-outline" size={20} color={theme.colors.special.watering || "#0ea5e9"} />
+                </View>
+                <Text className="font-medium text-neutral-800">Water</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                className="bg-white p-3 rounded-xl m-1 flex-row items-center shadow"
+                style={[{ width: '48%' }, theme.shadows.sm]}
+                onPress={() => console.log('Feed plant')}
+              >
+                <View className="h-10 w-10 bg-amber-100 rounded-full justify-center items-center mr-2">
+                  <Ionicons name="flask-outline" size={20} color={theme.colors.special.feeding || "#f59e0b"} />
+                </View>
+                <Text className="font-medium text-neutral-800">Feed</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                className="bg-white p-3 rounded-xl m-1 flex-row items-center shadow"
+                style={[{ width: '48%' }, theme.shadows.sm]}
+                onPress={() => console.log('Add task')}
+              >
+                <View className="h-10 w-10 bg-neutral-100 rounded-full justify-center items-center mr-2">
+                  <Ionicons name="add-circle-outline" size={20} color={theme.colors.neutral[600]} />
+                </View>
+                <Text className="font-medium text-neutral-800">Add Task</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}

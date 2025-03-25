@@ -3,14 +3,30 @@ import * as Notifications from 'expo-notifications';
 import { 
   registerForPushNotificationsAsync, 
   registerNotificationChannels,
-  NotificationType
+  NotificationType,
+  scheduleTaskReminder,
+  cancelTaskReminder,
+  rescheduleTaskReminder
 } from '../services/NotificationService';
+import { router } from 'expo-router';
 
 interface NotificationContextType {
   expoPushToken: string | null;
   notification: Notifications.Notification | null;
   isNotificationsEnabled: boolean;
   requestPermissions: () => Promise<boolean>;
+  scheduleTaskNotification: (params: TaskNotificationParams) => Promise<string | null>;
+  cancelTaskNotification: (taskId: string) => Promise<void>;
+  rescheduleTaskNotification: (params: TaskNotificationParams) => Promise<string | null>;
+}
+
+export interface TaskNotificationParams {
+  taskId: string;
+  plantId: string;
+  plantName: string;
+  taskType: 'water' | 'feed' | 'prune' | 'transplant' | 'harvest' | 'other';
+  taskTitle: string;
+  dueDate: Date;
 }
 
 const defaultContextValue: NotificationContextType = {
@@ -18,6 +34,9 @@ const defaultContextValue: NotificationContextType = {
   notification: null,
   isNotificationsEnabled: false,
   requestPermissions: async () => false,
+  scheduleTaskNotification: async () => null,
+  cancelTaskNotification: async () => {},
+  rescheduleTaskNotification: async () => null,
 };
 
 const NotificationContext = createContext<NotificationContextType>(defaultContextValue);
@@ -89,7 +108,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
   // Handle notification responses
   const handleNotificationResponse = (data: any) => {
-    const { type, plantId } = data;
+    const { type, plantId, taskId } = data;
 
     // Navigate or perform actions based on notification type
     switch (type) {
@@ -99,14 +118,53 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       case NotificationType.HARVEST:
         // If we have a plantId, navigate to the plant detail screen
         if (plantId) {
-          // We'll implement navigation in a future update
-          console.log(`Navigate to plant: ${plantId}`);
+          router.push(`/plant/${plantId}`);
+        }
+        break;
+      case NotificationType.TASK_REMINDER:
+        // For task reminders, navigate to the plant or diary screen
+        if (plantId && taskId) {
+          // Navigate to the plant detail screen
+          router.push(`/plant/${plantId}`);
+        } else if (taskId) {
+          // Navigate to the diary screen
+          router.push('/(tabs)/diary');
         }
         break;
       default:
-        // For general notifications, no specific action needed
+        // For general notifications, navigate to diary screen
+        router.push('/(tabs)/diary');
         break;
     }
+  };
+
+  // Schedule a task notification
+  const scheduleTaskNotification = async (params: TaskNotificationParams) => {
+    if (!isNotificationsEnabled) {
+      const permissionGranted = await requestPermissions();
+      if (!permissionGranted) {
+        return null;
+      }
+    }
+    
+    return await scheduleTaskReminder(params);
+  };
+
+  // Cancel a task notification
+  const cancelTaskNotification = async (taskId: string) => {
+    await cancelTaskReminder(taskId);
+  };
+
+  // Reschedule a task notification
+  const rescheduleTaskNotification = async (params: TaskNotificationParams) => {
+    if (!isNotificationsEnabled) {
+      const permissionGranted = await requestPermissions();
+      if (!permissionGranted) {
+        return null;
+      }
+    }
+    
+    return await rescheduleTaskReminder(params);
   };
 
   return (
@@ -116,6 +174,9 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         notification,
         isNotificationsEnabled,
         requestPermissions,
+        scheduleTaskNotification,
+        cancelTaskNotification,
+        rescheduleTaskNotification,
       }}
     >
       {children}

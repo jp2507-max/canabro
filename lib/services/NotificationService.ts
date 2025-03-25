@@ -11,6 +11,7 @@ export enum NotificationType {
   GROWTH_STAGE = 'growth_stage',
   HARVEST = 'harvest',
   GENERAL = 'general',
+  TASK_REMINDER = 'task_reminder',
 }
 
 // Initialize notifications
@@ -47,6 +48,14 @@ export async function setupNotificationChannels() {
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF9800',
       description: 'Notifications about plant harvest time',
+    });
+    
+    await Notifications.setNotificationChannelAsync('task-reminders', {
+      name: 'Task Reminders',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#9C27B0',
+      description: 'Reminders for scheduled plant care tasks',
     });
   }
 }
@@ -239,6 +248,112 @@ export async function scheduleHarvestNotification(plantId: string, plantName: st
     data: { plantId },
     trigger: secondsFromNow,
     type: NotificationType.HARVEST,
+  });
+}
+
+// Schedule task reminder
+export async function scheduleTaskReminder({
+  taskId,
+  plantId,
+  plantName,
+  taskType,
+  taskTitle,
+  dueDate,
+}: {
+  taskId: string;
+  plantId: string;
+  plantName: string;
+  taskType: 'water' | 'feed' | 'prune' | 'transplant' | 'harvest' | 'other';
+  taskTitle: string;
+  dueDate: Date;
+}) {
+  try {
+    // Calculate seconds until the due date
+    // Default to notifying at 9:00 AM on the due date
+    const now = new Date();
+    const targetDate = new Date(dueDate);
+    targetDate.setHours(9, 0, 0, 0); // Set to 9:00 AM
+    
+    // If the due date is today and it's already past 9 AM, notify immediately
+    if (targetDate.getTime() < now.getTime()) {
+      targetDate.setTime(now.getTime() + 60); // Notify in 1 minute
+    }
+    
+    const secondsFromNow = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
+    
+    // Get appropriate icon based on task type
+    let icon = '🌱';
+    switch (taskType) {
+      case 'water':
+        icon = '💧';
+        break;
+      case 'feed':
+        icon = '🧪';
+        break;
+      case 'prune':
+        icon = '✂️';
+        break;
+      case 'transplant':
+        icon = '🪴';
+        break;
+      case 'harvest':
+        icon = '🧺';
+        break;
+    }
+    
+    return await scheduleNotification({
+      title: `${icon} ${taskTitle}`,
+      body: `Time to ${taskType} your ${plantName}!`,
+      data: { taskId, plantId, taskType },
+      trigger: secondsFromNow,
+      type: NotificationType.TASK_REMINDER,
+    });
+  } catch (error) {
+    console.error('Error scheduling task reminder:', error);
+    return null;
+  }
+}
+
+// Cancel task reminder
+export async function cancelTaskReminder(taskId: string) {
+  // Get all scheduled notifications
+  const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+  
+  // Filter notifications for this task and cancel them
+  for (const notification of scheduledNotifications) {
+    if (notification.content.data?.taskId === taskId) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+    }
+  }
+}
+
+// Reschedule task reminder (useful when task is updated)
+export async function rescheduleTaskReminder({
+  taskId,
+  plantId,
+  plantName,
+  taskType,
+  taskTitle,
+  dueDate,
+}: {
+  taskId: string;
+  plantId: string;
+  plantName: string;
+  taskType: 'water' | 'feed' | 'prune' | 'transplant' | 'harvest' | 'other';
+  taskTitle: string;
+  dueDate: Date;
+}) {
+  // Cancel existing reminder
+  await cancelTaskReminder(taskId);
+  
+  // Schedule new reminder
+  return await scheduleTaskReminder({
+    taskId,
+    plantId,
+    plantName,
+    taskType,
+    taskTitle,
+    dueDate,
   });
 }
 

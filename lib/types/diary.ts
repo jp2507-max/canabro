@@ -110,3 +110,26 @@ export interface GrowJournal {
   created_at: string;
   updated_at?: string;
 }
+
+/**
+ * Plant diary entry with plant information
+ */
+export interface PlantDiaryEntry extends DiaryEntry {
+  plant_name: string;
+  plant_strain?: string;
+  plant_stage?: string;
+  plant_image_url?: string;
+}
+
+/**
+ * Interface for plant diary filters
+ */
+export interface PlantDiaryFilterOptions {
+  plantId?: string;
+  entryType?: DiaryEntryType | DiaryEntryType[];
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+  isPublic?: boolean;
+}
