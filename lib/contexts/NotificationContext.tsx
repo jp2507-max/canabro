@@ -73,7 +73,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       const token = await registerForPushNotificationsAsync();
       
       if (token) {
-        setExpoPushToken(token);
+        setExpoPushToken(token.data);
         setIsNotificationsEnabled(true);
         return true;
       } else {
