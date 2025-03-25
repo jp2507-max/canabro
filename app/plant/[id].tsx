@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
-import { View, Text, ScrollView, Image, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert, TextInput, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDatabase } from '../../lib/hooks/useDatabase';
 import { Plant } from '../../lib/models/Plant';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import supabase from '../../lib/supabase';
+import { useTheme } from '../../lib/contexts/ThemeContext';
 
 export default function PlantDetailsScreen() {
   const { id } = useLocalSearchParams();
   const { database } = useDatabase();
+  const { theme } = useTheme();
   const [plant, setPlant] = useState<Plant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -22,6 +24,7 @@ export default function PlantDetailsScreen() {
   const [newImage, setNewImage] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
 
   useEffect(() => {
     fetchPlant();
@@ -195,11 +198,49 @@ export default function PlantDetailsScreen() {
     }
   };
 
+  const showActions = () => {
+    Alert.alert(
+      'Plant Options',
+      undefined,
+      [
+        { 
+          text: 'Edit Details', 
+          onPress: () => setIsEditing(true) 
+        },
+        { 
+          text: 'View Gallery', 
+          onPress: () => console.log('View gallery') 
+        },
+        { 
+          text: 'Track Progress', 
+          onPress: () => console.log('Track progress') 
+        },
+        { 
+          text: 'Share', 
+          onPress: () => console.log('Share') 
+        },
+        { 
+          text: 'Get Expert Help', 
+          onPress: () => console.log('Get expert help') 
+        },
+        { 
+          text: 'Remove this Plant', 
+          style: 'destructive',
+          onPress: handleDelete 
+        },
+        { 
+          text: 'Cancel', 
+          style: 'cancel'
+        },
+      ]
+    );
+  };
+
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-primary-50">
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#16a34a" />
+          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
         </View>
       </SafeAreaView>
     );
@@ -207,14 +248,14 @@ export default function PlantDetailsScreen() {
 
   if (!plant) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-primary-50">
         <View className="flex-1 justify-center items-center p-4">
           <Text className="text-xl text-gray-600">Plant not found</Text>
           <TouchableOpacity 
-            className="mt-4 bg-green-600 px-4 py-2 rounded-lg"
+            className="mt-4 bg-primary-500 px-6 py-3 rounded-full"
             onPress={() => router.back()}
           >
-            <Text className="text-white">Go Back</Text>
+            <Text className="text-white font-semibold">Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -222,17 +263,136 @@ export default function PlantDetailsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-row justify-between items-center p-4 border-b border-gray-200">
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+    <SafeAreaView className="flex-1 bg-primary-50">
+      {/* Header */}
+      <View className="flex-row justify-between items-center px-4 py-2">
+        <TouchableOpacity 
+          className="h-10 w-10 rounded-full bg-white justify-center items-center shadow"
+          onPress={() => router.back()}
+          style={theme.shadows.sm}
+        >
+          <Ionicons name="close" size={22} color={theme.colors.neutral[800]} />
         </TouchableOpacity>
         
-        <View className="flex-row">
+        <TouchableOpacity 
+          className="h-10 w-10 rounded-full bg-white justify-center items-center shadow"
+          onPress={showActions}
+          style={theme.shadows.sm}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color={theme.colors.neutral[800]} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView className="flex-1">
+        {/* Plant Header */}
+        <View className="px-4 py-2 items-center">
+          <Text className="text-3xl font-bold text-neutral-900">{plant.name}</Text>
+          <Text className="text-sm uppercase tracking-wide text-neutral-500 mt-1">{plant.strain}</Text>
+        </View>
+
+        {/* Plant Image */}
+        <View className="px-8 py-4">
           {isEditing ? (
-            <>
+            <TouchableOpacity 
+              className="aspect-square bg-white rounded-3xl shadow overflow-hidden"
+              onPress={pickImage}
+              disabled={isUploadingImage}
+              style={theme.shadows.md}
+            >
+              {isUploadingImage ? (
+                <View className="w-full h-full justify-center items-center">
+                  <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+                </View>
+              ) : newImage ? (
+                <Image source={{ uri: newImage }} className="w-full h-full" resizeMode="cover" />
+              ) : plant.imageUrl ? (
+                <Image source={{ uri: plant.imageUrl }} className="w-full h-full" resizeMode="cover" />
+              ) : (
+                <View className="w-full h-full justify-center items-center">
+                  <Ionicons name="camera-outline" size={48} color={theme.colors.neutral[400]} />
+                  <Text className="text-neutral-500 mt-2">Tap to add a photo</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View 
+              className="aspect-square bg-white rounded-3xl shadow overflow-hidden"
+              style={theme.shadows.md}
+            >
+              {plant.imageUrl ? (
+                <Image source={{ uri: plant.imageUrl }} className="w-full h-full" resizeMode="cover" />
+              ) : (
+                <View className="w-full h-full justify-center items-center">
+                  <Ionicons name="leaf-outline" size={48} color={theme.colors.neutral[400]} />
+                  <Text className="text-neutral-500">No Image</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Plant Status */}
+        {!isEditing && (
+          <View className="mx-4 my-2 p-4 bg-white rounded-2xl flex-row items-center shadow" style={theme.shadows.sm}>
+            <View className="h-12 w-12 bg-primary-100 rounded-full justify-center items-center mr-3">
+              <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary[500]} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold text-lg text-neutral-900">I'm good to go</Text>
+              <Text className="text-neutral-500">All caught up on plant care!</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Edit Form */}
+        {isEditing && (
+          <View className="px-4 py-2 mb-4">
+            <View className="mb-4">
+              <Text className="font-medium text-neutral-700 mb-1">Name</Text>
+              <TextInput
+                className="bg-white p-3 rounded-xl border border-neutral-200"
+                value={editedName}
+                onChangeText={setEditedName}
+                placeholder="Plant name"
+              />
+            </View>
+
+            <View className="mb-4">
+              <Text className="font-medium text-neutral-700 mb-1">Strain</Text>
+              <TextInput
+                className="bg-white p-3 rounded-xl border border-neutral-200"
+                value={editedStrain}
+                onChangeText={setEditedStrain}
+                placeholder="Strain name"
+              />
+            </View>
+
+            <View className="mb-4">
+              <Text className="font-medium text-neutral-700 mb-1">Growth Stage</Text>
+              <TextInput
+                className="bg-white p-3 rounded-xl border border-neutral-200"
+                value={editedGrowthStage}
+                onChangeText={setEditedGrowthStage}
+                placeholder="e.g., Vegetative, Flowering"
+              />
+            </View>
+
+            <View className="mb-4">
+              <Text className="font-medium text-neutral-700 mb-1">Notes</Text>
+              <TextInput
+                className="bg-white p-3 rounded-xl border border-neutral-200"
+                value={editedNotes}
+                onChangeText={setEditedNotes}
+                placeholder="Any notes about your plant"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View className="flex-row justify-end mt-4">
               <TouchableOpacity 
-                className="mr-4" 
+                className="px-4 py-2 rounded-full border border-primary-500 mr-3"
                 onPress={() => {
                   setIsEditing(false);
                   setNewImage(null);
@@ -242,146 +402,157 @@ export default function PlantDetailsScreen() {
                   setEditedNotes(plant.notes || '');
                 }}
               >
-                <Ionicons name="close" size={24} color="black" />
+                <Text className="text-primary-500 font-medium">Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSave} disabled={isSaving || isUploadingImage}>
-                <Ionicons name="checkmark" size={24} color={isSaving || isUploadingImage ? "#9ca3af" : "#16a34a"} />
+              <TouchableOpacity 
+                className="px-5 py-2 rounded-full bg-primary-500"
+                onPress={handleSave}
+                disabled={isSaving || isUploadingImage}
+              >
+                {isSaving || isUploadingImage ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white font-medium">Save</Text>
+                )}
               </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity className="mr-4" onPress={() => setIsEditing(true)}>
-                <Ionicons name="create-outline" size={24} color="black" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete}>
-                <Ionicons name="trash-outline" size={24} color="#ef4444" />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
-      
-      <ScrollView className="flex-1">
-        <View className="p-4">
-          {/* Plant Image */}
-          {isEditing ? (
-            <TouchableOpacity 
-              className="h-60 bg-gray-200 rounded-xl mb-4 justify-center items-center overflow-hidden"
-              onPress={pickImage}
-              disabled={isUploadingImage}
-            >
-              {isUploadingImage ? (
-                <ActivityIndicator size="large" color="#16a34a" />
-              ) : newImage ? (
-                <Image source={{ uri: newImage }} className="w-full h-full" resizeMode="cover" />
-              ) : plant.imageUrl ? (
-                <Image source={{ uri: plant.imageUrl }} className="w-full h-full" resizeMode="cover" />
-              ) : (
-                <View className="items-center">
-                  <Ionicons name="camera-outline" size={48} color="#9ca3af" />
-                  <Text className="text-gray-500 mt-2">Tap to add a photo</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View className="h-60 bg-gray-200 rounded-xl mb-4 justify-center items-center overflow-hidden">
-              {plant.imageUrl ? (
-                <Image source={{ uri: plant.imageUrl }} className="w-full h-full" resizeMode="cover" />
-              ) : (
-                <View className="items-center">
-                  <Ionicons name="leaf-outline" size={48} color="#9ca3af" />
-                  <Text className="text-gray-500">No Image</Text>
-                </View>
-              )}
             </View>
-          )}
-          
-          {/* Plant Details */}
-          {isEditing ? (
-            <View className="space-y-4">
-              <View>
-                <Text className="text-gray-700 mb-1">Plant Name</Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg"
-                  value={editedName}
-                  onChangeText={setEditedName}
-                  placeholder="Plant Name"
-                />
-              </View>
-              
-              <View>
-                <Text className="text-gray-700 mb-1">Strain</Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg"
-                  value={editedStrain}
-                  onChangeText={setEditedStrain}
-                  placeholder="Strain"
-                />
-              </View>
-              
-              <View>
-                <Text className="text-gray-700 mb-1">Growth Stage</Text>
-                <View className="flex-row flex-wrap">
-                  {['Seedling', 'Vegetative', 'Flowering', 'Harvested'].map((stage) => (
-                    <TouchableOpacity
-                      key={stage}
-                      className={`mr-2 mb-2 px-3 py-2 rounded-lg ${
-                        editedGrowthStage === stage ? 'bg-green-600' : 'bg-gray-200'
-                      }`}
-                      onPress={() => setEditedGrowthStage(stage)}
+          </View>
+        )}
+
+        {/* Action Tabs */}
+        {!isEditing && (
+          <>
+            {/* Tab Navigation */}
+            <View className="mt-2 px-4">
+              <View className="flex-row mb-4 flex-wrap">
+                {['info', 'water', 'light', 'toxicity', 'humidity'].map((tab) => (
+                  <Pressable
+                    key={tab}
+                    className={`px-3 py-2 mx-1 mb-2 rounded-full border ${activeTab === tab ? 'bg-primary-300 border-primary-300' : 'bg-white border-neutral-200'}`}
+                    onPress={() => setActiveTab(tab)}
+                  >
+                    <Text 
+                      className={`capitalize ${activeTab === tab ? 'text-primary-800 font-medium' : 'text-neutral-700'}`}
                     >
-                      <Text
-                        className={`${
-                          editedGrowthStage === stage ? 'text-white' : 'text-gray-800'
-                        }`}
-                      >
-                        {stage}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-              
-              <View>
-                <Text className="text-gray-700 mb-1">Notes</Text>
-                <TextInput
-                  className="bg-gray-100 p-3 rounded-lg"
-                  value={editedNotes}
-                  onChangeText={setEditedNotes}
-                  placeholder="Notes"
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
+                      {tab}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
             </View>
-          ) : (
-            <>
-              <Text className="text-2xl font-bold mb-1">{plant.name}</Text>
-              
-              <View className="bg-green-50 p-4 rounded-xl mb-4">
-                <View className="flex-row justify-between mb-2">
-                  <Text className="font-semibold">Strain</Text>
-                  <Text>{plant.strain}</Text>
+
+            {/* Tab Content */}
+            <View className="px-4 mb-20">
+              {activeTab === 'info' && (
+                <View className="bg-white rounded-xl shadow p-4" style={theme.shadows.sm}>
+                  <View className="flex-row justify-between items-center mb-3">
+                    <Text className="text-lg font-semibold">Plant Details</Text>
+                  </View>
+                  <View className="border-b border-neutral-100 pb-2 mb-2">
+                    <Text className="text-neutral-500">Growth Stage</Text>
+                    <Text className="text-neutral-800">{plant.growthStage}</Text>
+                  </View>
+                  <View className="border-b border-neutral-100 pb-2 mb-2">
+                    <Text className="text-neutral-500">Planted Date</Text>
+                    <Text className="text-neutral-800">{plant.plantedDate}</Text>
+                  </View>
+                  {plant.notes && (
+                    <View>
+                      <Text className="text-neutral-500">Notes</Text>
+                      <Text className="text-neutral-800">{plant.notes}</Text>
+                    </View>
+                  )}
                 </View>
-                <View className="flex-row justify-between mb-2">
-                  <Text className="font-semibold">Planted Date</Text>
-                  <Text>{plant.plantedDate}</Text>
+              )}
+
+              {activeTab === 'water' && (
+                <View className="bg-white rounded-xl shadow p-4" style={theme.shadows.sm}>
+                  <Text className="text-xl font-semibold mb-3">Watering Guide</Text>
+                  <View className="flex-row items-center mb-4">
+                    <View className="h-12 w-12 bg-blue-100 rounded-full justify-center items-center mr-3">
+                      <Text className="text-lg font-bold text-blue-500">7</Text>
+                    </View>
+                    <View>
+                      <Text className="font-medium">Water every 7 days</Text>
+                      <Text className="text-neutral-500">In current season</Text>
+                    </View>
+                  </View>
+                  <View className="mb-3">
+                    <Text className="font-medium mb-1">Tips</Text>
+                    <Text className="text-neutral-600">The top soil should be dry between waterings. Water thoroughly until water runs through the drainage holes.</Text>
+                  </View>
                 </View>
-                <View className="flex-row justify-between">
-                  <Text className="font-semibold">Growth Stage</Text>
-                  <Text>{plant.growthStage}</Text>
+              )}
+
+              {activeTab === 'light' && (
+                <View className="bg-white rounded-xl shadow p-4" style={theme.shadows.sm}>
+                  <Text className="text-xl font-semibold mb-3">Light Requirements</Text>
+                  <View className="flex-row items-center mb-4">
+                    <View className="h-12 w-12 bg-yellow-100 rounded-full justify-center items-center mr-3">
+                      <Ionicons name="sunny" size={24} color={theme.colors.status.warning} />
+                    </View>
+                    <View>
+                      <Text className="font-medium">Full Sun</Text>
+                      <Text className="text-neutral-500">Preferred light condition</Text>
+                    </View>
+                  </View>
+                  <View className="mb-3">
+                    <Text className="font-medium mb-1">Details</Text>
+                    <Text className="text-neutral-600">Cannabis plants require a minimum of 6 hours of direct sunlight daily, but ideally 8-10 hours for optimal growth.</Text>
+                  </View>
                 </View>
-              </View>
-              
-              <View className="mb-4">
-                <Text className="text-lg font-semibold mb-2">Notes</Text>
-                <Text className="text-gray-600">{plant.notes || 'No notes added yet.'}</Text>
-              </View>
-            </>
-          )}
-        </View>
+              )}
+
+              {activeTab === 'toxicity' && (
+                <View className="bg-white rounded-xl shadow p-4" style={theme.shadows.sm}>
+                  <Text className="text-xl font-semibold mb-3">Toxicity Information</Text>
+                  <View className="p-3 bg-red-50 rounded-lg mb-4">
+                    <Text className="text-red-800 font-medium">Legal Warning</Text>
+                    <Text className="text-red-700 mt-1">Cannabis contains psychoactive compounds and may be regulated or restricted in your location. Always follow local laws and regulations.</Text>
+                  </View>
+                  <Text className="text-neutral-600">While cannabis is not considered toxic to humans when used responsibly, it should be kept away from pets and children. Some animals may experience adverse effects if they consume cannabis.</Text>
+                </View>
+              )}
+
+              {activeTab === 'humidity' && (
+                <View className="bg-white rounded-xl shadow p-4" style={theme.shadows.sm}>
+                  <Text className="text-xl font-semibold mb-3">Humidity Needs</Text>
+                  <View className="flex-row items-center mb-4">
+                    <View className="h-12 w-12 bg-blue-50 rounded-full justify-center items-center mr-3">
+                      <Ionicons name="water-outline" size={24} color={theme.colors.special.watering} />
+                    </View>
+                    <View>
+                      <Text className="font-medium">40-70% Humidity</Text>
+                      <Text className="text-neutral-500">Ideal range depends on growth stage</Text>
+                    </View>
+                  </View>
+                  <Text className="text-neutral-600">Seedlings prefer 65-70% humidity, vegetative stage 40-70%, and flowering stage 40-50%. Reduce humidity during late flowering to prevent mold.</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
+
+      {/* Bottom Action Buttons */}
+      {!isEditing && (
+        <View className="absolute bottom-0 left-0 right-0 bg-white p-4 flex-row justify-around items-center border-t border-neutral-200" style={theme.shadows.lg}>
+          <TouchableOpacity className="w-16 h-16 bg-blue-100 rounded-full justify-center items-center">
+            <Ionicons name="water-outline" size={24} color={theme.colors.special.watering} />
+            <Text className="text-xs mt-1 text-blue-600 font-medium">Water</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity className="w-16 h-16 bg-purple-100 rounded-full justify-center items-center">
+            <Ionicons name="flash-outline" size={24} color={theme.colors.special.feeding} />
+            <Text className="text-xs mt-1 text-purple-600 font-medium">Feed</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity className="w-16 h-16 bg-indigo-100 rounded-full justify-center items-center">
+            <Ionicons name="camera-outline" size={24} color={theme.colors.status.info} />
+            <Text className="text-xs mt-1 text-indigo-600 font-medium">Track</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

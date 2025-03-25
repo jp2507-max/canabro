@@ -1,14 +1,19 @@
-import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 import { useState, useEffect } from 'react';
 import supabase from '../../lib/supabase';
+import { useTheme } from '../../lib/contexts/ThemeContext';
+import ThemeToggle from '../../components/ui/ThemeToggle';
+import ThemedView from '../../components/ui/ThemedView';
+import ThemedText from '../../components/ui/ThemedText';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { isLoading } = useProtectedRoute();
+  const { theme, isDarkMode } = useTheme();
   const [profile, setProfile] = useState({
     username: '',
     joinDate: '',
@@ -200,68 +205,114 @@ export default function ProfileScreen() {
 
   if (isLoading || loadingProfile) {
     return (
-      <View className="flex-1 justify-center items-center bg-green-50">
+      <ThemedView className="flex-1 justify-center items-center" 
+                  lightClassName="bg-green-50" 
+                  darkClassName="bg-neutral-900">
         <ActivityIndicator size="large" color="#10b981" />
-      </View>
+      </ThemedView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-green-50">
-      <View className="px-4 py-6">
-        <View className="flex-row justify-between items-center">
-          <Text className="text-2xl font-bold text-green-800">My Profile</Text>
-          <TouchableOpacity 
-            onPress={handleSignOut}
-            className="bg-red-500 px-4 py-2 rounded-full"
-          >
-            <Text className="text-white font-semibold">Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.colors.neutral[50] }}>
+      <ScrollView>
+        <ThemedView className="px-4 py-6">
+          <View className="flex-row justify-between items-center">
+            <ThemedText className="text-2xl font-bold" 
+                        lightClassName="text-green-800" 
+                        darkClassName="text-primary-400">
+              My Profile
+            </ThemedText>
+            <View className="flex-row items-center">
+              <ThemeToggle compact showLabel={false} />
+              <TouchableOpacity 
+                onPress={handleSignOut}
+                className="bg-red-500 ml-2 px-4 py-2 rounded-full"
+              >
+                <Text className="text-white font-semibold">Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
-        <View className="mt-6 items-center">
-          <View className="w-24 h-24 rounded-full bg-green-200 justify-center items-center">
-            <Ionicons name="person" size={40} color="#065f46" />
-          </View>
-          <Text className="mt-4 text-xl font-bold text-green-800">{profile.username}</Text>
-          <Text className="text-green-600">Joined {profile.joinDate}</Text>
-        </View>
+          <ThemedView className="mt-6 items-center">
+            <ThemedView className="w-24 h-24 rounded-full justify-center items-center"
+                        lightClassName="bg-green-200"
+                        darkClassName="bg-primary-800">
+              <Ionicons name="person" size={40} color={isDarkMode ? "#4ade80" : "#065f46"} />
+            </ThemedView>
+            <ThemedText className="mt-4 text-xl font-bold" 
+                        lightClassName="text-green-800" 
+                        darkClassName="text-primary-300">{profile.username}</ThemedText>
+            <ThemedText className="" 
+                        lightClassName="text-green-600" 
+                        darkClassName="text-primary-400">Joined {profile.joinDate}</ThemedText>
+          </ThemedView>
 
-        <View className="mt-8 flex-row justify-around bg-white rounded-xl p-4 shadow-sm">
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-green-800">{profile.plantsCount}</Text>
-            <Text className="text-green-600">Plants</Text>
-          </View>
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-green-800">{profile.postsCount}</Text>
-            <Text className="text-green-600">Posts</Text>
-          </View>
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-green-800">{profile.followersCount}</Text>
-            <Text className="text-green-600">Followers</Text>
-          </View>
-          <View className="items-center">
-            <Text className="text-2xl font-bold text-green-800">{profile.followingCount}</Text>
-            <Text className="text-green-600">Following</Text>
-          </View>
-        </View>
+          <ThemedView className="mt-8 flex-row justify-around p-4 rounded-xl shadow-sm"
+                      lightClassName="bg-white"
+                      darkClassName="bg-neutral-800">
+            <View className="items-center">
+              <ThemedText className="text-2xl font-bold" 
+                         lightClassName="text-green-800" 
+                         darkClassName="text-primary-300">{profile.plantsCount}</ThemedText>
+              <ThemedText lightClassName="text-green-600" 
+                         darkClassName="text-primary-400">Plants</ThemedText>
+            </View>
+            <View className="items-center">
+              <ThemedText className="text-2xl font-bold" 
+                         lightClassName="text-green-800" 
+                         darkClassName="text-primary-300">{profile.postsCount}</ThemedText>
+              <ThemedText lightClassName="text-green-600" 
+                         darkClassName="text-primary-400">Posts</ThemedText>
+            </View>
+            <View className="items-center">
+              <ThemedText className="text-2xl font-bold" 
+                         lightClassName="text-green-800" 
+                         darkClassName="text-primary-300">{profile.followersCount}</ThemedText>
+              <ThemedText lightClassName="text-green-600" 
+                         darkClassName="text-primary-400">Followers</ThemedText>
+            </View>
+            <View className="items-center">
+              <ThemedText className="text-2xl font-bold" 
+                         lightClassName="text-green-800" 
+                         darkClassName="text-primary-300">{profile.followingCount}</ThemedText>
+              <ThemedText lightClassName="text-green-600" 
+                         darkClassName="text-primary-400">Following</ThemedText>
+            </View>
+          </ThemedView>
 
-        <View className="mt-8 bg-white rounded-xl p-4 shadow-sm">
-          <Text className="text-lg font-bold text-green-800 mb-2">Account Settings</Text>
-          <TouchableOpacity className="py-3 border-b border-gray-200">
-            <Text className="text-green-700">Edit Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="py-3 border-b border-gray-200">
-            <Text className="text-green-700">Notification Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="py-3 border-b border-gray-200">
-            <Text className="text-green-700">Privacy Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="py-3">
-            <Text className="text-green-700">Help & Support</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          <ThemedView className="mt-8 rounded-xl p-4 shadow-sm"
+                      lightClassName="bg-white"
+                      darkClassName="bg-neutral-800">
+            <ThemedText className="text-lg font-bold mb-2"
+                       lightClassName="text-green-800" 
+                       darkClassName="text-primary-300">Account Settings</ThemedText>
+            <TouchableOpacity className="flex-row items-center justify-between py-3 border-b" 
+                            style={{ borderColor: isDarkMode ? '#333' : '#e5e7eb' }}>
+              <ThemedText lightClassName="text-green-700" 
+                         darkClassName="text-primary-400">Edit Profile</ThemedText>
+              <Feather name="chevron-right" size={18} color={isDarkMode ? "#60a5fa" : "#059669"} />
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-row items-center justify-between py-3 border-b" 
+                            style={{ borderColor: isDarkMode ? '#333' : '#e5e7eb' }}>
+              <ThemedText lightClassName="text-green-700" 
+                         darkClassName="text-primary-400">Notification Settings</ThemedText>
+              <Feather name="chevron-right" size={18} color={isDarkMode ? "#60a5fa" : "#059669"} />
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-row items-center justify-between py-3 border-b" 
+                            style={{ borderColor: isDarkMode ? '#333' : '#e5e7eb' }}>
+              <ThemedText lightClassName="text-green-700" 
+                         darkClassName="text-primary-400">Privacy Settings</ThemedText>
+              <Feather name="chevron-right" size={18} color={isDarkMode ? "#60a5fa" : "#059669"} />
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-row items-center justify-between py-3">
+              <ThemedText lightClassName="text-green-700" 
+                         darkClassName="text-primary-400">Help & Support</ThemedText>
+              <Feather name="chevron-right" size={18} color={isDarkMode ? "#60a5fa" : "#059669"} />
+            </TouchableOpacity>
+          </ThemedView>
+        </ThemedView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
