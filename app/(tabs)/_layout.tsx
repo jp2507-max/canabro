@@ -22,12 +22,12 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#16a34a', // green-600
         tabBarInactiveTintColor: '#6b7280', // gray-500
       }}
-      initialRouteName="plants" // Set plants as the initial screen
+      initialRouteName="strains" // Set strains as the initial screen
     >
       <Tabs.Screen
-        name="plants"
+        name="strains"
         options={{
-          title: 'My Plants',
+          title: 'Strains',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="leaf" size={size} color={color} />
           ),
@@ -43,11 +43,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="diary"
+        name="calendar"
         options={{
-          title: 'Diary',
+          title: 'Calendar',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" size={size} color={color} />
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
