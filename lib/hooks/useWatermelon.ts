@@ -1,84 +1,94 @@
+/**
+ * useWatermelon Hook
+ * 
+ * Custom hook for accessing WatermelonDB collections and synchronization
+ * This hooks into the existing DatabaseProvider to provide a consistent interface
+ */
+
+import { useContext, useState, useEffect } from 'react';
+import { Collection } from '@nozbe/watermelondb';
 import { useDatabase } from '../contexts/DatabaseProvider';
-import withObservables from '@nozbe/with-observables';
-import { Database, Model, Q } from '@nozbe/watermelondb';
-import { ComponentType } from 'react';
+import { Plant } from '../models/Plant';
+import { Profile } from '../models/Profile';
+import { GrowJournal } from '../models/GrowJournal';
+import { JournalEntry } from '../models/JournalEntry';
+import { GrowLocation } from '../models/GrowLocation';
+import { DiaryEntry } from '../models/DiaryEntry';
+import { PlantTask } from '../models/PlantTask';
+import { Post } from '../models/Post';
+import { synchronizeWithServer } from '../services/sync-service';
+import { useAuth } from '../contexts/AuthProvider';
 
-// Hook to get the database instance
-export function useWatermelon() {
-  return useDatabase();
+interface WatermelonContextType {
+  database: any;
+  plants: Collection<Plant>;
+  profiles: Collection<Profile>;
+  growJournals: Collection<GrowJournal>;
+  journalEntries: Collection<JournalEntry>;
+  growLocations: Collection<GrowLocation>;
+  diaryEntries: Collection<DiaryEntry>;
+  plantTasks: Collection<PlantTask>;
+  posts: Collection<Post>;
+  sync: () => Promise<void>;
+  isInitialized: boolean;
+  isSyncing: boolean;
+  lastSyncTime: Date | null;
 }
 
-// Helper function to create a HOC that observes models
-export function withWatermelonModels<T extends Record<string, any>>(
-  Component: ComponentType<T>,
-  getModels: (props: any, database: Database) => Record<string, any>
-) {
-  // Using type assertion to handle the complex typing of withObservables
-  return withObservables(['id'], (props: any) => {
-    const { database } = useWatermelon();
-    return getModels(props, database);
-  })(Component as ComponentType<any>);
+/**
+ * useWatermelon Hook
+ * 
+ * Custom hook for accessing WatermelonDB collections and synchronization
+ * This provides a consistent interface for all database operations
+ */
+export default function useWatermelon(): WatermelonContextType {
+  // Use the existing DatabaseProvider context
+  const { database, sync, isSyncing } = useDatabase();
+  const { session } = useAuth();
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  
+  // Access collections
+  const plants = database.get<Plant>('plants');
+  const profiles = database.get<Profile>('profiles');
+  const growJournals = database.get<GrowJournal>('grow_journals');
+  const journalEntries = database.get<JournalEntry>('journal_entries');
+  const growLocations = database.get<GrowLocation>('grow_locations');
+  const diaryEntries = database.get<DiaryEntry>('diary_entries');
+  const plantTasks = database.get<PlantTask>('plant_tasks');
+  const posts = database.get<Post>('posts');
+  
+  // Enhanced sync function that updates lastSyncTime
+  const syncWithTracking = async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      await sync();
+      setLastSyncTime(new Date());
+    } catch (error) {
+      console.error('Sync failed:', error);
+    }
+  };
+  
+  // Initial sync on auth change
+  useEffect(() => {
+    if (session?.user?.id) {
+      syncWithTracking();
+    }
+  }, [session?.user?.id]);
+  
+  return {
+    database,
+    plants,
+    profiles,
+    growJournals,
+    journalEntries,
+    growLocations,
+    diaryEntries,
+    plantTasks,
+    posts,
+    sync: syncWithTracking,
+    isInitialized: true,
+    isSyncing,
+    lastSyncTime,
+  };
 }
-
-// Helper function to create a query for a model
-export function createQuery<T extends Model>(
-  database: Database,
-  tableName: string,
-  conditions: any[] = []
-) {
-  return database.collections.get<T>(tableName).query(...conditions);
-}
-
-// Helper function to find a model by id
-export async function findById<T extends Model>(
-  database: Database,
-  tableName: string,
-  id: string
-): Promise<T | null> {
-  try {
-    return await database.collections.get<T>(tableName).find(id);
-  } catch (error) {
-    console.error(`Error finding ${tableName} with id ${id}:`, error);
-    return null;
-  }
-}
-
-// Helper function to create a new model
-export async function createModel<T extends Model>(
-  database: Database,
-  tableName: string,
-  data: Record<string, any>
-): Promise<T> {
-  return await database.write(async () => {
-    return await database.collections.get<T>(tableName).create((record) => {
-      Object.keys(data).forEach((key) => {
-        // @ts-ignore
-        record[key] = data[key];
-      });
-    });
-  });
-}
-
-// Helper function to update a model
-export async function updateModel<T extends Model>(
-  model: T,
-  data: Record<string, any>
-): Promise<T> {
-  return await model.database.write(async () => {
-    return await model.update((record) => {
-      Object.keys(data).forEach((key) => {
-        // @ts-ignore
-        record[key] = data[key];
-      });
-    });
-  });
-}
-
-// Helper function to delete a model
-export async function deleteModel<T extends Model>(model: T): Promise<void> {
-  return await model.database.write(async () => {
-    await model.markAsDeleted();
-  });
-}
-
-export { Q };

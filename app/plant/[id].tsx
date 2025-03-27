@@ -2,17 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { View, Text, ScrollView, Image, TouchableOpacity, Alert, TextInput, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDatabase } from '../../lib/hooks/useDatabase';
 import { Plant } from '../../lib/models/Plant';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import supabase from '../../lib/supabase';
 import { useTheme } from '../../lib/contexts/ThemeContext';
+import useWatermelon from '../../lib/hooks/useWatermelon';
+import { Q } from '@nozbe/watermelondb';
 
 export default function PlantDetailsScreen() {
   const { id } = useLocalSearchParams();
-  const { database } = useDatabase();
+  const { plants, sync } = useWatermelon();
   const { theme } = useTheme();
   const [plant, setPlant] = useState<Plant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,8 +36,8 @@ export default function PlantDetailsScreen() {
       setIsLoading(true);
       if (!id) return;
 
-      const plantsCollection = database.get<Plant>('plants');
-      const plantRecord = await plantsCollection.find(id as string);
+      // Find the plant by its ID using WatermelonDB's find method
+      const plantRecord = await plants.find(id as string);
       
       setPlant(plantRecord);
       setEditedName(plantRecord.name);
@@ -45,7 +46,28 @@ export default function PlantDetailsScreen() {
       setEditedNotes(plantRecord.notes || '');
     } catch (error) {
       console.error('Error fetching plant:', error);
-      Alert.alert('Error', 'Failed to load plant details.');
+      
+      // Try to find by plantId instead of id
+      try {
+        const plantsWithMatchingId = await plants.query(
+          Q.where('plant_id', id as string)
+        ).fetch();
+        
+        if (plantsWithMatchingId.length > 0) {
+          const plantRecord = plantsWithMatchingId[0];
+          
+          setPlant(plantRecord);
+          setEditedName(plantRecord.name);
+          setEditedStrain(plantRecord.strain);
+          setEditedGrowthStage(plantRecord.growthStage);
+          setEditedNotes(plantRecord.notes || '');
+        } else {
+          Alert.alert('Error', 'Failed to load plant details.');
+        }
+      } catch (secondError) {
+        console.error('Error fetching plant by plantId:', secondError);
+        Alert.alert('Error', 'Failed to load plant details.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -64,11 +86,16 @@ export default function PlantDetailsScreen() {
             try {
               if (!plant) return;
               
-              await database.write(async () => {
+              // Use WatermelonDB's database.write method
+              await plant.database.write(async () => {
                 await plant.markAsDeleted();
               });
               
               Alert.alert('Success', 'Plant deleted successfully');
+              
+              // Trigger sync to update Supabase
+              await sync();
+              
               router.back();
             } catch (error) {
               console.error('Error deleting plant:', error);
@@ -173,7 +200,7 @@ export default function PlantDetailsScreen() {
       }
 
       // Update plant in database
-      await database.write(async () => {
+      await plant.database.write(async () => {
         await plant.update((p: Plant) => {
           p.name = editedName;
           p.strain = editedStrain;

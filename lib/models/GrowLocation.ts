@@ -17,4 +17,6 @@ export class GrowLocation extends Model {
   @field('area') area?: number;
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
+  @date('last_synced_at') lastSyncedAt?: Date;
+  @field('is_deleted') isDeleted?: boolean;
 }

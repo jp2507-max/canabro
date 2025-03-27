@@ -5,84 +5,37 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
-import supabase from '../../../lib/supabase';
 import { useAuth } from '../../../lib/contexts/AuthProvider';
 import { useTheme } from '../../../lib/contexts/ThemeContext';
 import ThemedView from '../../../components/ui/ThemedView';
 import ThemedText from '../../../components/ui/ThemedText';
-import { isExpoGo, authConfig } from '../../../lib/config';
+import { isExpoGo } from '../../../lib/config';
+import useWatermelon from '../../../lib/hooks/useWatermelon';
+import { Q } from '@nozbe/watermelondb';
+import { DiaryEntry } from '../../../lib/models/DiaryEntry';
+import { Plant } from '../../../lib/models/Plant';
 
-// Interfaces for diary entries and plant
-interface DiaryEntry {
+// Simplified interfaces for component state
+interface DiaryEntryData {
   id: string;
-  plant_id: string;
-  title: string;
+  entryId: string;
+  plantId: string;
+  title?: string;
   content: string;
-  entry_type: 'general' | 'watering' | 'feeding' | 'pruning' | 'transplant' | 'harvest' | 'problem';
-  entry_date: string;
-  created_at: string;
-  updated_at: string;
+  entryType: string;
+  entryDate: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
-
-interface Plant {
-  id: string;
-  name: string;
-  strain: string;
-  status: string;
-  current_stage: string;
-  image_url?: string;
-}
-
-// Mock data for development
-const MOCK_PLANT: Plant = {
-  id: '1',
-  name: 'Northern Lights',
-  strain: 'Northern Lights',
-  status: 'growing',
-  current_stage: 'vegetative',
-  image_url: 'https://example.com/plant.jpg'
-};
-
-const MOCK_ENTRIES: DiaryEntry[] = [
-  {
-    id: '1',
-    plant_id: '1',
-    title: 'Started Germination',
-    content: 'Placed seeds in water for 24 hours before transferring to soil.',
-    entry_type: 'general',
-    entry_date: new Date(2024, 2, 15).toISOString(),
-    created_at: new Date(2024, 2, 15).toISOString(),
-    updated_at: new Date(2024, 2, 15).toISOString()
-  },
-  {
-    id: '2',
-    plant_id: '1',
-    title: 'First Watering',
-    content: 'Watered with 500ml of pH 6.5 water.',
-    entry_type: 'watering',
-    entry_date: new Date(2024, 2, 17).toISOString(),
-    created_at: new Date(2024, 2, 17).toISOString(),
-    updated_at: new Date(2024, 2, 17).toISOString()
-  },
-  {
-    id: '3',
-    plant_id: '1',
-    title: 'First True Leaves',
-    content: 'Seedling has developed its first set of true leaves. Growth looks healthy.',
-    entry_type: 'general',
-    entry_date: new Date(2024, 2, 20).toISOString(),
-    created_at: new Date(2024, 2, 20).toISOString(),
-    updated_at: new Date(2024, 2, 20).toISOString()
-  }
-];
 
 export default function PlantDiaryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { theme, isDarkMode } = useTheme();
   const { session } = useAuth();
+  const { plants, diaryEntries, sync, isSyncing } = useWatermelon();
   
   const [plant, setPlant] = useState<Plant | null>(null);
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [entries, setEntries] = useState<DiaryEntryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +44,7 @@ export default function PlantDiaryScreen() {
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [entryTitle, setEntryTitle] = useState('');
   const [entryContent, setEntryContent] = useState('');
-  const [entryType, setEntryType] = useState<DiaryEntry['entry_type']>('general');
+  const [entryType, setEntryType] = useState<string>('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const contentInputRef = useRef<TextInput>(null);
@@ -99,59 +52,71 @@ export default function PlantDiaryScreen() {
   // Fetch plant information
   const fetchPlant = async () => {
     try {
-      if (isExpoGo && authConfig.forceDevBypass) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setPlant(MOCK_PLANT);
+      if (!id) {
+        setError('No plant ID provided');
+        setLoading(false);
         return;
       }
 
-      if (!session?.user || !id) {
-        throw new Error('Not authenticated or missing plant ID');
+      // First try to find plant by id
+      try {
+        const plantRecord = await plants.find(id);
+        setPlant(plantRecord);
+      } catch (error) {
+        // If direct find failed, try querying by plant_id
+        console.log('Finding plant by plant_id instead');
+        const plantRecords = await plants.query(Q.where('plant_id', id)).fetch();
+        
+        if (plantRecords.length > 0) {
+          setPlant(plantRecords[0]);
+        } else {
+          setError('Plant not found');
+        }
       }
-
-      const { data, error: queryError } = await supabase
-        .from('plants')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (queryError) throw queryError;
-      if (!data) throw new Error('Plant not found');
-      
-      setPlant(data);
-    } catch (err) {
-      console.error('Error fetching plant:', err);
+    } catch (error) {
+      console.error('Error fetching plant:', error);
       setError('Failed to load plant information');
     }
   };
 
-  // Fetch diary entries for this plant
+  // Fetch diary entries
   const fetchEntries = async () => {
     try {
-      if (isExpoGo && authConfig.forceDevBypass) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setEntries(MOCK_ENTRIES);
-        setError(null);
-        return;
-      }
-
-      if (!session?.user || !id) {
-        throw new Error('Not authenticated or missing plant ID');
-      }
-
-      const { data, error: queryError } = await supabase
-        .from('diary_entries')
-        .select('*')
-        .eq('plant_id', id)
-        .order('entry_date', { ascending: false });
-
-      if (queryError) throw queryError;
+      if (!id) return;
       
-      setEntries(data || []);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching diary entries:', err);
+      // Query diary entries for this plant
+      let plantIdToUse = id;
+      
+      // If we have plant object and it has a plantId, use that
+      if (plant && plant.plantId) {
+        plantIdToUse = plant.plantId;
+      }
+      
+      const entriesRecords = await diaryEntries.query(
+        Q.where('plant_id', plantIdToUse)
+      ).fetch();
+      
+      // Convert WatermelonDB records to simplified interface for component
+      const entriesData: DiaryEntryData[] = entriesRecords.map(entry => ({
+        id: entry.id,
+        entryId: entry.entryId,
+        plantId: entry.plantId,
+        title: entry.content.substring(0, 30) + (entry.content.length > 30 ? '...' : ''),
+        content: entry.content,
+        entryType: entry.entryType || 'general',
+        entryDate: entry.entryDate,
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt
+      }));
+      
+      // Sort entries by date (newest first)
+      entriesData.sort((a, b) => 
+        new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
+      );
+      
+      setEntries(entriesData);
+    } catch (error) {
+      console.error('Error fetching diary entries:', error);
       setError('Failed to load diary entries');
     } finally {
       setLoading(false);
@@ -159,108 +124,89 @@ export default function PlantDiaryScreen() {
     }
   };
 
-  // Initial data fetch
+  // Initial data load
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       await fetchPlant();
       await fetchEntries();
     };
     
     loadData();
-  }, [id, session]);
+  }, [id]);
 
-  // Handle pull-to-refresh
-  const onRefresh = () => {
+  // Refresh data (for pull-to-refresh)
+  const handleRefresh = async () => {
     setRefreshing(true);
-    fetchPlant();
-    fetchEntries();
+    try {
+      await sync();
+      await fetchPlant();
+      await fetchEntries();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  // Handle adding new entry
+  // Add new diary entry
   const handleAddEntry = async () => {
-    if (!entryTitle.trim()) {
-      Alert.alert('Missing Title', 'Please enter a title for your diary entry');
+    if (!entryContent.trim()) {
+      Alert.alert('Error', 'Entry content cannot be empty');
       return;
     }
 
-    if (!entryContent.trim()) {
-      Alert.alert('Missing Content', 'Please enter content for your diary entry');
+    if (!plant) {
+      Alert.alert('Error', 'Plant information not available');
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
-      setIsSubmitting(true);
-
-      // For development in Expo Go
-      if (isExpoGo && authConfig.forceDevBypass) {
-        await new Promise(resolve => setTimeout(resolve, 800));
+      await diaryEntries.database.write(async () => {
+        const now = new Date();
+        const newEntry = await diaryEntries.create((entry) => {
+          entry.plantId = plant.plantId || id as string;
+          entry.content = entryContent;
+          entry.entryType = entryType;
+          entry.entryDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+          entry.userId = session?.user?.id || '';
+        });
         
-        const newEntry: DiaryEntry = {
-          id: Date.now().toString(),
-          plant_id: id || '1',
-          title: entryTitle,
-          content: entryContent,
-          entry_type: entryType,
-          entry_date: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        setEntries([newEntry, ...entries]);
-        setEntryTitle('');
-        setEntryContent('');
-        setEntryType('general');
-        setIsAddingEntry(false);
-        return;
-      }
+        console.log('Diary entry created:', newEntry.id);
+      });
 
-      if (!session?.user || !id) {
-        throw new Error('Not authenticated or missing plant ID');
-      }
-
-      const newEntry = {
-        plant_id: id,
-        title: entryTitle,
-        content: entryContent,
-        entry_type: entryType,
-        entry_date: new Date().toISOString(),
-        user_id: session.user.id
-      };
-
-      const { data, error: insertError } = await supabase
-        .from('diary_entries')
-        .insert(newEntry)
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-      
-      // Add the new entry to the top of the list
-      if (data) {
-        setEntries([data, ...entries]);
-      }
-      
-      // Reset form
-      setEntryTitle('');
+      // Clear form and refresh entries
       setEntryContent('');
+      setEntryTitle('');
       setEntryType('general');
       setIsAddingEntry(false);
       
-    } catch (err) {
-      console.error('Error adding diary entry:', err);
-      Alert.alert('Error', 'Failed to add diary entry. Please try again.');
+      // Trigger sync to update Supabase
+      await sync();
+      
+      // Refresh entries list
+      await fetchEntries();
+      
+    } catch (error) {
+      console.error('Error adding diary entry:', error);
+      Alert.alert('Error', 'Failed to save diary entry');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Cancel adding entry
-  const handleCancelEntry = () => {
-    setEntryTitle('');
-    setEntryContent('');
-    setEntryType('general');
-    setIsAddingEntry(false);
-  };
+  // Entry type selection options
+  const entryTypes = [
+    { id: 'general', label: 'General', icon: 'document-text' },
+    { id: 'watering', label: 'Watering', icon: 'water' },
+    { id: 'feeding', label: 'Feeding', icon: 'nutrition' },
+    { id: 'pruning', label: 'Pruning', icon: 'cut' },
+    { id: 'transplant', label: 'Transplant', icon: 'arrow-up-circle' },
+    { id: 'harvest', label: 'Harvest', icon: 'leaf' },
+    { id: 'problem', label: 'Problem', icon: 'warning' },
+  ];
 
   // Get icon for entry type
   const getEntryIcon = (type: string) => {
@@ -313,35 +259,25 @@ export default function PlantDiaryScreen() {
 
   // Render entry type selector
   const renderEntryTypeSelector = () => {
-    const types: Array<{ type: DiaryEntry['entry_type']; label: string }> = [
-      { type: 'general', label: 'General' },
-      { type: 'watering', label: 'Watering' },
-      { type: 'feeding', label: 'Feeding' },
-      { type: 'pruning', label: 'Pruning' },
-      { type: 'transplant', label: 'Transplant' },
-      { type: 'harvest', label: 'Harvest' },
-      { type: 'problem', label: 'Problem' }
-    ];
-    
     return (
       <FlatList
         horizontal
-        data={types}
-        keyExtractor={(item) => item.type}
+        data={entryTypes}
+        keyExtractor={(item) => item.id}
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => {
-          const isSelected = entryType === item.type;
+          const isSelected = entryType === item.id;
           return (
             <Pressable
               className={`mr-2 py-1 px-3 rounded-full border ${isSelected ? 'border-primary-500' : 'border-neutral-300'}`}
-              style={isSelected ? { backgroundColor: `${getEntryColor(item.type)}20` } : {}}
-              onPress={() => setEntryType(item.type)}
+              style={isSelected ? { backgroundColor: `${getEntryColor(item.id)}20` } : {}}
+              onPress={() => setEntryType(item.id)}
             >
               <View className="flex-row items-center">
                 <Ionicons 
-                  name={getEntryIcon(item.type)} 
+                  name={getEntryIcon(item.id)} 
                   size={16} 
-                  color={isSelected ? getEntryColor(item.type) : theme.colors.neutral[400]} 
+                  color={isSelected ? getEntryColor(item.id) : theme.colors.neutral[400]} 
                   style={{ marginRight: 4 }}
                 />
                 <ThemedText 
@@ -361,7 +297,7 @@ export default function PlantDiaryScreen() {
   };
 
   // Render a diary entry card
-  const renderEntryCard = ({ item }: { item: DiaryEntry }) => {
+  const renderEntryCard = ({ item }: { item: DiaryEntryData }) => {
     return (
       <ThemedView 
         className="mb-4 rounded-2xl overflow-hidden"
@@ -375,12 +311,12 @@ export default function PlantDiaryScreen() {
             <View className="flex-row items-center">
               <View 
                 className="w-8 h-8 rounded-full justify-center items-center mr-2"
-                style={{ backgroundColor: `${getEntryColor(item.entry_type)}20` }}
+                style={{ backgroundColor: `${getEntryColor(item.entryType)}20` }}
               >
                 <Ionicons 
-                  name={getEntryIcon(item.entry_type)} 
+                  name={getEntryIcon(item.entryType)} 
                   size={16} 
-                  color={getEntryColor(item.entry_type)}
+                  color={getEntryColor(item.entryType)}
                 />
               </View>
               <ThemedText 
@@ -388,7 +324,7 @@ export default function PlantDiaryScreen() {
                 lightClassName="text-neutral-600" 
                 darkClassName="text-neutral-400"
               >
-                {item.entry_type}
+                {item.entryType}
               </ThemedText>
             </View>
             
@@ -397,7 +333,7 @@ export default function PlantDiaryScreen() {
               lightClassName="text-neutral-500" 
               darkClassName="text-neutral-500"
             >
-              {formatDate(item.entry_date)}
+              {formatDate(item.entryDate)}
             </ThemedText>
           </View>
           
@@ -494,7 +430,7 @@ export default function PlantDiaryScreen() {
           {/* Action buttons */}
           <View className="flex-row justify-end">
             <Pressable 
-              onPress={handleCancelEntry}
+              onPress={() => setIsAddingEntry(false)}
               className="py-2 px-4 rounded-lg mr-2"
               disabled={isSubmitting}
             >
@@ -568,7 +504,7 @@ export default function PlantDiaryScreen() {
                   lightClassName="text-neutral-600" 
                   darkClassName="text-neutral-400"
                 >
-                  {plant.strain} • {plant.current_stage}
+                  {plant.strain} • {plant.growthStage || 'Unknown stage'}
                 </ThemedText>
               </View>
             </ThemedView>
@@ -638,7 +574,7 @@ export default function PlantDiaryScreen() {
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
-                  onRefresh={onRefresh}
+                  onRefresh={handleRefresh}
                   colors={[theme.colors.primary[500]]}
                   tintColor={theme.colors.primary[500]}
                 />

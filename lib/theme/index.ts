@@ -44,6 +44,7 @@ export interface Theme {
       feeding: string;
       harvesting: string;
     };
+    background: string;
   };
   typography: {
     fontFamily: {
@@ -237,7 +238,8 @@ export const theme: Theme = {
       watering: '#3b82f6', // Blue for watering
       feeding: '#8b5cf6',  // Purple for feeding
       harvesting: '#f59e0b', // Orange/yellow for harvesting
-    }
+    },
+    background: '#ffffff',
   },
   
   // Typography - consistent text styling

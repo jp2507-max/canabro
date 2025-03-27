@@ -1,14 +1,15 @@
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
+import { useAuth } from '../lib/contexts/AuthProvider';
+import { useProtectedRoute } from '../lib/hooks/useProtectedRoute';
 import { useState, useEffect } from 'react';
-import supabase from '../../lib/supabase';
-import { useTheme } from '../../lib/contexts/ThemeContext';
-import ThemeToggle from '../../components/ui/ThemeToggle';
-import ThemedView from '../../components/ui/ThemedView';
-import ThemedText from '../../components/ui/ThemedText';
+import supabase from '../lib/supabase';
+import { useTheme } from '../lib/contexts/ThemeContext';
+import ThemeToggle from '../components/ui/ThemeToggle';
+import ThemedView from '../components/ui/ThemedView';
+import ThemedText from '../components/ui/ThemedText';
+import { router } from 'expo-router';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -214,15 +215,24 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.colors.neutral[50] }}>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50] }}>
       <ScrollView>
         <ThemedView className="px-4 py-6">
           <View className="flex-row justify-between items-center">
-            <ThemedText className="text-2xl font-bold" 
+            <View className="flex-row items-center">
+              <TouchableOpacity 
+                onPress={() => router.back()}
+                className="mr-2 p-2 rounded-full"
+                style={{ backgroundColor: theme.colors.primary[50] }}
+              >
+                <Ionicons name="arrow-back" size={24} color={theme.colors.primary[600]} />
+              </TouchableOpacity>
+              <ThemedText className="text-2xl font-bold" 
                         lightClassName="text-green-800" 
                         darkClassName="text-primary-400">
-              My Profile
-            </ThemedText>
+                My Profile
+              </ThemedText>
+            </View>
             <View className="flex-row items-center">
               <ThemeToggle compact showLabel={false} />
               <TouchableOpacity 

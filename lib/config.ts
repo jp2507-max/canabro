@@ -13,7 +13,7 @@ export const isDevelopment = process.env.NODE_ENV === 'development' || isExpoGo;
 // Authentication settings
 export const authConfig = {
   // Force dev authentication bypass in Expo Go
-  forceDevBypass: true, // Changed from false to true to enable dev bypass in Expo Go
+  forceDevBypass: false, // Disabled auth bypass as we're no longer using Expo Go
   
   // Whether to use a mock database adapter
   useMockAdapter: false, // This setting is overridden in Expo Go anyway

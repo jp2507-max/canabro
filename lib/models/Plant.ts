@@ -1,12 +1,16 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, relation } from '@nozbe/watermelondb/decorators';
-import { GrowJournal } from './GrowJournal';
+import { field, date, readonly, text, relation, children, lazy, writer } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
+import { GrowJournal } from './GrowJournal';
+import { DiaryEntry } from './DiaryEntry';
+import { Q } from '@nozbe/watermelondb';
+import { Query } from '@nozbe/watermelondb';
 
 export class Plant extends Model {
   static table = 'plants';
   static associations: Associations = {
     grow_journals: { type: 'belongs_to' as const, key: 'journal_id' },
+    diary_entries: { type: 'has_many' as const, foreignKey: 'plant_id' },
   };
 
   @text('plant_id') plantId!: string;
@@ -22,6 +26,64 @@ export class Plant extends Model {
   @text('location_id') locationId?: string;
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
+  @date('last_synced_at') lastSyncedAt?: Date;
+  @field('is_deleted') isDeleted?: boolean;
 
+  // Relations
   @relation('grow_journals', 'journal_id') journal!: GrowJournal;
+
+  // Children collections
+  @children('diary_entries') diaryEntries!: Query<DiaryEntry>;
+
+  // Custom queries
+  @lazy activeEntries = this.diaryEntries.extend(
+    Q.where('is_deleted', false)
+  );
+
+  @lazy recentEntries = this.diaryEntries.extend(
+    Q.sortBy('entry_date', 'desc'),
+    Q.take(5)
+  );
+
+  // Derived properties
+  get isActive(): boolean {
+    return !this.isDeleted;
+  }
+
+  get daysSincePlanting(): number {
+    const planted = new Date(this.plantedDate);
+    const now = new Date();
+    return Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  // Writer methods
+  @writer async updateGrowthStage(stage: string) {
+    await this.update(plant => {
+      plant.growthStage = stage;
+    });
+  }
+
+  @writer async updateHeight(height: number) {
+    await this.update(plant => {
+      plant.height = height;
+    });
+  }
+
+  @writer async updateNotes(notes: string) {
+    await this.update(plant => {
+      plant.notes = notes;
+    });
+  }
+
+  @writer async markAsDeleted() {
+    await this.update(plant => {
+      plant.isDeleted = true;
+    });
+  }
+
+  @writer async updateImage(imageUrl: string) {
+    await this.update(plant => {
+      plant.imageUrl = imageUrl;
+    });
+  }
 }

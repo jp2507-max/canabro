@@ -17,6 +17,10 @@ export enum DiagnosisProblemType {
   UNKNOWN = 'unknown'
 }
 
+// Export a string literal type for compatibility with existing code
+export type PlantProblemType = 'nutrient_deficiency' | 'nutrient_toxicity' | 'pest' | 
+  'disease' | 'environmental' | 'watering' | 'light' | 'ph' | 'unknown';
+
 /**
  * Specific nutrient deficiencies
  */
@@ -68,6 +72,16 @@ export enum DiseaseType {
 }
 
 /**
+ * Problem details interface for more structured diagnosis information
+ */
+export interface DiagnosisDetails {
+  name: string;
+  description: string;
+  severity: 'mild' | 'moderate' | 'severe';
+  recommendations: string[];
+}
+
+/**
  * Diagnosis result interface
  */
 export interface DiagnosisResult {
@@ -75,14 +89,16 @@ export interface DiagnosisResult {
   user_id: string;
   plant_id?: string;
   image_url: string;
-  problem_type: DiagnosisProblemType;
+  problem_type: DiagnosisProblemType | PlantProblemType;
   specific_problem?: string; // Can be a value from the specific enums
   confidence: number; // 0-1
-  description: string;
-  symptoms: string[];
-  suggested_solutions: string[];
+  description?: string;
+  symptoms?: string[];
+  suggested_solutions?: string[];
   created_at: string;
-  is_saved: boolean;
+  is_saved?: boolean;
+  // New structured details format
+  details?: DiagnosisDetails;
 }
 
 /**

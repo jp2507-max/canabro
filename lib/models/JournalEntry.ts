@@ -11,18 +11,33 @@ export class JournalEntry extends Model {
 
   @text('entry_id') entryId!: string;
   @text('journal_id') journalId!: string;
-  @text('content') content!: string;
-  @text('image_url') imageUrl?: string;
-  @text('plant_stage') plantStage?: string;
-  @field('plant_height') plantHeight?: number;
-  @field('water_amount') waterAmount?: number;
-  @text('nutrients') nutrients?: string;
-  @field('temperature') temperature?: number;
-  @field('humidity') humidity?: number;
-  @field('light_hours') lightHours?: number;
+  @text('user_id') userId!: string;
+  @text('entry_date') entryDate!: string;
+  @text('entry_type') entryType!: string;
+  @text('title') title!: string;
+  @text('content') content?: string;
+  @text('media') media?: string; // Serialized JSON array
+  @text('metrics') metrics?: string; // Serialized JSON
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
 
   // Using strong typing for relationship
   @relation('grow_journals', 'journal_id') journal!: GrowJournal;
+
+  // Helper methods for serialized data
+  getMedia(): string[] {
+    return this.media ? JSON.parse(this.media) : [];
+  }
+
+  setMedia(mediaUrls: string[]): void {
+    this.media = JSON.stringify(mediaUrls);
+  }
+
+  getMetrics(): Record<string, any> {
+    return this.metrics ? JSON.parse(this.metrics) : {};
+  }
+
+  setMetrics(metricsData: Record<string, any>): void {
+    this.metrics = JSON.stringify(metricsData);
+  }
 }

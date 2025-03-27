@@ -19,6 +19,8 @@ export class Profile extends Model {
   @text('certifications') certifications?: string; // Serialized array
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
+  @date('last_synced_at') lastSyncedAt?: Date;
+  @field('is_deleted') isDeleted?: boolean;
   
   // Helper methods to handle serialized arrays
   getFavoriteStrains(): string[] {

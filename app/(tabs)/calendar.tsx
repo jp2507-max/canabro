@@ -10,62 +10,27 @@ import { useTheme } from '../../lib/contexts/ThemeContext';
 import { useNotifications, TaskNotificationParams } from '../../lib/contexts/NotificationContext';
 import ThemedView from '../../components/ui/ThemedView';
 import ThemedText from '../../components/ui/ThemedText';
-import { isExpoGo, authConfig } from '../../lib/config';
+import { isExpoGo } from '../../lib/config';
+import useWatermelon from '../../lib/hooks/useWatermelon';
+import { Q } from '@nozbe/watermelondb';
+import { PlantTask } from '../../lib/models/PlantTask';
+import { Database } from '@nozbe/watermelondb';
 
 // Types for plant tasks
-interface PlantTask {
+interface PlantTaskData {
   id: string;
-  plant_id: string;
-  plant_name: string; // Joined from plants table
-  task_type: 'water' | 'feed' | 'prune' | 'transplant' | 'harvest' | 'other';
+  taskId: string;
+  plantId: string;
+  plantName: string; // Will be joined from plants
+  taskType: 'water' | 'feed' | 'prune' | 'transplant' | 'harvest' | 'other';
   title: string;
   description: string | null;
-  due_date: string;
-  status: 'pending' | 'completed' | 'skipped';
-  created_at: string;
-  updated_at: string;
-  notification_id?: string | null;
+  dueDate: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  notificationId?: string | null;
 }
-
-// Mock data for development
-const MOCK_TASKS: PlantTask[] = [
-  {
-    id: '1',
-    plant_id: '1',
-    plant_name: 'Northern Lights',
-    task_type: 'water',
-    title: 'Water plant',
-    description: 'Water until runoff appears at the bottom',
-    due_date: new Date().toISOString(),
-    status: 'pending',
-    created_at: new Date(2024, 2, 15).toISOString(),
-    updated_at: new Date(2024, 3, 1).toISOString()
-  },
-  {
-    id: '2',
-    plant_id: '2',
-    plant_name: 'Blue Dream',
-    task_type: 'feed',
-    title: 'Apply nutrients',
-    description: 'Use half-strength bloom nutrients',
-    due_date: new Date().toISOString(),
-    status: 'pending',
-    created_at: new Date(2024, 1, 10).toISOString(),
-    updated_at: new Date(2024, 2, 28).toISOString()
-  },
-  {
-    id: '3',
-    plant_id: '3',
-    plant_name: 'Girl Scout Cookies',
-    task_type: 'prune',
-    title: 'Remove lower leaves',
-    description: 'Remove yellowing and dying leaves',
-    due_date: addDays(new Date(), 1).toISOString(),
-    status: 'pending',
-    created_at: new Date(2024, 3, 1).toISOString(),
-    updated_at: new Date(2024, 3, 10).toISOString()
-  }
-];
 
 export default function CalendarScreen() {
   const { theme, isDarkMode } = useTheme();
@@ -76,58 +41,85 @@ export default function CalendarScreen() {
     scheduleTaskNotification, 
     cancelTaskNotification 
   } = useNotifications();
-  const [tasks, setTasks] = useState<PlantTask[]>([]);
+  const { plantTasks, plants, sync, isSyncing } = useWatermelon();
+  
+  const [tasks, setTasks] = useState<PlantTaskData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Fetch tasks from Supabase or use mock data in dev mode
+  // Fetch tasks from WatermelonDB
   const fetchTasks = async () => {
     try {
-      // Use mock data if in Expo Go with dev bypass enabled
-      if (isExpoGo && authConfig.forceDevBypass) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setTasks(MOCK_TASKS);
-        setError(null);
-        return;
-      }
-
       if (!session?.user) {
         setError('User not authenticated');
         setLoading(false);
         return;
       }
 
-      // Query tasks with plant information
-      const { data, error: queryError } = await supabase
-        .from('plant_tasks')
-        .select(`
-          *,
-          plants:plant_id (name)
-        `)
-        .eq('status', 'pending')
-        .gte('due_date', format(selectedDate, 'yyyy-MM-dd'))
-        .lt('due_date', format(addDays(selectedDate, 1), 'yyyy-MM-dd'))
-        .order('due_date', { ascending: true });
-
-      if (queryError) {
-        throw queryError;
+      // Format dates for query
+      const startDate = format(selectedDate, 'yyyy-MM-dd');
+      const endDate = format(addDays(selectedDate, 1), 'yyyy-MM-dd');
+      
+      // Query tasks for the selected date that are pending
+      const tasksRecords = await plantTasks.query(
+        Q.and(
+          Q.where('status', 'pending'),
+          Q.where('due_date', startDate),
+          Q.where('user_id', session.user.id)
+        )
+      ).fetch();
+      
+      // We need to get the plant names, so let's fetch related plants
+      const plantIds = tasksRecords.map(task => task.plantId);
+      
+      // Get unique plant IDs
+      const uniquePlantIds = [...new Set(plantIds)];
+      
+      // Fetch plants info if there are any plant IDs
+      let plantsMap: {[key: string]: string} = {};
+      
+      if (uniquePlantIds.length > 0) {
+        const plantsRecords = await plants.query(
+          Q.where('plant_id', Q.oneOf(uniquePlantIds as string[]))
+        ).fetch();
+        
+        // Create a map of plantId to plantName
+        plantsMap = plantsRecords.reduce((acc, plant) => {
+          acc[plant.plantId] = plant.name;
+          return acc;
+        }, {} as {[key: string]: string});
       }
-
-      // Format the data to include plant_name from the join
-      const formattedTasks = data?.map(task => ({
-        ...task,
-        plant_name: task.plants?.name || 'Unknown Plant'
-      })) || [];
-
-      setTasks(formattedTasks);
+      
+      // Map tasks to the format expected by the UI
+      const tasksData: PlantTaskData[] = tasksRecords.map((task: PlantTask) => ({
+        id: task.id,
+        taskId: task.taskId,
+        plantId: task.plantId,
+        plantName: plantsMap[task.plantId] || 'Unknown Plant',
+        taskType: task.taskType as 'water' | 'feed' | 'prune' | 'transplant' | 'harvest' | 'other',
+        title: task.title,
+        description: task.description || null,
+        dueDate: task.dueDate,
+        status: task.status,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+        notificationId: task.notificationId
+      }));
+      
+      // Sort tasks (if needed)
+      tasksData.sort((a, b) => 
+        a.plantName.localeCompare(b.plantName) || 
+        a.title.localeCompare(b.title)
+      );
+      
+      setTasks(tasksData);
       
       // Schedule notifications for tasks that don't have them yet
       if (isNotificationsEnabled) {
-        formattedTasks.forEach(task => {
-          if (!task.notification_id) {
+        tasksData.forEach((task: PlantTaskData) => {
+          if (!task.notificationId) {
             scheduleNotificationForTask(task);
           }
         });
@@ -144,7 +136,7 @@ export default function CalendarScreen() {
   };
 
   // Schedule notification for a task
-  const scheduleNotificationForTask = async (task: PlantTask) => {
+  const scheduleNotificationForTask = async (task: PlantTaskData) => {
     try {
       if (!isNotificationsEnabled) {
         const permissionGranted = await requestPermissions();
@@ -153,24 +145,39 @@ export default function CalendarScreen() {
 
       const notificationParams: TaskNotificationParams = {
         taskId: task.id,
-        plantId: task.plant_id,
-        plantName: task.plant_name,
-        taskType: task.task_type,
+        plantId: task.plantId,
+        plantName: task.plantName,
+        taskType: task.taskType,
         taskTitle: task.title,
-        dueDate: parseISO(task.due_date)
+        dueDate: parseISO(task.dueDate)
       };
 
       const notificationId = await scheduleTaskNotification(notificationParams);
       
-      if (notificationId) {
-        // Update the task with the notification ID
-        const { error } = await supabase
-          .from('plant_tasks')
-          .update({ notification_id: notificationId })
-          .eq('id', task.id);
+      if (notificationId && task.id) {
+        // Update the task with the notification ID in WatermelonDB
+        try {
+          const taskRecord = await plantTasks.find(task.id);
           
-        if (error) {
+          await taskRecord.database.write(async () => {
+            await taskRecord.update((t: any) => {
+              t.notificationId = notificationId;
+            });
+          });
+        } catch (error) {
           console.error('Error updating task with notification ID:', error);
+        }
+        
+        // Also update the Supabase database if not in Expo Go
+        if (!isExpoGo) {
+          const { error } = await supabase
+            .from('plant_tasks')
+            .update({ notification_id: notificationId })
+            .eq('id', task.id);
+            
+          if (error) {
+            console.error('Error updating task with notification ID in Supabase:', error);
+          }
         }
       }
     } catch (err) {
@@ -186,26 +193,30 @@ export default function CalendarScreen() {
       // Find the task to get its notification ID
       const task = tasks.find(t => t.id === taskId);
       
-      if (task?.notification_id) {
+      if (task?.notificationId) {
         // Cancel the notification
         await cancelTaskNotification(taskId);
       }
       
-      // Update the task status
-      const { error } = await supabase
-        .from('plant_tasks')
-        .update({ 
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId);
+      // Update the task status in WatermelonDB
+      try {
+        const taskRecord = await plantTasks.find(taskId);
         
-      if (error) {
+        await taskRecord.database.write(async () => {
+          await taskRecord.update((t: any) => {
+            t.status = 'completed';
+          });
+        });
+        
+        // Sync with Supabase
+        await sync();
+        
+        // Refresh the task list
+        await fetchTasks();
+      } catch (error) {
+        console.error('Error updating task status in WatermelonDB:', error);
         throw error;
       }
-      
-      // Refresh the task list
-      await fetchTasks();
       
     } catch (err) {
       console.error('Error marking task as completed:', err);
@@ -216,8 +227,13 @@ export default function CalendarScreen() {
   };
 
   // Refresh the tasks list
-  const onRefresh = async () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
+    
+    // Sync with Supabase
+    await sync();
+    
+    // Fetch updated tasks
     await fetchTasks();
   };
 
@@ -289,51 +305,51 @@ export default function CalendarScreen() {
     );
   };
 
-  const renderTaskItem = ({ item }: { item: PlantTask }) => {
+  const renderTaskItem = ({ item }: { item: PlantTaskData }) => {
     return (
       <ThemedView className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-4 overflow-hidden">
         <View className="flex-row p-4">
           {/* Task type icon */}
           <View
             className={`mr-4 h-12 w-12 rounded-full items-center justify-center ${
-              item.task_type === 'water'
+              item.taskType === 'water'
                 ? 'bg-blue-100 dark:bg-blue-900'
-                : item.task_type === 'feed'
+                : item.taskType === 'feed'
                 ? 'bg-yellow-100 dark:bg-yellow-900'
-                : item.task_type === 'prune'
+                : item.taskType === 'prune'
                 ? 'bg-green-100 dark:bg-green-900'
-                : item.task_type === 'transplant'
+                : item.taskType === 'transplant'
                 ? 'bg-purple-100 dark:bg-purple-900'
-                : item.task_type === 'harvest'
+                : item.taskType === 'harvest'
                 ? 'bg-red-100 dark:bg-red-900'
                 : 'bg-gray-100 dark:bg-gray-700'
             }`}
           >
             <Ionicons
               name={
-                item.task_type === 'water'
+                item.taskType === 'water'
                   ? 'water'
-                  : item.task_type === 'feed'
+                  : item.taskType === 'feed'
                   ? 'nutrition'
-                  : item.task_type === 'prune'
+                  : item.taskType === 'prune'
                   ? 'cut'
-                  : item.task_type === 'transplant'
+                  : item.taskType === 'transplant'
                   ? 'swap-horizontal'
-                  : item.task_type === 'harvest'
+                  : item.taskType === 'harvest'
                   ? 'basket'
                   : 'calendar'
               }
               size={24}
               color={
-                item.task_type === 'water'
+                item.taskType === 'water'
                   ? '#3b82f6'
-                  : item.task_type === 'feed'
+                  : item.taskType === 'feed'
                   ? '#f59e0b'
-                  : item.task_type === 'prune'
+                  : item.taskType === 'prune'
                   ? '#10b981'
-                  : item.task_type === 'transplant'
+                  : item.taskType === 'transplant'
                   ? '#8b5cf6'
-                  : item.task_type === 'harvest'
+                  : item.taskType === 'harvest'
                   ? '#ef4444'
                   : '#6b7280'
               }
@@ -347,7 +363,7 @@ export default function CalendarScreen() {
             </ThemedText>
             
             <TouchableOpacity
-              onPress={() => navigateToPlant(item.plant_id)}
+              onPress={() => navigateToPlant(item.plantId)}
               className="flex-row items-center mb-1"
             >
               <Ionicons
@@ -356,7 +372,7 @@ export default function CalendarScreen() {
                 color={isDarkMode ? '#10b981' : '#047857'}
               />
               <ThemedText className="text-green-700 dark:text-green-500 ml-1 text-sm">
-                {item.plant_name}
+                {item.plantName}
               </ThemedText>
             </TouchableOpacity>
             
@@ -373,7 +389,7 @@ export default function CalendarScreen() {
                 color={isDarkMode ? '#d1d5db' : '#6b7280'}
               />
               <ThemedText className="text-gray-500 dark:text-gray-400 ml-1 text-xs">
-                {format(parseISO(item.due_date), 'h:mm a')}
+                {format(parseISO(item.dueDate), 'h:mm a')}
               </ThemedText>
             </View>
           </View>
@@ -412,7 +428,7 @@ export default function CalendarScreen() {
             {error}
           </ThemedText>
           <TouchableOpacity
-            onPress={fetchTasks}
+            onPress={handleRefresh}
             className="mt-4 bg-green-600 py-2 px-4 rounded-lg"
           >
             <ThemedText className="text-white font-medium">Try Again</ThemedText>
@@ -427,7 +443,7 @@ export default function CalendarScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={onRefresh}
+              onRefresh={handleRefresh}
               colors={['#16a34a']}
               tintColor={isDarkMode ? '#16a34a' : '#16a34a'}
             />

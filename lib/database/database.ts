@@ -39,6 +39,22 @@ const mockSchema = {
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' }
       ]
+    },
+    {
+      name: 'plant_tasks',
+      columns: [
+        { name: 'task_id', type: 'string' },
+        { name: 'plant_id', type: 'string' },
+        { name: 'title', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'task_type', type: 'string' },
+        { name: 'due_date', type: 'string' },
+        { name: 'status', type: 'string' },
+        { name: 'notification_id', type: 'string', isOptional: true },
+        { name: 'user_id', type: 'string' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' }
+      ]
     }
   ]
 };
@@ -61,6 +77,13 @@ class MockProfile extends Model {
   static associations = {};
 }
 
+class MockPlantTask extends Model {
+  static table = 'plant_tasks';
+  static associations = {
+    plants: { type: "belongs_to" as const, key: 'plant_id' }
+  };
+}
+
 // Use dynamic imports to avoid TypeScript errors
 let plantSchema: any;
 let Plant: any = MockPlant;
@@ -71,6 +94,7 @@ let JournalEntry: any = MockDiaryEntry;
 let GrowLocation: any = MockProfile;
 let Notification: any = MockProfile;
 let Strain: any = MockPlant;
+let PlantTask: any = MockPlantTask;
 
 try {
   // Try to import schema and models
@@ -83,6 +107,13 @@ try {
   GrowLocation = require('../models/GrowLocation').GrowLocation;
   Notification = require('../models/Notification').Notification;
   Strain = require('../models/Strain').Strain;
+  
+  // Import PlantTask with better error handling since it's exported differently
+  try {
+    PlantTask = require('../models/PlantTask').PlantTask;
+  } catch (e) {
+    PlantTask = require('../models/PlantTask').default || require('../models/PlantTask');
+  }
 } catch (error) {
   console.error('Error importing schema or models:', error);
   // Use mock schema and models if imports fail
@@ -106,10 +137,21 @@ if (isExpoGo) {
     console.log('Using mock database adapter as configured');
   }
   
+  // Create a more robust mock adapter that properly handles all tables
+  const mockTables = mockSchema.tables.map(table => table.name);
+  const allTables = [...mockTables, 'plant_tasks']; // Ensure plant_tasks is included
+  
   adapter = {
     schema: plantSchema,
     tableName: (name: string) => name,
-    get: async () => ({}),
+    get: async (tableName: string) => {
+      console.log(`Mock adapter: get collection for table ${tableName}`);
+      // Make sure all known tables are available
+      if (!allTables.includes(tableName)) {
+        console.warn(`Mock adapter: Unknown table requested: ${tableName}`);
+      }
+      return {};
+    },
     find: async () => ({}),
     query: async () => [],
     count: async () => 0,
@@ -146,7 +188,8 @@ const database = new Database({
     JournalEntry,
     GrowLocation,
     Notification,
-    Strain
+    Strain,
+    PlantTask
   ]
 });
 
@@ -181,6 +224,7 @@ export async function synchronizeWithSupabase() {
             grow_locations: { created: [], updated: [], deleted: [] },
             notifications: { created: [], updated: [], deleted: [] },
             strains: { created: [], updated: [], deleted: [] },
+            plant_tasks: { created: [], updated: [], deleted: [] },
           }, 
           timestamp: Date.now() 
         };

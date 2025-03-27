@@ -2,7 +2,6 @@ import { Link, router } from 'expo-router';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, FlatList, ActivityIndicator, Pressable, Modal } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDatabase } from '../../lib/hooks/useDatabase';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedView from '../../components/ui/ThemedView';
@@ -11,6 +10,8 @@ import { AddPlantForm } from '../../components/AddPlantForm';
 import { Plant } from '../../lib/models/Plant';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import useWatermelon from '../../lib/hooks/useWatermelon';
+import { Q } from '@nozbe/watermelondb';
 
 // Define location types based on locationId values in the database
 type LocationType = 'indoor' | 'outdoor' | 'unknown';
@@ -25,13 +26,13 @@ const LOCATIONS = [
 ];
 
 export default function HomeScreen() {
-  const { database } = useDatabase();
+  const { plants, sync, isSyncing } = useWatermelon();
   const { theme, isDarkMode } = useTheme();
   const [plantCount, setPlantCount] = useState(0);
   const [isAddPlantModalVisible, setIsAddPlantModalVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [plants, setPlants] = useState<Plant[]>([]);
+  const [plantsData, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
   const [plantsByLocation, setPlantsByLocation] = useState<{[key: string]: Plant[]}>({});
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -65,8 +66,8 @@ export default function HomeScreen() {
         setLoadingTimeout(true);
       }, 5000); // 5 seconds timeout
       
-      const plantsCollection = database.get<Plant>('plants');
-      const allPlants = await plantsCollection.query().fetch();
+      // Use WatermelonDB query syntax with the Q object
+      const allPlants = await plants.query().fetch();
       setPlants(allPlants);
       setPlantCount(allPlants.length);
       
@@ -89,12 +90,23 @@ export default function HomeScreen() {
     }
   };
 
+  // Handle manual sync
+  const handleSync = async () => {
+    try {
+      await sync();
+      // Refresh plants after sync
+      fetchPlants();
+    } catch (error) {
+      console.error('Error syncing data:', error);
+    }
+  };
+
   useEffect(() => {
     fetchPlants();
-  }, [database]);
+  }, []);
 
   // Filter plants based on search query
-  const filteredPlants = plants.filter((plant: Plant) => 
+  const filteredPlants = plantsData.filter((plant: Plant) => 
     plant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     plant.strain.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -278,7 +290,35 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: theme.colors.neutral[50] }}>
+    <SafeAreaView
+      className="flex-1"
+      style={{
+        backgroundColor: isDarkMode
+          ? theme.colors.neutral[900]
+          : theme.colors.neutral[50],
+      }}
+    >
+      <ThemedView className="px-4 pt-2 pb-4 flex-row justify-between items-center">
+        <ThemedText
+          className="text-2xl font-bold"
+          lightClassName="text-green-800"
+          darkClassName="text-primary-300"
+        >
+          My Garden
+        </ThemedText>
+        
+        <TouchableOpacity
+          onPress={() => router.push('/profile')}
+          className="w-10 h-10 rounded-full justify-center items-center"
+          style={{ backgroundColor: theme.colors.primary[50] }}
+        >
+          <Ionicons 
+            name="person" 
+            size={22} 
+            color={theme.colors.primary[600]} 
+          />
+        </TouchableOpacity>
+      </ThemedView>
       <ScrollView className="flex-1">
         <ThemedView className="p-4">
           <ThemedText className="text-2xl font-bold mb-4" 

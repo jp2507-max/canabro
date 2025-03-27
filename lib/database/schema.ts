@@ -132,5 +132,21 @@ export const plantSchema = appSchema({
         { name: 'updated_at', type: 'number' },
       ],
     }),
+    tableSchema({
+      name: 'plant_tasks',
+      columns: [
+        { name: 'task_id', type: 'string', isIndexed: true },
+        { name: 'plant_id', type: 'string', isIndexed: true },
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'task_type', type: 'string' },
+        { name: 'due_date', type: 'string' },
+        { name: 'status', type: 'string' },
+        { name: 'notification_id', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' }
+      ],
+    }),
   ],
 });
