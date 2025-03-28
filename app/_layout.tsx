@@ -1,7 +1,11 @@
-import React from 'react';
+import { enableScreens } from 'react-native-screens';
+enableScreens();
+
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 import { DatabaseProvider } from '../lib/contexts/DatabaseProvider';
 import { AuthProvider } from '../lib/contexts/AuthProvider';
 import { NotificationProvider } from '../lib/contexts/NotificationContext';
@@ -10,7 +14,15 @@ import { ThemeProvider, useTheme } from '../lib/contexts/ThemeContext';
 // Import CSS for NativeWind
 import '../global.css';
 
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
+
 function RootLayout() {
+  useEffect(() => {
+    // Hide the splash screen once the root layout mounts
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>

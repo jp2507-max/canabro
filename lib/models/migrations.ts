@@ -4,7 +4,7 @@
  * Defines migrations for schema changes in WatermelonDB
  */
 import { schemaMigrations } from '@nozbe/watermelondb/Schema/migrations';
-import { addColumns } from '@nozbe/watermelondb/Schema/migrations';
+import { addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
 
 // Initial schema is version 1 (defined in schema.ts)
 // When making schema changes:
@@ -17,6 +17,22 @@ const migrations = schemaMigrations({
     {
       toVersion: 2,
       steps: [
+        // First, create the posts table if it doesn't exist
+        createTable({
+          name: 'posts',
+          columns: [
+            { name: 'post_id', type: 'string' },
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'content', type: 'string' },
+            { name: 'image_url', type: 'string', isOptional: true },
+            { name: 'plant_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'likes_count', type: 'number', isOptional: true },
+            { name: 'comments_count', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true }
+          ]
+        }),
         // Add is_deleted column to profiles
         addColumns({
           table: 'profiles',

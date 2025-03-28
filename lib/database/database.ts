@@ -3,9 +3,41 @@ import { synchronize } from '@nozbe/watermelondb/sync';
 import supabase from '../supabase';
 import { Model } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
-import { schemaMigrations } from '@nozbe/watermelondb/Schema/migrations';
 import Constants from 'expo-constants';
 import { authConfig, isExpoGo } from '../config'; 
+import migrations from '../models/migrations';
+import * as FileSystem from 'expo-file-system';
+
+// Database file paths for reset functionality
+const DB_NAME = 'canabro.db';
+const getDatabasePath = async () => {
+  return `${FileSystem.documentDirectory}${DB_NAME}`;
+};
+
+// Function to reset the local database
+export const resetDatabase = async () => {
+  try {
+    // Get the database file path
+    const dbPath = await getDatabasePath();
+    
+    // Check if the database file exists
+    const fileInfo = await FileSystem.getInfoAsync(dbPath);
+    
+    if (fileInfo.exists) {
+      console.log('Database file found, deleting to reset...');
+      // Delete the database file
+      await FileSystem.deleteAsync(dbPath);
+      console.log('Database file deleted successfully.');
+      return true;
+    } else {
+      console.log('No database file found, nothing to delete.');
+      return false;
+    }
+  } catch (error) {
+    console.error('Error while trying to reset database:', error);
+    return false;
+  }
+};
 
 // Define the mock schema and model before the try block
 const mockSchema = {
@@ -95,10 +127,24 @@ let GrowLocation: any = MockProfile;
 let Notification: any = MockProfile;
 let Strain: any = MockPlant;
 let PlantTask: any = MockPlantTask;
+let Post: any = MockPlant;
+
+let schemaImportFailed = false; // Flag to track import failure
 
 try {
   // Try to import schema and models
-  plantSchema = require('./schema').plantSchema;
+  const schemaModule = require('./schema');
+  plantSchema = schemaModule.default;
+
+  // Explicitly check if schema loaded correctly
+  if (!plantSchema || typeof plantSchema !== 'object' || !plantSchema.version) {
+    console.error('Failed to load schema correctly from ./schema, schema is invalid or undefined.');
+    schemaImportFailed = true;
+    throw new Error('Schema import validation failed'); // Force fallback to catch block
+  }
+
+  console.log('Successfully imported real schema version:', plantSchema.version);
+
   Plant = require('../models/Plant').Plant;
   DiaryEntry = require('../models/DiaryEntry').DiaryEntry;
   Profile = require('../models/Profile').Profile;
@@ -107,6 +153,7 @@ try {
   GrowLocation = require('../models/GrowLocation').GrowLocation;
   Notification = require('../models/Notification').Notification;
   Strain = require('../models/Strain').Strain;
+  Post = require('../models/Post').Post;
   
   // Import PlantTask with better error handling since it's exported differently
   try {
@@ -116,17 +163,35 @@ try {
   }
 } catch (error) {
   console.error('Error importing schema or models:', error);
+  schemaImportFailed = true; // Mark import as failed
   // Use mock schema and models if imports fail
   plantSchema = mockSchema;
+  console.log('Falling back to mock schema.');
+  // Assign mock models (ensure all used models have mocks)
+  Plant = MockPlant;
+  DiaryEntry = MockDiaryEntry;
+  Profile = MockProfile;
+  // Add mocks for others if they were potentially uninitialized due to import errors
+  GrowJournal = MockPlant; 
+  JournalEntry = MockDiaryEntry;
+  GrowLocation = MockProfile;
+  Notification = MockProfile;
+  Strain = MockPlant;
+  PlantTask = MockPlantTask;
+  Post = MockPlant;
 }
 
 // Define migrations for future use in production builds
-const migrations = schemaMigrations({
-  migrations: []
-});
+// Using imported migrations from the correct path
 
 // Create appropriate adapter based on configuration
 let adapter: any;
+
+// Double-check plantSchema before creating the adapter
+if (!plantSchema || schemaImportFailed) {
+  console.error("CRITICAL: plantSchema is missing or invalid before creating SQLiteAdapter. Using mock schema as fallback.");
+  plantSchema = mockSchema; // Ensure mock schema is used if real one failed
+}
 
 // In Expo Go, we MUST use mock adapter because SQLite with JSI is not supported
 if (isExpoGo) {
@@ -170,7 +235,7 @@ if (isExpoGo) {
   // In production or development build, use the real SQLiteAdapter
   console.log('Using SQLite adapter with real database');
   adapter = new SQLiteAdapter({
-    schema: plantSchema,
+    schema: plantSchema, // Now guaranteed to be either real or mock schema
     migrations,
     jsi: true, // This is recommended for performance
     dbName: 'canabro',
@@ -189,7 +254,8 @@ const database = new Database({
     GrowLocation,
     Notification,
     Strain,
-    PlantTask
+    PlantTask,
+    Post // Add Post to modelClasses
   ]
 });
 

@@ -45,24 +45,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get the initial session
     const initializeAuth = async () => {
       try {
+        console.log('[AuthProvider] Initializing...');
         // Initialize database schema if needed
+        console.log('[AuthProvider] Calling initializeDatabase...');
         await initializeDatabase();
+        console.log('[AuthProvider] initializeDatabase complete.');
         
-        // For Expo Go, use dev bypass if configured
-        if (isExpoGo && authConfig.forceDevBypass) {
+        // For development environment, use dev bypass if configured
+        if (isDevelopment && authConfig.forceDevBypass) {
           if (authConfig.enableAuthLogging) {
             console.log('Development environment detected, using dev bypass auth');
           }
           await devBypassAuth();
+          console.log('[AuthProvider] Dev bypass complete.');
           return;
+        } else {
+            console.log('[AuthProvider] Dev bypass NOT active (isDevelopment:', isDevelopment, ', forceDevBypass:', authConfig.forceDevBypass, ')');
         }
         
+        console.log('[AuthProvider] Calling supabase.auth.getSession...');
         const { data } = await supabase.auth.getSession();
+        console.log('[AuthProvider] supabase.auth.getSession complete. Session:', data.session ? 'Exists' : 'Null');
         setSession(data.session);
         setUser(data.session?.user || null);
       } catch (error) {
-        console.error('Error getting session:', error);
+        console.error('[AuthProvider] Error during initializeAuth:', error);
       } finally {
+        console.log('[AuthProvider] Setting loading to false.');
         setLoading(false);
       }
     };
@@ -73,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         // Skip session updates in dev mode if using bypass
-        if (isExpoGo && authConfig.forceDevBypass) {
+        if (isDevelopment && authConfig.forceDevBypass) {
           return;
         }
         
@@ -175,6 +184,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Development-only function to bypass Supabase auth for testing
   const devBypassAuth = async () => {
+    // --- Bypass Disabled --- 
+    console.warn('devBypassAuth called but is explicitly disabled!');
+    return { error: new Error('Development bypass authentication is disabled.') };
+    // --- Original Bypass Logic Commented Out ---
+    /*
     // Only allow in development environment
     if (!isDevelopment) {
       console.error('Dev bypass auth can only be used in development');
@@ -270,6 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error in dev bypass auth:', error);
       return { error: error as Error };
     }
+    */
   };
 
   // Sign in with email and password

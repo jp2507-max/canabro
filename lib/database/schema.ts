@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const plantSchema = appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'plants',
@@ -148,5 +148,24 @@ export const plantSchema = appSchema({
         { name: 'updated_at', type: 'number' }
       ],
     }),
+    tableSchema({
+      name: 'posts',
+      columns: [
+        { name: 'post_id', type: 'string' },
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'content', type: 'string' },
+        { name: 'image_url', type: 'string', isOptional: true },
+        { name: 'plant_id', type: 'string', isOptional: true, isIndexed: true },
+        { name: 'likes_count', type: 'number', isOptional: true },
+        { name: 'comments_count', type: 'number', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'last_synced_at', type: 'number', isOptional: true },
+        { name: 'is_deleted', type: 'boolean', isOptional: true }
+      ],
+    }),
   ],
 });
+
+// Export the plantSchema as the default export as well
+export default plantSchema;

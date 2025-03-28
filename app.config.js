@@ -9,7 +9,8 @@ export default {
       favicon: "./assets/favicon.png"
     },
     experiments: {
-      tsconfigPaths: true
+      tsconfigPaths: true,
+      typedRoutes: true
     },
     plugins: [
       "expo-router",
@@ -20,6 +21,18 @@ export default {
         {
           icon: "./assets/notification-icon.png",
           color: "#ffffff"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            useFrameworks: "static",
+            deploymentTarget: "15.1",
+            extraPodspecDependencies: {
+              simdjson: "../node_modules/@nozbe/simdjson"
+            }
+          }
         }
       ]
     ],
@@ -35,9 +48,22 @@ export default {
     assetBundlePatterns: [
       "**/*"
     ],
-    ios: {
-      supportsTablet: true,
-      bundleIdentifier: "com.canabro.app"
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.canabro.app",
+      "buildNumber": "1.0.0",
+      "deploymentTarget": "15.1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
+      },
+      "associatedDomains": [
+        "applinks:YOUR_APP_LINK_DOMAIN"
+      ]
     },
     android: {
       adaptiveIcon: {
