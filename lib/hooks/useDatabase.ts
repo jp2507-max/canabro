@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import database, { synchronizeWithSupabase } from '../database/database';
-import { Collection } from '@nozbe/watermelondb';
+import { Collection, Model } from '@nozbe/watermelondb';
 import { Plant } from '../models/Plant';
 import { DiaryEntry } from '../models/DiaryEntry';
 import { Profile } from '../models/Profile';
 import supabase from '../supabase';
+import { Observable } from 'rxjs';
 
 export function useDatabase() {
-  const [plants, setPlants] = useState<Collection<Plant>>(database.get<Plant>('plants'));
-  const [diaryEntries, setDiaryEntries] = useState<Collection<DiaryEntry>>(database.get<DiaryEntry>('diary_entries'));
-  const [profiles, setProfiles] = useState<Collection<Profile>>(database.get<Profile>('profiles'));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -45,13 +43,33 @@ export function useDatabase() {
     }
   };
 
+  // Helper function to get observable query for any collection
+  const observeCollection = <T extends Model>(collectionName: string, queryBuilder?: (collection: Collection<T>) => any): Observable<T[]> => {
+    const collection = database.get<T>(collectionName);
+    if (queryBuilder) {
+      return queryBuilder(collection).observe();
+    }
+    return collection.query().observe();
+  };
+
+  // Pre-defined observables for common collections
+  const observePlants = (queryBuilder?: (collection: Collection<Plant>) => any): Observable<Plant[]> => 
+    observeCollection<Plant>('plants', queryBuilder);
+
+  const observeDiaryEntries = (queryBuilder?: (collection: Collection<DiaryEntry>) => any): Observable<DiaryEntry[]> => 
+    observeCollection<DiaryEntry>('diary_entries', queryBuilder);
+
+  const observeProfiles = (queryBuilder?: (collection: Collection<Profile>) => any): Observable<Profile[]> => 
+    observeCollection<Profile>('profiles', queryBuilder);
+
   return {
     database,
-    plants,
-    diaryEntries,
-    profiles,
+    observeCollection,
+    observePlants,
+    observeDiaryEntries,
+    observeProfiles,
     isLoading,
     error,
-    syncDatabase,
+    syncDatabase
   };
 }

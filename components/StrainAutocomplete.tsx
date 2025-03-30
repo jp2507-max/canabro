@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -92,6 +91,7 @@ export function StrainAutocomplete({
 
     return (
       <TouchableOpacity
+        key={item.id}
         className="p-3 border-b border-gray-200 flex-row items-center"
         onPress={() => handleSelectStrain(item)}
       >
@@ -147,12 +147,9 @@ export function StrainAutocomplete({
               <ActivityIndicator size="small" color="#4CAF50" />
             </View>
           ) : suggestions.length > 0 ? (
-            <FlatList
-              data={suggestions}
-              renderItem={renderStrainItem}
-              keyExtractor={(item) => item.id}
-              keyboardShouldPersistTaps="handled"
-            />
+            <View>
+              {suggestions.map((item) => renderStrainItem({ item }))}
+            </View>
           ) : (
             <View className="p-4 items-center">
               <Text className="text-gray-500">No strains found</Text>

@@ -1,6 +1,3 @@
-import { enableScreens } from 'react-native-screens';
-enableScreens();
-
 import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

@@ -1,21 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { useDatabase } from '../lib/contexts/DatabaseProvider';
-import withObservables from '@nozbe/with-observables';
+import { withObservables } from '@nozbe/watermelondb/react';
 import { Plant } from '../lib/models/Plant';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Collection } from '@nozbe/watermelondb';
-import { Observable } from '@nozbe/watermelondb/utils/rx';
+import { Database } from '@nozbe/watermelondb';
+import { Observable } from 'rxjs';
 
-interface PlantListProps {
+interface PlantListComponentProps {
   plants: Plant[];
-}
-
-interface EnhancedProps {
-  plants: Collection<Plant>;
 }
 
 // Component to render when there are no plants
@@ -41,23 +37,12 @@ const PlantItem = ({ plant }: { plant: Plant }) => (
   </TouchableOpacity>
 );
 
-// Component to convert Collection to Array
-const PlantListComponent = ({ plants }: EnhancedProps) => {
-  const [plantArray, setPlantArray] = useState<Plant[]>([]);
-  
-  useEffect(() => {
-    const fetchPlants = async () => {
-      const allPlants = await plants.query().fetch();
-      setPlantArray(allPlants);
-    };
-    
-    fetchPlants();
-  }, [plants]);
-  
+// Base component that receives plants as an array (already transformed by withObservables)
+const PlantListComponent = ({ plants }: PlantListComponentProps) => {
   return (
     <View className="flex-1">
       <FlatList
-        data={plantArray}
+        data={plants}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <PlantItem plant={item} />}
         ListEmptyComponent={<EmptyPlantList />}
@@ -67,12 +52,13 @@ const PlantListComponent = ({ plants }: EnhancedProps) => {
   );
 };
 
-// Enhanced component with observables
-export const PlantList = withObservables([], ({ database }: { database: any }) => {
-  const db = database || useDatabase().database;
-  return {
-    plants: db.get('plants'),
-  };
-})(PlantListComponent);
+// Enhanced component with observables - withObservables automatically
+// subscribes to the Observable and passes unwrapped values to the component
+export const PlantList = withObservables(
+  [], 
+  ({ database }: { database: Database }) => ({
+    plants: database.get<Plant>('plants').query().observe()
+  })
+)(PlantListComponent);
 
 export default PlantList;

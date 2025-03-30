@@ -51,7 +51,6 @@ export default {
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.canabro.app",
-      "buildNumber": "1.0.0",
       "deploymentTarget": "15.1",
       "config": {
         "usesNonExemptEncryption": false

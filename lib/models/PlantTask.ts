@@ -1,5 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, relation } from '@nozbe/watermelondb/decorators';
+import { field, date, readonly, text, relation, writer } from '@nozbe/watermelondb/decorators'; // Import writer
 import { Associations } from '@nozbe/watermelondb/Model';
 import { Plant } from './Plant';
 
@@ -22,4 +22,11 @@ export class PlantTask extends Model {
   @readonly @date('updated_at') updatedAt!: Date;
 
   @relation('plants', 'plant_id') plant!: Plant;
+
+  @writer async markAsCompleted() {
+    await this.update((task) => {
+      task.status = 'completed';
+      task.notificationId = undefined; // Clear notification ID
+    });
+  }
 }

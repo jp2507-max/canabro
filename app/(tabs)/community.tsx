@@ -12,9 +12,16 @@ import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useCommunityPosts } from '../../lib/hooks/useCommunityPosts';
+// import { useCommunityPosts } from '../../lib/hooks/useCommunityPosts'; // Removed hook
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
-import { useProfileData } from '../../lib/hooks/useProfileData';
+// import { useProfileData } from '../../lib/hooks/useProfileData'; // Keep for avatar for now, or fetch profile via WDB relation in PostItem
+
+// WatermelonDB imports
+import { withObservables, withDatabase, compose } from '@nozbe/watermelondb/react';
+import { Database, Q } from '@nozbe/watermelondb';
+import { Post } from '../../lib/models/Post'; // Import WatermelonDB Post model
+import useWatermelon from '../../lib/hooks/useWatermelon'; // Import for sync
+import { ComponentType } from 'react'; // Import ComponentType for explicit typing
 
 // Topic tags for the horizontal scroll
 const TOPICS = [
@@ -26,32 +33,31 @@ const TOPICS = [
   { id: '6', name: 'growlights', count: 18 },
 ];
 
+// Define props injected by HOCs
+interface InjectedProps {
+  posts: Post[];
+  database: Database; // Explicitly include database from withDatabase
+}
+
 /**
- * Community screen component for displaying and interacting with social posts
+ * Base Community screen component
  */
-export default function CommunityScreen() {
-  useProtectedRoute();
+// Add database to props
+function CommunityScreenBase({ posts, database }: InjectedProps) {
+  useProtectedRoute(); // Keep protected route logic
   const { theme, isDarkMode } = useTheme();
-  const { user } = useAuth();
-  const { profile } = useProfileData();
-  
+  const { user } = useAuth(); // Keep auth context
+  // const { profile } = useProfileData(); // Maybe fetch profile via Post relation later
+  const { sync, isSyncing } = useWatermelon(); // Use sync from hook
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateScreen, setShowCreateScreen] = useState(false);
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [expandedImage, setExpandedImage] = useState<{ url: string; index: number } | null>(null);
-  
-  // Use our custom hook to fetch and manage posts
-  const {
-    posts,
-    loading,
-    refreshing,
-    hasMore,
-    loadMore,
-    refresh,
-    like,
-    addPost
-  } = useCommunityPosts();
-  
+
+  // Removed useCommunityPosts hook and its state variables (loading, refreshing, hasMore, etc.)
+  // const { posts, loading, refreshing, hasMore, loadMore, refresh, like, addPost } = useCommunityPosts();
+
   // Handle topic selection
   const handleTopicPress = (topicId: string) => {
     if (activeTopic === topicId) {
@@ -63,12 +69,14 @@ export default function CommunityScreen() {
   
   // Handle user profile navigation
   const handleUserPress = (userId: string) => {
-    router.push(`/profile/${userId}`);
+    // Use any type assertion to avoid TypeScript errors with dynamic routes
+    router.push(`/profile/${userId}` as any);
   };
-  
+
   // Handle plant detail navigation
   const handlePlantPress = (plantId: string) => {
-    router.push(`/plant/${plantId}`);
+    // Use any type assertion to avoid TypeScript errors with dynamic routes
+    router.push(`/plant/${plantId}` as any);
   };
   
   // Handle create post actions
@@ -76,18 +84,44 @@ export default function CommunityScreen() {
     setShowCreateModal(false);
     setShowCreateScreen(true);
   };
-  
+
   const handleAskQuestion = () => {
     setShowCreateModal(false);
     // TODO: Navigate to question asking screen
     // For now, just open the regular post screen
     setShowCreateScreen(true);
   };
-  
+
+  // Called after CreatePostScreen successfully creates a post
   const handlePostCreated = () => {
-    refresh();
+    // Optionally trigger sync after local creation
+    sync();
   };
-  
+
+  // Reimplement like action using the @writer method on the Post model
+  // Add explicit type for postId
+  const handleLike = async (postId: string) => {
+    console.log("Attempting WatermelonDB like for post:", postId);
+    try {
+      // Find the post first
+      const post = await database.get<Post>('posts').find(postId);
+      // Call the @writer method directly on the post instance
+      await post.incrementLikes();
+
+      // Optional: Trigger sync after successful write if needed immediately
+      // await sync();
+    } catch (error) {
+      console.error("Error liking post via WatermelonDB:", error);
+      // Optionally show an alert to the user
+      // Alert.alert("Error", "Could not like the post.");
+    }
+  };
+
+  // Reimplement refresh action
+  const handleRefresh = async () => {
+    await sync(); // Sync with backend
+  };
+
   // Render the header with user avatar and topics
   const renderHeader = () => (
     <>
@@ -95,12 +129,13 @@ export default function CommunityScreen() {
         <ThemedText className="text-2xl font-bold">Community</ThemedText>
         <TouchableOpacity onPress={() => handleUserPress(user?.id || '')}>
           <UserAvatar
-            uri={profile?.avatar_url || 'https://via.placeholder.com/40'}
+            // TODO: Get avatar from user context or fetch profile via relation
+            uri={'https://via.placeholder.com/40'}
             verified={false}
           />
         </TouchableOpacity>
       </ThemedView>
-      
+
       <TopicList
         topics={TOPICS}
         activeTopic={activeTopic}
@@ -108,15 +143,13 @@ export default function CommunityScreen() {
       />
     </>
   );
-  
+
   // Render empty state when no posts are available
+  // Loading is handled implicitly by withObservables (renders empty/null initially)
   const renderEmptyState = () => {
-    if (loading) return (
-      <ThemedView className="flex-1 items-center justify-center py-20">
-        <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-      </ThemedView>
-    );
-    
+    // Can add a loading indicator if posts is null/undefined initially if desired
+    // if (posts === null) return <ActivityIndicator />;
+
     return (
       <ThemedView className="flex-1 items-center justify-center py-20">
         <Ionicons
@@ -150,27 +183,27 @@ export default function CommunityScreen() {
           ListEmptyComponent={renderEmptyState}
           renderItem={({ item }) => (
             <PostItem
-              post={item}
-              onLike={(postId) => like(postId)}
-              onComment={(postId) => router.push(`/post/${postId}`)}
+              post={item} // Pass the WatermelonDB Post model instance
+              onLike={handleLike} // Use new handler
+              onComment={(postId: string) => router.push(`/post/${postId}` as any)} // Add type for postId
               onUserPress={handleUserPress}
               onPlantPress={handlePlantPress}
-              onImagePress={(url, index) => setExpandedImage({ url, index })}
+              // Add explicit types for url and index
+              onImagePress={(url: string, index: number) => setExpandedImage({ url, index })}
             />
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
-              onRefresh={refresh}
+              refreshing={isSyncing} // Use isSyncing state
+              onRefresh={handleRefresh} // Use new handler
               colors={[theme.colors.primary[500]]}
               tintColor={theme.colors.primary[500]}
             />
           }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
+          // Removed onEndReached and related props for pagination
         />
-        
+
         {/* Floating action button */}
         <TouchableOpacity
           className="absolute bottom-6 right-6 w-14 h-14 rounded-full items-center justify-center shadow-lg"
@@ -198,3 +231,32 @@ export default function CommunityScreen() {
     </SafeAreaView>
   );
 }
+
+// Apply HOCs sequentially instead of using compose
+
+// 1. Enhance the base component with database access
+// This component now expects InjectedProps but receives only 'database' from HOC
+// We need to adjust the base component or the HOC application
+// Let's adjust the HOC application order: withObservables needs the database prop.
+
+// Enhance with Database first
+const CommunityScreenWithDB = withDatabase(CommunityScreenBase);
+
+// Enhance the result with Observables
+const EnhancedCommunityScreen = withObservables(
+  [], // No trigger props
+  // This function receives props passed to EnhancedCommunityScreen *plus* those from withDatabase (i.e., database)
+  ({ database }: { database: Database }) => ({
+    posts: database.get<Post>('posts')
+      .query(
+        Q.where('is_deleted', false),
+        Q.sortBy('created_at', Q.desc)
+      )
+      .observe(),
+    // We pass database through again, although withObservables doesn't strictly need it as output
+    // database: database // This line is optional, as withDatabase already provides it
+  })
+)(CommunityScreenWithDB); // Apply to the component already enhanced with database
+
+// Export the final enhanced component
+export default EnhancedCommunityScreen;

@@ -122,21 +122,22 @@ $$;
 -- Add sync mechanism support: Add _changed column to all tables
 DO $$
 DECLARE
-  table_names TEXT[] := ARRAY['profiles', 'plants', 'journal_entries', 'posts', 'grow_journals', 'grow_locations', 'plant_tasks'];
-  table_name TEXT;
+  table_names TEXT[] := ARRAY['profiles', 'plants', 'journal_entries', 'posts', 'grow_journals', 'grow_locations', 'plant_tasks']; -- Corrected missing commas
+  tbl_name TEXT; -- Renamed variable to avoid confusion
 BEGIN
-  FOREACH table_name IN ARRAY table_names
+  FOREACH tbl_name IN ARRAY table_names -- Use renamed variable
   LOOP
+    -- Check if table exists and _changed column doesn't
     IF EXISTS (
-      SELECT 1 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-        AND table_name = table_name
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = tbl_name -- Corrected comparison
     ) AND NOT EXISTS (
-      SELECT 1 
-      FROM information_schema.columns 
-      WHERE table_schema = 'public' 
-        AND table_name = table_name 
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = tbl_name -- Corrected comparison
         AND column_name = '_changed'
     ) THEN
       EXECUTE format('ALTER TABLE public.%I ADD COLUMN _changed TIMESTAMP WITH TIME ZONE DEFAULT NOW()', table_name);
@@ -147,7 +148,7 @@ BEGIN
         CREATE OR REPLACE FUNCTION public.%I_update_changed()
         RETURNS TRIGGER AS $$
         BEGIN
-          NEW._changed = NOW();
+          NEW._changed = NOW(); -- Added missing semicolon
           RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;

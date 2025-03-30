@@ -3,6 +3,7 @@ import { field, date, readonly, text, relation, children, lazy, writer } from '@
 import { Associations } from '@nozbe/watermelondb/Model';
 import { GrowJournal } from './GrowJournal';
 import { DiaryEntry } from './DiaryEntry';
+import { Profile } from './Profile'; // Import Profile model
 import { Q } from '@nozbe/watermelondb';
 import { Query } from '@nozbe/watermelondb';
 
@@ -11,12 +12,14 @@ export class Plant extends Model {
   static associations: Associations = {
     grow_journals: { type: 'belongs_to' as const, key: 'journal_id' },
     diary_entries: { type: 'has_many' as const, foreignKey: 'plant_id' },
+    profiles: { type: 'belongs_to' as const, key: 'user_id' }, // Add profile association
   };
 
   @text('plant_id') plantId!: string;
   @text('journal_id') journalId!: string;
   @text('name') name!: string;
   @text('strain') strain!: string;
+  @text('strain_id') strainId?: string;
   @text('planted_date') plantedDate!: string;
   @text('growth_stage') growthStage!: string;
   @field('height') height?: number;
@@ -31,6 +34,7 @@ export class Plant extends Model {
 
   // Relations
   @relation('grow_journals', 'journal_id') journal!: GrowJournal;
+  @relation('profiles', 'user_id') profile!: Profile; // Add profile relation
 
   // Children collections
   @children('diary_entries') diaryEntries!: Query<DiaryEntry>;

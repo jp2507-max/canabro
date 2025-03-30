@@ -1,5 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, relation } from '@nozbe/watermelondb/decorators';
+import { field, date, readonly, text, relation, writer } from '@nozbe/watermelondb/decorators'; // Import writer
 import { Associations } from '@nozbe/watermelondb/Model';
 
 export class Post extends Model {
@@ -23,4 +23,11 @@ export class Post extends Model {
 
   @relation('profiles', 'user_id') profile: any;
   @relation('plants', 'plant_id') plant?: any;
+
+  @writer async incrementLikes() {
+    await this.update((post) => {
+      // Ensure likesCount is treated as a number, defaulting to 0 if null/undefined
+      post.likesCount = (post.likesCount || 0) + 1;
+    });
+  }
 }

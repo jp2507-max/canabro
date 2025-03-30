@@ -1,8 +1,8 @@
 import { Link, router } from 'expo-router';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, FlatList, ActivityIndicator, Pressable, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, FlatList, ActivityIndicator, Pressable, Modal, RefreshControl } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, ComponentType } from 'react';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedView from '../../components/ui/ThemedView';
 import ThemedText from '../../components/ui/ThemedText';
@@ -11,12 +11,13 @@ import { Plant } from '../../lib/models/Plant';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import useWatermelon from '../../lib/hooks/useWatermelon';
-import { Q } from '@nozbe/watermelondb';
+import { Q, Database } from '@nozbe/watermelondb';
+import React from 'react';
+import { Observable } from 'rxjs';
+import { withObservables, withDatabase, compose } from '@nozbe/watermelondb/react';
 
-// Define location types based on locationId values in the database
 type LocationType = 'indoor' | 'outdoor' | 'unknown';
 
-// Define plant location categories with proper icons
 const LOCATIONS = [
   { id: 'all', name: 'All Plants', icon: 'cannabis' },
   { id: 'indoor', name: 'Indoor', icon: 'home' },
@@ -25,263 +26,153 @@ const LOCATIONS = [
   { id: 'flowering', name: 'Flowering', icon: 'flower' },
 ];
 
-export default function HomeScreen() {
-  const { plants, sync, isSyncing } = useWatermelon();
+interface HomeScreenProps {
+  plants: Plant[];
+}
+
+type PlantFilterKey = 'all' | 'indoor' | 'outdoor' | 'seedling' | 'flowering';
+
+interface FilteredPlants {
+  all: Plant[];
+  indoor: Plant[];
+  outdoor: Plant[];
+  seedling: Plant[];
+  flowering: Plant[];
+}
+
+function HomeScreen({ plants }: HomeScreenProps) {
+  const { sync, isSyncing } = useWatermelon();
   const { theme, isDarkMode } = useTheme();
-  const [plantCount, setPlantCount] = useState(0);
-  const [isAddPlantModalVisible, setIsAddPlantModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [plantsData, setPlants] = useState<Plant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [plantsByLocation, setPlantsByLocation] = useState<{[key: string]: Plant[]}>({});
+  const [selectedFilter, setSelectedFilter] = useState<PlantFilterKey>('all');
+  const [isAddPlantModalVisible, setIsAddPlantModalVisible] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
-  
-  // Helper function to get location type from locationId
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    console.log('DEBUG: Effective plants prop length:', plants?.length || 0);
+    if (plants?.length > 0 && isLoading) {
+      setIsLoading(false);
+    }
+  }, [plants, isLoading]);
+
+  const filteredPlants = useMemo<FilteredPlants>(() => {
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    const filtered = plants.filter(plant =>
+      plant.name.toLowerCase().includes(lowerCaseQuery) ||
+      plant.strain.toLowerCase().includes(lowerCaseQuery)
+    );
+
+    return {
+      all: filtered,
+      indoor: filtered.filter(p => getLocationType(p) === 'indoor'),
+      outdoor: filtered.filter(p => getLocationType(p) === 'outdoor'),
+      seedling: filtered.filter(p => p.growthStage === 'Seedling'),
+      flowering: filtered.filter(p => p.growthStage === 'Flowering'),
+    };
+  }, [plants, searchQuery]);
+
+  const currentPlantList = filteredPlants[selectedFilter];
+
   const getLocationType = (plant: Plant): LocationType => {
     if (!plant.locationId) return 'unknown';
-    
     const locationId = plant.locationId.toLowerCase();
     if (locationId.includes('indoor')) return 'indoor';
     if (locationId.includes('outdoor')) return 'outdoor';
-    
-    // Default fallback logic - use notes field if available
     if (plant.notes) {
       const notes = plant.notes.toLowerCase();
       if (notes.includes('indoor')) return 'indoor';
       if (notes.includes('outdoor')) return 'outdoor';
     }
-    
     return 'unknown';
   };
 
-  // Fetch plants from database
-  const fetchPlants = async () => {
-    try {
-      setLoading(true);
-      
-      // Set a timeout to prevent infinite loading
-      const timeoutId = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, 5000); // 5 seconds timeout
-      
-      // Use WatermelonDB query syntax with the Q object
-      const allPlants = await plants.query().fetch();
-      setPlants(allPlants);
-      setPlantCount(allPlants.length);
-      
-      // Group plants by location
-      const groupedPlants: {[key: string]: Plant[]} = { 
-        all: allPlants,
-        indoor: allPlants.filter((p: Plant) => getLocationType(p) === 'indoor'), 
-        outdoor: allPlants.filter((p: Plant) => getLocationType(p) === 'outdoor'),
-        seedling: allPlants.filter((p: Plant) => p.growthStage === 'Seedling'),
-        flowering: allPlants.filter((p: Plant) => p.growthStage === 'Flowering'),
-      };
-      
-      setPlantsByLocation(groupedPlants);
-      clearTimeout(timeoutId);
-    } catch (error) {
-      console.error('Error fetching plants:', error);
-      setLoadingTimeout(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle manual sync
-  const handleSync = async () => {
-    try {
-      await sync();
-      // Refresh plants after sync
-      fetchPlants();
-    } catch (error) {
-      console.error('Error syncing data:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlants();
-  }, []);
-
-  // Filter plants based on search query
-  const filteredPlants = plantsData.filter((plant: Plant) => 
-    plant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    plant.strain.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Get plants for the selected category
-  const displayedPlants = searchQuery ? filteredPlants : (plantsByLocation[selectedCategory] || []);
-
-  // Calculate days until next action based on notes
-  const getNextAction = (plant: Plant, type: 'water' | 'feed') => {
-    if (!plant.createdAt) return null;
-    
-    // Generate a mock next date based on plant id and action type
-    const plantDate = new Date(plant.createdAt);
-    const mockDays = type === 'water' 
-      ? (parseInt(plant.id.slice(-2), 16) % 7) + 1 // 1-7 days for watering
-      : (parseInt(plant.id.slice(-2), 16) % 14) + 7; // 7-21 days for feeding
-      
-    const nextDate = new Date(plantDate);
-    nextDate.setDate(nextDate.getDate() + mockDays);
-    
-    const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Only return if in the future
-    if (diffDays <= 0) return null;
-    
-    return {
-      days: diffDays,
-      icon: type === 'water' ? 'water-outline' : 'nutrition',
-      color: diffDays <= 2 ? '#ef4444' : '#16a34a'
-    };
-  };
-
-  // Render a location category button
   const renderLocationItem = ({ item }: { item: typeof LOCATIONS[0] }) => (
     <TouchableOpacity
-      className={`py-2 px-4 mr-2 rounded-full flex-row items-center ${
-        selectedCategory === item.id 
-          ? 'bg-green-600' 
-          : ''
-      }`}
-      style={{ 
-        backgroundColor: selectedCategory === item.id 
+      className={`py-2 px-4 mr-2 rounded-full flex-row items-center ${selectedFilter === item.id ? 'bg-green-600' : ''}`}
+      style={{
+        backgroundColor: selectedFilter === item.id
           ? theme.colors.primary[500]
           : isDarkMode ? theme.colors.neutral[100] : '#e5e7eb'
       }}
-      onPress={() => setSelectedCategory(item.id)}
+      onPress={() => setSelectedFilter(item.id as PlantFilterKey)}
     >
-      <MaterialCommunityIcons 
-        name={item.icon as any} 
-        size={16} 
-        color={selectedCategory === item.id 
-          ? '#ffffff' 
-          : isDarkMode ? theme.colors.neutral[800] : '#4b5563'
-        } 
+      <MaterialCommunityIcons
+        name={item.icon as any}
+        size={16}
+        color={selectedFilter === item.id ? '#ffffff' : isDarkMode ? theme.colors.neutral[800] : '#4b5563'}
         style={{ marginRight: 4 }}
       />
-      <ThemedText 
-        className={`font-medium text-sm ${
-          selectedCategory === item.id 
-            ? 'text-white' 
-            : ''
-        }`}
-        lightClassName={selectedCategory === item.id ? '' : 'text-gray-700'}
-        darkClassName={selectedCategory === item.id ? '' : 'text-neutral-800'}
+      <ThemedText
+        className={`font-medium text-sm ${selectedFilter === item.id ? 'text-white' : ''}`}
+        lightClassName={selectedFilter === item.id ? '' : 'text-neutral-700'}
+        darkClassName={selectedFilter === item.id ? '' : 'text-neutral-800'}
       >
         {item.name}
       </ThemedText>
     </TouchableOpacity>
   );
 
-  // Render a plant card
   const renderPlantCard = (plant: Plant) => {
     const waterInfo = getNextAction(plant, 'water');
     const feedInfo = getNextAction(plant, 'feed');
     const locationType = getLocationType(plant);
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         className="w-full mb-4"
-        onPress={() => router.push(`/plant/${plant.id}`)}
+        onPress={() => router.push(`/plant/${plant.id}` as any)}
+        key={plant.id}
       >
-        <ThemedView 
-          className="rounded-xl overflow-hidden shadow-sm border" 
-          lightClassName="bg-white border-gray-100"
+        <ThemedView
+          className="rounded-xl overflow-hidden shadow-sm border"
+          lightClassName="bg-white border-neutral-100"
           darkClassName="bg-neutral-800 border-neutral-700"
         >
           <View className="aspect-square relative">
             {plant.imageUrl ? (
-              <Image 
-                source={{ uri: plant.imageUrl }} 
+              <Image
+                source={{ uri: plant.imageUrl }}
                 className="w-full h-full"
                 resizeMode="cover"
               />
             ) : (
-              <View className="w-full h-full items-center justify-center bg-green-50">
-                <MaterialCommunityIcons 
-                  name="cannabis" 
-                  size={64} 
-                  color={isDarkMode ? theme.colors.primary[700] : theme.colors.primary[300]} 
-                />
+              <View className="w-full h-full bg-neutral-200 dark:bg-neutral-700 items-center justify-center">
+                <MaterialCommunityIcons name="flower-tulip" size={60} color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]} />
               </View>
             )}
-            
-            {/* Location badge */}
-            <View 
-              className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black bg-opacity-50 flex-row items-center"
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.6)']}
+              className="absolute bottom-0 left-0 right-0 h-20 justify-end p-3"
             >
-              <Ionicons 
-                name={locationType === 'indoor' ? 'home' : locationType === 'outdoor' ? 'sunny' : 'help-circle'} 
-                size={12} 
-                color="#fff" 
-              />
-              <Text className="text-white text-xs ml-1 capitalize">
-                {locationType}
+              <Text className="text-white text-lg font-bold shadow-black" style={{ textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } }}>
+                {plant.name}
               </Text>
-            </View>
-            
-            {/* Growth stage badge */}
-            {plant.growthStage && (
-              <View 
-                className="absolute top-2 right-2 px-2 py-1 rounded-full bg-black bg-opacity-50"
-              >
-                <Text className="text-white text-xs capitalize">
-                  {plant.growthStage}
-                </Text>
-              </View>
-            )}
-          </View>
-          
-          <View className="p-3">
-            <ThemedText 
-              className="font-semibold text-lg" 
-              lightClassName="text-gray-900"
-              darkClassName="text-white"
-            >
-              {plant.name}
-            </ThemedText>
-            
-            <ThemedText 
-              className="text-sm mb-2" 
-              lightClassName="text-gray-600"
-              darkClassName="text-gray-400"
-            >
-              {plant.strain || 'Unknown strain'}
-            </ThemedText>
-            
-            {/* Next actions row */}
-            <View className="flex-row items-center mt-1">
+              <Text className="text-neutral-200 text-xs shadow-black" style={{ textShadowRadius: 1, textShadowOffset: { width: 0, height: 1 } }}>
+                {plant.strain} ({plant.growthStage})
+              </Text>
+            </LinearGradient>
+            <View className="absolute top-2 right-2 flex-row space-x-1">
               {waterInfo && (
-                <View className="flex-row items-center mr-4">
-                  <Ionicons name="water-outline" size={16} color={waterInfo.color} />
-                  <ThemedText 
-                    className="ml-1 text-xs" 
-                    lightClassName="text-gray-700"
-                    darkClassName="text-gray-300"
-                  >
-                    {waterInfo.days}d
-                  </ThemedText>
+                <View className="bg-black/50 rounded-full p-1 flex-row items-center">
+                  <MaterialCommunityIcons name={waterInfo.icon as any} size={12} color={waterInfo.color} />
+                  <Text className="text-white text-[10px] font-bold ml-1">{waterInfo.days}d</Text>
                 </View>
               )}
-              
               {feedInfo && (
-                <View className="flex-row items-center">
-                  <MaterialCommunityIcons name="nutrition" size={16} color={feedInfo.color} />
-                  <ThemedText 
-                    className="ml-1 text-xs" 
-                    lightClassName="text-gray-700"
-                    darkClassName="text-gray-300"
-                  >
-                    {feedInfo.days}d
-                  </ThemedText>
+                <View className="bg-black/50 rounded-full p-1 flex-row items-center">
+                  <MaterialCommunityIcons name={feedInfo.icon as any} size={12} color={feedInfo.color} />
+                  <Text className="text-white text-[10px] font-bold ml-1">{feedInfo.days}d</Text>
                 </View>
               )}
+            </View>
+            <View className="absolute top-2 left-2 bg-black/50 rounded-full p-1.5">
+              <MaterialCommunityIcons
+                name={locationType === 'indoor' ? 'home' : locationType === 'outdoor' ? 'white-balance-sunny' : 'help-circle-outline'}
+                size={14}
+                color="#ffffff"
+              />
             </View>
           </View>
         </ThemedView>
@@ -289,277 +180,222 @@ export default function HomeScreen() {
     );
   };
 
+  const getNextAction = (plant: Plant, type: 'water' | 'feed') => {
+    if (!plant.createdAt) return null;
+    const plantDate = new Date(plant.createdAt);
+    const mockDays = type === 'water'
+      ? (parseInt(plant.id.slice(-2), 16) % 7) + 1
+      : (parseInt(plant.id.slice(-2), 16) % 14) + 7;
+    const nextDate = new Date(plantDate);
+    nextDate.setDate(nextDate.getDate() + mockDays);
+    const today = new Date();
+    const diffTime = nextDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return null;
+    return {
+      days: diffDays,
+      icon: type === 'water' ? 'water-outline' : 'nutrition',
+      color: type === 'water' ? '#3b82f6' : '#f59e0b'
+    };
+  };
+
+  const handleAddPlant = () => {
+    setIsAddPlantModalVisible(true);
+  };
+
+  const handleAddPlantSuccess = () => {
+    setIsAddPlantModalVisible(false);
+    sync(); // Sync after adding a plant
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      if (sync) {
+        console.log("Manual sync triggered on refresh");
+        await sync();
+      }
+    } catch (error) {
+      console.error('Error refreshing plants:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
-    <SafeAreaView
-      className="flex-1"
-      style={{
-        backgroundColor: isDarkMode
-          ? theme.colors.neutral[900]
-          : theme.colors.neutral[50],
-      }}
-    >
-      <ThemedView className="px-4 pt-2 pb-4 flex-row justify-between items-center">
-        <ThemedText
-          className="text-2xl font-bold"
-          lightClassName="text-green-800"
-          darkClassName="text-primary-300"
-        >
-          My Garden
-        </ThemedText>
-        
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          className="w-10 h-10 rounded-full justify-center items-center"
-          style={{ backgroundColor: theme.colors.primary[50] }}
-        >
-          <Ionicons 
-            name="person" 
-            size={22} 
-            color={theme.colors.primary[600]} 
-          />
-        </TouchableOpacity>
-      </ThemedView>
-      <ScrollView className="flex-1">
-        <ThemedView className="p-4">
-          <ThemedText className="text-2xl font-bold mb-4" 
-                    lightClassName="text-neutral-900" 
-                    darkClassName="text-white">
-            Welcome to CanaBro
+    <SafeAreaView className="flex-1">
+      <ThemedView 
+        className="flex-1 p-4"
+        lightClassName="bg-neutral-50"
+        darkClassName="bg-neutral-900"
+      >
+        <View className="flex-row items-center justify-between mb-4">
+          <ThemedText className="text-2xl font-bold" lightClassName="text-neutral-800" darkClassName="text-white">
+            My Plants
           </ThemedText>
-          
-          {/* Plant management section */}
-          <ThemedView className="rounded-xl p-4 mb-6"
-                     lightClassName="bg-green-50"
-                     darkClassName="bg-primary-900">
-            <View className="flex-row justify-between items-center mb-4">
-              <ThemedText className="text-lg font-semibold"
-                        lightClassName="text-neutral-900"
-                        darkClassName="text-primary-300">
-                Your Plants
-              </ThemedText>
-              <TouchableOpacity 
-                className="bg-green-600 px-3 py-2 rounded-lg"
-                onPress={() => setIsAddPlantModalVisible(true)}
-              >
-                <Text className="text-white font-medium">Add Plant</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Search bar */}
-            <View className="mb-4">
-              <View className="flex-row items-center px-3 py-2 bg-white dark:bg-neutral-700 rounded-lg border border-gray-200 dark:border-neutral-600">
-                <Ionicons name="search" size={18} color={isDarkMode ? '#9ca3af' : '#6b7280'} />
-                <TextInput
-                  className="flex-1 ml-2 text-black dark:text-white"
-                  placeholder="Search plants..."
-                  placeholderTextColor={isDarkMode ? '#9ca3af' : '#6b7280'}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </View>
-            </View>
-            
-            {/* Location filters */}
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={LOCATIONS}
-              renderItem={renderLocationItem}
-              keyExtractor={item => item.id}
-              className="mb-4"
-            />
-            
-            {/* Plants list */}
-            {loading ? (
-              <View className="py-8 items-center">
-                <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-                <ThemedText className="mt-2 text-center" 
-                         lightClassName="text-gray-500"
-                         darkClassName="text-gray-400">
-                  Loading your plants...
-                </ThemedText>
-              </View>
-            ) : displayedPlants.length > 0 ? (
-              <View>
-                {displayedPlants.map(plant => (
-                  <View key={plant.id}>
-                    {renderPlantCard(plant)}
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View className="py-8 items-center">
-                <MaterialCommunityIcons 
-                  name="cannabis" 
-                  size={64} 
-                  color={isDarkMode ? theme.colors.primary[700] : theme.colors.primary[300]} 
-                />
-                <ThemedText className="mt-4 text-center font-medium text-lg" 
-                         lightClassName="text-gray-700"
-                         darkClassName="text-gray-300">
-                  No plants found
-                </ThemedText>
-                <ThemedText className="mt-1 text-center" 
-                         lightClassName="text-gray-500"
-                         darkClassName="text-gray-400">
-                  {searchQuery 
-                    ? "No plants match your search" 
-                    : selectedCategory !== 'all' 
-                      ? `You don't have any plants in this category yet` 
-                      : "Tap 'Add Plant' to get started"}
-                </ThemedText>
-              </View>
-            )}
-          </ThemedView>
-          
-          {/* Quick access section */}
-          <ThemedText className="text-lg font-semibold mb-3" 
-                     lightClassName="text-neutral-900"
-                     darkClassName="text-white">
-            Quick Access
-          </ThemedText>
-          
-          <View className="flex-row flex-wrap justify-between mb-6">
+          <View className="flex-row">
             <TouchableOpacity 
-              className="bg-green-100 w-[48%] rounded-xl p-4 mb-4"
-              onPress={() => router.push('/diary')}
+              className="mr-2 w-10 h-10 rounded-full items-center justify-center"
+              style={{ backgroundColor: theme.colors.primary[500] }}
+              onPress={handleRefresh}
             >
-              <Ionicons name="book-outline" size={24} color={isDarkMode ? "#4ade80" : "#16a34a"} />
-              <ThemedText className="font-semibold mt-2"
-                         lightClassName="text-neutral-900"
-                         darkClassName="text-white">
-                Diary
-              </ThemedText>
-              <ThemedText className="text-sm"
-                         lightClassName="text-gray-600" 
-                         darkClassName="text-neutral-400">
-                Track your growing journey
-              </ThemedText>
+              <Ionicons name="refresh" size={20} color="white" />
             </TouchableOpacity>
-            
             <TouchableOpacity 
-              className="bg-green-100 w-[48%] rounded-xl p-4 mb-4"
-              onPress={() => router.push('/diagnosis')}
+              className="w-10 h-10 rounded-full items-center justify-center"
+              style={{ backgroundColor: theme.colors.primary[500] }}
+              onPress={() => setShowAddMenu(!showAddMenu)}
             >
-              <Ionicons name="medkit-outline" size={24} color={isDarkMode ? "#4ade80" : "#16a34a"} />
-              <ThemedText className="font-semibold mt-2"
-                         lightClassName="text-neutral-900"
-                         darkClassName="text-white">
-                Diagnosis
-              </ThemedText>
-              <ThemedText className="text-sm"
-                         lightClassName="text-gray-600" 
-                         darkClassName="text-neutral-400">
-                Check plant health
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              className="bg-green-100 w-[48%] rounded-xl p-4"
-              onPress={() => router.push('/community')}
-            >
-              <Ionicons name="people-outline" size={24} color={isDarkMode ? "#4ade80" : "#16a34a"} />
-              <ThemedText className="font-semibold mt-2"
-                         lightClassName="text-neutral-900"
-                         darkClassName="text-white">
-                Community
-              </ThemedText>
-              <ThemedText className="text-sm"
-                         lightClassName="text-gray-600" 
-                         darkClassName="text-neutral-400">
-                Connect with growers
-              </ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              className="bg-green-100 w-[48%] rounded-xl p-4"
-              onPress={() => router.push('/strains')}
-            >
-              <Ionicons name="leaf-outline" size={24} color={isDarkMode ? "#4ade80" : "#16a34a"} />
-              <ThemedText className="font-semibold mt-2"
-                         lightClassName="text-neutral-900"
-                         darkClassName="text-white">
-                Strains
-              </ThemedText>
-              <ThemedText className="text-sm"
-                         lightClassName="text-gray-600" 
-                         darkClassName="text-neutral-400">
-                Browse cannabis strains
-              </ThemedText>
+              <Ionicons name="add" size={24} color="white" />
             </TouchableOpacity>
           </View>
-          
-          {/* Growing tips section */}
-          <ThemedView className="rounded-xl p-4"
-                     lightClassName="bg-green-50"
-                     darkClassName="bg-primary-900">
-            <ThemedText className="text-lg font-semibold mb-2"
-                       lightClassName="text-neutral-900"
-                       darkClassName="text-primary-300">
-              Growing Tips
-            </ThemedText>
-            <ThemedText className="mb-3"
-                       lightClassName="text-gray-600"
-                       darkClassName="text-neutral-400">
-              Ensure your plants get 18 hours of light during the vegetative stage and 12 hours during flowering.
-            </ThemedText>
-            <Link href="https://www.growweedeasy.com/" asChild>
-              <TouchableOpacity>
-                <ThemedText lightClassName="text-green-600" 
-                          darkClassName="text-primary-400">
-                  Learn more
-                </ThemedText>
-              </TouchableOpacity>
-            </Link>
-          </ThemedView>
-        </ThemedView>
-      </ScrollView>
+        </View>
 
-      {/* Add Plant Modal */}
-      <Modal
-        visible={isAddPlantModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsAddPlantModalVisible(false)}
-      >
-        <ThemedView 
-          className="flex-1 justify-end"
-          lightClassName="bg-black bg-opacity-50"
-          darkClassName="bg-black bg-opacity-70"
-        >
+        {showAddMenu && (
           <ThemedView 
-            className="rounded-t-3xl p-4 h-5/6"
+            className="absolute right-4 top-16 z-10 rounded-lg shadow-lg p-2 border"
+            lightClassName="bg-white border-neutral-200"
+            darkClassName="bg-neutral-800 border-neutral-700"
+          >
+            <TouchableOpacity 
+              className="flex-row items-center p-2"
+              onPress={handleAddPlant}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[500]} />
+              <ThemedText className="ml-2" lightClassName="text-neutral-800" darkClassName="text-white">
+                Add New Plant
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              className="flex-row items-center p-2"
+              onPress={() => {
+                setShowAddMenu(false);
+                router.push('/scan-plant' as any);
+              }}
+            >
+              <Ionicons name="scan-outline" size={20} color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[500]} />
+              <ThemedText className="ml-2" lightClassName="text-neutral-800" darkClassName="text-white">
+                Scan Plant
+              </ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+        )}
+
+        <View className="mb-4">
+          <ThemedView 
+            className="flex-row items-center rounded-full px-4 py-2 mb-4 border"
+            lightClassName="bg-white border-neutral-200"
+            darkClassName="bg-neutral-800 border-neutral-700"
+          >
+            <Ionicons name="search" size={20} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
+            <TextInput
+              className="flex-1 ml-2 text-base"
+              style={{ color: isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[800] }}
+              placeholder="Search plants..."
+              placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </ThemedView>
+
+          <FlatList
+            data={LOCATIONS}
+            renderItem={renderLocationItem}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+          />
+        </View>
+
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+            <ThemedText className="mt-4 text-center" lightClassName="text-neutral-600" darkClassName="text-neutral-400">
+              Loading plants...
+            </ThemedText>
+          </View>
+        ) : currentPlantList.length === 0 ? (
+          <View className="flex-1 items-center justify-center">
+            <MaterialCommunityIcons 
+              name="leaf-off" 
+              size={60} 
+              color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]} 
+            />
+            <ThemedText className="mt-4 text-center text-lg font-medium" lightClassName="text-neutral-600" darkClassName="text-neutral-400">
+              No plants found
+            </ThemedText>
+            <ThemedText className="mt-2 text-center" lightClassName="text-neutral-500" darkClassName="text-neutral-500">
+              {searchQuery ? 'Try a different search term' : 'Add your first plant to get started'}
+            </ThemedText>
+            <TouchableOpacity
+              className="mt-6 px-6 py-3 rounded-full"
+              style={{ backgroundColor: theme.colors.primary[500] }}
+              onPress={handleAddPlant}
+            >
+              <Text className="text-white font-medium">Add Plant</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView 
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            }
+          >
+            <View className="flex-row flex-wrap justify-between">
+              {currentPlantList.map((plant) => (
+                <View key={plant.id} className="w-[48%]">
+                  {renderPlantCard(plant)}
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+
+        <Modal
+          visible={isAddPlantModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setIsAddPlantModalVisible(false)}
+        >
+          <BlurView intensity={10} className="absolute inset-0" />
+          <ThemedView 
+            className="flex-1 mt-20 rounded-t-3xl overflow-hidden"
             lightClassName="bg-white"
             darkClassName="bg-neutral-900"
           >
-            <View className="flex-row justify-between items-center mb-4">
-              <ThemedText className="text-xl font-bold"
-                        lightClassName="text-neutral-900"
-                        darkClassName="text-white">
+            <View className="flex-row justify-between items-center p-4 border-b" style={{ borderColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200] }}>
+              <ThemedText className="text-xl font-bold" lightClassName="text-neutral-800" darkClassName="text-white">
                 Add New Plant
               </ThemedText>
               <TouchableOpacity onPress={() => setIsAddPlantModalVisible(false)}>
-                <Ionicons name="close" size={24} color={isDarkMode ? 'white' : 'black'} />
+                <Ionicons name="close" size={24} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
               </TouchableOpacity>
             </View>
-            <AddPlantForm 
-              onSuccess={() => {
-                setIsAddPlantModalVisible(false);
-                // Refresh plants list
-                fetchPlants();
-              }}
-            />
+            <ScrollView className="flex-1 p-4">
+              <AddPlantForm onSuccess={handleAddPlantSuccess} />
+            </ScrollView>
           </ThemedView>
-        </ThemedView>
-      </Modal>
-
-      {/* Add button */}
-      <TouchableOpacity
-        className="absolute right-5 bottom-5 w-14 h-14 rounded-full bg-green-600 items-center justify-center shadow-lg z-10"
-        onPress={() => setIsAddPlantModalVisible(true)}
-      >
-        <Ionicons name="add" size={30} color="white" />
-      </TouchableOpacity>
+        </Modal>
+      </ThemedView>
     </SafeAreaView>
   );
+}
+
+// Export the HomeScreen component for use with HOCs
+export default function HomeScreenContainer() {
+  // Get access to the plants collection from the Watermelon hook
+  const { plants } = useWatermelon();
+  
+  // Create an enhanced component that observes the plants collection
+  const EnhancedHomeScreen = withObservables([], () => ({
+    plants: plants
+      .query(Q.where('is_deleted', Q.notEq(true)))
+      .observeWithColumns(['id', 'name', 'strain', 'growthStage', 'imageUrl', 'locationId', 'notes', 'createdAt', 'next_water_date', 'next_feed_date'])
+  }))(HomeScreen);
+  
+  // Render the enhanced component
+  return <EnhancedHomeScreen />;
 }

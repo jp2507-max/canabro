@@ -1,10 +1,16 @@
-import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text } from '@nozbe/watermelondb/decorators';
+import { Model, Query } from '@nozbe/watermelondb';
+import { field, date, readonly, text, children } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
+import { Plant } from './Plant'; // Import Plant model
+import { Post } from './Post'; // Import Post model
 
 export class Profile extends Model {
   static table = 'profiles';
-  static associations: Associations = {};
+  static associations: Associations = {
+    plants: { type: 'has_many' as const, foreignKey: 'user_id' },
+    posts: { type: 'has_many' as const, foreignKey: 'user_id' },
+    // Add other associations here if needed (e.g., follows)
+  };
 
   @text('user_id') userId!: string;
   @text('username') username!: string;
@@ -21,6 +27,10 @@ export class Profile extends Model {
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;
   @field('is_deleted') isDeleted?: boolean;
+
+  // Children collections
+  @children('plants') plants!: Query<Plant>;
+  @children('posts') posts!: Query<Post>;
   
   // Helper methods to handle serialized arrays
   getFavoriteStrains(): string[] {

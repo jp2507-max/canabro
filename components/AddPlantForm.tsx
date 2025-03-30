@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, Image, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native';
-import { useDatabase } from '../lib/hooks/useDatabase';
+import { useDatabase } from '../lib/hooks/useDatabase'; // Enhanced database hook with observables
 import supabase from '../lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -15,6 +15,7 @@ import { GrowthStage, CreatePlantData } from '../lib/types/plant';
 import { StrainAutocomplete } from './StrainAutocomplete';
 import { Strain, searchStrainsByName } from '../lib/data/strains';
 import { scheduleInitialPlantNotifications } from '../lib/services/NotificationService';
+import useWatermelon from '../lib/hooks/useWatermelon'; // Import useWatermelon
 
 // Enums for the form
 enum GrowLocation {
@@ -72,6 +73,7 @@ const FORM_STEPS: FormStep[] = [
 
 export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
   const { database } = useDatabase();
+  const { sync } = useWatermelon(); // Use the hook to get the sync function
   
   // Basic info
   const [name, setName] = useState('');
@@ -186,6 +188,8 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
       const filename = `plant_${Date.now()}.jpg`;
       const filePath = `${userId}/${filename}`;
       
+      console.log('Uploading image to Supabase storage...');
+      
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('plants')
@@ -199,10 +203,14 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
         return null;
       }
       
+      console.log('Image uploaded successfully');
+      
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('plants')
         .getPublicUrl(filePath);
+      
+      console.log('Image public URL:', publicUrl);
       
       return publicUrl;
     } catch (error) {
@@ -262,6 +270,10 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
         imageUrl = await uploadImage(user.id);
       }
 
+      // Log selected strain information for debugging
+      console.log('Creating plant with strain:', strain);
+      console.log('Selected strain object:', selectedStrain ? JSON.stringify(selectedStrain) : 'None');
+
       // Create plant data object
       const plantData: CreatePlantData = {
         name,
@@ -274,6 +286,8 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
         is_public: false, // Default to private
         strain_id: selectedStrain?.id
       };
+
+      console.log('Plant data being created:', JSON.stringify(plantData));
 
       // Create a new plant in the local database
       let newPlantId: string = '';
@@ -288,6 +302,12 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
           plant.notes = plantData.notes;
           plant.userId = user.id;
           
+          // Add strain ID if a strain was selected from the autocomplete
+          if (selectedStrain) {
+            plant.strainId = selectedStrain.id;
+            console.log('Setting strain ID in database:', selectedStrain.id);
+          }
+          
           // Additional custom fields
           plant.cannabisType = cannabisType;
           plant.location = location;
@@ -301,6 +321,7 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
         });
         
         newPlantId = newPlant.id;
+        console.log('Plant created successfully with ID:', newPlantId);
       });
 
       // Schedule notifications for the new plant
@@ -317,6 +338,16 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
           console.error('Error scheduling plant notifications:', error);
           // Continue with form submission even if notifications fail
         }
+      }
+
+      // Call sync function from useWatermelon
+      console.log('(NOBRIDGE) LOG  Plant created locally, triggering sync...');
+      try {
+        await sync(); // Call the sync function from useWatermelon
+        console.log('(NOBRIDGE) LOG  Sync triggered successfully after plant creation.');
+      } catch (syncError) {
+        console.error('(NOBRIDGE) ERROR  Failed to trigger sync after plant creation:', syncError);
+        // Decide how to handle sync errors - maybe alert the user?
       }
 
       // Reset form
@@ -433,6 +464,7 @@ export const AddPlantForm = ({ onSuccess }: { onSuccess?: () => void }) => {
           value={strain}
           onInputChange={setStrain}
           onSelect={(selectedStrain) => {
+            console.log('Strain selected:', selectedStrain.name, 'ID:', selectedStrain.id);
             setStrain(selectedStrain.name);
             setSelectedStrain(selectedStrain);
             

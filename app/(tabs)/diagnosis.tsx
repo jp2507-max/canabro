@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Image, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Image, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator, Button, Alert } from 'react-native'; // Added Button, Alert
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+import { resetDatabase } from '../../lib/database/database'; // Added resetDatabase import
 import { AntDesign, Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 
@@ -106,6 +107,26 @@ export default function DiagnosisScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      {/* --- TEMPORARY RESET BUTTON --- */}
+      <View style={{ padding: 10 }}>
+        <Button title="!!! RESET DATABASE !!!" color="red" onPress={async () => {
+          Alert.alert(
+            "Confirm Reset",
+            "Are you sure you want to delete the local database? This cannot be undone.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Reset", style: "destructive", onPress: async () => {
+                  console.log('Attempting DB reset...');
+                  const success = await resetDatabase();
+                  console.log('Reset success:', success);
+                  Alert.alert('Reset Attempted', `Database reset ${success ? 'successful' : 'failed'}. Please fully restart the app now.`);
+                }
+              }
+            ]
+          );
+        }} />
+      </View>
+      {/* --- END TEMPORARY BUTTON --- */}
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         {!image ? (
           <ThemedView className="flex-1 justify-center items-center p-6">

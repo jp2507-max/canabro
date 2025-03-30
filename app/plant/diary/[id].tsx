@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, ActivityIndicator, FlatList, Pressable, RefreshControl, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
@@ -11,34 +11,24 @@ import ThemedView from '../../../components/ui/ThemedView';
 import ThemedText from '../../../components/ui/ThemedText';
 import { isExpoGo } from '../../../lib/config';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
-import { Q } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
+import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
 import { DiaryEntry } from '../../../lib/models/DiaryEntry';
 import { Plant } from '../../../lib/models/Plant';
 
-// Simplified interfaces for component state
-interface DiaryEntryData {
-  id: string;
-  entryId: string;
-  plantId: string;
-  title?: string;
-  content: string;
-  entryType: string;
-  entryDate: string;
-  createdAt: Date;
-  updatedAt: Date;
+// Simplified interfaces for props
+interface PlantDiaryScreenProps {
+  plant: Plant | null;
+  diaryEntries: DiaryEntry[];
 }
 
-export default function PlantDiaryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+// Base component that receives data from withObservables
+function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
   const { theme, isDarkMode } = useTheme();
   const { session } = useAuth();
-  const { plants, diaryEntries, sync, isSyncing } = useWatermelon();
+  const { sync, isSyncing } = useWatermelon();
   
-  const [plant, setPlant] = useState<Plant | null>(null);
-  const [entries, setEntries] = useState<DiaryEntryData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   
   // New entry form state
   const [isAddingEntry, setIsAddingEntry] = useState(false);
@@ -49,417 +39,165 @@ export default function PlantDiaryScreen() {
   
   const contentInputRef = useRef<TextInput>(null);
 
-  // Fetch plant information
-  const fetchPlant = async () => {
-    try {
-      if (!id) {
-        setError('No plant ID provided');
-        setLoading(false);
-        return;
-      }
+  // Sort entries by date - newest first
+  const sortedEntries = [...diaryEntries].sort((a, b) => {
+    return new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime();
+  });
 
-      // First try to find plant by id
-      try {
-        const plantRecord = await plants.find(id);
-        setPlant(plantRecord);
-      } catch (error) {
-        // If direct find failed, try querying by plant_id
-        console.log('Finding plant by plant_id instead');
-        const plantRecords = await plants.query(Q.where('plant_id', id)).fetch();
-        
-        if (plantRecords.length > 0) {
-          setPlant(plantRecords[0]);
-        } else {
-          setError('Plant not found');
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching plant:', error);
-      setError('Failed to load plant information');
-    }
-  };
-
-  // Fetch diary entries
-  const fetchEntries = async () => {
-    try {
-      if (!id) return;
-      
-      // Query diary entries for this plant
-      let plantIdToUse = id;
-      
-      // If we have plant object and it has a plantId, use that
-      if (plant && plant.plantId) {
-        plantIdToUse = plant.plantId;
-      }
-      
-      const entriesRecords = await diaryEntries.query(
-        Q.where('plant_id', plantIdToUse)
-      ).fetch();
-      
-      // Convert WatermelonDB records to simplified interface for component
-      const entriesData: DiaryEntryData[] = entriesRecords.map(entry => ({
-        id: entry.id,
-        entryId: entry.entryId,
-        plantId: entry.plantId,
-        title: entry.content.substring(0, 30) + (entry.content.length > 30 ? '...' : ''),
-        content: entry.content,
-        entryType: entry.entryType || 'general',
-        entryDate: entry.entryDate,
-        createdAt: entry.createdAt,
-        updatedAt: entry.updatedAt
-      }));
-      
-      // Sort entries by date (newest first)
-      entriesData.sort((a, b) => 
-        new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
-      );
-      
-      setEntries(entriesData);
-    } catch (error) {
-      console.error('Error fetching diary entries:', error);
-      setError('Failed to load diary entries');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  // Initial data load
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await fetchPlant();
-      await fetchEntries();
-    };
-    
-    loadData();
-  }, [id]);
-
-  // Refresh data (for pull-to-refresh)
-  const handleRefresh = async () => {
+  const onRefresh = async () => {
     setRefreshing(true);
     try {
       await sync();
-      await fetchPlant();
-      await fetchEntries();
-    } catch (error) {
-      console.error('Error refreshing data:', error);
     } finally {
       setRefreshing(false);
     }
   };
 
-  // Add new diary entry
   const handleAddEntry = async () => {
+    if (!plant) return;
     if (!entryContent.trim()) {
-      Alert.alert('Error', 'Entry content cannot be empty');
+      Alert.alert('Error', 'Please enter some content for your diary entry');
       return;
     }
-
-    if (!plant) {
-      Alert.alert('Error', 'Plant information not available');
-      return;
-    }
-
-    setIsSubmitting(true);
 
     try {
-      await diaryEntries.database.write(async () => {
-        const now = new Date();
-        const newEntry = await diaryEntries.create((entry) => {
-          entry.plantId = plant.plantId || id as string;
-          entry.content = entryContent;
+      setIsSubmitting(true);
+      
+      await plant.database.write(async () => {
+        const entriesCollection = plant.database.get<DiaryEntry>('diary_entries');
+        await entriesCollection.create((entry) => {
+          entry.plantId = plant.id;
+          entry.content = entryContent.trim();
           entry.entryType = entryType;
-          entry.entryDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+          entry.entryDate = new Date().toISOString();
           entry.userId = session?.user?.id || '';
         });
-        
-        console.log('Diary entry created:', newEntry.id);
       });
 
-      // Clear form and refresh entries
-      setEntryContent('');
+      // Clear form and close it
       setEntryTitle('');
+      setEntryContent('');
       setEntryType('general');
       setIsAddingEntry(false);
       
-      // Trigger sync to update Supabase
-      await sync();
-      
-      // Refresh entries list
-      await fetchEntries();
-      
+      // Sync with Supabase
+      sync();
+
     } catch (error) {
       console.error('Error adding diary entry:', error);
-      Alert.alert('Error', 'Failed to save diary entry');
+      Alert.alert('Error', 'Failed to add diary entry');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Entry type selection options
-  const entryTypes = [
-    { id: 'general', label: 'General', icon: 'document-text' },
-    { id: 'watering', label: 'Watering', icon: 'water' },
-    { id: 'feeding', label: 'Feeding', icon: 'nutrition' },
-    { id: 'pruning', label: 'Pruning', icon: 'cut' },
-    { id: 'transplant', label: 'Transplant', icon: 'arrow-up-circle' },
-    { id: 'harvest', label: 'Harvest', icon: 'leaf' },
-    { id: 'problem', label: 'Problem', icon: 'warning' },
-  ];
-
-  // Get icon for entry type
-  const getEntryIcon = (type: string) => {
-    switch (type) {
-      case 'watering':
-        return 'water-outline';
-      case 'feeding':
-        return 'flask-outline';
-      case 'pruning':
-        return 'cut-outline';
-      case 'transplant':
-        return 'leaf-outline';
-      case 'harvest':
-        return 'basket-outline';
-      case 'problem':
-        return 'warning-outline';
-      default:
-        return 'journal-outline';
-    }
-  };
-
-  // Get color for entry type
-  const getEntryColor = (type: string) => {
-    switch (type) {
-      case 'watering':
-        return theme.colors.special.watering;
-      case 'feeding':
-        return theme.colors.special.feeding;
-      case 'pruning':
-        return theme.colors.primary[500];
-      case 'transplant':
-        return theme.colors.status.warning;
-      case 'harvest':
-        return theme.colors.special.harvesting;
-      case 'problem':
-        return theme.colors.status.danger;
-      default:
-        return theme.colors.neutral[400];
-    }
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'MMM d, yyyy');
-    } catch (e) {
-      return 'Invalid date';
-    }
-  };
-
-  // Render entry type selector
-  const renderEntryTypeSelector = () => {
-    return (
-      <FlatList
-        horizontal
-        data={entryTypes}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => {
-          const isSelected = entryType === item.id;
-          return (
-            <Pressable
-              className={`mr-2 py-1 px-3 rounded-full border ${isSelected ? 'border-primary-500' : 'border-neutral-300'}`}
-              style={isSelected ? { backgroundColor: `${getEntryColor(item.id)}20` } : {}}
-              onPress={() => setEntryType(item.id)}
-            >
-              <View className="flex-row items-center">
-                <Ionicons 
-                  name={getEntryIcon(item.id)} 
-                  size={16} 
-                  color={isSelected ? getEntryColor(item.id) : theme.colors.neutral[400]} 
-                  style={{ marginRight: 4 }}
-                />
-                <ThemedText 
-                  className={`text-sm ${isSelected ? 'font-medium' : ''}`}
-                  lightClassName={isSelected ? 'text-neutral-800' : 'text-neutral-600'}
-                  darkClassName={isSelected ? 'text-neutral-800' : 'text-neutral-600'}
-                >
-                  {item.label}
-                </ThemedText>
-              </View>
-            </Pressable>
-          );
-        }}
-        contentContainerStyle={{ paddingVertical: 10 }}
-      />
+  const handleDeleteEntry = (entry: DiaryEntry) => {
+    Alert.alert(
+      'Delete Entry',
+      'Are you sure you want to delete this diary entry?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await entry.markAsDeleted();
+              sync(); // Sync with Supabase
+            } catch (error) {
+              console.error('Error deleting entry:', error);
+              Alert.alert('Error', 'Failed to delete entry');
+            }
+          },
+        },
+      ]
     );
   };
 
-  // Render a diary entry card
-  const renderEntryCard = ({ item }: { item: DiaryEntryData }) => {
+  // Handle loading state
+  if (!plant) {
+    return (
+      <SafeAreaView className="flex-1">
+        <ThemedView 
+          className="flex-1 justify-center items-center p-4" 
+          lightClassName="bg-white" 
+          darkClassName="bg-neutral-900"
+        >
+          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+          <ThemedText className="mt-4">Loading plant diary...</ThemedText>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
+
+  const renderDiaryEntryItem = ({ item }: { item: DiaryEntry }) => {
+    const entryDate = new Date(item.entryDate);
+    
+    // Get entry type color
+    let typeColor = theme.colors.neutral[500];
+    let typeBgColor = theme.colors.neutral[100];
+    
+    if (item.entryType === 'watering') {
+      typeColor = theme.colors.primary[600];
+      typeBgColor = theme.colors.primary[100];
+    } else if (item.entryType === 'feeding') {
+      typeColor = theme.colors.status.warning;
+      typeBgColor = '#FEF3C7'; // amber-100
+    } else if (item.entryType === 'pruning') {
+      typeColor = theme.colors.status.success;
+      typeBgColor = '#D1FAE5'; // green-100
+    } else if (item.entryType === 'issue') {
+      typeColor = theme.colors.status.danger;
+      typeBgColor = '#FEE2E2'; // red-100
+    }
+    
     return (
       <ThemedView 
-        className="mb-4 rounded-2xl overflow-hidden"
-        lightClassName="bg-white" 
-        darkClassName="bg-neutral-800"
-        style={{ ...theme.shadows.md }}
+        className="rounded-lg mb-4 p-4 border"
+        lightClassName="bg-white border-neutral-200"
+        darkClassName="bg-neutral-800 border-neutral-700"
       >
-        <View className="p-4">
-          {/* Header with type icon and date */}
-          <View className="flex-row justify-between items-center mb-3">
-            <View className="flex-row items-center">
-              <View 
-                className="w-8 h-8 rounded-full justify-center items-center mr-2"
-                style={{ backgroundColor: `${getEntryColor(item.entryType)}20` }}
-              >
-                <Ionicons 
-                  name={getEntryIcon(item.entryType)} 
-                  size={16} 
-                  color={getEntryColor(item.entryType)}
-                />
-              </View>
-              <ThemedText 
-                className="text-xs uppercase font-medium" 
-                lightClassName="text-neutral-600" 
-                darkClassName="text-neutral-400"
-              >
-                {item.entryType}
-              </ThemedText>
-            </View>
-            
-            <ThemedText 
-              className="text-sm" 
-              lightClassName="text-neutral-500" 
-              darkClassName="text-neutral-500"
-            >
-              {formatDate(item.entryDate)}
+        <View className="flex-row justify-between items-start">
+          <View className="flex-1">
+            <ThemedText className="font-bold text-lg">
+              {`Entry - ${format(entryDate, 'MMM d, yyyy')}`}
             </ThemedText>
-          </View>
-          
-          {/* Title */}
-          <ThemedText 
-            className="text-lg font-bold mb-2" 
-            lightClassName="text-neutral-800" 
-            darkClassName="text-neutral-100"
-          >
-            {item.title}
-          </ThemedText>
-          
-          {/* Content */}
-          <ThemedText 
-            className="text-base" 
-            lightClassName="text-neutral-700" 
-            darkClassName="text-neutral-300"
-          >
-            {item.content}
-          </ThemedText>
-        </View>
-      </ThemedView>
-    );
-  };
-
-  // Render new entry form
-  const renderNewEntryForm = () => {
-    return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="mb-4"
-      >
-        <ThemedView 
-          className="p-4 rounded-2xl"
-          lightClassName="bg-white" 
-          darkClassName="bg-neutral-800"
-          style={{ ...theme.shadows.md }}
-        >
-          <ThemedText 
-            className="text-lg font-bold mb-3" 
-            lightClassName="text-neutral-800" 
-            darkClassName="text-neutral-100"
-          >
-            New Diary Entry
-          </ThemedText>
-          
-          {/* Entry type selector */}
-          {renderEntryTypeSelector()}
-          
-          {/* Title input */}
-          <ThemedView 
-            className="mb-3 rounded-lg p-3"
-            lightClassName="bg-neutral-100" 
-            darkClassName="bg-neutral-700"
-          >
-            <TextInput
-              placeholder="Entry title"
-              placeholderTextColor={theme.colors.neutral[400]}
-              value={entryTitle}
-              onChangeText={setEntryTitle}
-              className="text-base"
-              style={{ 
-                color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800] 
-              }}
-              returnKeyType="next"
-              onSubmitEditing={() => contentInputRef.current?.focus()}
-              blurOnSubmit={false}
-            />
-          </ThemedView>
-          
-          {/* Content input */}
-          <ThemedView 
-            className="mb-4 rounded-lg p-3"
-            lightClassName="bg-neutral-100" 
-            darkClassName="bg-neutral-700"
-          >
-            <TextInput
-              ref={contentInputRef}
-              placeholder="What happened with your plant?"
-              placeholderTextColor={theme.colors.neutral[400]}
-              value={entryContent}
-              onChangeText={setEntryContent}
-              multiline
-              numberOfLines={4}
-              className="text-base"
-              style={{ 
-                color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800],
-                textAlignVertical: 'top',
-                minHeight: 80
-              }}
-            />
-          </ThemedView>
-          
-          {/* Action buttons */}
-          <View className="flex-row justify-end">
-            <Pressable 
-              onPress={() => setIsAddingEntry(false)}
-              className="py-2 px-4 rounded-lg mr-2"
-              disabled={isSubmitting}
-            >
+            
+            <View className="flex-row items-center mt-1 mb-2">
               <ThemedText 
-                className="font-medium" 
-                lightClassName="text-neutral-500" 
+                className="text-xs mr-2"
+                lightClassName="text-neutral-500"
                 darkClassName="text-neutral-400"
               >
-                Cancel
+                {format(entryDate, 'MMM d, yyyy • h:mm a')}
               </ThemedText>
-            </Pressable>
-            
-            <Pressable 
-              onPress={handleAddEntry}
-              className="py-2 px-4 rounded-lg"
-              style={{ backgroundColor: theme.colors.primary[500] }}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <ThemedText className="font-medium text-white">
-                  Save Entry
+              
+              <View 
+                style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : typeBgColor, borderRadius: 12 }}
+                className="px-2 py-0.5"
+              >
+                <ThemedText 
+                  className="text-xs font-medium capitalize"
+                  style={{ color: typeColor }}
+                >
+                  {item.entryType}
                 </ThemedText>
-              )}
-            </Pressable>
+              </View>
+            </View>
           </View>
-        </ThemedView>
-      </KeyboardAvoidingView>
+          
+          <Pressable
+            onPress={() => handleDeleteEntry(item)}
+            className="p-2"
+          >
+            <Ionicons name="trash-outline" size={18} color={theme.colors.status.danger} />
+          </Pressable>
+        </View>
+        
+        <ThemedText className="mt-1">
+          {item.content}
+        </ThemedText>
+      </ThemedView>
     );
   };
 
@@ -467,122 +205,293 @@ export default function PlantDiaryScreen() {
     <>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <Stack.Screen 
-        options={{
-          title: plant?.name || 'Plant Diary',
+        options={{ 
+          title: plant?.name ? `${plant.name}'s Diary` : 'Plant Diary',
           headerBackTitle: 'Back',
-        }}
+        }} 
       />
       
-      <SafeAreaView className="flex-1 bg-primary-50">
-        <ThemedView className="flex-1 p-4" lightClassName="bg-primary-50" darkClassName="bg-neutral-900">
-          {/* Plant info header */}
-          {plant && (
-            <ThemedView 
-              className="mb-4 p-4 rounded-2xl flex-row items-center"
-              lightClassName="bg-white" 
+      <SafeAreaView className="flex-1">
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1"
+        >
+          <ThemedView 
+            className="flex-1 p-4" 
+            lightClassName="bg-neutral-50" 
+            darkClassName="bg-black"
+          >
+            {/* Plant Header */}
+            <ThemedView
+              className="rounded-lg p-4 mb-4 flex-row items-center"
+              lightClassName="bg-white"
               darkClassName="bg-neutral-800"
-              style={{ ...theme.shadows.sm }}
             >
-              <View 
-                className="w-12 h-12 rounded-full mr-3 justify-center items-center"
-                style={{ backgroundColor: theme.colors.primary[100] }}
-              >
-                <Ionicons name="leaf" size={24} color={theme.colors.primary[500]} />
+              <View className="h-12 w-12 rounded-full bg-primary-100 items-center justify-center mr-3">
+                <Ionicons name="leaf-outline" size={24} color={theme.colors.primary[500]} />
               </View>
-              
-              <View>
-                <ThemedText 
-                  className="text-lg font-bold" 
-                  lightClassName="text-neutral-800" 
-                  darkClassName="text-neutral-100"
-                >
+              <View className="flex-1">
+                <ThemedText className="font-bold text-lg">
                   {plant.name}
                 </ThemedText>
-                
                 <ThemedText 
-                  className="text-sm" 
-                  lightClassName="text-neutral-600" 
+                  className="text-sm"
+                  lightClassName="text-neutral-500"
                   darkClassName="text-neutral-400"
                 >
-                  {plant.strain} • {plant.growthStage || 'Unknown stage'}
+                  {plant.strain} • {plant.growthStage}
                 </ThemedText>
               </View>
             </ThemedView>
-          )}
-          
-          {/* Add entry button (when not adding) */}
-          {!isAddingEntry && (
-            <Pressable
-              onPress={() => setIsAddingEntry(true)}
-              className="mb-4 p-4 rounded-2xl border border-dashed border-neutral-300 items-center justify-center"
-            >
-              <Ionicons 
-                name="add-circle-outline" 
-                size={24} 
-                color={theme.colors.primary[500]} 
-              />
-              <ThemedText 
-                className="mt-1 font-medium" 
-                lightClassName="text-neutral-700" 
-                darkClassName="text-neutral-300"
-              >
-                Add Diary Entry
-              </ThemedText>
-            </Pressable>
-          )}
-          
-          {/* New entry form */}
-          {isAddingEntry && renderNewEntryForm()}
-          
-          {/* Diary entries */}
-          {loading && !refreshing ? (
-            <View className="flex-1 justify-center items-center">
-              <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-              <ThemedText className="mt-4" lightClassName="text-neutral-500" darkClassName="text-neutral-400">
-                Loading diary entries...
-              </ThemedText>
-            </View>
-          ) : (
+            
+            {/* Diary Entries List */}
             <FlatList
-              data={entries}
-              renderItem={renderEntryCard}
+              data={sortedEntries}
+              renderItem={renderDiaryEntryItem}
               keyExtractor={(item) => item.id}
-              ListEmptyComponent={
-                <ThemedView 
-                  className="rounded-2xl p-6 items-center justify-center my-8" 
-                  lightClassName="bg-white" 
-                  darkClassName="bg-neutral-800"
-                  style={{ ...theme.shadows.sm }}
-                >
-                  <Ionicons name="journal-outline" size={48} color={theme.colors.neutral[400]} />
-                  <ThemedText 
-                    className="text-lg font-medium mt-4 mb-2 text-center" 
-                    lightClassName="text-neutral-700" 
-                    darkClassName="text-neutral-300"
-                  >
-                    No diary entries yet
-                  </ThemedText>
-                  <ThemedText 
-                    className="text-center" 
-                    lightClassName="text-neutral-500" 
-                    darkClassName="text-neutral-500"
-                  >
-                    Start tracking your plant's progress
-                  </ThemedText>
-                </ThemedView>
-              }
+              contentContainerClassName="pb-20"
               refreshControl={
                 <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={handleRefresh}
+                  refreshing={refreshing || isSyncing}
+                  onRefresh={onRefresh}
                   colors={[theme.colors.primary[500]]}
                   tintColor={theme.colors.primary[500]}
                 />
               }
+              ListEmptyComponent={
+                <ThemedView 
+                  className="rounded-lg p-6 items-center"
+                  lightClassName="bg-white"
+                  darkClassName="bg-neutral-800"
+                >
+                  <Ionicons 
+                    name="document-text-outline" 
+                    size={48} 
+                    color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300]} 
+                  />
+                  <ThemedText 
+                    className="text-lg font-bold mt-3 text-center"
+                    lightClassName="text-neutral-800"
+                    darkClassName="text-neutral-200"
+                  >
+                    No diary entries yet
+                  </ThemedText>
+                  <ThemedText 
+                    className="text-center mt-1"
+                    lightClassName="text-neutral-500"
+                    darkClassName="text-neutral-400"
+                  >
+                    Start keeping track of your plant's journey by adding your first entry!
+                  </ThemedText>
+                </ThemedView>
+              }
             />
-          )}
-        </ThemedView>
+            
+            {/* Add Entry Button (visible when not adding entry) */}
+            {!isAddingEntry && (
+              <View className="absolute bottom-4 right-4">
+                <Pressable
+                  className="h-14 w-14 rounded-full bg-primary-500 items-center justify-center shadow-xl"
+                  onPress={() => {
+                    setIsAddingEntry(true);
+                    setTimeout(() => {
+                      contentInputRef.current?.focus();
+                    }, 100);
+                  }}
+                  style={({ pressed }) => [
+                    {
+                      backgroundColor: 
+                        pressed 
+                          ? theme.colors.primary[600] 
+                          : theme.colors.primary[500],
+                      elevation: 4,
+                    }
+                  ]}
+                >
+                  <Ionicons name="add" size={28} color="white" />
+                </Pressable>
+              </View>
+            )}
+            
+            {/* Add Entry Form (shown when isAddingEntry is true) */}
+            {isAddingEntry && (
+              <ThemedView 
+                className="absolute bottom-0 left-0 right-0 p-4 rounded-t-xl shadow-xl border-t"
+                lightClassName="bg-white border-neutral-200"
+                darkClassName="bg-neutral-800 border-neutral-700"
+                style={[{ elevation: 8 }]}
+              >
+                <View className="flex-row justify-between items-center mb-3">
+                  <ThemedText className="font-bold text-lg">
+                    New Diary Entry
+                  </ThemedText>
+                  <Pressable
+                    onPress={() => {
+                      setIsAddingEntry(false);
+                      setEntryTitle('');
+                      setEntryContent('');
+                      setEntryType('general');
+                    }}
+                  >
+                    <Ionicons 
+                      name="close" 
+                      size={24} 
+                      color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} 
+                    />
+                  </Pressable>
+                </View>
+                
+                {/* Entry Type Selection */}
+                <ScrollableEntryTypeSelector 
+                  selectedType={entryType}
+                  onSelect={setEntryType}
+                  isDarkMode={isDarkMode}
+                  theme={theme}
+                />
+                
+                {/* Entry Form */}
+                <ThemedView
+                  className="rounded-lg p-3 mb-3 border"
+                  lightClassName="bg-neutral-50 border-neutral-200"
+                  darkClassName="bg-neutral-900 border-neutral-700"
+                >
+                  <TextInput
+                    placeholder="Title (optional)"
+                    placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                    value={entryTitle}
+                    onChangeText={setEntryTitle}
+                    className="text-base font-medium mb-1"
+                    style={{ color: isDarkMode ? 'white' : 'black' }}
+                  />
+                  <TextInput
+                    ref={contentInputRef}
+                    placeholder="What's happening with your plant today?"
+                    placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                    value={entryContent}
+                    onChangeText={setEntryContent}
+                    multiline
+                    numberOfLines={4}
+                    className="text-base min-h-[100px]"
+                    style={{ color: isDarkMode ? 'white' : 'black' }}
+                    textAlignVertical="top"
+                  />
+                </ThemedView>
+                
+                {/* Submit Button */}
+                <Pressable
+                  className="bg-primary-500 rounded-lg py-3 items-center"
+                  onPress={handleAddEntry}
+                  disabled={isSubmitting || !entryContent.trim()}
+                  style={({ pressed }) => [
+                    {
+                      backgroundColor: 
+                        isSubmitting || !entryContent.trim()
+                          ? theme.colors.neutral[300]
+                          : pressed
+                            ? theme.colors.primary[600]
+                            : theme.colors.primary[500]
+                    }
+                  ]}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <ThemedText className="text-white font-bold">Add Entry</ThemedText>
+                  )}
+                </Pressable>
+              </ThemedView>
+            )}
+          </ThemedView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
+}
+
+// Type selector component for entry form
+function ScrollableEntryTypeSelector({ 
+  selectedType, 
+  onSelect, 
+  isDarkMode, 
+  theme 
+}: { 
+  selectedType: string, 
+  onSelect: (type: string) => void, 
+  isDarkMode: boolean, 
+  theme: any 
+}) {
+  const options = [
+    { id: 'general', label: 'General', icon: 'document-text-outline' },
+    { id: 'watering', label: 'Watering', icon: 'water-outline' },
+    { id: 'feeding', label: 'Feeding', icon: 'nutrition-outline' },
+    { id: 'pruning', label: 'Pruning', icon: 'cut-outline' },
+    { id: 'issue', label: 'Issue', icon: 'warning-outline' },
+  ];
+  
+  return (
+    <View className="flex-row mb-3 -mx-1">
+      {options.map((option) => (
+        <Pressable
+          key={option.id}
+          onPress={() => onSelect(option.id)}
+          className={`flex-1 items-center justify-center py-2 mx-1 rounded-lg ${selectedType === option.id ? 'bg-primary-100' : ''}`}
+          style={[
+            { 
+              backgroundColor: 
+                selectedType === option.id 
+                  ? (isDarkMode ? 'rgba(5, 150, 105, 0.2)' : theme.colors.primary[100]) 
+                  : (isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100])
+            }
+          ]}
+        >
+          <Ionicons 
+            name={option.icon as any} 
+            size={20} 
+            color={
+              selectedType === option.id 
+                ? theme.colors.primary[500] 
+                : (isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500])
+            } 
+          />
+          <ThemedText 
+            className={`text-xs mt-1 ${selectedType === option.id ? 'font-bold' : ''}`}
+            lightClassName={selectedType === option.id ? 'text-primary-700' : 'text-neutral-600'}
+            darkClassName={selectedType === option.id ? 'text-primary-400' : 'text-neutral-400'}
+          >
+            {option.label}
+          </ThemedText>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+// Higher-order component to enhance with database
+const PlantDiaryScreenWithDatabase = withDatabase(PlantDiaryScreenBase);
+
+// Enhance with observables
+const PlantDiaryScreen = withObservables(['route'], ({ database, route }: { database: Database, route: any }) => {
+  const plantId = route?.params?.id;
+  
+  if (!plantId) {
+    return {
+      plant: null,
+      diaryEntries: [],
+    };
+  }
+  
+  return {
+    plant: database.get<Plant>('plants').findAndObserve(plantId),
+    diaryEntries: database.get<DiaryEntry>('diary_entries')
+      .query(Q.where('plant_id', plantId))
+      .observe()
+  };
+})(PlantDiaryScreenWithDatabase);
+
+// Wrapper component to handle params
+export default function PlantDiaryWrapper() {
+  const params = useLocalSearchParams();
+  const id = params.id as string;
+  
+  return <PlantDiaryScreen route={{ params: { id } }} />;
 }

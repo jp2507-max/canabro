@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const plantSchema = appSchema({
-  version: 2,
+  version: 3,
   tables: [
     tableSchema({
       name: 'plants',
@@ -10,6 +10,7 @@ export const plantSchema = appSchema({
         { name: 'journal_id', type: 'string', isIndexed: true },
         { name: 'name', type: 'string' },
         { name: 'strain', type: 'string' },
+        { name: 'strain_id', type: 'string', isOptional: true },
         { name: 'planted_date', type: 'string' },
         { name: 'growth_stage', type: 'string' },
         { name: 'height', type: 'number', isOptional: true },
@@ -19,6 +20,8 @@ export const plantSchema = appSchema({
         { name: 'location_id', type: 'string', isOptional: true, isIndexed: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+        { name: 'last_synced_at', type: 'number', isOptional: true },
+        { name: 'is_deleted', type: 'boolean', isOptional: true },
       ],
     }),
     tableSchema({

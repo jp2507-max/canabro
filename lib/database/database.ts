@@ -8,6 +8,9 @@ import { authConfig, isExpoGo } from '../config';
 import migrations from '../models/migrations';
 import * as FileSystem from 'expo-file-system';
 
+// Import Observable from rxjs if not already imported
+import { Observable } from 'rxjs';
+
 // Database file paths for reset functionality
 const DB_NAME = 'canabro.db';
 const getDatabasePath = async () => {
@@ -131,23 +134,30 @@ let Post: any = MockPlant;
 
 let schemaImportFailed = false; // Flag to track import failure
 
+console.log('[DB Init] Attempting to import schema and models...'); // Added log
+
 try {
   // Try to import schema and models
+  console.log('[DB Init] Requiring ./schema...'); // Added log
   const schemaModule = require('./schema');
   plantSchema = schemaModule.default;
+  console.log('[DB Init] Schema module loaded:', !!schemaModule, 'Default schema:', !!plantSchema); // Added log
 
   // Explicitly check if schema loaded correctly
   if (!plantSchema || typeof plantSchema !== 'object' || !plantSchema.version) {
     console.error('Failed to load schema correctly from ./schema, schema is invalid or undefined.');
     schemaImportFailed = true;
+    console.error('[DB Init] Schema validation failed!'); // Added log
     throw new Error('Schema import validation failed'); // Force fallback to catch block
   }
 
-  console.log('Successfully imported real schema version:', plantSchema.version);
+  console.log('[DB Init] Successfully imported real schema version:', plantSchema.version);
 
+  console.log('[DB Init] Importing REAL models...'); // Added log
   Plant = require('../models/Plant').Plant;
   DiaryEntry = require('../models/DiaryEntry').DiaryEntry;
-  Profile = require('../models/Profile').Profile;
+  Profile = require('../models/Profile').Profile; // Check this one specifically
+  console.log('[DB Init] REAL Profile Model loaded:', Profile !== MockProfile, Profile?.name); // Added log
   GrowJournal = require('../models/GrowJournal').GrowJournal;
   JournalEntry = require('../models/JournalEntry').JournalEntry;
   GrowLocation = require('../models/GrowLocation').GrowLocation;
@@ -162,17 +172,18 @@ try {
     PlantTask = require('../models/PlantTask').default || require('../models/PlantTask');
   }
 } catch (error) {
-  console.error('Error importing schema or models:', error);
+  console.error('[DB Init] Error importing schema or models:', error); // Added log prefix
   schemaImportFailed = true; // Mark import as failed
   // Use mock schema and models if imports fail
   plantSchema = mockSchema;
-  console.log('Falling back to mock schema.');
+  console.log('[DB Init] Falling back to MOCK schema.'); // Added log prefix
   // Assign mock models (ensure all used models have mocks)
   Plant = MockPlant;
   DiaryEntry = MockDiaryEntry;
-  Profile = MockProfile;
+  Profile = MockProfile; // Fallback Profile
+  console.log('[DB Init] Falling back to MOCK Profile Model.'); // Added log
   // Add mocks for others if they were potentially uninitialized due to import errors
-  GrowJournal = MockPlant; 
+  GrowJournal = MockPlant;
   JournalEntry = MockDiaryEntry;
   GrowLocation = MockProfile;
   Notification = MockProfile;
@@ -209,13 +220,28 @@ if (isExpoGo) {
   adapter = {
     schema: plantSchema,
     tableName: (name: string) => name,
-    get: async (tableName: string) => {
+    get: (tableName: string) => {
       console.log(`Mock adapter: get collection for table ${tableName}`);
       // Make sure all known tables are available
       if (!allTables.includes(tableName)) {
         console.warn(`Mock adapter: Unknown table requested: ${tableName}`);
       }
-      return {};
+      
+      // Return a mock collection with appropriate methods
+      return {
+        query: () => ({
+          observe: () => new Observable(subscriber => {
+            subscriber.next([]);
+            subscriber.complete();
+            return { unsubscribe: () => {} };
+          })
+        }),
+        create: () => ({}),
+        find: () => Promise.resolve({}),
+        update: () => Promise.resolve({}),
+        markAsDeleted: () => Promise.resolve({}),
+        fetchQuery: () => Promise.resolve([])
+      };
     },
     find: async () => ({}),
     query: async () => [],
@@ -233,31 +259,81 @@ if (isExpoGo) {
   };
 } else {
   // In production or development build, use the real SQLiteAdapter
-  console.log('Using SQLite adapter with real database');
-  adapter = new SQLiteAdapter({
-    schema: plantSchema, // Now guaranteed to be either real or mock schema
-    migrations,
-    jsi: true, // This is recommended for performance
-    dbName: 'canabro',
-  });
+  console.log('[DB Init] Using SQLite adapter with real database'); // Added log prefix
+  try {
+    console.log('[DB Init] Creating SQLiteAdapter with schema version:', plantSchema?.version); // Log schema used
+    adapter = new SQLiteAdapter({
+      schema: plantSchema, // Now guaranteed to be either real or mock schema
+      migrations,
+      jsi: true, // This is recommended for performance
+      dbName: 'canabro',
+    });
+  } catch (error) {
+    console.error('Error creating SQLiteAdapter:', error);
+    
+    // Fall back to mock adapter if SQLiteAdapter creation fails
+    console.warn('Falling back to mock adapter due to SQLiteAdapter initialization error');
+    
+    const mockTables = mockSchema.tables.map(table => table.name);
+    const allTables = [...mockTables, 'plant_tasks']; 
+    
+    adapter = {
+      schema: plantSchema,
+      tableName: (name: string) => name,
+      get: (tableName: string) => {
+        console.log(`Fallback mock adapter: get collection for table ${tableName}`);
+        return {
+          query: () => ({
+            observe: () => new Observable(subscriber => {
+              subscriber.next([]);
+              subscriber.complete();
+              return { unsubscribe: () => {} };
+            })
+          }),
+          create: () => ({}),
+          find: () => Promise.resolve({}),
+          update: () => Promise.resolve({}),
+          markAsDeleted: () => Promise.resolve({}),
+          fetchQuery: () => Promise.resolve([])
+        };
+      },
+      find: async () => ({}),
+      query: async () => [],
+      count: async () => 0,
+      batch: async () => ({}),
+      getDeletedRecords: async () => [],
+      destroyDeletedRecords: async () => {},
+      unsafeResetDatabase: async () => {},
+      getLocal: async () => ({}),
+      create: async () => ({}),
+      update: async () => ({}),
+      markAsDeleted: async () => ({}),
+      syncChanges: async () => ({})
+    };
+  }
 }
 
-// Initialize the database with the adapter
-const database = new Database({
-  adapter: adapter as any,
-  modelClasses: [
-    Plant,
-    DiaryEntry,
+// Log the final model classes being used
+const finalModelClasses = [
+  Plant,
+  DiaryEntry,
     Profile,
     GrowJournal, 
     JournalEntry,
     GrowLocation,
     Notification,
     Strain,
-    PlantTask,
-    Post // Add Post to modelClasses
-  ]
+  PlantTask,
+  Post // Add Post to modelClasses
+];
+console.log('[DB Init] Final Model Classes:', finalModelClasses.map(m => m?.name || 'Unknown/Undefined')); // Log names
+
+// Initialize the database with the adapter
+const database = new Database({
+  adapter: adapter as any,
+  modelClasses: finalModelClasses // Use the logged array
 });
+console.log('[DB Init] Database instance created.'); // Added log
 
 // Sync function for WatermelonDB
 export async function synchronizeWithSupabase() {

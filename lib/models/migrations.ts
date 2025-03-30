@@ -90,6 +90,29 @@ const migrations = schemaMigrations({
           ]
         })
       ]
+    },
+    // Migration to version 3: Ensure is_deleted column exists in plants table
+    {
+      toVersion: 3,
+      steps: [
+        // Ensure is_deleted column exists in plants table
+        // This is necessary because the column may not have been created in version 2
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'is_deleted', type: 'boolean', isOptional: true }
+          ]
+        }),
+        // Add next_water_date and next_feed_date columns to plants
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'next_water_date', type: 'number', isOptional: true },
+            { name: 'next_feed_date', type: 'number', isOptional: true },
+            { name: 'strain_id', type: 'string', isOptional: true, isIndexed: true }
+          ]
+        })
+      ]
     }
   ]
 });

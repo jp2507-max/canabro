@@ -24,11 +24,11 @@ const TABLES_TO_SYNC = [
   'profiles',
   'plants',
   'grow_journals',
-  // 'journal_entries', // Temporarily disabled due to missing user_id column
+  'journal_entries', // Re-enabled
   'grow_locations',
   'diary_entries',
   'plant_tasks',
-  // 'posts', // Temporarily disabled as table doesn't exist yet
+  'posts', // Re-enabled
 ];
 
 // Mapping of watermelonDB id fields to Supabase id fields
@@ -148,14 +148,11 @@ export async function synchronizeWithServer(
               });
               
               if (error) {
-                console.log(`Sync pull error: ${error.message}, continuing with empty changes`);
-                // Return empty changes instead of throwing
-                return { 
-                  changes: {},
-                  timestamp: new Date().getTime()
-                };
+                console.error(`Sync pull error: ${error.message}`);
+                // Throw the error to be caught by the main sync logic
+                throw new Error(`Sync pull failed: ${error.message}`);
               }
-              
+
               // If using turbo mode for first sync
               if (isFirstSync && lastPulledAt === null) {
                 // For turbo mode, return raw JSON
@@ -171,12 +168,9 @@ export async function synchronizeWithServer(
                 };
               }
             } catch (error) {
-              console.error('Error in pullChanges:', error);
-              // Return empty changes instead of throwing
-              return { 
-                changes: {},
-                timestamp: new Date().getTime()
-              };
+              console.error('Critical error during pullChanges:', error);
+              // Re-throw the error to ensure the sync process fails correctly
+              throw error; 
             }
           },
           pushChanges: async ({ changes, lastPulledAt }) => {
@@ -191,12 +185,14 @@ export async function synchronizeWithServer(
               });
               
               if (error) {
-                console.log(`Push error: ${error.message}`);
-                // Log but don't throw, as we want sync to continue
+                console.error(`Push error: ${error.message}`);
+                // Throw the error to be caught by the main sync logic
+                throw new Error(`Sync push failed: ${error.message}`);
               }
             } catch (error) {
-              console.error('Error in pushChanges:', error);
-              // Log but don't throw
+              console.error('Critical error during pushChanges:', error);
+              // Re-throw the error to ensure the sync process fails correctly
+              throw error;
             }
           },
           migrationsEnabledAtVersion: 1, // Enable migration syncs from first version

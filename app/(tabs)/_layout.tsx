@@ -1,9 +1,10 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Pressable } from 'react-native';
 
 export default function TabsLayout() {
+  const router = useRouter();
   // Protect all tab routes
   const { isLoading } = useProtectedRoute();
 
@@ -39,6 +40,18 @@ export default function TabsLayout() {
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
+          ),
+          headerRight: () => (
+            <Pressable onPress={() => router.push('/profile')} className="mr-4">
+              {({ pressed }) => (
+                <Ionicons
+                  name="person-circle-outline"
+                  size={28}
+                  color="#6b7280" // gray-500
+                  style={{ opacity: pressed ? 0.5 : 1 }}
+                />
+              )}
+            </Pressable>
           ),
         }}
       />
