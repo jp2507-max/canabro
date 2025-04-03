@@ -15,7 +15,7 @@ import {
   Alert,
   Image,
   ActivityIndicator,
-  ScrollView,
+  ScrollView, // Use ScrollView instead of FlatList
   KeyboardAvoidingView,
   Platform,
   Modal,
@@ -211,7 +211,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Corrected enum access
+        mediaTypes: 'images', // Use lowercase string literal as suggested by TS error
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -438,7 +438,6 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                   />
                 ) : (
                   <ThemedView className="items-center bg-transparent p-4">
-                    {' '}
                     {/* Added padding */}
                     <Ionicons
                       name="image-outline"
@@ -621,20 +620,25 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               Cannabis Type
             </ThemedText>
             <ThemedView className="-m-1 flex-row flex-wrap">
-              {Object.values(CannabisType).map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  className={`m-1 rounded-full border px-4 py-2.5 active:opacity-80 ${value === type ? 'bg-primary border-primary dark:bg-darkPrimary dark:border-darkPrimary' : 'bg-background border-border dark:bg-darkBackground dark:border-darkBorder'}`}
-                  onPress={() => onChange(type)}
+              {Object.values(CannabisType).map((type) => {
+                const isSelected = value === type;
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    className={`m-1 rounded-full border px-4 py-2.5 active:opacity-80 ${isSelected ? 'bg-primary border-primary dark:bg-darkPrimary dark:border-darkPrimary' : 'bg-background border-border dark:bg-darkBackground dark:border-darkBorder'}`}
+                    onPress={() => {
+                    onChange(type);
+                  }}
                   accessibilityRole="radio"
-                  accessibilityState={{ checked: value === type }}
-                  accessibilityLabel={type}>
-                  <ThemedText
-                    className={`font-medium ${value === type ? 'text-primary-foreground dark:text-darkPrimaryForeground' : 'text-foreground dark:text-darkForeground'}`}>
-                    {type}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
+                    accessibilityState={{ checked: isSelected }}
+                    accessibilityLabel={type}>
+                    <ThemedText
+                      className={`font-medium ${isSelected ? 'text-primary-foreground dark:text-darkPrimaryForeground' : 'text-foreground dark:text-darkForeground'}`}>
+                      {type}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
             </ThemedView>
             {error && (
               <ThemedText className="text-destructive dark:text-darkDestructive mt-1 text-sm">
@@ -658,22 +662,26 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               Initial Growth Stage *
             </ThemedText>
             <ThemedView className="-m-1 flex-row flex-wrap">
-              {Object.values(GrowthStage).map((stage) => (
-                <TouchableOpacity
-                  key={stage}
-                  className={`m-1 rounded-full border px-4 py-2.5 active:opacity-80 ${value === stage ? 'bg-primary border-primary dark:bg-darkPrimary dark:border-darkPrimary' : 'bg-background border-border dark:bg-darkBackground dark:border-darkBorder'}`}
-                  onPress={() => onChange(stage)}
+              {Object.values(GrowthStage).map((stage) => {
+                const isSelected = value === stage;
+                const label = stage.charAt(0).toUpperCase() + stage.slice(1).replace(/_/g, ' ');
+                return (
+                  <TouchableOpacity
+                    key={stage}
+                    className={`m-1 rounded-full border px-4 py-2.5 active:opacity-80 ${isSelected ? 'bg-primary border-primary dark:bg-darkPrimary dark:border-darkPrimary' : 'bg-background border-border dark:bg-darkBackground dark:border-darkBorder'}`}
+                    onPress={() => {
+                    onChange(stage);
+                  }}
                   accessibilityRole="radio"
-                  accessibilityState={{ checked: value === stage }}
-                  accessibilityLabel={
-                    stage.charAt(0).toUpperCase() + stage.slice(1).replace(/_/g, ' ')
-                  }>
-                  <ThemedText
-                    className={`font-medium ${value === stage ? 'text-primary-foreground dark:text-darkPrimaryForeground' : 'text-foreground dark:text-darkForeground'}`}>
-                    {stage.charAt(0).toUpperCase() + stage.slice(1).replace(/_/g, ' ')}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
+                    accessibilityState={{ checked: isSelected }}
+                    accessibilityLabel={label}>
+                    <ThemedText
+                      className={`font-medium ${isSelected ? 'text-primary-foreground dark:text-darkPrimaryForeground' : 'text-foreground dark:text-darkForeground'}`}>
+                      {label}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
             </ThemedView>
             {error && (
               <ThemedText className="text-destructive dark:text-darkDestructive mt-1 text-sm">
@@ -1171,12 +1179,15 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1">
+      className="flex-1 bg-background dark:bg-darkBackground">
+      {/* Use ScrollView for the form content */}
       <ScrollView
-        className="bg-background dark:bg-darkBackground flex-1"
-        keyboardShouldPersistTaps="handled">
+        className="flex-1"
+        keyboardShouldPersistTaps="handled" // Reverted from "always"
+        contentContainerStyle={{ flexGrow: 1 }}>
+        {/* Render the main content view directly inside ScrollView */}
         <ThemedView className="min-h-screen px-4 pb-20 pt-4">
-          {/* Header (remains the same) */}
+          {/* Header */}
           <ThemedView className="mb-2 flex-row items-center justify-between">
             <TouchableOpacity
               onPress={goToPreviousStep}
@@ -1247,8 +1258,9 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               </TouchableOpacity>
             )}
           </ThemedView>
+          {/* End of main content view */}
         </ThemedView>
       </ScrollView>
     </KeyboardAvoidingView>
   );
-} // Changed to function declaration
+}

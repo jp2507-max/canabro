@@ -8,6 +8,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList, // Use FlatList for suggestions
+  Modal, // Import Modal
+  StyleSheet, // Import StyleSheet for positioning
+  Dimensions, // Import Dimensions
 } from 'react-native';
 
 import ThemedText from './ui/ThemedText'; // Import ThemedText
@@ -35,6 +38,9 @@ export function StrainAutocomplete({
   const [suggestions, setSuggestions] = useState<Strain[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [inputLayout, setInputLayout] = useState({ x: 0, y: 0, width: 0, height: 0 }); // State to store input layout
+
+  const inputRef = React.useRef<TextInput>(null); // Ref for the TextInput
 
   // Update local state when external value changes
   useEffect(() => {
@@ -151,13 +157,22 @@ export function StrainAutocomplete({
           />
         </ThemedView>
         <TextInput
+          ref={inputRef} // Assign ref
           className="h-10 flex-1 text-base"
           style={{ color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800] }} // Theme text color
           value={query}
           onChangeText={handleInputChange}
           placeholder={placeholder}
           placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]} // Theme placeholder
-          onFocus={() => query.length > 0 && setShowSuggestions(true)}
+          onFocus={() => {
+            // Measure input position on focus
+            inputRef.current?.measureInWindow((x, y, width, height) => {
+              setInputLayout({ x, y, width, height });
+            });
+            if (query.length > 0) {
+              setShowSuggestions(true);
+            }
+          }}
           onBlur={() => {
             // Delay hiding suggestions to allow for selection
             setTimeout(() => setShowSuggestions(false), 200);
@@ -181,10 +196,29 @@ export function StrainAutocomplete({
         )}
       </ThemedView>
 
-      {/* Suggestions List */}
-      {showSuggestions && (
+      {/* Suggestions Modal */}
+      <Modal
+        transparent
+        visible={showSuggestions}
+        animationType="fade" // Optional: add animation
+        onRequestClose={() => setShowSuggestions(false)} // Allow closing modal via back button etc.
+      >
+        {/* Touchable overlay to close modal when tapping outside */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={() => setShowSuggestions(false)}
+        />
+        {/* Suggestions Container */}
         <ThemedView
-          className="absolute left-0 right-0 top-full z-10 mt-1.5 max-h-64 overflow-hidden rounded-lg border shadow-lg" // Adjusted position and added overflow
+          style={[
+            styles.suggestionsContainer,
+            {
+              top: inputLayout.y + inputLayout.height + 5, // Position below input + 5px margin
+              left: inputLayout.x,
+              width: inputLayout.width,
+            },
+          ]}
           lightClassName="bg-white border-neutral-300"
           darkClassName="bg-neutral-800 border-neutral-600">
           {isLoading ? (
@@ -192,12 +226,12 @@ export function StrainAutocomplete({
               <ActivityIndicator size="small" color={theme.colors.primary[500]} />
             </ThemedView>
           ) : suggestions.length > 0 ? (
-            // Use FlatList for potentially long suggestion lists
             <FlatList
               data={suggestions}
               renderItem={renderStrainItem}
               keyExtractor={(item) => item.id}
-              keyboardShouldPersistTaps="handled" // Allow tapping items without dismissing keyboard
+              keyboardShouldPersistTaps="handled"
+              style={styles.flatList} // Ensure FlatList takes up modal space
             />
           ) : (
             <ThemedView className="items-center p-4">
@@ -207,7 +241,27 @@ export function StrainAutocomplete({
             </ThemedView>
           )}
         </ThemedView>
-      )}
+      </Modal>
     </ThemedView>
   );
 }
+
+// Add StyleSheet for modal positioning
+const styles = StyleSheet.create({
+  suggestionsContainer: {
+    position: 'absolute',
+    maxHeight: Dimensions.get('window').height * 0.3, // Limit height (e.g., 30% of screen)
+    // Use classNames for styling below where possible
+    // className: "overflow-hidden rounded-lg border shadow-lg" // Apply these via className prop if ThemedView supports it directly on style
+    borderRadius: 8, // Example: Ensure these match your theme/design system
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3, // for Android shadow
+  },
+  flatList: {
+    flexGrow: 0, // Prevent FlatList from trying to grow indefinitely inside the modal container
+  },
+});
