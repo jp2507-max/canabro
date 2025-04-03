@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+
 import { Container } from '../../components/Container';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
@@ -28,7 +29,7 @@ export default function RegisterScreen() {
     try {
       // Register user with Supabase auth
       const { error, data } = await signUp(email, password);
-      
+
       if (error) {
         Alert.alert('Registration Failed', error.message);
         return;
@@ -36,14 +37,12 @@ export default function RegisterScreen() {
 
       // If registration is successful, create a profile record
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            username,
-            email,
-            created_at: new Date().toISOString(),
-          });
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          username,
+          email,
+          created_at: new Date().toISOString(),
+        });
 
         if (profileError) {
           console.error('Error creating profile:', profileError);
@@ -64,21 +63,21 @@ export default function RegisterScreen() {
   return (
     <Container>
       <View className="flex-1 justify-center px-6">
-        <Text className="text-3xl font-bold mb-8 text-center">CanaBro</Text>
-        <Text className="text-xl font-semibold mb-6 text-center">Create Account</Text>
-        
-        <View className="space-y-4 mb-6">
+        <Text className="mb-8 text-center text-3xl font-bold">CanaBro</Text>
+        <Text className="mb-6 text-center text-xl font-semibold">Create Account</Text>
+
+        <View className="mb-6 space-y-4">
           <TextInput
-            className="bg-gray-100 p-4 rounded-lg"
+            className="rounded-lg bg-gray-100 p-4"
             placeholder="Username"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
             editable={!isLoading}
           />
-          
+
           <TextInput
-            className="bg-gray-100 p-4 rounded-lg"
+            className="rounded-lg bg-gray-100 p-4"
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
@@ -86,9 +85,9 @@ export default function RegisterScreen() {
             keyboardType="email-address"
             editable={!isLoading}
           />
-          
+
           <TextInput
-            className="bg-gray-100 p-4 rounded-lg"
+            className="rounded-lg bg-gray-100 p-4"
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
@@ -96,24 +95,23 @@ export default function RegisterScreen() {
             editable={!isLoading}
           />
         </View>
-        
-        <TouchableOpacity 
-          className={`bg-green-600 p-4 rounded-lg mb-4 ${isLoading ? 'opacity-70' : ''}`}
+
+        <TouchableOpacity
+          className={`mb-4 rounded-lg bg-green-600 p-4 ${isLoading ? 'opacity-70' : ''}`}
           onPress={handleRegister}
-          disabled={isLoading}
-        >
+          disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-center font-semibold">Register</Text>
+            <Text className="text-center font-semibold text-white">Register</Text>
           )}
         </TouchableOpacity>
-        
+
         <View className="flex-row justify-center">
           <Text className="text-gray-600">Already have an account? </Text>
           <Link href="/(auth)/login" asChild>
             <TouchableOpacity disabled={isLoading}>
-              <Text className="text-green-600 font-semibold">Login</Text>
+              <Text className="font-semibold text-green-600">Login</Text>
             </TouchableOpacity>
           </Link>
         </View>

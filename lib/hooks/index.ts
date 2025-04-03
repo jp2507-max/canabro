@@ -1,3 +1,5 @@
+import useWatermelon from './useWatermelon';
+
 /**
  * Export all hooks from a single entry point
  */
@@ -7,7 +9,7 @@ export * from './useProtectedRoute';
 
 // Database hooks
 export * from './useDatabase';
-export * from './useWatermelon';
+export { useWatermelon };
 
 // Supabase base hooks
 export * from './supabase';

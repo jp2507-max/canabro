@@ -1,7 +1,8 @@
-import { View } from 'react-native';
-import { ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { ReactNode } from 'react';
+import { View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+
 import { DevModeIndicator } from './DevModeIndicator';
 import { isDevelopment } from '../lib/config';
 
@@ -23,7 +24,3 @@ export function Container({ children, showDevInfo = false }: ContainerProps) {
     </SafeAreaProvider>
   );
 }
-
-const styles = {
-  container: 'flex flex-1 m-6',
-};

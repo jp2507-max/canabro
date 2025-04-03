@@ -9,7 +9,7 @@ export enum GrowEnvironment {
   INDOOR = 'indoor',
   OUTDOOR = 'outdoor',
   GREENHOUSE = 'greenhouse',
-  HYBRID = 'hybrid'
+  HYBRID = 'hybrid',
 }
 
 /**
@@ -24,7 +24,7 @@ export enum LightSourceType {
   CMH = 'cmh',
   FLUORESCENT = 'fluorescent',
   SUNLIGHT = 'sunlight',
-  MIXED = 'mixed'
+  MIXED = 'mixed',
 }
 
 /**
@@ -39,7 +39,7 @@ export enum GrowingMedium {
   VERMICULITE = 'vermiculite',
   WATER = 'water', // For DWC
   AEROPONICS = 'aeroponics',
-  MIXED = 'mixed'
+  MIXED = 'mixed',
 }
 
 /**

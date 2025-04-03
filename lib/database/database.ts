@@ -1,18 +1,27 @@
+// Standard Imports for Schema and Models
 import { Database } from '@nozbe/watermelondb';
-import { synchronize } from '@nozbe/watermelondb/sync';
-import supabase from '../supabase';
-import { Model } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
-import Constants from 'expo-constants';
-import { authConfig, isExpoGo } from '../config'; 
-import migrations from '../models/migrations';
 import * as FileSystem from 'expo-file-system';
 
-// Import Observable from rxjs if not already imported
-import { Observable } from 'rxjs';
+// import { Observable } from 'rxjs'; // Observable is unused
+// import { Model } from '@nozbe/watermelondb'; // Model is unused
+import { isExpoGo } from '../config';
+import plantSchema from './schema'; // Import the schema directly
+// Import all model classes directly
+import { DiaryEntry } from '../models/DiaryEntry';
+import { GrowJournal } from '../models/GrowJournal';
+import { GrowLocation } from '../models/GrowLocation';
+import { JournalEntry } from '../models/JournalEntry';
+import { Notification } from '../models/Notification';
+import { Plant } from '../models/Plant';
+import { PlantTask } from '../models/PlantTask';
+import { Post } from '../models/Post';
+import { Profile } from '../models/Profile';
+import { Strain } from '../models/Strain';
+import migrations from '../models/migrations';
 
 // Database file paths for reset functionality
-const DB_NAME = 'canabro.db';
+const DB_NAME = 'canabro.db'; // Keep DB Name consistent
 const getDatabasePath = async () => {
   return `${FileSystem.documentDirectory}${DB_NAME}`;
 };
@@ -22,10 +31,10 @@ export const resetDatabase = async () => {
   try {
     // Get the database file path
     const dbPath = await getDatabasePath();
-    
+
     // Check if the database file exists
     const fileInfo = await FileSystem.getInfoAsync(dbPath);
-    
+
     if (fileInfo.exists) {
       console.log('Database file found, deleting to reset...');
       // Delete the database file
@@ -42,345 +51,93 @@ export const resetDatabase = async () => {
   }
 };
 
-// Define the mock schema and model before the try block
-const mockSchema = {
-  tables: [
-    {
-      name: 'mock_plants',
-      columns: [
-        { name: 'name', type: 'string' },
-        { name: 'created_at', type: 'number' },
-        { name: 'updated_at', type: 'number' }
-      ]
-    },
-    {
-      name: 'mock_diary_entries',
-      columns: [
-        { name: 'plant_id', type: 'string' },
-        { name: 'entry_date', type: 'string' },
-        { name: 'content', type: 'string' },
-        { name: 'image_url', type: 'string' },
-        { name: 'user_id', type: 'string' },
-        { name: 'created_at', type: 'number' },
-        { name: 'updated_at', type: 'number' }
-      ]
-    },
-    {
-      name: 'mock_profiles',
-      columns: [
-        { name: 'user_id', type: 'string' },
-        { name: 'username', type: 'string' },
-        { name: 'avatar_url', type: 'string' },
-        { name: 'created_at', type: 'number' },
-        { name: 'updated_at', type: 'number' }
-      ]
-    },
-    {
-      name: 'plant_tasks',
-      columns: [
-        { name: 'task_id', type: 'string' },
-        { name: 'plant_id', type: 'string' },
-        { name: 'title', type: 'string' },
-        { name: 'description', type: 'string', isOptional: true },
-        { name: 'task_type', type: 'string' },
-        { name: 'due_date', type: 'string' },
-        { name: 'status', type: 'string' },
-        { name: 'notification_id', type: 'string', isOptional: true },
-        { name: 'user_id', type: 'string' },
-        { name: 'created_at', type: 'number' },
-        { name: 'updated_at', type: 'number' }
-      ]
-    }
-  ]
-};
-
-// Create mock model classes
-class MockPlant extends Model {
-  static table = 'mock_plants';
-  static associations = {};
-}
-
-class MockDiaryEntry extends Model {
-  static table = 'mock_diary_entries';
-  static associations = {
-    plants: { type: "belongs_to" as const, key: 'plant_id' }
-  };
-}
-
-class MockProfile extends Model {
-  static table = 'mock_profiles';
-  static associations = {};
-}
-
-class MockPlantTask extends Model {
-  static table = 'plant_tasks';
-  static associations = {
-    plants: { type: "belongs_to" as const, key: 'plant_id' }
-  };
-}
-
-// Use dynamic imports to avoid TypeScript errors
-let plantSchema: any;
-let Plant: any = MockPlant;
-let DiaryEntry: any = MockDiaryEntry;
-let Profile: any = MockProfile;
-let GrowJournal: any = MockPlant;
-let JournalEntry: any = MockDiaryEntry;
-let GrowLocation: any = MockProfile;
-let Notification: any = MockProfile;
-let Strain: any = MockPlant;
-let PlantTask: any = MockPlantTask;
-let Post: any = MockPlant;
-
-let schemaImportFailed = false; // Flag to track import failure
-
-console.log('[DB Init] Attempting to import schema and models...'); // Added log
-
-try {
-  // Try to import schema and models
-  console.log('[DB Init] Requiring ./schema...'); // Added log
-  const schemaModule = require('./schema');
-  plantSchema = schemaModule.default;
-  console.log('[DB Init] Schema module loaded:', !!schemaModule, 'Default schema:', !!plantSchema); // Added log
-
-  // Explicitly check if schema loaded correctly
-  if (!plantSchema || typeof plantSchema !== 'object' || !plantSchema.version) {
-    console.error('Failed to load schema correctly from ./schema, schema is invalid or undefined.');
-    schemaImportFailed = true;
-    console.error('[DB Init] Schema validation failed!'); // Added log
-    throw new Error('Schema import validation failed'); // Force fallback to catch block
-  }
-
-  console.log('[DB Init] Successfully imported real schema version:', plantSchema.version);
-
-  console.log('[DB Init] Importing REAL models...'); // Added log
-  Plant = require('../models/Plant').Plant;
-  DiaryEntry = require('../models/DiaryEntry').DiaryEntry;
-  Profile = require('../models/Profile').Profile; // Check this one specifically
-  console.log('[DB Init] REAL Profile Model loaded:', Profile !== MockProfile, Profile?.name); // Added log
-  GrowJournal = require('../models/GrowJournal').GrowJournal;
-  JournalEntry = require('../models/JournalEntry').JournalEntry;
-  GrowLocation = require('../models/GrowLocation').GrowLocation;
-  Notification = require('../models/Notification').Notification;
-  Strain = require('../models/Strain').Strain;
-  Post = require('../models/Post').Post;
-  
-  // Import PlantTask with better error handling since it's exported differently
-  try {
-    PlantTask = require('../models/PlantTask').PlantTask;
-  } catch (e) {
-    PlantTask = require('../models/PlantTask').default || require('../models/PlantTask');
-  }
-} catch (error) {
-  console.error('[DB Init] Error importing schema or models:', error); // Added log prefix
-  schemaImportFailed = true; // Mark import as failed
-  // Use mock schema and models if imports fail
-  plantSchema = mockSchema;
-  console.log('[DB Init] Falling back to MOCK schema.'); // Added log prefix
-  // Assign mock models (ensure all used models have mocks)
-  Plant = MockPlant;
-  DiaryEntry = MockDiaryEntry;
-  Profile = MockProfile; // Fallback Profile
-  console.log('[DB Init] Falling back to MOCK Profile Model.'); // Added log
-  // Add mocks for others if they were potentially uninitialized due to import errors
-  GrowJournal = MockPlant;
-  JournalEntry = MockDiaryEntry;
-  GrowLocation = MockProfile;
-  Notification = MockProfile;
-  Strain = MockPlant;
-  PlantTask = MockPlantTask;
-  Post = MockPlant;
-}
-
-// Define migrations for future use in production builds
-// Using imported migrations from the correct path
-
-// Create appropriate adapter based on configuration
-let adapter: any;
-
-// Double-check plantSchema before creating the adapter
-if (!plantSchema || schemaImportFailed) {
-  console.error("CRITICAL: plantSchema is missing or invalid before creating SQLiteAdapter. Using mock schema as fallback.");
-  plantSchema = mockSchema; // Ensure mock schema is used if real one failed
-}
-
-// In Expo Go, we MUST use mock adapter because SQLite with JSI is not supported
-if (isExpoGo) {
-  if (!authConfig.useMockAdapter) {
-    console.log('Note: Even though auth bypass is disabled, SQLite with JSI is not supported in Expo Go.');
-    console.log('Using mock database adapter due to Expo Go technical limitations.');
-  } else {
-    console.log('Using mock database adapter as configured');
-  }
-  
-  // Create a more robust mock adapter that properly handles all tables
-  const mockTables = mockSchema.tables.map(table => table.name);
-  const allTables = [...mockTables, 'plant_tasks']; // Ensure plant_tasks is included
-  
-  adapter = {
-    schema: plantSchema,
-    tableName: (name: string) => name,
-    get: (tableName: string) => {
-      console.log(`Mock adapter: get collection for table ${tableName}`);
-      // Make sure all known tables are available
-      if (!allTables.includes(tableName)) {
-        console.warn(`Mock adapter: Unknown table requested: ${tableName}`);
-      }
-      
-      // Return a mock collection with appropriate methods
-      return {
-        query: () => ({
-          observe: () => new Observable(subscriber => {
-            subscriber.next([]);
-            subscriber.complete();
-            return { unsubscribe: () => {} };
-          })
-        }),
-        create: () => ({}),
-        find: () => Promise.resolve({}),
-        update: () => Promise.resolve({}),
-        markAsDeleted: () => Promise.resolve({}),
-        fetchQuery: () => Promise.resolve([])
-      };
-    },
-    find: async () => ({}),
-    query: async () => [],
-    count: async () => 0,
-    batch: async () => ({}),
-    getDeletedRecords: async () => [],
-    destroyDeletedRecords: async () => {},
-    unsafeResetDatabase: async () => {},
-    // Add missing methods for sync
-    getLocal: async () => ({}),
-    create: async () => ({}),
-    update: async () => ({}),
-    markAsDeleted: async () => ({}),
-    syncChanges: async () => ({})
-  };
-} else {
-  // In production or development build, use the real SQLiteAdapter
-  console.log('[DB Init] Using SQLite adapter with real database'); // Added log prefix
-  try {
-    console.log('[DB Init] Creating SQLiteAdapter with schema version:', plantSchema?.version); // Log schema used
-    adapter = new SQLiteAdapter({
-      schema: plantSchema, // Now guaranteed to be either real or mock schema
-      migrations,
-      jsi: true, // This is recommended for performance
-      dbName: 'canabro',
-    });
-  } catch (error) {
-    console.error('Error creating SQLiteAdapter:', error);
-    
-    // Fall back to mock adapter if SQLiteAdapter creation fails
-    console.warn('Falling back to mock adapter due to SQLiteAdapter initialization error');
-    
-    const mockTables = mockSchema.tables.map(table => table.name);
-    const allTables = [...mockTables, 'plant_tasks']; 
-    
-    adapter = {
-      schema: plantSchema,
-      tableName: (name: string) => name,
-      get: (tableName: string) => {
-        console.log(`Fallback mock adapter: get collection for table ${tableName}`);
-        return {
-          query: () => ({
-            observe: () => new Observable(subscriber => {
-              subscriber.next([]);
-              subscriber.complete();
-              return { unsubscribe: () => {} };
-            })
-          }),
-          create: () => ({}),
-          find: () => Promise.resolve({}),
-          update: () => Promise.resolve({}),
-          markAsDeleted: () => Promise.resolve({}),
-          fetchQuery: () => Promise.resolve([])
-        };
-      },
-      find: async () => ({}),
-      query: async () => [],
-      count: async () => 0,
-      batch: async () => ({}),
-      getDeletedRecords: async () => [],
-      destroyDeletedRecords: async () => {},
-      unsafeResetDatabase: async () => {},
-      getLocal: async () => ({}),
-      create: async () => ({}),
-      update: async () => ({}),
-      markAsDeleted: async () => ({}),
-      syncChanges: async () => ({})
-    };
-  }
-}
-
-// Log the final model classes being used
-const finalModelClasses = [
+// Define the list of all model classes used in the app
+const modelClasses = [
   Plant,
   DiaryEntry,
-    Profile,
-    GrowJournal, 
-    JournalEntry,
-    GrowLocation,
-    Notification,
-    Strain,
+  Profile,
+  GrowJournal,
+  JournalEntry,
+  GrowLocation,
+  Notification,
+  Strain,
   PlantTask,
-  Post // Add Post to modelClasses
+  Post,
 ];
-console.log('[DB Init] Final Model Classes:', finalModelClasses.map(m => m?.name || 'Unknown/Undefined')); // Log names
 
-// Initialize the database with the adapter
-const database = new Database({
-  adapter: adapter as any,
-  modelClasses: finalModelClasses // Use the logged array
-});
-console.log('[DB Init] Database instance created.'); // Added log
+// Create appropriate adapter based on configuration
+let adapter: SQLiteAdapter;
 
-// Sync function for WatermelonDB
-export async function synchronizeWithSupabase() {
-  // Skip sync in Expo Go environment
-  if (isExpoGo) {
-    console.log('Sync skipped in Expo Go environment');
-    return;
-  }
-  
-  if (!supabase.auth.getSession()) {
-    console.log('No active session, sync skipped');
-    return;
-  }
-
+// In Expo Go, we MUST use a mock adapter because SQLite with JSI is not supported.
+// For simplicity in this refactor, we'll throw an error if trying to use the real DB in Expo Go.
+// A proper mock adapter implementation would be needed for testing/running in Expo Go.
+if (isExpoGo) {
+  console.error(
+    'CRITICAL: Real SQLite database is not supported in Expo Go. App will likely fail.'
+  );
+  // If you need Expo Go support, implement a proper mock adapter here.
+  // For now, we'll let it potentially fail later or use a very basic mock.
+  adapter = {
+    // Basic mock to avoid immediate crash, but functionality will be broken
+    schema: plantSchema,
+    migrations, // Include migrations in mock for consistency if needed elsewhere
+    jsi: false, // JSI not applicable for mock
+    dbName: 'mock_canabro',
+    // Implement basic mock methods as needed for the app to load without crashing
+    // This is NOT a functional database adapter.
+    find: async () => null,
+    query: async () => [],
+    count: async () => 0,
+    batch: async () => {},
+    getDeletedRecords: async () => [],
+    destroyDeletedRecords: async () => {},
+    unsafeResetDatabase: async () => {
+      console.log('Mock unsafeResetDatabase called');
+    },
+    getLocal: async (key: string) => null,
+    setLocal: async (key: string, value: string) => {},
+    removeLocal: async (key: string) => {},
+  } as any; // Cast to any to satisfy the type temporarily
+  console.warn(
+    'Using a minimal mock adapter for Expo Go. Database functionality will be limited/broken.'
+  );
+} else {
+  // In production or development build, use the real SQLiteAdapter
+  console.log('[DB Init] Using SQLite adapter with real database');
   try {
-    await synchronize({
-      database,
-      pullChanges: async ({ lastPulledAt }) => {
-        const timestamp = lastPulledAt ? new Date(lastPulledAt).toISOString() : null;
-        
-        // This is where you'd fetch changes from Supabase based on timestamp
-        // For now, returning an empty changes set with proper structure
-        return { 
-          changes: {
-            plants: { created: [], updated: [], deleted: [] },
-            profiles: { created: [], updated: [], deleted: [] },
-            diary_entries: { created: [], updated: [], deleted: [] },
-            grow_journals: { created: [], updated: [], deleted: [] },
-            journal_entries: { created: [], updated: [], deleted: [] },
-            grow_locations: { created: [], updated: [], deleted: [] },
-            notifications: { created: [], updated: [], deleted: [] },
-            strains: { created: [], updated: [], deleted: [] },
-            plant_tasks: { created: [], updated: [], deleted: [] },
-          }, 
-          timestamp: Date.now() 
-        };
-      },
-      pushChanges: async ({ changes, lastPulledAt }) => {
-        // This is where you'd push local changes to Supabase
-        console.log('Changes to push to Supabase:', changes);
-        
-        // Here you would implement actual Supabase operations to sync changes
-      },
+    console.log('[DB Init] Creating SQLiteAdapter with schema version:', plantSchema.version);
+    adapter = new SQLiteAdapter({
+      schema: plantSchema, // Use the directly imported schema
+      migrations,
+      jsi: true, // Recommended for performance
+      dbName: DB_NAME, // Use the constant DB name
+      // Provide paths for Expo FileSystem compatibility if needed by the adapter version
+      // dbPath: FileSystem.documentDirectory, // Example if needed
     });
+    console.log('[DB Init] SQLiteAdapter created successfully.');
   } catch (error) {
-    console.error('Sync failed:', error);
+    console.error('CRITICAL: Error creating SQLiteAdapter:', error);
+    // If the adapter fails, throw the error to prevent the app from starting with a broken DB.
+    throw new Error(
+      `Failed to initialize SQLiteAdapter: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
+// Log the final model classes being used (now directly imported)
+console.log(
+  '[DB Init] Using Model Classes:',
+  modelClasses.map((m) => m.name)
+);
+
+// Initialize the database with the adapter and models
+const database = new Database({
+  adapter, // Use the initialized adapter (real or mock)
+  modelClasses, // Use the directly imported models
+});
+console.log('[DB Init] Database instance created.');
+
+// Export the initialized database instance
 export default database;
+
+// Removed the redundant synchronizeWithSupabase function

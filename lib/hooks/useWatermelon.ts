@@ -1,23 +1,24 @@
 /**
  * useWatermelon Hook
- * 
+ *
  * Custom hook for accessing WatermelonDB collections and synchronization
  * This hooks into the existing DatabaseProvider to provide a consistent interface
  */
 
-import { useContext, useState, useEffect } from 'react';
 import { Collection } from '@nozbe/watermelondb';
+import { useState, useEffect } from 'react'; // useContext is unused
+
+import { useAuth } from '../contexts/AuthProvider';
 import { useDatabase } from '../contexts/DatabaseProvider';
-import { Plant } from '../models/Plant';
-import { Profile } from '../models/Profile';
-import { GrowJournal } from '../models/GrowJournal';
-import { JournalEntry } from '../models/JournalEntry';
-import { GrowLocation } from '../models/GrowLocation';
 import { DiaryEntry } from '../models/DiaryEntry';
+import { GrowJournal } from '../models/GrowJournal';
+import { GrowLocation } from '../models/GrowLocation';
+import { JournalEntry } from '../models/JournalEntry';
+import { Plant } from '../models/Plant';
 import { PlantTask } from '../models/PlantTask';
 import { Post } from '../models/Post';
-import { synchronizeWithServer } from '../services/sync-service';
-import { useAuth } from '../contexts/AuthProvider';
+import { Profile } from '../models/Profile';
+// import { synchronizeWithServer } from '../services/sync-service'; // synchronizeWithServer is unused
 
 interface WatermelonContextType {
   database: any;
@@ -29,7 +30,7 @@ interface WatermelonContextType {
   diaryEntries: Collection<DiaryEntry>;
   plantTasks: Collection<PlantTask>;
   posts: Collection<Post>;
-  sync: () => Promise<void>;
+  sync: (options?: { showFeedback?: boolean; force?: boolean }) => Promise<boolean>;
   isInitialized: boolean;
   isSyncing: boolean;
   lastSyncTime: Date | null;
@@ -37,7 +38,7 @@ interface WatermelonContextType {
 
 /**
  * useWatermelon Hook
- * 
+ *
  * Custom hook for accessing WatermelonDB collections and synchronization
  * This provides a consistent interface for all database operations
  */
@@ -46,7 +47,7 @@ export default function useWatermelon(): WatermelonContextType {
   const { database, sync, isSyncing } = useDatabase();
   const { session } = useAuth();
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  
+
   // Access collections
   const plants = database.get<Plant>('plants');
   const profiles = database.get<Profile>('profiles');
@@ -56,26 +57,31 @@ export default function useWatermelon(): WatermelonContextType {
   const diaryEntries = database.get<DiaryEntry>('diary_entries');
   const plantTasks = database.get<PlantTask>('plant_tasks');
   const posts = database.get<Post>('posts');
-  
+
   // Enhanced sync function that updates lastSyncTime
-  const syncWithTracking = async () => {
-    if (!session?.user?.id) return;
-    
+  const syncWithTracking = async (options?: { showFeedback?: boolean; force?: boolean }) => {
+    if (!session?.user?.id) return false;
+
     try {
-      await sync();
-      setLastSyncTime(new Date());
+      // Pass the options through to the underlying sync function
+      const result = await sync(options);
+      if (result) {
+        setLastSyncTime(new Date());
+      }
+      return result;
     } catch (error) {
       console.error('Sync failed:', error);
+      return false;
     }
   };
-  
+
   // Initial sync on auth change
   useEffect(() => {
     if (session?.user?.id) {
       syncWithTracking();
     }
   }, [session?.user?.id]);
-  
+
   return {
     database,
     plants,

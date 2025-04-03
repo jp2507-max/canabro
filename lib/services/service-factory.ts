@@ -29,7 +29,7 @@ export abstract class BaseService {
   // Standardized Supabase error handling
   protected handleSupabaseError(error: PostgrestError | null): string {
     if (!error) return 'An unknown error occurred';
-    
+
     console.error(`Supabase error: ${error.message}`, error);
     // Handle specific error codes if needed
     if (error.code === '23505') {

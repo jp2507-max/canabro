@@ -1,27 +1,26 @@
-import React, { useState } from 'react';
-import { FlatList, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Q } from '@nozbe/watermelondb';
+import { withObservables } from '@nozbe/watermelondb/react';
 import { router } from 'expo-router';
-import ThemedView from '../../components/ui/ThemedView';
-import ThemedText from '../../components/ui/ThemedText';
-import UserAvatar from '../../components/community/UserAvatar';
-import TopicList from '../../components/community/TopicList';
-import PostItem from '../../components/community/PostItem';
+import React, { useState } from 'react';
+import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
-import { useTheme } from '../../lib/contexts/ThemeContext';
+import PostItem from '../../components/community/PostItem';
+import TopicList from '../../components/community/TopicList';
+import UserAvatar from '../../components/community/UserAvatar';
+import ThemedText from '../../components/ui/ThemedText';
+import ThemedView from '../../components/ui/ThemedView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
+import { useDatabase } from '../../lib/contexts/DatabaseProvider'; // Import useDatabase instead of using withDatabase HOC
+import { useTheme } from '../../lib/contexts/ThemeContext';
 // import { useCommunityPosts } from '../../lib/hooks/useCommunityPosts'; // Removed hook
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 // import { useProfileData } from '../../lib/hooks/useProfileData'; // Keep for avatar for now, or fetch profile via WDB relation in PostItem
-
 // WatermelonDB imports
-import { withObservables, withDatabase, compose } from '@nozbe/watermelondb/react';
-import { Database, Q } from '@nozbe/watermelondb';
 import { Post } from '../../lib/models/Post'; // Import WatermelonDB Post model
-import useWatermelon from '../../lib/hooks/useWatermelon'; // Import for sync
-import { ComponentType } from 'react'; // Import ComponentType for explicit typing
 
 // Topic tags for the horizontal scroll
 const TOPICS = [
@@ -36,24 +35,22 @@ const TOPICS = [
 // Define props injected by HOCs
 interface InjectedProps {
   posts: Post[];
-  database: Database; // Explicitly include database from withDatabase
 }
 
 /**
  * Base Community screen component
  */
-// Add database to props
-function CommunityScreenBase({ posts, database }: InjectedProps) {
+function CommunityScreenBase({ posts }: InjectedProps) {
   useProtectedRoute(); // Keep protected route logic
-  const { theme, isDarkMode } = useTheme();
+  const { theme } = useTheme();
   const { user } = useAuth(); // Keep auth context
   // const { profile } = useProfileData(); // Maybe fetch profile via Post relation later
-  const { sync, isSyncing } = useWatermelon(); // Use sync from hook
+  const { database, sync, isSyncing } = useDatabase(); // Get database from DatabaseProvider context
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateScreen, setShowCreateScreen] = useState(false);
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  const [expandedImage, setExpandedImage] = useState<{ url: string; index: number } | null>(null);
+  // const [expandedImage, setExpandedImage] = useState<{ url: string; index: number } | null>(null); // Unused state
 
   // Removed useCommunityPosts hook and its state variables (loading, refreshing, hasMore, etc.)
   // const { posts, loading, refreshing, hasMore, loadMore, refresh, like, addPost } = useCommunityPosts();
@@ -66,7 +63,7 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
       setActiveTopic(topicId);
     }
   };
-  
+
   // Handle user profile navigation
   const handleUserPress = (userId: string) => {
     // Use any type assertion to avoid TypeScript errors with dynamic routes
@@ -78,7 +75,7 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
     // Use any type assertion to avoid TypeScript errors with dynamic routes
     router.push(`/plant/${plantId}` as any);
   };
-  
+
   // Handle create post actions
   const handleCreatePost = () => {
     setShowCreateModal(false);
@@ -101,7 +98,7 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
   // Reimplement like action using the @writer method on the Post model
   // Add explicit type for postId
   const handleLike = async (postId: string) => {
-    console.log("Attempting WatermelonDB like for post:", postId);
+    console.log('Attempting WatermelonDB like for post:', postId);
     try {
       // Find the post first
       const post = await database.get<Post>('posts').find(postId);
@@ -111,7 +108,7 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
       // Optional: Trigger sync after successful write if needed immediately
       // await sync();
     } catch (error) {
-      console.error("Error liking post via WatermelonDB:", error);
+      console.error('Error liking post via WatermelonDB:', error);
       // Optionally show an alert to the user
       // Alert.alert("Error", "Could not like the post.");
     }
@@ -119,7 +116,8 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
 
   // Reimplement refresh action
   const handleRefresh = async () => {
-    await sync(); // Sync with backend
+    console.log('Manual sync triggered on community refresh');
+    await sync({ force: true, showFeedback: true }); // Force sync with backend
   };
 
   // Render the header with user avatar and topics
@@ -130,17 +128,13 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
         <TouchableOpacity onPress={() => handleUserPress(user?.id || '')}>
           <UserAvatar
             // TODO: Get avatar from user context or fetch profile via relation
-            uri={'https://via.placeholder.com/40'}
+            uri="https://via.placeholder.com/40"
             verified={false}
           />
         </TouchableOpacity>
       </ThemedView>
 
-      <TopicList
-        topics={TOPICS}
-        activeTopic={activeTopic}
-        onTopicPress={handleTopicPress}
-      />
+      <TopicList topics={TOPICS} activeTopic={activeTopic} onTopicPress={handleTopicPress} />
     </>
   );
 
@@ -158,21 +152,20 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
           color={theme.colors.neutral[400]}
           style={{ marginBottom: 16 }}
         />
-        <ThemedText className="text-center font-bold text-lg mb-2">No Posts Yet</ThemedText>
-        <ThemedText className="text-center text-neutral-500 mb-8 px-8">
+        <ThemedText className="mb-2 text-center text-lg font-bold">No Posts Yet</ThemedText>
+        <ThemedText className="mb-8 px-8 text-center text-neutral-500">
           Be the first to share your plants with the community!
         </ThemedText>
         <TouchableOpacity
           onPress={() => setShowCreateModal(true)}
-          className="py-3 px-6 rounded-full"
-          style={{ backgroundColor: theme.colors.primary[500] }}
-        >
+          className="rounded-full px-6 py-3"
+          style={{ backgroundColor: theme.colors.primary[500] }}>
           <ThemedText className="font-bold text-white">Create Post</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
   };
-  
+
   return (
     <SafeAreaView className="flex-1" edges={['top']}>
       <ThemedView className="flex-1" lightClassName="bg-neutral-100" darkClassName="bg-neutral-950">
@@ -189,7 +182,7 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
               onUserPress={handleUserPress}
               onPlantPress={handlePlantPress}
               // Add explicit types for url and index
-              onImagePress={(url: string, index: number) => setExpandedImage({ url, index })}
+              // onImagePress={(url: string, index: number) => setExpandedImage({ url, index })} // Removed as expandedImage state is unused
             />
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
@@ -206,13 +199,12 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
 
         {/* Floating action button */}
         <TouchableOpacity
-          className="absolute bottom-6 right-6 w-14 h-14 rounded-full items-center justify-center shadow-lg"
+          className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full shadow-lg"
           style={{ backgroundColor: theme.colors.primary[500] }}
-          onPress={() => setShowCreateModal(true)}
-        >
+          onPress={() => setShowCreateModal(true)}>
           <Ionicons name="add" size={30} color="white" />
         </TouchableOpacity>
-        
+
         {/* Create post modal */}
         <CreatePostModal
           visible={showCreateModal}
@@ -220,7 +212,7 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
           onCreatePost={handleCreatePost}
           onAskQuestion={handleAskQuestion}
         />
-        
+
         {/* Create post screen */}
         <CreatePostScreen
           visible={showCreateScreen}
@@ -232,31 +224,30 @@ function CommunityScreenBase({ posts, database }: InjectedProps) {
   );
 }
 
-// Apply HOCs sequentially instead of using compose
+// Create a custom HOC that provides posts from the database
+const enhance = withObservables([], () => {
+  // Get database directly from the imported database instance
+  const db = require('../../lib/database/database').default;
 
-// 1. Enhance the base component with database access
-// This component now expects InjectedProps but receives only 'database' from HOC
-// We need to adjust the base component or the HOC application
-// Let's adjust the HOC application order: withObservables needs the database prop.
+  // Check if database is available before trying to query
+  if (!db) {
+    console.error('Database instance is not available in withObservables');
+    return { posts: [] };
+  }
 
-// Enhance with Database first
-const CommunityScreenWithDB = withDatabase(CommunityScreenBase);
+  try {
+    // Use the database to query posts
+    return {
+      posts: db
+        .get('posts')
+        .query(Q.where('is_deleted', false), Q.sortBy('created_at', Q.desc))
+        .observe(),
+    };
+  } catch (error) {
+    console.error('Error setting up observable query:', error);
+    return { posts: [] };
+  }
+});
 
-// Enhance the result with Observables
-const EnhancedCommunityScreen = withObservables(
-  [], // No trigger props
-  // This function receives props passed to EnhancedCommunityScreen *plus* those from withDatabase (i.e., database)
-  ({ database }: { database: Database }) => ({
-    posts: database.get<Post>('posts')
-      .query(
-        Q.where('is_deleted', false),
-        Q.sortBy('created_at', Q.desc)
-      )
-      .observe(),
-    // We pass database through again, although withObservables doesn't strictly need it as output
-    // database: database // This line is optional, as withDatabase already provides it
-  })
-)(CommunityScreenWithDB); // Apply to the component already enhanced with database
-
-// Export the final enhanced component
-export default EnhancedCommunityScreen;
+// Export the enhanced component
+export default enhance(CommunityScreenBase);

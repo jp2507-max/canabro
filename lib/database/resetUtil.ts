@@ -1,12 +1,13 @@
-import { Alert, Platform } from 'react-native';
-import { resetDatabase } from './database';
 import * as Application from 'expo-application';
 import * as FileSystem from 'expo-file-system';
+import { Alert } from 'react-native';
+
+import { resetDatabase } from './database';
 
 /**
  * Utility to force reset the local WatermelonDB database.
  * This is useful when schema migrations fail and the app is in a corrupted state.
- * 
+ *
  * @returns Promise<boolean> - true if the database was reset or the reset is not needed
  */
 export const forceResetDatabaseIfNeeded = async (): Promise<boolean> => {
@@ -14,27 +15,27 @@ export const forceResetDatabaseIfNeeded = async (): Promise<boolean> => {
     // Get app info
     const buildVersion = Application.nativeBuildVersion;
     const appVersion = Application.nativeApplicationVersion;
-    
+
     // We'll store a flag file to track if we've already done the reset for this app version
     const resetFlagPath = `${FileSystem.documentDirectory}db_reset_${appVersion}_${buildVersion}.flag`;
-    
+
     // Check if we've already done the reset for this version
     const flagExists = (await FileSystem.getInfoAsync(resetFlagPath)).exists;
-    
+
     if (flagExists) {
       console.log('Database reset already performed for this version');
       return true;
     }
-    
+
     // Perform the reset
     const resetResult = await resetDatabase();
-    
+
     if (resetResult) {
       console.log('Database was reset successfully');
-      
+
       // Create the flag file to indicate we've done the reset for this version
       await FileSystem.writeAsStringAsync(resetFlagPath, new Date().toISOString());
-      
+
       return true;
     } else {
       console.log('Database reset was not needed or failed');
@@ -67,7 +68,7 @@ export const showDatabaseResetAlert = (): Promise<boolean> => {
           onPress: async () => {
             const result = await resetDatabase();
             resolve(result);
-            
+
             if (result) {
               Alert.alert(
                 'Database Reset',

@@ -1,9 +1,10 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+
 import { Container } from '../../components/Container';
-import { useAuth } from '../../lib/contexts/AuthProvider';
 import { isDevelopment, authConfig } from '../../lib/config';
+import { useAuth } from '../../lib/contexts/AuthProvider';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -52,22 +53,22 @@ export default function LoginScreen() {
   return (
     <Container>
       <View className="flex-1 justify-center px-6">
-        <Text className="text-3xl font-bold mb-8 text-center">CanaBro</Text>
-        <Text className="text-xl font-semibold mb-6 text-center">Login</Text>
-        
+        <Text className="mb-8 text-center text-3xl font-bold">CanaBro</Text>
+        <Text className="mb-6 text-center text-xl font-semibold">Login</Text>
+
         {isDevelopment && (
-          <View className="mb-4 p-3 bg-yellow-100 rounded-lg">
-            <Text className="text-yellow-800 text-center text-sm">
-              {authConfig.forceDevBypass 
-                ? 'Development mode: Auto-login is enabled' 
+          <View className="mb-4 rounded-lg bg-yellow-100 p-3">
+            <Text className="text-center text-sm text-yellow-800">
+              {authConfig.forceDevBypass
+                ? 'Development mode: Auto-login is enabled'
                 : 'Development mode: Manual login required'}
             </Text>
           </View>
         )}
-        
-        <View className="space-y-4 mb-6">
+
+        <View className="mb-6 space-y-4">
           <TextInput
-            className="bg-gray-100 p-4 rounded-lg"
+            className="rounded-lg bg-gray-100 p-4"
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
@@ -75,9 +76,9 @@ export default function LoginScreen() {
             keyboardType="email-address"
             editable={!isLoading}
           />
-          
+
           <TextInput
-            className="bg-gray-100 p-4 rounded-lg"
+            className="rounded-lg bg-gray-100 p-4"
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
@@ -85,34 +86,32 @@ export default function LoginScreen() {
             editable={!isLoading}
           />
         </View>
-        
-        <TouchableOpacity 
-          className={`bg-green-600 p-4 rounded-lg mb-4 ${isLoading ? 'opacity-70' : ''}`}
+
+        <TouchableOpacity
+          className={`mb-4 rounded-lg bg-green-600 p-4 ${isLoading ? 'opacity-70' : ''}`}
           onPress={handleLogin}
-          disabled={isLoading}
-        >
+          disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-center font-semibold">Login</Text>
+            <Text className="text-center font-semibold text-white">Login</Text>
           )}
         </TouchableOpacity>
-        
+
         {showDevOptions && (
-          <TouchableOpacity 
-            className="bg-blue-600 p-4 rounded-lg mb-4"
+          <TouchableOpacity
+            className="mb-4 rounded-lg bg-blue-600 p-4"
             onPress={handleDevBypass}
-            disabled={isLoading}
-          >
-            <Text className="text-white text-center font-semibold">Dev Mode Login</Text>
+            disabled={isLoading}>
+            <Text className="text-center font-semibold text-white">Dev Mode Login</Text>
           </TouchableOpacity>
         )}
-        
+
         <View className="flex-row justify-center">
           <Text className="text-gray-600">Don't have an account? </Text>
           <Link href="/(auth)/register" asChild>
             <TouchableOpacity disabled={isLoading}>
-              <Text className="text-green-600 font-semibold">Register</Text>
+              <Text className="font-semibold text-green-600">Register</Text>
             </TouchableOpacity>
           </Link>
         </View>

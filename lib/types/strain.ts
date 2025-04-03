@@ -9,7 +9,7 @@ export enum StrainSpecies {
   SATIVA = 'sativa',
   INDICA = 'indica',
   HYBRID = 'hybrid',
-  RUDERALIS = 'ruderalis'
+  RUDERALIS = 'ruderalis',
 }
 
 /**
@@ -19,7 +19,7 @@ export enum StrainDifficulty {
   BEGINNER = 'beginner',
   INTERMEDIATE = 'intermediate',
   ADVANCED = 'advanced',
-  EXPERT = 'expert'
+  EXPERT = 'expert',
 }
 
 /**
@@ -36,7 +36,7 @@ export enum StrainEffectType {
   HUNGRY = 'hungry',
   TALKATIVE = 'talkative',
   TINGLY = 'tingly',
-  SLEEPY = 'sleepy'
+  SLEEPY = 'sleepy',
 }
 
 /**
@@ -67,7 +67,7 @@ export enum StrainFlavorType {
   VANILLA = 'vanilla',
   MINT = 'mint',
   COFFEE = 'coffee',
-  CHOCOLATE = 'chocolate'
+  CHOCOLATE = 'chocolate',
 }
 
 /**

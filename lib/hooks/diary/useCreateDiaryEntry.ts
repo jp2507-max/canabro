@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthProvider';
+import { useDatabase } from '../../contexts/DatabaseProvider';
 import { DiaryEntry, DiaryEntryType } from '../../types';
 import { useSupabaseMutation } from '../supabase';
-import { useDatabase } from '../../contexts/DatabaseProvider';
 
 /**
  * Data required to create a new diary entry
@@ -32,14 +32,14 @@ export interface CreateDiaryEntryData {
 export function useCreateDiaryEntry() {
   const { user } = useAuth();
   const database = useDatabase();
-  
+
   // Use the base mutation hook
   const { mutate, loading, error, reset } = useSupabaseMutation<DiaryEntry>({
     table: 'diary_entries',
     type: 'INSERT',
-    returning: 'representation'
+    returning: 'representation',
   });
-  
+
   /**
    * Create a new diary entry in both Supabase and WatermelonDB
    */
@@ -47,11 +47,11 @@ export function useCreateDiaryEntry() {
     if (!user) {
       throw new Error('User must be authenticated to create a diary entry');
     }
-    
-    // Convert metrics object to string for storage if needed
-    const metricsJson = data.metrics ? JSON.stringify(data.metrics) : undefined;
-    const tagsJson = data.tags ? JSON.stringify(data.tags) : undefined;
-    
+
+    // Convert metrics object to string for storage if needed - These are unused now
+    // const metricsJson = data.metrics ? JSON.stringify(data.metrics) : undefined;
+    // const tagsJson = data.tags ? JSON.stringify(data.tags) : undefined;
+
     // Prepare the entry data with user ID
     const entryData: Omit<DiaryEntry, 'id' | 'created_at'> = {
       plant_id: data.plant_id,
@@ -63,12 +63,12 @@ export function useCreateDiaryEntry() {
       image_url: data.image_url,
       metrics: data.metrics,
       is_public: data.is_public || false,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
-    
+
     // Create in Supabase
     const result = await mutate(entryData);
-    
+
     // If successful and we have a database instance, also create locally
     if (result.data && database.database) {
       try {
@@ -87,7 +87,7 @@ export function useCreateDiaryEntry() {
               metrics: result.data!.metrics,
               is_public: result.data!.is_public,
               created_at: result.data!.created_at,
-              updated_at: result.data!.updated_at
+              updated_at: result.data!.updated_at,
             });
           });
         });
@@ -95,14 +95,14 @@ export function useCreateDiaryEntry() {
         console.error('Error creating diary entry in local database:', e);
       }
     }
-    
+
     return result;
   };
-  
+
   return {
     createDiaryEntry,
     loading,
     error,
-    reset
+    reset,
   };
 }

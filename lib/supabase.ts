@@ -1,9 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
 import * as aesjs from 'aes-js';
-import 'react-native-get-random-values';
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+import 'react-native-get-random-values';
 
 // As Expo's SecureStore does not support values larger than 2048
 // bytes, an AES-256 key is generated and stored in SecureStore, while
@@ -26,7 +26,10 @@ class LargeSecureStore {
       return encryptionKeyHex;
     }
 
-    const cipher = new aesjs.ModeOfOperation.ctr(aesjs.utils.hex.toBytes(encryptionKeyHex), new aesjs.Counter(1));
+    const cipher = new aesjs.ModeOfOperation.ctr(
+      aesjs.utils.hex.toBytes(encryptionKeyHex),
+      new aesjs.Counter(1)
+    );
     const decryptedBytes = cipher.decrypt(aesjs.utils.hex.toBytes(value));
 
     return aesjs.utils.utf8.fromBytes(decryptedBytes);
@@ -34,7 +37,9 @@ class LargeSecureStore {
 
   async getItem(key: string) {
     const encrypted = await AsyncStorage.getItem(key);
-    if (!encrypted) { return encrypted; }
+    if (!encrypted) {
+      return encrypted;
+    }
 
     return await this._decrypt(key, encrypted);
   }
@@ -76,11 +81,8 @@ export default supabase;
 export async function initializeDatabase() {
   try {
     // Check if profiles table exists
-    const { error: profilesError } = await supabase
-      .from('profiles')
-      .select('id')
-      .limit(1);
-      
+    const { error: profilesError } = await supabase.from('profiles').select('id').limit(1);
+
     // If profiles table doesn't exist, create it
     if (profilesError && profilesError.code === 'PGRST104') {
       console.log('Creating profiles table...');

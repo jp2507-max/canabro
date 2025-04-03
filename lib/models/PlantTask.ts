@@ -1,6 +1,7 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, relation, writer } from '@nozbe/watermelondb/decorators'; // Import writer
 import { Associations } from '@nozbe/watermelondb/Model';
+import { date, readonly, text, relation, writer } from '@nozbe/watermelondb/decorators'; // Import writer, field is unused
+
 import { Plant } from './Plant';
 
 export class PlantTask extends Model {

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
 import { PostgrestError } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
+
 import supabase from '../../supabase';
 import { ApiResponse } from '../../types';
 
@@ -9,22 +10,22 @@ import { ApiResponse } from '../../types';
 interface UseSupabaseItemOptions<T> {
   // The table to query
   table: string;
-  
+
   // The column to match (usually 'id')
   matchColumn: string;
-  
+
   // The value to match
   matchValue: string | null;
-  
+
   // Optional column selection
   select?: string;
-  
+
   // Whether to fetch on mount
   fetchOnMount?: boolean;
-  
+
   // Optional callback after successful fetch
   onSuccess?: (data: T) => void;
-  
+
   // Optional callback after error
   onError?: (error: PostgrestError) => void;
 }
@@ -57,31 +58,31 @@ export function useSupabaseItem<T>(options: UseSupabaseItemOptions<T>) {
       if (error) throw error;
 
       setData(data as T);
-      
+
       if (options.onSuccess) {
         options.onSuccess(data as T);
       }
 
-      return { 
-        data: data as T, 
-        error: null, 
-        status: 200 
+      return {
+        data: data as T,
+        error: null,
+        status: 200,
       };
     } catch (err) {
       const postgrestError = err as PostgrestError;
       setError(postgrestError);
-      
+
       if (options.onError) {
         options.onError(postgrestError);
       }
-      
+
       // If not found, return 404 status
       const status = postgrestError.code === 'PGRST116' ? 404 : 500;
-      
-      return { 
-        data: null, 
-        error: postgrestError, 
-        status 
+
+      return {
+        data: null,
+        error: postgrestError,
+        status,
       };
     } finally {
       setLoading(false);
@@ -99,6 +100,6 @@ export function useSupabaseItem<T>(options: UseSupabaseItemOptions<T>) {
     data,
     loading,
     error,
-    refetch: fetchItem
+    refetch: fetchItem,
   };
 }

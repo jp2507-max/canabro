@@ -14,7 +14,7 @@ export enum DiaryEntryType {
   TRANSPLANT = 'transplant',
   PROBLEM = 'problem',
   HARVEST = 'harvest',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 /**

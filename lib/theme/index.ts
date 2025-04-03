@@ -1,6 +1,6 @@
 /**
  * CanaBro Theme Configuration
- * 
+ *
  * This file provides centralized theme tokens to maintain a consistent
  * design language across the entire application.
  */
@@ -76,7 +76,7 @@ export interface Theme {
   };
   spacing: {
     '0': number;
-    'px': number;
+    px: number;
     '0.5': number;
     '1': number;
     '1.5': number;
@@ -199,7 +199,7 @@ export const theme: Theme = {
   colors: {
     // Primary palette - greens
     primary: {
-      50: '#f0fdf4',  // Very light mint - backgrounds
+      50: '#f0fdf4', // Very light mint - backgrounds
       100: '#dcfce7', // Light mint - secondary backgrounds
       200: '#bbf7d0', // Light green - highlighted sections
       300: '#86efac', // Medium green
@@ -210,10 +210,10 @@ export const theme: Theme = {
       800: '#065f46', // Very dark green
       900: '#064e3b', // Almost black green
     },
-    
+
     // Neutral palette - grays
     neutral: {
-      50: '#fafafa',  // Almost white
+      50: '#fafafa', // Almost white
       100: '#f5f5f5', // Very light gray
       200: '#e5e5e5', // Light gray
       300: '#d4d4d4', // Medium light gray
@@ -224,24 +224,24 @@ export const theme: Theme = {
       800: '#262626', // Almost black
       900: '#171717', // Black
     },
-    
+
     // Status colors
     status: {
       success: '#22c55e', // Success green
       warning: '#f59e0b', // Warning yellow/orange
-      danger: '#ef4444',  // Error/danger red
-      info: '#3b82f6',    // Info blue
+      danger: '#ef4444', // Error/danger red
+      info: '#3b82f6', // Info blue
     },
-    
+
     // Special colors for specific features
     special: {
       watering: '#3b82f6', // Blue for watering
-      feeding: '#8b5cf6',  // Purple for feeding
+      feeding: '#8b5cf6', // Purple for feeding
       harvesting: '#f59e0b', // Orange/yellow for harvesting
     },
     background: '#ffffff',
   },
-  
+
   // Typography - consistent text styling
   typography: {
     fontFamily: {
@@ -271,11 +271,11 @@ export const theme: Theme = {
       bold: 'bold',
     },
   },
-  
+
   // Spacing - standardized space values
   spacing: {
     '0': 0,
-    'px': 1,
+    px: 1,
     '0.5': 2,
     '1': 4,
     '1.5': 6,
@@ -310,7 +310,7 @@ export const theme: Theme = {
     '80': 320,
     '96': 384,
   },
-  
+
   // Border Radius - consistent corner rounding
   borderRadius: {
     none: 0,
@@ -322,7 +322,7 @@ export const theme: Theme = {
     '3xl': 24,
     full: 9999,
   },
-  
+
   // Shadows - consistent elevation
   shadows: {
     none: {
@@ -354,7 +354,7 @@ export const theme: Theme = {
       elevation: 3,
     },
   },
-  
+
   // Component-specific style tokens
   components: {
     button: {

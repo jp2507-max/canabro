@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { ScreenContent } from 'components/ScreenContent';
 import { StatusBar } from 'expo-status-bar';

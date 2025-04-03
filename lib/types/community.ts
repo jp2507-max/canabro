@@ -82,7 +82,7 @@ export enum ActivityType {
   FOLLOW = 'follow',
   PLANT_UPDATE = 'plant_update',
   DIARY_ENTRY = 'diary_entry',
-  ACHIEVEMENT = 'achievement'
+  ACHIEVEMENT = 'achievement',
 }
 
 /**

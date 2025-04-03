@@ -1,20 +1,20 @@
+import { useDatabase } from '../../contexts/DatabaseProvider';
 import { DiaryEntry } from '../../types';
 import { useSupabaseMutation } from '../supabase';
-import { useDatabase } from '../../contexts/DatabaseProvider';
 
 /**
  * Hook for deleting a diary entry
  */
 export function useDeleteDiaryEntry() {
   const database = useDatabase();
-  
+
   // Use the base mutation hook
   const { mutate, loading, error, reset } = useSupabaseMutation<DiaryEntry>({
     table: 'diary_entries',
     type: 'DELETE',
-    returning: 'representation'
+    returning: 'representation',
   });
-  
+
   /**
    * Delete a diary entry from both Supabase and WatermelonDB
    */
@@ -22,10 +22,10 @@ export function useDeleteDiaryEntry() {
     if (!entryId) {
       throw new Error('Diary entry ID is required');
     }
-    
+
     // Delete from Supabase
     const result = await mutate(entryId, 'id');
-    
+
     // If successful and we have a database instance, also delete locally
     if (result.data && database.database) {
       try {
@@ -38,14 +38,14 @@ export function useDeleteDiaryEntry() {
         console.error('Error deleting diary entry in local database:', e);
       }
     }
-    
+
     return result;
   };
-  
+
   return {
     deleteDiaryEntry,
     loading,
     error,
-    reset
+    reset,
   };
 }

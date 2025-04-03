@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Alert, useWindowDimensions, Platform } from 'react-native';
+import { AntDesign, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { AntDesign, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
-import ThemedView from '../ui/ThemedView';
-import ThemedText from '../ui/ThemedText';
 import { useTheme } from '../../lib/contexts/ThemeContext';
+import ThemedText from '../ui/ThemedText';
+import ThemedView from '../ui/ThemedView';
 
 // Define the types based on expo-camera documentation
 type CameraType = 'front' | 'back';
@@ -23,7 +23,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
   const [cameraType, setCameraType] = useState<CameraType>('back');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const cameraRef = useRef<any>(null);
-  const { width } = useWindowDimensions();
+  // const { width } = useWindowDimensions(); // width is unused
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -32,16 +32,16 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
   }, [permission, requestPermission]);
 
   const handleCameraTypeToggle = () => {
-    setCameraType(prevType => prevType === 'back' ? 'front' : 'back');
+    setCameraType((prevType) => (prevType === 'back' ? 'front' : 'back'));
   };
 
   const handleFlashToggle = () => {
-    setFlashMode(prevMode => prevMode === 'off' ? 'on' : 'off');
+    setFlashMode((prevMode) => (prevMode === 'off' ? 'on' : 'off'));
   };
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
-    
+
     try {
       const result = await cameraRef.current.takePictureAsync();
       if (result && result.uri) {
@@ -70,7 +70,10 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
 
   if (!permission) {
     return (
-      <ThemedView className="flex-1 items-center justify-center" lightClassName="bg-white" darkClassName="bg-neutral-900">
+      <ThemedView
+        className="flex-1 items-center justify-center"
+        lightClassName="bg-white"
+        darkClassName="bg-neutral-900">
         <ThemedText className="text-lg">Requesting camera permission...</ThemedText>
       </ThemedView>
     );
@@ -78,19 +81,25 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
 
   if (!permission.granted) {
     return (
-      <ThemedView className="flex-1 items-center justify-center" lightClassName="bg-white" darkClassName="bg-neutral-900">
-        <ThemedText className="text-lg mb-4">Camera permission is required</ThemedText>
-        <TouchableOpacity 
+      <ThemedView
+        className="flex-1 items-center justify-center"
+        lightClassName="bg-white"
+        darkClassName="bg-neutral-900">
+        <ThemedText className="mb-4 text-lg">Camera permission is required</ThemedText>
+        <TouchableOpacity
           onPress={requestPermission}
-          style={{ backgroundColor: theme.colors.primary[500], padding: 12, borderRadius: 8, marginBottom: 12 }}
-        >
-          <ThemedText className="text-white font-medium">Grant Permission</ThemedText>
+          style={{
+            backgroundColor: theme.colors.primary[500],
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 12,
+          }}>
+          <ThemedText className="font-medium text-white">Grant Permission</ThemedText>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={onClose}
-          style={{ backgroundColor: theme.colors.neutral[500], padding: 12, borderRadius: 8 }}
-        >
-          <ThemedText className="text-white font-medium">Go Back</ThemedText>
+          style={{ backgroundColor: theme.colors.neutral[500], padding: 12, borderRadius: 8 }}>
+          <ThemedText className="font-medium text-white">Go Back</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -108,41 +117,38 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
           onMountError={(error) => {
             console.error('Camera mount error:', error);
             Alert.alert('Error', 'Failed to initialize camera');
-          }}
-        >
+          }}>
           <View style={styles.cameraContent}>
             {/* Top controls */}
-            <ThemedView 
-              className="flex-row justify-between p-4 absolute top-0 left-0 right-0" 
-              lightClassName="bg-black/20" 
-              darkClassName="bg-black/40"
-            >
+            <ThemedView
+              className="absolute left-0 right-0 top-0 flex-row justify-between p-4"
+              lightClassName="bg-black/20"
+              darkClassName="bg-black/40">
               <TouchableOpacity onPress={onClose}>
                 <AntDesign name="close" size={24} color="white" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleFlashToggle}>
-                <Ionicons 
-                  name={flashMode === 'on' ? "flash" : "flash-off"} 
-                  size={24} 
-                  color="white" 
+                <Ionicons
+                  name={flashMode === 'on' ? 'flash' : 'flash-off'}
+                  size={24}
+                  color="white"
                 />
               </TouchableOpacity>
             </ThemedView>
 
             {/* Bottom controls */}
-            <ThemedView 
-              className="flex-row justify-between items-center px-8 py-6 absolute bottom-0 left-0 right-0" 
-              lightClassName="bg-black/20" 
-              darkClassName="bg-black/40"
-            >
+            <ThemedView
+              className="absolute bottom-0 left-0 right-0 flex-row items-center justify-between px-8 py-6"
+              lightClassName="bg-black/20"
+              darkClassName="bg-black/40">
               <TouchableOpacity onPress={pickImage}>
                 <Ionicons name="image-outline" size={30} color="white" />
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
                 <View style={styles.captureButtonInner} />
               </TouchableOpacity>
-              
+
               <TouchableOpacity onPress={handleCameraTypeToggle}>
                 <MaterialCommunityIcons name="camera-flip-outline" size={30} color="white" />
               </TouchableOpacity>

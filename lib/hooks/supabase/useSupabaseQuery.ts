@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
 import { PostgrestError } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
+
 import supabase from '../../supabase';
 import { ApiResponse, PaginationParams } from '../../types';
 
@@ -9,32 +10,32 @@ import { ApiResponse, PaginationParams } from '../../types';
 interface UseSupabaseQueryOptions<T> {
   // The table to query
   table: string;
-  
+
   // Optional column selection
   select?: string;
-  
+
   // Optional filter conditions
   filter?: {
     column: string;
     operator: string;
     value: any;
   }[];
-  
+
   // Optional ordering
   orderBy?: {
     column: string;
     ascending?: boolean;
   };
-  
+
   // Optional pagination
   pagination?: PaginationParams;
-  
+
   // Whether to fetch on mount
   fetchOnMount?: boolean;
-  
+
   // Optional callback after successful fetch
   onSuccess?: (data: T[]) => void;
-  
+
   // Optional callback after error
   onError?: (error: PostgrestError) => void;
 }
@@ -54,23 +55,20 @@ export function useSupabaseQuery<T>(options: UseSupabaseQueryOptions<T>) {
 
     try {
       // Start building the query
-      let query = supabase
-        .from(options.table)
-        .select(options.select || '*', { count: 'exact' });
+      let query = supabase.from(options.table).select(options.select || '*', { count: 'exact' });
 
       // Apply filters if provided
       if (options.filter && options.filter.length > 0) {
-        options.filter.forEach(filter => {
+        options.filter.forEach((filter) => {
           query = query.filter(filter.column, filter.operator, filter.value);
         });
       }
 
       // Apply ordering if provided
       if (options.orderBy) {
-        query = query.order(
-          options.orderBy.column, 
-          { ascending: options.orderBy.ascending ?? true }
-        );
+        query = query.order(options.orderBy.column, {
+          ascending: options.orderBy.ascending ?? true,
+        });
       }
 
       // Apply pagination if provided
@@ -88,28 +86,28 @@ export function useSupabaseQuery<T>(options: UseSupabaseQueryOptions<T>) {
 
       setData(data as T[]);
       setCount(count);
-      
+
       if (options.onSuccess) {
         options.onSuccess(data as T[]);
       }
 
-      return { 
-        data: data as T[], 
-        error: null, 
-        status: 200 
+      return {
+        data: data as T[],
+        error: null,
+        status: 200,
       };
     } catch (err) {
       const postgrestError = err as PostgrestError;
       setError(postgrestError);
-      
+
       if (options.onError) {
         options.onError(postgrestError);
       }
-      
-      return { 
-        data: null, 
-        error: postgrestError, 
-        status: postgrestError.code === '23505' ? 409 : 500 
+
+      return {
+        data: null,
+        error: postgrestError,
+        status: postgrestError.code === '23505' ? 409 : 500,
       };
     } finally {
       setLoading(false);
@@ -127,7 +125,7 @@ export function useSupabaseQuery<T>(options: UseSupabaseQueryOptions<T>) {
     // We need to stringify these objects for dependency tracking
     JSON.stringify(options.filter),
     JSON.stringify(options.orderBy),
-    JSON.stringify(options.pagination)
+    JSON.stringify(options.pagination),
   ]);
 
   return {
@@ -135,6 +133,6 @@ export function useSupabaseQuery<T>(options: UseSupabaseQueryOptions<T>) {
     count,
     loading,
     error,
-    refetch: fetchData
+    refetch: fetchData,
   };
 }

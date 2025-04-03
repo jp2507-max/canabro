@@ -13,7 +13,7 @@ export enum GrowthStage {
   FLOWERING = 'flowering',
   LATE_FLOWERING = 'late_flowering',
   HARVEST = 'harvest',
-  CURING = 'curing'
+  CURING = 'curing',
 }
 
 /**
@@ -73,7 +73,7 @@ export enum ProblemCategory {
   ENVIRONMENTAL = 'environmental',
   WATERING = 'watering',
   LIGHT = 'light',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 /**

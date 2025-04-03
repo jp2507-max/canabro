@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
-  Text,
+  // Text, // Prefer ThemedText
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
+  FlatList, // Use FlatList for suggestions
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+
+import ThemedText from './ui/ThemedText'; // Import ThemedText
+import ThemedView from './ui/ThemedView'; // Import ThemedView
+import { useTheme } from '../lib/contexts/ThemeContext'; // Import useTheme
 import { searchStrainsByName, Strain } from '../lib/data/strains';
 
 interface StrainAutocompleteProps {
@@ -25,6 +30,7 @@ export function StrainAutocomplete({
   placeholder = 'Search for a strain...',
   className = '',
 }: StrainAutocompleteProps) {
+  const { theme, isDarkMode } = useTheme(); // Get theme context
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<Strain[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +47,7 @@ export function StrainAutocomplete({
       if (query.length > 0) {
         setIsLoading(true);
         // Simulate network delay for a more realistic experience
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise((resolve) => setTimeout(resolve, 150));
         const results = searchStrainsByName(query);
         setSuggestions(results);
         setIsLoading(false);
@@ -68,42 +74,60 @@ export function StrainAutocomplete({
 
   const renderStrainItem = ({ item }: { item: Strain }) => {
     // Determine the icon based on strain type
-    let icon;
-    let iconColor;
-    
+    // Determine the icon based on strain type
+    let iconName: keyof typeof Ionicons.glyphMap = 'leaf-outline'; // Default icon
+    let iconColor = isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]; // Default color
+
     switch (item.type) {
       case 'indica':
-        icon = 'leaf';
-        iconColor = '#6B8E23'; // Olive green for indica
+        iconName = 'moon-outline';
+        iconColor = theme.colors.special.feeding; // Use theme purple for indica
         break;
       case 'sativa':
-        icon = 'leaf';
-        iconColor = '#228B22'; // Forest green for sativa
+        iconName = 'sunny-outline';
+        iconColor = theme.colors.status.warning; // Use theme orange for sativa
         break;
       case 'hybrid':
-        icon = 'leaf';
-        iconColor = '#3CB371'; // Medium sea green for hybrid
+        iconName = 'leaf-outline';
+        iconColor = theme.colors.primary[500]; // Use theme green for hybrid
         break;
-      default:
-        icon = 'leaf';
-        iconColor = '#2E8B57'; // Sea green default
     }
 
     return (
       <TouchableOpacity
         key={item.id}
-        className="p-3 border-b border-gray-200 flex-row items-center"
+        className="flex-row items-center border-b p-3 active:opacity-70"
+        style={{ borderColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200] }} // Theme border
         onPress={() => handleSelectStrain(item)}
-      >
-        <View className="mr-3">
-          <Ionicons name={icon as any} size={20} color={iconColor} />
-        </View>
+        accessibilityLabel={`Select strain: ${item.name}, Type: ${item.type}`}
+        accessibilityRole="button">
+        <ThemedView
+          className="mr-3 rounded-full p-1"
+          lightClassName="bg-neutral-100"
+          darkClassName="bg-neutral-700">
+          <Ionicons name={iconName} size={20} color={iconColor} />
+        </ThemedView>
         <View className="flex-1">
-          <Text className="text-base font-medium">{item.name}</Text>
-          <View className="flex-row items-center">
-            <Text className="text-xs text-gray-500 capitalize">{item.type}</Text>
+          <ThemedText
+            className="text-base font-medium"
+            lightClassName="text-neutral-800"
+            darkClassName="text-neutral-100">
+            {item.name}
+          </ThemedText>
+          <View className="mt-0.5 flex-row items-center">
+            <ThemedText
+              className="text-xs capitalize"
+              lightClassName="text-neutral-500"
+              darkClassName="text-neutral-400">
+              {item.type}
+            </ThemedText>
             {item.thcContent && (
-              <Text className="text-xs text-gray-500 ml-2">THC: {item.thcContent}%</Text>
+              <ThemedText
+                className="ml-2 text-xs"
+                lightClassName="text-neutral-500"
+                darkClassName="text-neutral-400">
+                THC: {item.thcContent}%
+              </ThemedText>
             )}
           </View>
         </View>
@@ -112,14 +136,27 @@ export function StrainAutocomplete({
   };
 
   return (
-    <View className={`relative ${className}`}>
-      <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2 bg-white">
-        <Ionicons name="search" size={20} color="#666" className="mr-2" />
+    <ThemedView className={`relative ${className}`}>
+      {/* Input Container */}
+      <ThemedView
+        className="flex-row items-center rounded-lg border px-3 py-2"
+        lightClassName="bg-white border-neutral-300"
+        darkClassName="bg-neutral-800 border-neutral-600">
+        {/* Wrap Icon in View for styling */}
+        <ThemedView className="mr-2">
+          <Ionicons
+            name="search"
+            size={20}
+            color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]}
+          />
+        </ThemedView>
         <TextInput
-          className="flex-1 text-base h-10"
+          className="h-10 flex-1 text-base"
+          style={{ color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800] }} // Theme text color
           value={query}
           onChangeText={handleInputChange}
           placeholder={placeholder}
+          placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]} // Theme placeholder
           onFocus={() => query.length > 0 && setShowSuggestions(true)}
           onBlur={() => {
             // Delay hiding suggestions to allow for selection
@@ -134,29 +171,43 @@ export function StrainAutocomplete({
               setSuggestions([]);
               setShowSuggestions(false);
             }}
-          >
-            <Ionicons name="close-circle" size={20} color="#666" />
+            accessibilityLabel="Clear search input">
+            <Ionicons
+              name="close-circle"
+              size={20}
+              color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+            />
           </TouchableOpacity>
         )}
-      </View>
+      </ThemedView>
 
+      {/* Suggestions List */}
       {showSuggestions && (
-        <View className="absolute top-14 left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-md z-10 max-h-64">
+        <ThemedView
+          className="absolute left-0 right-0 top-full z-10 mt-1.5 max-h-64 overflow-hidden rounded-lg border shadow-lg" // Adjusted position and added overflow
+          lightClassName="bg-white border-neutral-300"
+          darkClassName="bg-neutral-800 border-neutral-600">
           {isLoading ? (
-            <View className="p-4 items-center">
-              <ActivityIndicator size="small" color="#4CAF50" />
-            </View>
+            <ThemedView className="items-center p-4">
+              <ActivityIndicator size="small" color={theme.colors.primary[500]} />
+            </ThemedView>
           ) : suggestions.length > 0 ? (
-            <View>
-              {suggestions.map((item) => renderStrainItem({ item }))}
-            </View>
+            // Use FlatList for potentially long suggestion lists
+            <FlatList
+              data={suggestions}
+              renderItem={renderStrainItem}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled" // Allow tapping items without dismissing keyboard
+            />
           ) : (
-            <View className="p-4 items-center">
-              <Text className="text-gray-500">No strains found</Text>
-            </View>
+            <ThemedView className="items-center p-4">
+              <ThemedText lightClassName="text-neutral-500" darkClassName="text-neutral-400">
+                No strains found
+              </ThemedText>
+            </ThemedView>
           )}
-        </View>
+        </ThemedView>
       )}
-    </View>
+    </ThemedView>
   );
 }

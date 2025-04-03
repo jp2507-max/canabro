@@ -1,17 +1,32 @@
-import React, { useState, useRef } from 'react';
-import { View, Image, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator, Button, Alert } from 'react-native'; // Added Button, Alert
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming, Easing } from 'react-native-reanimated';
-import { resetDatabase } from '../../lib/database/database'; // Added resetDatabase import
 import { AntDesign, Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import React, { useState } from 'react';
+import {
+  View,
+  Image,
+  StyleSheet,
+  ScrollView,
+  useWindowDimensions,
+  TouchableOpacity,
+  Button,
+  Alert,
+} from 'react-native'; // Added Button, Alert
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import ThemedView from '../../components/ui/ThemedView';
-import ThemedText from '../../components/ui/ThemedText';
 import CameraCapture from '../../components/diagnosis/CameraCapture';
-import { useTheme } from '../../lib/contexts/ThemeContext';
-import { analyzeImage } from '../../lib/services/diagnosis-service';
+import ThemedText from '../../components/ui/ThemedText';
+import ThemedView from '../../components/ui/ThemedView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
+import { useTheme } from '../../lib/contexts/ThemeContext';
+import { resetDatabase } from '../../lib/database/database'; // Added resetDatabase import
+import { analyzeImage } from '../../lib/services/diagnosis-service';
 import { DiagnosisResult } from '../../lib/types/diagnosis';
 
 export default function DiagnosisScreen() {
@@ -31,16 +46,13 @@ export default function DiagnosisScreen() {
   // Set up animated styles
   const companionAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { translateY: companionY.value },
-        { scale: companionScale.value }
-      ]
+      transform: [{ translateY: companionY.value }, { scale: companionScale.value }],
     };
   });
 
   const loadingAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ rotateZ: `${loadingRotation.value}deg` }]
+      transform: [{ rotateZ: `${loadingRotation.value}deg` }],
     };
   });
 
@@ -82,10 +94,10 @@ export default function DiagnosisScreen() {
 
   const handleAnalyzeImage = async (imageUri: string) => {
     if (!user?.id) return;
-    
+
     setIsAnalyzing(true);
     setDiagnosisResult(null);
-    
+
     try {
       const result = await analyzeImage(imageUri, user.id);
       setDiagnosisResult(result);
@@ -102,34 +114,46 @@ export default function DiagnosisScreen() {
   };
 
   if (cameraMode) {
-    return <CameraCapture onImageCaptured={handleImageCaptured} onClose={() => setCameraMode(false)} />;
+    return (
+      <CameraCapture onImageCaptured={handleImageCaptured} onClose={() => setCameraMode(false)} />
+    );
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       {/* --- TEMPORARY RESET BUTTON --- */}
       <View style={{ padding: 10 }}>
-        <Button title="!!! RESET DATABASE !!!" color="red" onPress={async () => {
-          Alert.alert(
-            "Confirm Reset",
-            "Are you sure you want to delete the local database? This cannot be undone.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { text: "Reset", style: "destructive", onPress: async () => {
-                  console.log('Attempting DB reset...');
-                  const success = await resetDatabase();
-                  console.log('Reset success:', success);
-                  Alert.alert('Reset Attempted', `Database reset ${success ? 'successful' : 'failed'}. Please fully restart the app now.`);
-                }
-              }
-            ]
-          );
-        }} />
+        <Button
+          title="!!! RESET DATABASE !!!"
+          color="red"
+          onPress={async () => {
+            Alert.alert(
+              'Confirm Reset',
+              'Are you sure you want to delete the local database? This cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Reset',
+                  style: 'destructive',
+                  onPress: async () => {
+                    console.log('Attempting DB reset...');
+                    const success = await resetDatabase();
+                    console.log('Reset success:', success);
+                    Alert.alert(
+                      'Reset Attempted',
+                      `Database reset ${success ? 'successful' : 'failed'}. Please fully restart the app now.`
+                    );
+                  },
+                },
+              ]
+            );
+          }}
+        />
       </View>
       {/* --- END TEMPORARY BUTTON --- */}
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         {!image ? (
-          <ThemedView className="flex-1 justify-center items-center p-6">
+          <ThemedView className="flex-1 items-center justify-center p-6">
             <Animated.View style={[companionAnimatedStyle, { marginBottom: 20 }]}>
               <Image
                 source={require('../../assets/icon.png')}
@@ -137,23 +161,21 @@ export default function DiagnosisScreen() {
                 resizeMode="contain"
               />
             </Animated.View>
-            
-            <ThemedText 
-              className="text-2xl font-bold mb-2 text-center"
+
+            <ThemedText
+              className="mb-2 text-center text-2xl font-bold"
               lightClassName="text-emerald-800"
-              darkClassName="text-emerald-400"
-            >
+              darkClassName="text-emerald-400">
               Plant Doctor
             </ThemedText>
-            
-            <ThemedText 
-              className="text-base mb-8 text-center"
+
+            <ThemedText
+              className="mb-8 text-center text-base"
               lightClassName="text-gray-700"
-              darkClassName="text-gray-300"
-            >
+              darkClassName="text-gray-300">
               Take a photo of your plant to diagnose any problems it may have
             </ThemedText>
-            
+
             <TouchableOpacity
               onPress={handleCameraToggle}
               style={{
@@ -165,12 +187,9 @@ export default function DiagnosisScreen() {
                 justifyContent: 'center',
                 flexDirection: 'row',
                 minWidth: width * 0.7,
-              }}
-            >
+              }}>
               <AntDesign name="camera" size={20} color="white" style={{ marginRight: 10 }} />
-              <ThemedText className="text-white font-semibold text-base">
-                Take a Photo
-              </ThemedText>
+              <ThemedText className="text-base font-semibold text-white">Take a Photo</ThemedText>
             </TouchableOpacity>
           </ThemedView>
         ) : (
@@ -182,7 +201,7 @@ export default function DiagnosisScreen() {
                 style={{ width: '100%', height: '100%' }}
                 resizeMode="cover"
               />
-              
+
               {/* Controls overlay */}
               <View style={styles.imageControls}>
                 <TouchableOpacity onPress={resetImage}>
@@ -192,72 +211,103 @@ export default function DiagnosisScreen() {
                   <AntDesign name="camera" size={24} color="white" />
                 </TouchableOpacity>
               </View>
-              
+
               {/* Analysis overlay */}
               {isAnalyzing && (
                 <BlurView intensity={40} style={styles.analysisOverlay}>
-                  <ThemedView className="bg-white/90 dark:bg-neutral-800/90 px-6 py-8 rounded-2xl items-center">
+                  <ThemedView className="items-center rounded-2xl bg-white/90 px-6 py-8 dark:bg-neutral-800/90">
                     <Animated.View style={loadingAnimatedStyle}>
                       <AntDesign name="loading1" size={36} color={theme.colors.primary[500]} />
                     </Animated.View>
-                    <ThemedText className="text-lg font-medium mt-4">
+                    <ThemedText className="mt-4 text-lg font-medium">
                       Analyzing your plant...
                     </ThemedText>
-                    <ThemedText className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    <ThemedText className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
                       Our AI is looking for signs of nutrient deficiencies, pests, and diseases
                     </ThemedText>
                   </ThemedView>
                 </BlurView>
               )}
             </View>
-            
+
             {/* Diagnosis Results */}
             {diagnosisResult && (
               <ThemedView className="p-5">
-                <ThemedText className="text-xl font-bold mb-3" lightClassName="text-emerald-800" darkClassName="text-emerald-400">
+                <ThemedText
+                  className="mb-3 text-xl font-bold"
+                  lightClassName="text-emerald-800"
+                  darkClassName="text-emerald-400">
                   Diagnosis Results
                 </ThemedText>
-                
-                <ThemedView className="rounded-xl p-4 mb-4" lightClassName="bg-emerald-50" darkClassName="bg-emerald-950/30">
-                  <ThemedText className="text-lg font-bold mb-1" lightClassName="text-emerald-800" darkClassName="text-emerald-400">
+
+                <ThemedView
+                  className="mb-4 rounded-xl p-4"
+                  lightClassName="bg-emerald-50"
+                  darkClassName="bg-emerald-950/30">
+                  <ThemedText
+                    className="mb-1 text-lg font-bold"
+                    lightClassName="text-emerald-800"
+                    darkClassName="text-emerald-400">
                     {diagnosisResult.details?.name || 'Unknown Issue'}
                   </ThemedText>
-                  
-                  <View className="flex-row items-center mb-3">
-                    <ThemedText className="text-sm mr-2" lightClassName="text-emerald-700" darkClassName="text-emerald-300">
+
+                  <View className="mb-3 flex-row items-center">
+                    <ThemedText
+                      className="mr-2 text-sm"
+                      lightClassName="text-emerald-700"
+                      darkClassName="text-emerald-300">
                       Confidence:
                     </ThemedText>
-                    <View style={{ 
-                      height: 8, 
-                      width: 100, 
-                      backgroundColor: theme.colors.neutral[200],
-                      borderRadius: 4,
-                      overflow: 'hidden'
-                    }}>
-                      <View style={{ 
-                        height: '100%', 
-                        width: `${diagnosisResult.confidence * 100}%`,
-                        backgroundColor: theme.colors.primary[500],
-                        borderRadius: 4
-                      }} />
+                    <View
+                      style={{
+                        height: 8,
+                        width: 100,
+                        backgroundColor: theme.colors.neutral[200],
+                        borderRadius: 4,
+                        overflow: 'hidden',
+                      }}>
+                      <View
+                        style={{
+                          height: '100%',
+                          width: `${diagnosisResult.confidence * 100}%`,
+                          backgroundColor: theme.colors.primary[500],
+                          borderRadius: 4,
+                        }}
+                      />
                     </View>
-                    <ThemedText className="text-sm ml-2" lightClassName="text-neutral-500" darkClassName="text-neutral-400">
+                    <ThemedText
+                      className="ml-2 text-sm"
+                      lightClassName="text-neutral-500"
+                      darkClassName="text-neutral-400">
                       {Math.round(diagnosisResult.confidence * 100)}%
                     </ThemedText>
                   </View>
-                  
-                  <ThemedText className="mb-4" lightClassName="text-neutral-700" darkClassName="text-neutral-300">
+
+                  <ThemedText
+                    className="mb-4"
+                    lightClassName="text-neutral-700"
+                    darkClassName="text-neutral-300">
                     {diagnosisResult.details?.description || 'No description available'}
                   </ThemedText>
-                  
-                  <ThemedText className="font-medium mb-2" lightClassName="text-emerald-800" darkClassName="text-emerald-400">
+
+                  <ThemedText
+                    className="mb-2 font-medium"
+                    lightClassName="text-emerald-800"
+                    darkClassName="text-emerald-400">
                     Recommendations:
                   </ThemedText>
-                  
+
                   {diagnosisResult.details?.recommendations.map((rec, index) => (
-                    <View key={index} className="flex-row items-start mb-2">
-                      <Feather name="check-circle" size={16} color={theme.colors.primary[500]} style={{ marginTop: 2, marginRight: 8 }} />
-                      <ThemedText lightClassName="text-neutral-700" darkClassName="text-neutral-300">
+                    <View key={index} className="mb-2 flex-row items-start">
+                      <Feather
+                        name="check-circle"
+                        size={16}
+                        color={theme.colors.primary[500]}
+                        style={{ marginTop: 2, marginRight: 8 }}
+                      />
+                      <ThemedText
+                        lightClassName="text-neutral-700"
+                        darkClassName="text-neutral-300">
                         {rec}
                       </ThemedText>
                     </View>

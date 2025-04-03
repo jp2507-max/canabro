@@ -1,6 +1,7 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, relation } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
+import { date, readonly, text, relation } from '@nozbe/watermelondb/decorators'; // field is unused
+
 import { GrowJournal } from './GrowJournal';
 
 export class JournalEntry extends Model {

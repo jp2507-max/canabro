@@ -1,7 +1,8 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
 import { GrowthStage } from '../types/plant';
 
 // Notification types
@@ -19,7 +20,7 @@ export async function initializeNotifications() {
   if (Platform.OS === 'android') {
     await setupNotificationChannels();
   }
-  
+
   return await registerForPushNotificationsAsync();
 }
 
@@ -33,7 +34,7 @@ export async function setupNotificationChannels() {
       lightColor: '#2196F3',
       description: 'Notifications about watering and feeding your plants',
     });
-    
+
     await Notifications.setNotificationChannelAsync('growth-stages', {
       name: 'Growth Stages',
       importance: Notifications.AndroidImportance.HIGH,
@@ -41,7 +42,7 @@ export async function setupNotificationChannels() {
       lightColor: '#4CAF50',
       description: 'Notifications about plant growth stage transitions',
     });
-    
+
     await Notifications.setNotificationChannelAsync('harvest', {
       name: 'Harvest',
       importance: Notifications.AndroidImportance.HIGH,
@@ -49,7 +50,7 @@ export async function setupNotificationChannels() {
       lightColor: '#FF9800',
       description: 'Notifications about plant harvest time',
     });
-    
+
     await Notifications.setNotificationChannelAsync('task-reminders', {
       name: 'Task Reminders',
       importance: Notifications.AndroidImportance.HIGH,
@@ -66,7 +67,7 @@ export const registerNotificationChannels = setupNotificationChannels;
 // Register for push notifications
 export async function registerForPushNotificationsAsync() {
   let token;
-  
+
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
@@ -79,31 +80,32 @@ export async function registerForPushNotificationsAsync() {
   if (Device.isDevice) {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    
+
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
-    
+
     if (finalStatus !== 'granted') {
       console.log('Failed to get push token for push notification!');
       return null;
     }
-    
+
     try {
       // Get the token that uniquely identifies this device
       // For development builds, we use the EAS project ID
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId || 'f04ff5d3-6a5d-4abf-8ac4-e471877b69e3';
-      
+      const projectId =
+        Constants.expoConfig?.extra?.eas?.projectId || 'f04ff5d3-6a5d-4abf-8ac4-e471877b69e3';
+
       if (!projectId) {
         console.error('No projectId found for push notifications');
         return null;
       }
-      
+
       token = await Notifications.getExpoPushTokenAsync({
-        projectId: projectId,
+        projectId,
       });
-      
+
       console.log('Push token:', token);
     } catch (error) {
       console.error('Error getting push token:', error);
@@ -169,7 +171,7 @@ export async function cancelAllNotifications() {
 export async function cancelPlantNotifications(plantId: string) {
   // Get all scheduled notifications
   const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-  
+
   // Filter notifications for this plant and cancel them
   for (const notification of scheduledNotifications) {
     if (notification.content.data?.plantId === plantId) {
@@ -179,10 +181,14 @@ export async function cancelPlantNotifications(plantId: string) {
 }
 
 // Schedule watering reminder
-export async function scheduleWateringReminder(plantId: string, plantName: string, daysFromNow: number = 3) {
+export async function scheduleWateringReminder(
+  plantId: string,
+  plantName: string,
+  daysFromNow: number = 3
+) {
   // Convert days to seconds
   const secondsFromNow = daysFromNow * 24 * 60 * 60;
-  
+
   return await scheduleNotification({
     title: ' Time to water your plant!',
     body: `${plantName} needs watering today.`,
@@ -193,10 +199,14 @@ export async function scheduleWateringReminder(plantId: string, plantName: strin
 }
 
 // Schedule feeding reminder
-export async function scheduleFeedingReminder(plantId: string, plantName: string, daysFromNow: number = 7) {
+export async function scheduleFeedingReminder(
+  plantId: string,
+  plantName: string,
+  daysFromNow: number = 7
+) {
   // Convert days to seconds
   const secondsFromNow = daysFromNow * 24 * 60 * 60;
-  
+
   return await scheduleNotification({
     title: ' Time to feed your plant!',
     body: `${plantName} needs nutrients today.`,
@@ -216,7 +226,7 @@ export async function scheduleGrowthStageNotification(
 ) {
   // Convert days to seconds
   const secondsFromNow = daysFromNow * 24 * 60 * 60;
-  
+
   return await scheduleNotification({
     title: ' Growth Stage Transition',
     body: `${plantName} is ready to transition from ${formatGrowthStage(currentStage)} to ${formatGrowthStage(nextStage)}.`,
@@ -227,21 +237,25 @@ export async function scheduleGrowthStageNotification(
 }
 
 // Schedule harvest notification
-export async function scheduleHarvestNotification(plantId: string, plantName: string, harvestDate: Date) {
+export async function scheduleHarvestNotification(
+  plantId: string,
+  plantName: string,
+  harvestDate: Date
+) {
   // Calculate days from now to harvest date
   const now = new Date();
   const diffTime = harvestDate.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   // If harvest date is in the past, don't schedule
   if (diffDays <= 0) {
     console.log('Harvest date is in the past, not scheduling notification');
     return null;
   }
-  
+
   // Convert days to seconds
   const secondsFromNow = diffDays * 24 * 60 * 60;
-  
+
   return await scheduleNotification({
     title: ' Harvest Time!',
     body: `${plantName} is ready for harvest today!`,
@@ -273,14 +287,14 @@ export async function scheduleTaskReminder({
     const now = new Date();
     const targetDate = new Date(dueDate);
     targetDate.setHours(9, 0, 0, 0); // Set to 9:00 AM
-    
+
     // If the due date is today and it's already past 9 AM, notify immediately
     if (targetDate.getTime() < now.getTime()) {
       targetDate.setTime(now.getTime() + 60); // Notify in 1 minute
     }
-    
+
     const secondsFromNow = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
-    
+
     // Get appropriate icon based on task type
     let icon = '🌱';
     switch (taskType) {
@@ -300,7 +314,7 @@ export async function scheduleTaskReminder({
         icon = '🧺';
         break;
     }
-    
+
     return await scheduleNotification({
       title: `${icon} ${taskTitle}`,
       body: `Time to ${taskType} your ${plantName}!`,
@@ -318,7 +332,7 @@ export async function scheduleTaskReminder({
 export async function cancelTaskReminder(taskId: string) {
   // Get all scheduled notifications
   const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-  
+
   // Filter notifications for this task and cancel them
   for (const notification of scheduledNotifications) {
     if (notification.content.data?.taskId === taskId) {
@@ -345,7 +359,7 @@ export async function rescheduleTaskReminder({
 }) {
   // Cancel existing reminder
   await cancelTaskReminder(taskId);
-  
+
   // Schedule new reminder
   return await scheduleTaskReminder({
     taskId,
@@ -379,13 +393,13 @@ export async function scheduleInitialPlantNotifications(
 
     // Schedule watering reminder (3 days from now)
     await scheduleWateringReminder(plantId, plantName, 3);
-    
+
     // Schedule feeding reminder (7 days from now)
     await scheduleFeedingReminder(plantId, plantName, 7);
-    
+
     // Schedule growth stage transitions based on current stage
     const currentDate = new Date();
-    
+
     switch (growthStage) {
       case GrowthStage.SEEDLING:
         // Schedule transition to vegetative stage in 14 days
@@ -397,7 +411,7 @@ export async function scheduleInitialPlantNotifications(
           14
         );
         break;
-        
+
       case GrowthStage.VEGETATIVE:
         // Schedule transition to flowering stage in 30 days
         await scheduleGrowthStageNotification(
@@ -408,19 +422,20 @@ export async function scheduleInitialPlantNotifications(
           30
         );
         break;
-        
-      case GrowthStage.FLOWERING:
+
+      case GrowthStage.FLOWERING: {
         // Schedule harvest notification in 60 days
         const harvestDate = new Date(currentDate);
         harvestDate.setDate(harvestDate.getDate() + 60);
         await scheduleHarvestNotification(plantId, plantName, harvestDate);
         break;
-        
+      }
+
       default:
         // No stage-specific notifications for other stages
         break;
     }
-    
+
     console.log(`All notifications scheduled for plant ${plantName}`);
   } catch (error) {
     console.error('Error scheduling initial plant notifications:', error);

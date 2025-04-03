@@ -1,4 +1,4 @@
-import { useAuth } from '../../contexts/AuthProvider';
+// import { useAuth } from '../../contexts/AuthProvider'; // useAuth is unused
 import { DiaryEntry, GrowJournal, PaginationParams } from '../../types';
 import { useSupabaseQuery, useSupabaseItem } from '../supabase';
 
@@ -8,10 +8,10 @@ import { useSupabaseQuery, useSupabaseItem } from '../supabase';
 interface UseGrowJournalOptions {
   // Optional pagination parameters
   pagination?: PaginationParams;
-  
+
   // Whether to fetch on mount
   fetchOnMount?: boolean;
-  
+
   // Whether to include entries
   includeEntries?: boolean;
 }
@@ -25,27 +25,29 @@ export function useGrowJournal(journalId: string | null, options: UseGrowJournal
     table: 'grow_journals',
     matchColumn: 'id',
     matchValue: journalId,
-    fetchOnMount: options.fetchOnMount
+    fetchOnMount: options.fetchOnMount,
   });
-  
+
   // Fetch the journal entries if requested
   const entriesQuery = useSupabaseQuery<DiaryEntry>({
     table: 'diary_entries',
-    filter: journalId ? [
-      {
-        column: 'journal_id',
-        operator: 'eq',
-        value: journalId
-      }
-    ] : [],
+    filter: journalId
+      ? [
+          {
+            column: 'journal_id',
+            operator: 'eq',
+            value: journalId,
+          },
+        ]
+      : [],
     orderBy: {
       column: 'date',
-      ascending: false
+      ascending: false,
     },
     pagination: options.pagination,
-    fetchOnMount: options.fetchOnMount && options.includeEntries
+    fetchOnMount: options.fetchOnMount && options.includeEntries,
   });
-  
+
   return {
     journal: journalQuery.data,
     entries: entriesQuery.data,
@@ -54,6 +56,6 @@ export function useGrowJournal(journalId: string | null, options: UseGrowJournal
     journalError: journalQuery.error,
     entriesError: entriesQuery.error,
     refetchJournal: journalQuery.refetch,
-    refetchEntries: entriesQuery.refetch
+    refetchEntries: entriesQuery.refetch,
   };
 }

@@ -1,6 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 interface PlantImageProps {
   imageUrl?: string | null;
@@ -9,17 +9,16 @@ interface PlantImageProps {
   iconColor?: string;
 }
 
-export const PlantImage = ({ 
-  imageUrl, 
-  size = 100, 
-  iconSize = 40, 
-  iconColor = '#9ca3af' 
+export const PlantImage = ({
+  imageUrl,
+  size = 100,
+  iconSize = 40,
+  iconColor = '#9ca3af',
 }: PlantImageProps) => {
   return (
-    <View 
-      className="bg-gray-100 rounded-lg overflow-hidden justify-center items-center"
-      style={{ width: size, height: size }}
-    >
+    <View
+      className="items-center justify-center overflow-hidden rounded-lg bg-gray-100"
+      style={{ width: size, height: size }}>
       <Ionicons name="leaf-outline" size={iconSize} color={iconColor} />
     </View>
   );

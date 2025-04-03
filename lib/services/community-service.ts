@@ -1,5 +1,5 @@
 import supabase from '../supabase';
-import { Post, Comment, Like } from '../types/community';
+import { Post, Comment } from '../types/community'; // Like is unused
 
 /**
  * Extended Comment interface with user information
@@ -26,7 +26,7 @@ export function adaptPostFromDB(dbPost: any): Post {
     comments_count: dbPost.comments_count || 0,
     is_public: dbPost.is_public,
     created_at: dbPost.created_at,
-    updated_at: dbPost.updated_at
+    updated_at: dbPost.updated_at,
   };
 }
 
@@ -36,7 +36,7 @@ export function adaptPostFromDB(dbPost: any): Post {
 export async function getPosts({
   page = 1,
   limit = 10,
-  userId = null
+  userId = null,
 }: {
   page?: number;
   limit?: number;
@@ -70,15 +70,15 @@ export async function getPosts({
         user: {
           id: post.user_id,
           username: profile.username || 'Unknown',
-          avatarUrl: profile.avatar_url
-        }
+          avatarUrl: profile.avatar_url,
+        },
       };
     });
 
     return {
       posts,
       total: count || 0,
-      hasMore: count ? (page * limit < count) : false
+      hasMore: count ? page * limit < count : false,
     };
   } catch (error) {
     console.error('Error fetching posts:', error);
@@ -89,19 +89,27 @@ export async function getPosts({
 /**
  * Creates a new post
  */
-export async function createPost(post: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'likesCount' | 'commentsCount'>): Promise<Post | null> {
+export async function createPost(post: {
+  user_id: string;
+  content: string;
+  image_url?: string;
+  plant_id?: string;
+  is_public?: boolean;
+}): Promise<Post | null> {
   try {
     const { data, error } = await supabase
       .from('posts')
-      .insert([{
-        user_id: post.user_id,
-        content: post.content,
-        image_url: post.image_url,
-        plant_id: post.plant_id,
-        is_public: post.is_public ?? true,
-        likes_count: 0,
-        comments_count: 0
-      }])
+      .insert([
+        {
+          user_id: post.user_id,
+          content: post.content,
+          image_url: post.image_url,
+          plant_id: post.plant_id,
+          is_public: post.is_public ?? true,
+          likes_count: 0,
+          comments_count: 0,
+        },
+      ])
       .select()
       .single();
 
@@ -136,18 +144,17 @@ export async function likePost(postId: string, userId: string): Promise<boolean>
     }
 
     // Add the like
-    const { error: insertError } = await supabase
-      .from('likes')
-      .insert([{
+    const { error: insertError } = await supabase.from('likes').insert([
+      {
         post_id: postId,
-        user_id: userId
-      }]);
+        user_id: userId,
+      },
+    ]);
 
     if (insertError) throw insertError;
 
     // Increment the likes count on the post
-    const { error: updateError } = await supabase
-      .rpc('increment_post_likes', { post_id: postId });
+    const { error: updateError } = await supabase.rpc('increment_post_likes', { post_id: postId });
 
     if (updateError) throw updateError;
 
@@ -171,7 +178,7 @@ export async function getComments(postId: string): Promise<CommentWithUser[]> {
 
     if (error) throw error;
 
-    return (data || []).map(comment => ({
+    return (data || []).map((comment) => ({
       id: comment.id,
       post_id: comment.post_id,
       user_id: comment.user_id,
@@ -182,8 +189,8 @@ export async function getComments(postId: string): Promise<CommentWithUser[]> {
       user: {
         id: comment.user_id,
         username: comment.profiles?.username || 'Unknown',
-        avatar_url: comment.profiles?.avatar_url
-      }
+        avatar_url: comment.profiles?.avatar_url,
+      },
     }));
   } catch (error) {
     console.error('Error fetching comments:', error);
@@ -194,23 +201,30 @@ export async function getComments(postId: string): Promise<CommentWithUser[]> {
 /**
  * Adds a comment to a post
  */
-export async function addComment(comment: { post_id: string, user_id: string, content: string }): Promise<CommentWithUser | null> {
+export async function addComment(comment: {
+  post_id: string;
+  user_id: string;
+  content: string;
+}): Promise<CommentWithUser | null> {
   try {
     const { data, error } = await supabase
       .from('comments')
-      .insert([{
-        post_id: comment.post_id,
-        user_id: comment.user_id,
-        content: comment.content
-      }])
+      .insert([
+        {
+          post_id: comment.post_id,
+          user_id: comment.user_id,
+          content: comment.content,
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
 
     // Increment the comments count on the post
-    const { error: updateError } = await supabase
-      .rpc('increment_post_comments', { post_id: comment.post_id });
+    const { error: updateError } = await supabase.rpc('increment_post_comments', {
+      post_id: comment.post_id,
+    });
 
     if (updateError) throw updateError;
 
@@ -224,8 +238,8 @@ export async function addComment(comment: { post_id: string, user_id: string, co
       user: {
         id: data.user_id,
         username: '', // Will be fetched separately
-        avatar_url: ''
-      }
+        avatar_url: '',
+      },
     };
   } catch (error) {
     console.error('Error adding comment:', error);

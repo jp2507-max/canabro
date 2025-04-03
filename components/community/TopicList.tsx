@@ -1,14 +1,15 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
+
 import TopicTag from './TopicTag';
 import ThemedView from '../ui/ThemedView';
 
 type TopicListProps = {
-  topics: Array<{
+  topics: {
     id: string;
     name: string;
     count: number;
-  }>;
+  }[];
   activeTopic: string | null;
   onTopicPress: (topicId: string) => void;
 };
@@ -22,8 +23,7 @@ export default function TopicList({ topics, activeTopic, onTopicPress }: TopicLi
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-      >
+        contentContainerStyle={{ paddingHorizontal: 16 }}>
         {topics.map((topic) => (
           <TopicTag
             key={topic.id}

@@ -1,6 +1,6 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, children } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
+import { field, date, readonly, text, children } from '@nozbe/watermelondb/decorators';
 
 export class GrowJournal extends Model {
   static table = 'grow_journals';

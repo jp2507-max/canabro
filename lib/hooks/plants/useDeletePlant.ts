@@ -1,20 +1,20 @@
+import { useDatabase } from '../../contexts/DatabaseProvider';
 import { Plant } from '../../types';
 import { useSupabaseMutation } from '../supabase';
-import { useDatabase } from '../../contexts/DatabaseProvider';
 
 /**
  * Hook for deleting a plant
  */
 export function useDeletePlant() {
   const database = useDatabase();
-  
+
   // Use the base mutation hook
   const { mutate, loading, error, reset } = useSupabaseMutation<Plant>({
     table: 'plants',
     type: 'DELETE',
-    returning: 'representation'
+    returning: 'representation',
   });
-  
+
   /**
    * Delete a plant from both Supabase and WatermelonDB
    */
@@ -22,10 +22,10 @@ export function useDeletePlant() {
     if (!plantId) {
       throw new Error('Plant ID is required');
     }
-    
+
     // Delete from Supabase
     const result = await mutate(plantId, 'id');
-    
+
     // If successful and we have a database instance, also delete locally
     if (result.data && database.database) {
       try {
@@ -38,14 +38,14 @@ export function useDeletePlant() {
         console.error('Error deleting plant in local database:', e);
       }
     }
-    
+
     return result;
   };
-  
+
   return {
     deletePlant,
     loading,
     error,
-    reset
+    reset,
   };
 }

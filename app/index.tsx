@@ -1,16 +1,19 @@
-"use client"; // Mark as a client component
+'use client'; // Mark as a client component
 
+import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
+
 import { useAuth } from '../lib/contexts/AuthProvider';
-import { router } from 'expo-router';
 
 const Index = () => {
   const { user, loading } = useAuth();
   console.log('[Index] Component rendering...', { loading, user: user ? 'Exists' : 'Null' }); // Log render
 
   useEffect(() => {
-    console.log(`[Index] useEffect running. Loading: ${loading}, User: ${user ? 'Exists' : 'Null'}`); // Log effect run
+    console.log(
+      `[Index] useEffect running. Loading: ${loading}, User: ${user ? 'Exists' : 'Null'}`
+    ); // Log effect run
 
     if (!loading) {
       console.log('[Index] Auth state loaded.'); // Log condition met
@@ -28,7 +31,7 @@ const Index = () => {
 
   // Show loading indicator while determining auth state or redirecting
   return (
-    <View className="flex-1 justify-center items-center bg-white">
+    <View className="flex-1 items-center justify-center bg-white">
       <ActivityIndicator size="large" color="#16a34a" />
     </View>
   );

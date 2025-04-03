@@ -1,62 +1,63 @@
-import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import { DatabaseProvider } from '../lib/contexts/DatabaseProvider';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import { AuthProvider } from '../lib/contexts/AuthProvider';
+import { DatabaseProvider } from '../lib/contexts/DatabaseProvider';
 import { NotificationProvider } from '../lib/contexts/NotificationContext';
+import { SyncProvider } from '../lib/contexts/SyncContext';
 import { ThemeProvider, useTheme } from '../lib/contexts/ThemeContext';
 
-// Import CSS for NativeWind
 import '../global.css';
 
-// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 function RootLayout() {
   useEffect(() => {
-    // Hide the splash screen once the root layout mounts
     SplashScreen.hideAsync();
   }, []);
 
+  // Ensure clean nesting of providers without extra whitespace or comments
   return (
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <DatabaseProvider>
-            <NotificationProvider>
-              <AppWithTheme />
-            </NotificationProvider>
-          </DatabaseProvider>
+          <SyncProvider>
+            <DatabaseProvider>
+              <NotificationProvider>
+                <AppWithTheme />
+              </NotificationProvider>
+            </DatabaseProvider>
+          </SyncProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
 }
 
-// Separate component to use theme context
+// Component to use theme context and render the main app structure
 function AppWithTheme() {
   const { isDarkMode } = useTheme();
-  
+
   return (
     <>
-      <StatusBar style={isDarkMode ? "light" : "dark"} />
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <Stack>
         <Stack.Screen name="index" options={{ title: 'Home' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="plant/[id]" 
-          options={{ 
+        <Stack.Screen
+          name="plant/[id]"
+          options={{
             title: 'Plant Details',
-            headerBackTitle: 'Back'
-          }} 
+            headerBackTitle: 'Back',
+          }}
         />
       </Stack>
     </>
   );
 }
 
-// This solves the "missing default export" issue
 export default RootLayout;

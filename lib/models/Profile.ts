@@ -1,6 +1,7 @@
 import { Model, Query } from '@nozbe/watermelondb';
-import { field, date, readonly, text, children } from '@nozbe/watermelondb/decorators';
 import { Associations } from '@nozbe/watermelondb/Model';
+import { field, date, readonly, text, children } from '@nozbe/watermelondb/decorators';
+
 import { Plant } from './Plant'; // Import Plant model
 import { Post } from './Post'; // Import Post model
 
@@ -31,20 +32,20 @@ export class Profile extends Model {
   // Children collections
   @children('plants') plants!: Query<Plant>;
   @children('posts') posts!: Query<Post>;
-  
+
   // Helper methods to handle serialized arrays
   getFavoriteStrains(): string[] {
     return this.favoriteStrains ? JSON.parse(this.favoriteStrains) : [];
   }
-  
+
   setFavoriteStrains(strains: string[]): void {
     this.favoriteStrains = JSON.stringify(strains);
   }
-  
+
   getCertifications(): string[] {
     return this.certifications ? JSON.parse(this.certifications) : [];
   }
-  
+
   setCertifications(certs: string[]): void {
     this.certifications = JSON.stringify(certs);
   }

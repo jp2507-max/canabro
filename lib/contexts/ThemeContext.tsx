@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+
 import theme, { Theme } from '../theme';
 import darkTheme from '../theme/dark';
 
@@ -22,7 +23,7 @@ export const useTheme = () => useContext(ThemeContext);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const colorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(colorScheme === 'dark');
-  
+
   // Use the appropriate theme based on dark mode state
   const currentTheme = isDarkMode ? darkTheme : theme;
 
@@ -32,7 +33,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [colorScheme]);
 
   const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode((prev) => !prev);
   };
 
   const contextValue = {
@@ -42,11 +43,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDarkMode: setIsDarkMode,
   };
 
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 export default ThemeProvider;

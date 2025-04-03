@@ -1,7 +1,7 @@
 import { useAuth } from '../../contexts/AuthProvider';
+import { useDatabase } from '../../contexts/DatabaseProvider';
 import { Plant, GrowthStage } from '../../types';
 import { useSupabaseMutation } from '../supabase';
-import { useDatabase } from '../../contexts/DatabaseProvider';
 
 /**
  * Data required to create a new plant
@@ -26,14 +26,14 @@ export interface CreatePlantData {
 export function useCreatePlant() {
   const { user } = useAuth();
   const database = useDatabase();
-  
+
   // Use the base mutation hook
   const { mutate, loading, error, reset } = useSupabaseMutation<Plant>({
     table: 'plants',
     type: 'INSERT',
-    returning: 'representation'
+    returning: 'representation',
   });
-  
+
   /**
    * Create a new plant in both Supabase and WatermelonDB
    */
@@ -41,7 +41,7 @@ export function useCreatePlant() {
     if (!user) {
       throw new Error('User must be authenticated to create a plant');
     }
-    
+
     // Prepare the plant data with user ID
     const plantData: Omit<Plant, 'id' | 'created_at'> = {
       name: data.name,
@@ -56,12 +56,12 @@ export function useCreatePlant() {
       is_feminized: data.is_feminized,
       image_url: data.image_url,
       user_id: user.id,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
-    
+
     // Create in Supabase
     const result = await mutate(plantData);
-    
+
     // If successful and we have a database instance, also create locally
     if (result.data && database.database) {
       try {
@@ -83,7 +83,7 @@ export function useCreatePlant() {
               image_url: result.data!.image_url,
               user_id: result.data!.user_id,
               created_at: result.data!.created_at,
-              updated_at: result.data!.updated_at
+              updated_at: result.data!.updated_at,
             });
           });
         });
@@ -91,14 +91,14 @@ export function useCreatePlant() {
         console.error('Error creating plant in local database:', e);
       }
     }
-    
+
     return result;
   };
-  
+
   return {
     createPlant,
     loading,
     error,
-    reset
+    reset,
   };
 }

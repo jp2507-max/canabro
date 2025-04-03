@@ -19,6 +19,6 @@ export function useDiaryEntry(entryId: string | null) {
         growth_stage,
         image_url
       )
-    `
+    `,
   });
 }

@@ -25,6 +25,6 @@ export function usePlant(plantId: string | null) {
         username,
         avatar_url
       )
-    `
+    `,
   });
 }

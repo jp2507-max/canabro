@@ -44,7 +44,7 @@ export enum ExperienceLevel {
   BEGINNER = 'beginner',
   INTERMEDIATE = 'intermediate',
   ADVANCED = 'advanced',
-  EXPERT = 'expert'
+  EXPERT = 'expert',
 }
 
 /**
@@ -57,7 +57,7 @@ export enum GrowMethod {
   COCO = 'coco',
   AQUAPONICS = 'aquaponics',
   DWC = 'deep_water_culture',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 /**

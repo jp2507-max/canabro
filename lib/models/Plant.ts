@@ -1,11 +1,19 @@
-import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, relation, children, lazy, writer } from '@nozbe/watermelondb/decorators';
+import { Model, Query, Q } from '@nozbe/watermelondb';
 import { Associations } from '@nozbe/watermelondb/Model';
-import { GrowJournal } from './GrowJournal';
+import {
+  field,
+  date,
+  readonly,
+  text,
+  relation,
+  children,
+  lazy,
+  writer,
+} from '@nozbe/watermelondb/decorators';
+
 import { DiaryEntry } from './DiaryEntry';
+import { GrowJournal } from './GrowJournal';
 import { Profile } from './Profile'; // Import Profile model
-import { Q } from '@nozbe/watermelondb';
-import { Query } from '@nozbe/watermelondb';
 
 export class Plant extends Model {
   static table = 'plants';
@@ -26,7 +34,11 @@ export class Plant extends Model {
   @text('notes') notes?: string;
   @text('image_url') imageUrl?: string;
   @text('user_id') userId!: string;
-  @text('location_id') locationId?: string;
+  @text('location_id') locationId?: string; // Keep for future use, but form uses location_description for now
+  @text('cannabis_type') cannabisType?: string; // Added
+  @text('grow_medium') growMedium?: string; // Added
+  @text('light_condition') lightCondition?: string; // Added
+  @text('location_description') locationDescription?: string; // Added
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;
@@ -40,14 +52,9 @@ export class Plant extends Model {
   @children('diary_entries') diaryEntries!: Query<DiaryEntry>;
 
   // Custom queries
-  @lazy activeEntries = this.diaryEntries.extend(
-    Q.where('is_deleted', false)
-  );
+  @lazy activeEntries = this.diaryEntries.extend(Q.where('is_deleted', false));
 
-  @lazy recentEntries = this.diaryEntries.extend(
-    Q.sortBy('entry_date', 'desc'),
-    Q.take(5)
-  );
+  @lazy recentEntries = this.diaryEntries.extend(Q.sortBy('entry_date', 'desc'), Q.take(5));
 
   // Derived properties
   get isActive(): boolean {
@@ -62,31 +69,31 @@ export class Plant extends Model {
 
   // Writer methods
   @writer async updateGrowthStage(stage: string) {
-    await this.update(plant => {
+    await this.update((plant) => {
       plant.growthStage = stage;
     });
   }
 
   @writer async updateHeight(height: number) {
-    await this.update(plant => {
+    await this.update((plant) => {
       plant.height = height;
     });
   }
 
   @writer async updateNotes(notes: string) {
-    await this.update(plant => {
+    await this.update((plant) => {
       plant.notes = notes;
     });
   }
 
   @writer async markAsDeleted() {
-    await this.update(plant => {
+    await this.update((plant) => {
       plant.isDeleted = true;
     });
   }
 
   @writer async updateImage(imageUrl: string) {
-    await this.update(plant => {
+    await this.update((plant) => {
       plant.imageUrl = imageUrl;
     });
   }

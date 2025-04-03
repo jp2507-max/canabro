@@ -14,12 +14,20 @@ export enum DiagnosisProblemType {
   WATERING = 'watering',
   LIGHT = 'light',
   PH = 'ph',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 // Export a string literal type for compatibility with existing code
-export type PlantProblemType = 'nutrient_deficiency' | 'nutrient_toxicity' | 'pest' | 
-  'disease' | 'environmental' | 'watering' | 'light' | 'ph' | 'unknown';
+export type PlantProblemType =
+  | 'nutrient_deficiency'
+  | 'nutrient_toxicity'
+  | 'pest'
+  | 'disease'
+  | 'environmental'
+  | 'watering'
+  | 'light'
+  | 'ph'
+  | 'unknown';
 
 /**
  * Specific nutrient deficiencies
@@ -36,7 +44,7 @@ export enum NutrientDeficiency {
   ZINC = 'zinc',
   BORON = 'boron',
   COPPER = 'copper',
-  MOLYBDENUM = 'molybdenum'
+  MOLYBDENUM = 'molybdenum',
 }
 
 /**
@@ -52,7 +60,7 @@ export enum PestType {
   CATERPILLARS = 'caterpillars',
   LEAFHOPPERS = 'leafhoppers',
   MEALYBUGS = 'mealybugs',
-  SCALE_INSECTS = 'scale_insects'
+  SCALE_INSECTS = 'scale_insects',
 }
 
 /**
@@ -68,7 +76,7 @@ export enum DiseaseType {
   ROOT_ROT = 'root_rot',
   BLIGHT = 'blight',
   MOLD = 'mold',
-  BACTERIAL_INFECTION = 'bacterial_infection'
+  BACTERIAL_INFECTION = 'bacterial_infection',
 }
 
 /**

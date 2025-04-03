@@ -1,10 +1,9 @@
 /**
  * WatermelonDB Schema Migrations
- * 
+ *
  * Defines migrations for schema changes in WatermelonDB
  */
-import { schemaMigrations } from '@nozbe/watermelondb/Schema/migrations';
-import { addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
+import { schemaMigrations, addColumns, createTable } from '@nozbe/watermelondb/Schema/migrations';
 
 // Initial schema is version 1 (defined in schema.ts)
 // When making schema changes:
@@ -30,66 +29,50 @@ const migrations = schemaMigrations({
             { name: 'comments_count', type: 'number', isOptional: true },
             { name: 'created_at', type: 'number' },
             { name: 'updated_at', type: 'number' },
-            { name: 'last_synced_at', type: 'number', isOptional: true }
-          ]
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+          ],
         }),
         // Add is_deleted column to profiles
         addColumns({
           table: 'profiles',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add is_deleted column to plants
         addColumns({
           table: 'plants',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add is_deleted column to grow_journals
         addColumns({
           table: 'grow_journals',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add is_deleted column to journal_entries
         addColumns({
           table: 'journal_entries',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add is_deleted column to grow_locations
         addColumns({
           table: 'grow_locations',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add is_deleted column to diary_entries
         addColumns({
           table: 'diary_entries',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add is_deleted column to plant_tasks
         addColumns({
           table: 'plant_tasks',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add is_deleted column to posts
         addColumns({
           table: 'posts',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
-        })
-      ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
+        }),
+      ],
     },
     // Migration to version 3: Ensure is_deleted column exists in plants table
     {
@@ -99,9 +82,7 @@ const migrations = schemaMigrations({
         // This is necessary because the column may not have been created in version 2
         addColumns({
           table: 'plants',
-          columns: [
-            { name: 'is_deleted', type: 'boolean', isOptional: true }
-          ]
+          columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
         // Add next_water_date and next_feed_date columns to plants
         addColumns({
@@ -109,12 +90,12 @@ const migrations = schemaMigrations({
           columns: [
             { name: 'next_water_date', type: 'number', isOptional: true },
             { name: 'next_feed_date', type: 'number', isOptional: true },
-            { name: 'strain_id', type: 'string', isOptional: true, isIndexed: true }
-          ]
-        })
-      ]
-    }
-  ]
+            { name: 'strain_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+      ],
+    },
+  ],
 });
 
 export default migrations;

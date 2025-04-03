@@ -1,23 +1,33 @@
 /**
  * Sync Service for WatermelonDB and Supabase
- * 
+ *
  * Handles synchronization between local WatermelonDB and remote Supabase
  */
 
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { synchronize, hasUnsyncedChanges } from '@nozbe/watermelondb/sync';
+import type { SyncTableChangeSet } from '@nozbe/watermelondb/sync'; // SyncPullResult is unused
 import SyncLogger from '@nozbe/watermelondb/sync/SyncLogger';
-import { Q } from '@nozbe/watermelondb';
-import supabase from '../supabase';
-import { Plant } from '../models/Plant';
-import { Profile } from '../models/Profile';
-import { GrowJournal } from '../models/GrowJournal';
-import { JournalEntry } from '../models/JournalEntry';
-import { GrowLocation } from '../models/GrowLocation';
-import { DiaryEntry } from '../models/DiaryEntry';
-import { PlantTask } from '../models/PlantTask';
-import { v4 as uuid } from 'uuid';
 import NetInfo from '@react-native-community/netinfo';
+import { Mutex } from 'async-mutex'; // Import Mutex
+import { v4 as uuid } from 'uuid';
+
+// Unused model imports removed: DiaryEntry, GrowJournal, GrowLocation, JournalEntry, Plant, PlantTask
+import { Profile } from '../models/Profile';
+import supabase from '../supabase';
+
+// Create a Mutex instance for synchronization locking
+const syncMutex = new Mutex();
+
+// Add a minimum time between syncs (30 seconds)
+const MIN_SYNC_INTERVAL_MS = 30 * 1000;
+let lastSuccessfulSyncTime = 0;
+// Add a sync lock timeout to prevent deadlocks
+const SYNC_LOCK_TIMEOUT_MS = 30 * 1000; // 30 seconds
+
+// Track sync attempts to avoid too many logs
+let recentSyncAttempts = 0;
+let lastSyncAttemptLogTime = 0;
 
 // Array of table names to synchronize
 const TABLES_TO_SYNC = [
@@ -31,17 +41,17 @@ const TABLES_TO_SYNC = [
   'posts', // Re-enabled
 ];
 
-// Mapping of watermelonDB id fields to Supabase id fields
-const ID_FIELD_MAPPING: Record<string, string> = {
-  'profiles': 'userId',
-  'plants': 'plantId',
-  'grow_journals': 'journalId',
-  'journal_entries': 'entryId',
-  'grow_locations': 'locationId',
-  'diary_entries': 'entryId',
-  'plant_tasks': 'taskId',
-  'posts': 'postId',
-};
+// Mapping of watermelonDB id fields to Supabase id fields - Unused
+// const ID_FIELD_MAPPING: Record<string, string> = {
+//   profiles: 'userId',
+//   plants: 'plantId',
+//   grow_journals: 'journalId',
+//   journal_entries: 'entryId',
+//   grow_locations: 'locationId',
+//   diary_entries: 'entryId',
+//   plant_tasks: 'taskId',
+//   posts: 'postId',
+// };
 
 // Create a sync logger
 const logger = new SyncLogger(20); // Keep last 20 sync logs
@@ -75,7 +85,7 @@ export async function checkUnsyncedChanges(database: Database): Promise<boolean>
  */
 function formatDateForSupabase(date: Date | number | string | null): string | null {
   if (date === null) return null;
-  
+
   if (typeof date === 'number') {
     return new Date(date).toISOString();
   } else if (typeof date === 'string') {
@@ -89,210 +99,268 @@ function formatDateForSupabase(date: Date | number | string | null): string | nu
   } else if (date instanceof Date) {
     return date.toISOString();
   }
-  
+
   return null;
 }
 
 /**
  * Synchronize local WatermelonDB with remote Supabase
- * 
+ *
  * @param database The WatermelonDB database instance
  * @param userId The user ID to sync data for
  * @param isFirstSync Whether this is the first sync (for optimizing with turbo login)
- * @returns Promise that resolves when sync is complete
+ * @param forceSync Set to true to bypass the cooldown period
+ * @returns Promise that resolves to a boolean indicating success
  */
 export async function synchronizeWithServer(
-  database: Database, 
+  database: Database,
   userId: string,
-  isFirstSync: boolean = false
+  isFirstSync: boolean = false,
+  forceSync: boolean = false
 ): Promise<boolean> {
-  // Check for internet connection first
-  if (!(await isOnline())) {
-    console.log('No internet connection, skipping sync');
+  const callTimestamp = Date.now(); // Timestamp for this specific call attempt
+
+  // Check if we've synced recently (unless forceSync is true)
+  if (!forceSync && callTimestamp - lastSuccessfulSyncTime < MIN_SYNC_INTERVAL_MS) {
+    // Limit logging of frequent sync attempts to avoid console spam
+    recentSyncAttempts++;
+    const shouldLog = callTimestamp - lastSyncAttemptLogTime > 5000; // Only log once every 5 seconds
+
+    if (shouldLog) {
+      console.log(
+        `[Sync Service @ ${callTimestamp}] Sync throttled. Next sync available in ${Math.ceil((MIN_SYNC_INTERVAL_MS - (callTimestamp - lastSuccessfulSyncTime)) / 1000)}s. (${recentSyncAttempts} attempts since last log)`
+      );
+      lastSyncAttemptLogTime = callTimestamp;
+      recentSyncAttempts = 0;
+    }
     return false;
   }
-  
-  // Create a new log for this sync
-  const syncLog = logger.newLog();
-  
-  // Use a try-catch block to handle potential errors with collections that might not be fully set up
-  try {
-    // Skip specific collections that are causing errors
-    const collectionsToSync = TABLES_TO_SYNC.filter(table => {
-      // Skip posts collection until it's properly set up
-      if (table === 'posts') {
-        console.log('Skipping posts collection as it is not fully set up yet');
-        return false;
-      }
-      
-      return true;
-    });
-    
-    // Use a retry block to handle potential conflicts
-    async function attemptSync(): Promise<boolean> {
-      try {
-        await synchronize({
-          database,
-          log: syncLog,
-          pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
-            // Convert the date to ISO string for the API
-            const lastPulledAtISO = lastPulledAt ? formatDateForSupabase(lastPulledAt) : null;
-            
-            try {
-              // Call the Supabase function using the REST API
-              const { data, error } = await supabase.rpc('sync_pull', {
-                last_pulled_at: lastPulledAtISO,
-                schema_version: schemaVersion,
-                user_id: userId,
-                migration: migration ? migration : null,
-              });
-              
-              if (error) {
-                console.error(`Sync pull error: ${error.message}`);
-                // Throw the error to be caught by the main sync logic
-                throw new Error(`Sync pull failed: ${error.message}`);
-              }
 
-              // If using turbo mode for first sync
-              if (isFirstSync && lastPulledAt === null) {
-                // For turbo mode, return raw JSON
-                const json = JSON.stringify(data);
-                return { 
-                  syncJson: json,
-                };
-              } else {
-                // For standard sync, use the parsed data
-                return { 
-                  changes: data?.changes || {},
-                  timestamp: data?.timestamp || new Date().getTime()
-                };
-              }
-            } catch (error) {
-              console.error('Critical error during pullChanges:', error);
-              // Re-throw the error to ensure the sync process fails correctly
-              throw error; 
-            }
-          },
-          pushChanges: async ({ changes, lastPulledAt }) => {
-            const lastPulledAtISO = lastPulledAt ? formatDateForSupabase(lastPulledAt) : null;
-            
-            try {
-              // Call the Supabase function using the REST API
-              const { error } = await supabase.rpc('sync_push', {
-                changes,
-                last_pulled_at: lastPulledAtISO,
-                user_id: userId,
-              });
-              
-              if (error) {
-                console.error(`Push error: ${error.message}`);
-                // Throw the error to be caught by the main sync logic
-                throw new Error(`Sync push failed: ${error.message}`);
-              }
-            } catch (error) {
-              console.error('Critical error during pushChanges:', error);
-              // Re-throw the error to ensure the sync process fails correctly
-              throw error;
-            }
-          },
-          migrationsEnabledAtVersion: 1, // Enable migration syncs from first version
-          unsafeTurbo: isFirstSync && await database.adapter.getLocal('sync_is_empty') === 'true',
-          // Note: WatermelonDB will automatically only sync the tables listed in TABLES_TO_SYNC
-          onWillApplyRemoteChanges: async ({ remoteChangeCount }) => {
-            console.log(`Applying ${remoteChangeCount || 'unknown'} remote changes...`);
-          },
-          onDidPullChanges: async (response: any) => {
-            // Store last sync timestamp if needed
-            if (response && typeof response.timestamp === 'number') {
-              await database.adapter.setLocal('last_sync_timestamp', String(new Date(response.timestamp).getTime()));
-            }
-          },
-        });
-        
-        // Save sync information
-        await database.adapter.setLocal('last_sync_time', new Date().toISOString());
-        await database.adapter.setLocal('sync_is_empty', 'false');
-        
-        console.log('Sync completed successfully');
-        console.log('Sync log:', logger.formattedLogs);
-        
-        return true;
-      } catch (error) {
-        console.error('Sync error:', error);
-        return false;
-      }
-    }
-    
-    // Try sync once
-    let success = await attemptSync();
-    
-    // If first attempt fails, try again once as recommended in the docs
-    // This helps with resolving conflicts
-    if (!success) {
-      console.log('First sync attempt failed, retrying...');
-      success = await attemptSync();
-    }
-    
-    return success;
-  } catch (error) {
-    console.error('Error in synchronizeWithServer:', error);
+  console.log(`[Sync Service Entry @ ${callTimestamp}] Attempting to acquire sync lock...`);
+
+  // Check for internet connection first before attempting to acquire the lock
+  if (!(await isOnline())) {
+    console.log(`[Sync Service @ ${callTimestamp}] No internet connection, skipping sync.`);
     return false;
+  }
+
+  // Check if the mutex is already locked
+  if (syncMutex.isLocked()) {
+    console.log(
+      `[Sync Service @ ${callTimestamp}] Sync already in progress, skipping this attempt.`
+    );
+    return false; // Indicate that sync didn't run due to concurrency
+  }
+
+  // Use a timeout release mechanism to avoid deadlocks
+  let release: (() => void) | null = null;
+  let lockTimedOut = false;
+  const timeoutId = setTimeout(() => {
+    if (release) {
+      console.error(
+        `[Sync Service @ ${callTimestamp}] Sync lock timed out after ${SYNC_LOCK_TIMEOUT_MS}ms. Forcing release.`
+      );
+      lockTimedOut = true;
+      release();
+    }
+  }, SYNC_LOCK_TIMEOUT_MS);
+
+  // Define attemptSync function here, outside the try block
+  async function attemptSync(): Promise<boolean> {
+    let success = false; // Define success within attemptSync scope
+    try {
+      await synchronize({
+        database,
+        log: logger.newLog(), // Use a new log for each attempt if retrying
+        pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
+          const lastPulledAtISO = lastPulledAt ? formatDateForSupabase(lastPulledAt) : null;
+          try {
+            const { data, error } = await supabase.rpc('sync_pull', {
+              last_pulled_at: lastPulledAtISO,
+              schema_version: schemaVersion,
+              user_id: userId,
+              migration: migration ? migration : null,
+            });
+            if (error) throw new Error(`Sync pull failed: ${error.message}`);
+
+            if (isFirstSync && lastPulledAt === null) {
+              const json = data ? JSON.stringify(data) : '{}';
+              return { syncJson: json };
+            } else {
+              const receivedChanges = data?.changes || {};
+              const ensuredChanges: Record<string, SyncTableChangeSet> = {};
+              for (const table of TABLES_TO_SYNC) {
+                ensuredChanges[table] = { created: [], updated: [], deleted: [] };
+              }
+              for (const table of Object.keys(receivedChanges)) {
+                if (TABLES_TO_SYNC.includes(table)) {
+                  ensuredChanges[table] = {
+                    created: receivedChanges[table]?.created || [],
+                    updated: receivedChanges[table]?.updated || [],
+                    deleted: receivedChanges[table]?.deleted || [],
+                  };
+                }
+              }
+              return {
+                changes: ensuredChanges,
+                timestamp: data?.timestamp || Date.now(),
+              };
+            }
+          } catch (error) {
+            console.error('Error during pullChanges:', error);
+            throw error;
+          }
+        },
+        pushChanges: async ({ changes, lastPulledAt }) => {
+          if (!changes || Object.keys(changes).length === 0) {
+            console.log('No changes to push');
+            return;
+          }
+          const sanitizedChanges: Record<string, any> = {};
+          for (const tableName of Object.keys(changes)) {
+            if (!TABLES_TO_SYNC.includes(tableName)) continue;
+            const tableChanges = changes[tableName];
+            sanitizedChanges[tableName] = {
+              created: (tableChanges.created || []).map((record) =>
+                sanitizeRecord(record, tableName)
+              ),
+              updated: (tableChanges.updated || []).map((record) =>
+                sanitizeRecord(record, tableName)
+              ),
+              deleted: (tableChanges.deleted || []).map((id) => ({ id })),
+            };
+          }
+          try {
+            const { error } = await supabase.rpc('sync_push', {
+              changes: sanitizedChanges,
+              last_pulled_at: lastPulledAt ? formatDateForSupabase(lastPulledAt) : null,
+              user_id: userId,
+            });
+            if (error) throw new Error(`Sync push failed: ${error.message}`);
+            console.log('Push completed successfully');
+          } catch (error) {
+            console.error('Error during pushChanges:', error);
+            throw error;
+          }
+        },
+        unsafeTurbo: isFirstSync,
+        migrationsEnabledAtVersion: 1,
+      });
+      success = true; // Mark success if synchronize completes without error
+    } catch (error) {
+      console.error(
+        `Sync attempt failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+      success = false; // Mark failure
+    }
+    return success; // Return the success status of this attempt
+  }
+
+  try {
+    // Acquire the lock
+    release = await syncMutex.acquire();
+
+    if (lockTimedOut) {
+      console.log(`[Sync Service @ ${callTimestamp}] Lock was already released due to timeout.`);
+      return false;
+    }
+
+    const lockAcquiredTimestamp = Date.now();
+    console.log(
+      `[Sync Service @ ${lockAcquiredTimestamp}] Lock acquired, starting sync process...`
+    );
+
+    // Attempt the sync
+    let syncResult = await attemptSync();
+
+    // If the first attempt failed, retry once
+    if (!syncResult) {
+      console.log('Sync failed on first attempt, retrying once...');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      syncResult = await attemptSync();
+    }
+
+    // Log the final result
+    if (syncResult) {
+      console.log('Sync completed successfully');
+      console.log('Sync log:', JSON.stringify(logger.logs, null, 2));
+      lastSuccessfulSyncTime = Date.now();
+    } else {
+      console.error('Sync failed after retry attempt');
+    }
+    return syncResult; // Return the final success status
+  } catch (error) {
+    console.error(
+      `Error acquiring sync lock or during sync process: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return false; // Return false if lock acquisition or the process itself fails
+  } finally {
+    // Always clear the timeout and release the lock if it's still held
+    clearTimeout(timeoutId);
+    if (release && !lockTimedOut) {
+      console.log(`[Sync Service @ ${callTimestamp}] Releasing lock.`);
+      release();
+    }
   }
 }
 
 /**
  * Cleans up a record for Supabase insertion
- * 
+ *
  * @param record The raw record from WatermelonDB
- * @param table The table name 
+ * @param table The table name
  * @returns A cleaned record suitable for Supabase
  */
 function sanitizeRecord(record: any, table: string): any {
   // Make a copy to avoid mutating the original
   const cleanedRecord = { ...record };
-  
+
   // Format dates for Supabase
   if (cleanedRecord.createdAt) {
     cleanedRecord.createdAt = formatDateForSupabase(cleanedRecord.createdAt);
   }
-  
+
   if (cleanedRecord.updatedAt) {
     cleanedRecord.updatedAt = formatDateForSupabase(cleanedRecord.updatedAt);
   }
-  
+
   if (cleanedRecord.lastSyncedAt) {
     cleanedRecord.lastSyncedAt = formatDateForSupabase(cleanedRecord.lastSyncedAt);
   }
-  
+
   // Convert any other date fields specific to the table
   // This depends on your schema
   if (table === 'plants' && cleanedRecord.plantedDate) {
     cleanedRecord.plantedDate = formatDateForSupabase(cleanedRecord.plantedDate);
   }
-  
+
   if ((table === 'journal_entries' || table === 'diary_entries') && cleanedRecord.entryDate) {
     cleanedRecord.entryDate = formatDateForSupabase(cleanedRecord.entryDate);
   }
-  
+
   if (table === 'plant_tasks' && cleanedRecord.dueDate) {
     cleanedRecord.dueDate = formatDateForSupabase(cleanedRecord.dueDate);
   }
-  
+
   return cleanedRecord;
 }
 
 /**
  * Initializes database with user profile if it doesn't exist yet
- * 
+ *
  * @param database The WatermelonDB database instance
  * @param userId The user ID to initialize data for
- * @param userEmail Email address of the user 
+ * @param userEmail Email address of the user
  */
-export async function initializeUserData(database: Database, userId: string, userEmail: string): Promise<void> {
+export async function initializeUserData(
+  database: Database,
+  userId: string,
+  userEmail: string
+): Promise<void> {
   // Check if user profile exists
   const profiles = database.get<Profile>('profiles');
   const profile = await profiles.query(Q.where('userId', userId)).fetch();
-  
+
   // If profile doesn't exist, create it
   if (profile.length === 0) {
     await database.write(async () => {
@@ -303,9 +371,9 @@ export async function initializeUserData(database: Database, userId: string, use
         profile.updatedAt = new Date(); // Use Date object instead of number
       });
     });
-    
+
     console.log('User profile initialized');
-    
+
     // Mark as first sync
     await database.adapter.setLocal('sync_is_empty', 'true');
   }
@@ -314,25 +382,29 @@ export async function initializeUserData(database: Database, userId: string, use
 /**
  * Performs a full reset and sync from server
  * Use with caution as this will delete all local data
- * 
+ *
  * @param database The WatermelonDB database instance
  * @param userId The user ID to sync data for
  * @param userEmail Email address of the user
  * @returns Promise that resolves to a boolean indicating success
  */
-export async function resetAndSync(database: Database, userId: string, userEmail: string): Promise<boolean> {
+export async function resetAndSync(
+  database: Database,
+  userId: string,
+  userEmail: string
+): Promise<boolean> {
   try {
     // Reset database
     await database.write(async () => {
       await database.unsafeResetDatabase();
     });
-    
+
     // Reinitialize user data
     await initializeUserData(database, userId, userEmail);
-    
+
     // Mark as empty so we can use turbo sync
     await database.adapter.setLocal('sync_is_empty', 'true');
-    
+
     // Perform full sync
     return synchronizeWithServer(database, userId, true);
   } catch (error) {
@@ -343,21 +415,24 @@ export async function resetAndSync(database: Database, userId: string, userEmail
 
 /**
  * Schedule periodic synchronization
- * 
+ *
  * @param database The WatermelonDB database instance
  * @param userId The user ID to sync data for
  * @param intervalMinutes How often to sync (in minutes)
  * @returns A function to cancel the scheduled sync
  */
 export function scheduleSync(database: Database, userId: string, intervalMinutes = 15): () => void {
-  const interval = setInterval(async () => {
-    // Only sync if there are changes to sync
-    const hasChanges = await checkUnsyncedChanges(database);
-    if (hasChanges) {
-      await synchronizeWithServer(database, userId);
-    }
-  }, intervalMinutes * 60 * 1000);
-  
+  const interval = setInterval(
+    async () => {
+      // Only sync if there are changes to sync
+      const hasChanges = await checkUnsyncedChanges(database);
+      if (hasChanges) {
+        await synchronizeWithServer(database, userId);
+      }
+    },
+    intervalMinutes * 60 * 1000
+  );
+
   // Return function to clear interval
   return () => clearInterval(interval);
 }

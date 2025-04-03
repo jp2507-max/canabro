@@ -1,6 +1,6 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text, relation, writer } from '@nozbe/watermelondb/decorators'; // Import writer
 import { Associations } from '@nozbe/watermelondb/Model';
+import { field, date, readonly, text, relation, writer } from '@nozbe/watermelondb/decorators'; // Import writer
 
 export class Post extends Model {
   static table = 'posts';

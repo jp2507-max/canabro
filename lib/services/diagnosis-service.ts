@@ -1,6 +1,6 @@
 import supabase from '../supabase';
-import { DiagnosisResult, PlantProblemType } from '../types/diagnosis';
 import { BaseService, ApiResponse, createService } from './service-factory';
+import { DiagnosisResult, PlantProblemType } from '../types/diagnosis';
 
 /**
  * Service for plant diagnosis and problem identification
@@ -16,7 +16,7 @@ export class DiagnosisService extends BaseService {
       // 1. Upload the image to Supabase storage
       // 2. Process the image with TensorFlow.js
       // 3. Return diagnosis results
-      
+
       // For now, we'll simulate a response
       const mockDiagnosis: DiagnosisResult = {
         id: `diag-${Date.now()}`,
@@ -27,32 +27,33 @@ export class DiagnosisService extends BaseService {
         problem_type: 'nutrient_deficiency' as PlantProblemType,
         details: {
           name: 'Nitrogen Deficiency',
-          description: 'The plant appears to be suffering from nitrogen deficiency, characterized by yellowing of older leaves starting from the tips.',
+          description:
+            'The plant appears to be suffering from nitrogen deficiency, characterized by yellowing of older leaves starting from the tips.',
           severity: 'moderate',
           recommendations: [
             'Apply a nitrogen-rich fertilizer',
             'Ensure proper pH (6.0-7.0) for optimal nutrient absorption',
-            'Consider adding compost or other organic matter to the soil'
-          ]
-        }
+            'Consider adding compost or other organic matter to the soil',
+          ],
+        },
       };
-      
+
       // In a real implementation, we would save the diagnosis to Supabase
       // const { data, error } = await supabase
       //   .from('plant_diagnoses')
       //   .insert([mockDiagnosis])
       //   .select()
       //   .single();
-      
+
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       return this.wrapResponse<DiagnosisResult>(mockDiagnosis, null);
     } catch (error) {
       return this.wrapResponse<DiagnosisResult>(null, this.handleError(error));
     }
   }
-  
+
   /**
    * Upload an image to Supabase storage
    */
@@ -62,35 +63,29 @@ export class DiagnosisService extends BaseService {
       const fileExt = imageUri.split('.').pop();
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
       const filePath = `diagnosis/${userId}/${fileName}`;
-      
+
       // Fetch the image as a blob
       const response = await fetch(imageUri);
       const blob = await response.blob();
-      
+
       // Upload to Supabase Storage
-      const { data, error } = await supabase
-        .storage
-        .from('plant-images')
-        .upload(filePath, blob);
-      
+      const { error } = await supabase.storage.from('plant-images').upload(filePath, blob); // data is unused
+
       if (error) {
         // Create a string error message as expected by wrapResponse
         const errorMessage = `Storage upload failed: ${error.message || 'Unknown error'}`;
         return this.wrapResponse<string>(null, errorMessage);
       }
-      
+
       // Get the public URL
-      const { data: publicUrlData } = supabase
-        .storage
-        .from('plant-images')
-        .getPublicUrl(filePath);
-      
+      const { data: publicUrlData } = supabase.storage.from('plant-images').getPublicUrl(filePath);
+
       return this.wrapResponse<string>(publicUrlData.publicUrl, null);
     } catch (error) {
       return this.wrapResponse<string>(null, this.handleError(error));
     }
   }
-  
+
   /**
    * Save a diagnosis result to the database
    */
@@ -101,14 +96,14 @@ export class DiagnosisService extends BaseService {
         .insert([diagnosis])
         .select()
         .single();
-      
+
       if (error) return this.wrapResponse<DiagnosisResult>(null, this.handleSupabaseError(error));
       return this.wrapResponse<DiagnosisResult>(data as DiagnosisResult, null);
     } catch (error) {
       return this.wrapResponse<DiagnosisResult>(null, this.handleError(error));
     }
   }
-  
+
   /**
    * Get diagnosis history for a user
    */
@@ -119,7 +114,7 @@ export class DiagnosisService extends BaseService {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      
+
       if (error) return this.wrapResponse<DiagnosisResult[]>(null, this.handleSupabaseError(error));
       return this.wrapResponse<DiagnosisResult[]>(data as DiagnosisResult[], null);
     } catch (error) {
@@ -132,7 +127,10 @@ export class DiagnosisService extends BaseService {
 export const diagnosisService = createService(DiagnosisService);
 
 // Export service methods with legacy function signatures for backwards compatibility
-export const analyzeImage = async (imageUri: string, userId: string): Promise<DiagnosisResult | null> => {
+export const analyzeImage = async (
+  imageUri: string,
+  userId: string
+): Promise<DiagnosisResult | null> => {
   const response = await diagnosisService.analyzeImage(imageUri, userId);
   return response.data;
 };
@@ -142,7 +140,9 @@ export const uploadImage = async (imageUri: string, userId: string): Promise<str
   return response.data;
 };
 
-export const saveDiagnosis = async (diagnosis: DiagnosisResult): Promise<DiagnosisResult | null> => {
+export const saveDiagnosis = async (
+  diagnosis: DiagnosisResult
+): Promise<DiagnosisResult | null> => {
   const response = await diagnosisService.saveDiagnosis(diagnosis);
   return response.data;
 };

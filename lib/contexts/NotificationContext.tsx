@@ -1,14 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as Notifications from 'expo-notifications';
-import { 
-  registerForPushNotificationsAsync, 
+import { router } from 'expo-router';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+import {
+  registerForPushNotificationsAsync,
   registerNotificationChannels,
   NotificationType,
   scheduleTaskReminder,
   cancelTaskReminder,
-  rescheduleTaskReminder
+  rescheduleTaskReminder,
 } from '../services/NotificationService';
-import { router } from 'expo-router';
 
 interface NotificationContextType {
   expoPushToken: string | null;
@@ -61,23 +62,19 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     requestPermissions();
 
     // Set up notification listeners
-    const notificationListener = Notifications.addNotificationReceivedListener(
-      notification => {
-        setNotification(notification);
-      }
-    );
+    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
+      setNotification(notification);
+    });
 
-    const responseListener = Notifications.addNotificationResponseReceivedListener(
-      response => {
-        const { notification } = response;
-        const data = notification.request.content.data;
-        
-        // Handle notification response based on type
-        if (data && data.type) {
-          handleNotificationResponse(data);
-        }
+    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+      const { notification } = response;
+      const data = notification.request.content.data;
+
+      // Handle notification response based on type
+      if (data && data.type) {
+        handleNotificationResponse(data);
       }
-    );
+    });
 
     // Clean up listeners on unmount
     return () => {
@@ -90,7 +87,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const requestPermissions = async () => {
     try {
       const token = await registerForPushNotificationsAsync();
-      
+
       if (token) {
         setExpoPushToken(token.data);
         setIsNotificationsEnabled(true);
@@ -128,12 +125,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           router.push(`/plant/${plantId}`);
         } else if (taskId) {
           // Navigate to the diary screen
-          router.push('/(tabs)/diary');
+          router.push('/');
         }
         break;
       default:
         // For general notifications, navigate to diary screen
-        router.push('/(tabs)/diary');
+        router.push('/');
         break;
     }
   };
@@ -146,7 +143,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         return null;
       }
     }
-    
+
     return await scheduleTaskReminder(params);
   };
 
@@ -163,7 +160,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         return null;
       }
     }
-    
+
     return await rescheduleTaskReminder(params);
   };
 
@@ -177,8 +174,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         scheduleTaskNotification,
         cancelTaskNotification,
         rescheduleTaskNotification,
-      }}
-    >
+      }}>
       {children}
     </NotificationContext.Provider>
   );

@@ -1,6 +1,6 @@
 /**
  * Models Index
- * 
+ *
  * Exports all WatermelonDB models for consistent imports across the app
  */
 

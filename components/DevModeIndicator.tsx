@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+
 import { isDevelopment, authConfig } from '../lib/config';
 import { useAuth } from '../lib/contexts/AuthProvider';
 
@@ -13,12 +14,12 @@ interface DevModeIndicatorProps {
  */
 export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorProps) {
   const { devBypassAuth, user } = useAuth();
-  
+
   // Don't show anything in production mode
   if (!isDevelopment) {
     return null;
   }
-  
+
   // Minimal version for normal screens
   if (!showFullDetails) {
     return (
@@ -27,20 +28,21 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
       </View>
     );
   }
-  
+
   // Full version with auth details
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Development Mode</Text>
-      <Text style={styles.detail}>Auth: {authConfig.forceDevBypass ? 'Auto Bypass' : 'Manual'}</Text>
-      <Text style={styles.detail}>Mock DB: {authConfig.useMockAdapter ? 'Enabled' : 'Disabled'}</Text>
+      <Text style={styles.detail}>
+        Auth: {authConfig.forceDevBypass ? 'Auto Bypass' : 'Manual'}
+      </Text>
+      <Text style={styles.detail}>
+        Mock DB: {authConfig.useMockAdapter ? 'Enabled' : 'Disabled'}
+      </Text>
       <Text style={styles.detail}>User ID: {user?.id || 'Not logged in'}</Text>
-      
+
       {!authConfig.forceDevBypass && (
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => devBypassAuth()}
-        >
+        <TouchableOpacity style={styles.button} onPress={() => devBypassAuth()}>
           <Text style={styles.buttonText}>Use Dev Auth</Text>
         </TouchableOpacity>
       )}
@@ -89,5 +91,5 @@ const styles = StyleSheet.create({
   miniText: {
     fontSize: 10,
     fontWeight: 'bold',
-  }
+  },
 });
