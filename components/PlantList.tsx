@@ -3,9 +3,17 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // Added MaterialCommunityIcons
 import { Database, Q } from '@nozbe/watermelondb'; // Added Q
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Link, router } from 'expo-router'; // Use Link for navigation item
+import { Link, useRouter } from 'expo-router'; // Use Link for navigation item, Import useRouter
 import React, { useEffect } from 'react'; // Added useEffect
-import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native'; // Added Image, ActivityIndicator
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native'; // Added Image, ActivityIndicator, RefreshControl
 
 import { useTheme } from '../lib/contexts/ThemeContext'; // Added useTheme
 import { Plant } from '../lib/models/Plant';
@@ -16,6 +24,9 @@ interface PlantListComponentProps {
   plants: Plant[];
   isLoading: boolean; // Add isLoading prop
   onCountChange?: (count: number) => void; // Callback for plant count
+  ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null; // Add ListHeaderComponent prop
+  refreshing?: boolean; // Add refreshing prop
+  onRefresh?: () => void; // Add onRefresh prop
 }
 
 // Mock data function for status icons - replace with real data later
@@ -76,92 +87,99 @@ const PlantItem = React.memo(({ plant }: { plant: Plant }) => {
     </View>
   );
 
+  // Get router instance for programmatic navigation
+  const router = useRouter();
+
   return (
-    <Link href={`/plant/${plant.id}`} asChild>
-      <TouchableOpacity
-        className="mb-4 active:opacity-80" // Increased bottom margin
-        key={plant.id}
-        accessibilityLabel={`View details for plant: ${plant.name}, Strain: ${plant.strain}`}
-        accessibilityRole="button">
-        <ThemedView
-          // Remove border and shadow, adjust padding
-          className="flex-row items-center rounded-xl p-3"
-          lightClassName="bg-transparent" // Make background transparent or match screen
-          darkClassName="bg-transparent">
-          {/* Circular Image */}
-          <View className="mr-4 h-16 w-16 overflow-hidden rounded-full">
-            {plant.imageUrl ? (
-              <Image
-                source={{ uri: plant.imageUrl }}
-                className="h-full w-full"
-                resizeMode="cover"
-                accessibilityLabel={`Image of ${plant.name}`}
+    // <Link href={`/plant/${plant.id}`} asChild> // Temporarily removed Link
+    <TouchableOpacity
+      className="mb-4 active:opacity-80" // Increased bottom margin
+      key={plant.id}
+      onPress={() => router.push(`/plant/${plant.id}`)} // Added onPress handler
+      accessibilityLabel={`View details for plant: ${plant.name}, Strain: ${plant.strain}`}
+      accessibilityRole="button">
+      <ThemedView
+        // Remove border and shadow, adjust padding
+        className="flex-row items-center rounded-xl p-3"
+        lightClassName="bg-transparent" // Make background transparent or match screen
+        darkClassName="bg-transparent">
+        {/* Circular Image */}
+        <View className="mr-4 h-16 w-16 overflow-hidden rounded-full">
+          {plant.imageUrl ? (
+            <Image
+              source={{ uri: plant.imageUrl }}
+              className="h-full w-full"
+              resizeMode="cover"
+              accessibilityLabel={`Image of ${plant.name}`}
+            />
+          ) : (
+            <View className="h-full w-full items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700">
+              <MaterialCommunityIcons
+                name="flower-tulip-outline"
+                size={32}
+                color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                accessibilityLabel="Placeholder image for plant"
               />
-            ) : (
-              <View className="h-full w-full items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700">
-                <MaterialCommunityIcons
-                  name="flower-tulip-outline"
-                  size={32}
-                  color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
-                  accessibilityLabel="Placeholder image for plant"
-                />
-              </View>
-            )}
-          </View>
-
-          {/* Text Info & Status Icons */}
-          <View className="flex-1">
-            <ThemedText
-              className="text-lg font-semibold" // Keep font size
-              lightClassName="text-neutral-800"
-              darkClassName="text-white"
-              numberOfLines={1}>
-              {plant.name}
-            </ThemedText>
-            <ThemedText
-              className="text-sm" // Keep font size
-              lightClassName="text-neutral-600"
-              darkClassName="text-neutral-400"
-              numberOfLines={1}>
-              {plant.strain || 'Unknown Strain'} {/* Add fallback */}
-            </ThemedText>
-            {/* Status Icons Row */}
-            <View className="mt-2 flex-row">
-              <StatusIcon
-                iconName="information-outline"
-                text={`${mockStatus.infoPercent}%`}
-                iconColor={theme.colors.primary[500]} // Example color
-              />
-              <StatusIcon
-                  iconName="water-outline"
-                  text={`in ${mockStatus.waterDays} Tg.`}
-                  iconColor={theme.colors.special.watering} // Use theme's watering color
-                 />
-                 <StatusIcon
-                   iconName="leaf" // Using leaf as a placeholder for fertilizer/nutrition
-                   text={`in ${mockStatus.feedDays} Tg.`}
-                   iconColor={theme.colors.primary[600]} // Use theme's primary green shade
-                 />
             </View>
-          </View>
-
-          {/* Right Arrow Icon */}
-          <View className="ml-2 p-1">
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={28} // Slightly larger arrow
-              color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+          )}
+        </View>{/* Text Info & Status Icons */}
+        <View className="flex-1">
+          <ThemedText
+            className="text-lg font-semibold" // Keep font size
+            lightClassName="text-neutral-800"
+            darkClassName="text-white"
+            numberOfLines={1}>
+            {plant.name}
+          </ThemedText>
+          <ThemedText
+            className="text-sm" // Keep font size
+            lightClassName="text-neutral-600"
+            darkClassName="text-neutral-400"
+            numberOfLines={1}>
+            {plant.strain || 'Unknown Strain'} {/* Add fallback */}
+          </ThemedText>
+          {/* Status Icons Row */}
+          <View className="mt-2 flex-row">
+            <StatusIcon
+              iconName="information-outline"
+              text={`${mockStatus.infoPercent}%`}
+              iconColor={theme.colors.primary[500]} // Example color
+            />
+            <StatusIcon
+              iconName="water-outline"
+              text={`in ${mockStatus.waterDays} Tg.`}
+              iconColor={theme.colors.special.watering} // Use theme's watering color
+            />
+            <StatusIcon
+              iconName="leaf" // Using leaf as a placeholder for fertilizer/nutrition
+              text={`in ${mockStatus.feedDays} Tg.`}
+              iconColor={theme.colors.primary[600]} // Use theme's primary green shade
             />
           </View>
-        </ThemedView>
-      </TouchableOpacity>
-    </Link>
+        </View>{/* Right Arrow Icon */}
+        <View className="ml-2 p-1">
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={28} // Slightly larger arrow
+            color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+          />
+        </View>
+      </ThemedView>
+    </TouchableOpacity>
+    // </Link> // Temporarily removed Link
   );
 });
 
 // Base component that receives plants as an array
-const PlantListComponent = ({ plants, isLoading, onCountChange }: PlantListComponentProps) => {
-  const { theme } = useTheme(); // Get theme for ActivityIndicator color
+const PlantListComponent = ({
+  plants,
+  isLoading,
+  onCountChange,
+  ListHeaderComponent, // Destructure new prop
+  refreshing = false, // Destructure new prop with default
+  onRefresh, // Destructure new prop
+}: PlantListComponentProps) => {
+  const { theme, isDarkMode } = useTheme(); // Get theme for ActivityIndicator color and RefreshControl
 
   // Report count change when plants array updates
   useEffect(() => {
@@ -174,7 +192,10 @@ const PlantListComponent = ({ plants, isLoading, onCountChange }: PlantListCompo
     return (
       <View className="mt-10 flex-1 items-center justify-center">
         <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-        <ThemedText className="mt-3" lightClassName="text-neutral-600" darkClassName="text-neutral-400">
+        <ThemedText
+          className="mt-3"
+          lightClassName="text-neutral-600"
+          darkClassName="text-neutral-400">
           Loading plants...
         </ThemedText>
       </View>
@@ -188,9 +209,25 @@ const PlantListComponent = ({ plants, isLoading, onCountChange }: PlantListCompo
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <PlantItem plant={item} />}
       ListEmptyComponent={<EmptyPlantList />}
-      // Make FlatList scrollable if needed, or disable if parent ScrollView handles it
-      // scrollEnabled={false} // Example: if parent ScrollView handles scrolling
-      contentContainerStyle={{ flexGrow: 1, paddingVertical: 5 }} // Add some padding
+      ListHeaderComponent={ListHeaderComponent} // Pass header component
+      refreshControl={
+        // Add RefreshControl
+        onRefresh ? ( // Only add if onRefresh is provided
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]} // Color for iOS spinner
+            colors={[theme.colors.primary[500]]} // Color for Android spinner
+            progressBackgroundColor={
+              isDarkMode ? theme.colors.neutral[800] : theme.colors.background
+            } // Background for Android spinner - Fixed: Use background
+          />
+        ) : undefined
+      }
+      // Make FlatList scrollable (it's now the main scroller)
+      scrollEnabled={true}
+      contentContainerStyle={{ flexGrow: 1, paddingVertical: 5, paddingBottom: 80 }} // Add paddingBottom for FAB
+      // className="flex-1 px-0" // Removed className as a test - padding should be handled by header/items
     />
   );
 };
@@ -203,7 +240,8 @@ export const PlantList = withObservables(
     const plantsObserve = database
       .get<Plant>('plants')
       .query(Q.where('is_deleted', Q.notEq(true))) // Keep the query specific
-      .observeWithColumns([ // Observe relevant columns for PlantItem
+      .observeWithColumns([
+        // Observe relevant columns for PlantItem
         'name',
         'strain',
         'imageUrl',
@@ -249,7 +287,6 @@ const enhance = withObservables([], ({ database }: { database: Database }) => ({
 
 // Apply the HOC to the base component
 export const EnhancedPlantList = enhance(PlantListComponent);
-
 
 // Default export remains the enhanced version for backward compatibility if needed,
 // but using EnhancedPlantList might be clearer.

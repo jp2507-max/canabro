@@ -74,12 +74,11 @@ const migrations = schemaMigrations({
         }),
       ],
     },
-    // Migration to version 3: Ensure is_deleted column exists in plants table
+    // Migration to version 3: Add all required columns for the Plant model
     {
       toVersion: 3,
       steps: [
         // Ensure is_deleted column exists in plants table
-        // This is necessary because the column may not have been created in version 2
         addColumns({
           table: 'plants',
           columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
@@ -91,6 +90,132 @@ const migrations = schemaMigrations({
             { name: 'next_water_date', type: 'number', isOptional: true },
             { name: 'next_feed_date', type: 'number', isOptional: true },
             { name: 'strain_id', type: 'string', isOptional: true, isIndexed: true },
+          ],
+        }),
+        // Add all the missing columns needed by the Plant model
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'plant_id', type: 'string', isOptional: true },
+            { name: 'journal_id', type: 'string', isOptional: true },
+            { name: 'strain', type: 'string', isOptional: true },
+            { name: 'planted_date', type: 'string', isOptional: true },
+            { name: 'cannabis_type', type: 'string', isOptional: true },
+            { name: 'grow_medium', type: 'string', isOptional: true },
+            { name: 'light_condition', type: 'string', isOptional: true },
+            { name: 'location_description', type: 'string', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 4: Remove the redundant plant_id column from the plants table schema
+    // Note: We are not actually dropping the column from the SQLite table to avoid complex migration steps.
+    // The column is removed from the schema definition (schema.ts) and will no longer be used or synced.
+    {
+      toVersion: 4,
+      steps: [
+        // No explicit steps needed here as the column is removed from the schema definition.
+        // WatermelonDB will handle the schema update based on the new definition in schema.ts.
+      ],
+    },
+    // Migration to version 5: Make updated_at columns non-optional in the schema
+    // Note: This change affects WatermelonDB's schema validation but doesn't require
+    // altering the underlying SQLite table structure, as the columns already exist.
+    {
+      toVersion: 5,
+      steps: [
+        // No explicit steps needed here.
+      ],
+    },
+    // Migration to version 6: Add the notifications table
+    {
+      toVersion: 6,
+      steps: [
+        createTable({
+          name: 'notifications',
+          columns: [
+            // WatermelonDB automatically handles 'id' as the primary key
+            { name: 'notification_id', type: 'string' }, // Keep original ID if needed for relations, but 'id' is the WDB key
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'sender_id', type: 'string', isOptional: true },
+            { name: 'type', type: 'string' },
+            { name: 'content', type: 'string', isOptional: true },
+            { name: 'related_post_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'related_comment_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'is_read', type: 'boolean' },
+            { name: 'created_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 7: Add the strains table
+    {
+      toVersion: 7,
+      steps: [
+        createTable({
+          name: 'strains',
+          columns: [
+            // WatermelonDB automatically handles 'id' as the primary key
+            { name: 'strain_id', type: 'string' }, // Keep original ID if needed for relations, but 'id' is the WDB key
+            { name: 'name', type: 'string', isIndexed: true },
+            { name: 'type', type: 'string' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'image_url', type: 'string', isOptional: true },
+            { name: 'thc_content', type: 'number', isOptional: true },
+            { name: 'cbd_content', type: 'number', isOptional: true },
+            { name: 'flowering_time', type: 'number', isOptional: true },
+            { name: 'difficulty', type: 'number', isOptional: true },
+            { name: 'effects', type: 'string', isOptional: true }, // Stored as JSON string
+            { name: 'flavors', type: 'string', isOptional: true }, // Stored as JSON string
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 8: Add the plant_tasks table
+    {
+      toVersion: 8,
+      steps: [
+        createTable({
+          name: 'plant_tasks',
+          columns: [
+            // WatermelonDB automatically handles 'id' as the primary key
+            { name: 'task_id', type: 'string' }, // Keep original ID if needed for relations, but 'id' is the WDB key
+            { name: 'plant_id', type: 'string', isIndexed: true },
+            { name: 'title', type: 'string' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'task_type', type: 'string' },
+            { name: 'due_date', type: 'string' }, // Storing date as string based on model
+            { name: 'status', type: 'string' },
+            { name: 'notification_id', type: 'string', isOptional: true },
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 9: Add the posts table
+    {
+      toVersion: 9,
+      steps: [
+        createTable({
+          name: 'posts',
+          columns: [
+            // WatermelonDB automatically handles 'id' as the primary key
+            { name: 'post_id', type: 'string' }, // Keep original ID if needed for relations, but 'id' is the WDB key
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'content', type: 'string' },
+            { name: 'image_url', type: 'string', isOptional: true },
+            { name: 'plant_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'likes_count', type: 'number', isOptional: true },
+            { name: 'comments_count', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
           ],
         }),
       ],

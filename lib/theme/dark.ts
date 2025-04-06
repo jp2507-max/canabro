@@ -24,18 +24,18 @@ const darkTheme: Theme = {
       900: '#064e3b', // Almost black green
     },
 
-    // Neutral palette - less dark green instead of black/gray for a softer dark mode with better contrast
+    // Neutral palette - dark versions of the warm beige/earthy tones
     neutral: {
-      50: '#0f3d2d', // Dark green background (replaces almost black)
-      100: '#164e3a', // Less dark green (replaces very dark gray)
-      200: '#1e6349', // Medium dark green (replaces dark gray)
-      300: '#297a5d', // Medium green (replaces medium dark gray)
-      400: '#34916e', // Light medium green (replaces medium gray)
-      500: '#3fa87f', // Light green (replaces light gray)
-      600: '#4abe91', // Medium light green (replaces medium light gray)
-      700: '#60d3a7', // Light green (replaces light gray)
-      800: '#e2f0eb', // Very light green (replaces very light gray)
-      900: '#f3f9f7', // Almost white with green tint (replaces almost white)
+      50: '#4b3f33', // Very dark brown (was 900 light)
+      100: '#615141', // Dark brown (was 800 light)
+      200: '#7f6a56', // Darker brown (was 700 light)
+      300: '#9c846e', // Medium brown (was 600 light)
+      400: '#b8a18a', // Muted brown (was 500 light)
+      500: '#d3bfa8', // Warm gray/light brown (was 400 light) - Use for text
+      600: '#e9d8c0', // Light warm gray/beige (was 300 light) - Use for text/borders
+      700: '#f5eadc', // Soft beige (was 200 light) - Use for lighter elements
+      800: '#fbf6ef', // Light beige (was 100 light)
+      900: '#fdfbf7', // Very light beige/off-white (was 50 light) - Use for high contrast text
     },
 
     // Status colors - maintain recognition but adjust for dark mode
@@ -54,7 +54,7 @@ const darkTheme: Theme = {
     },
 
     // Background color for the app
-    background: '#0f3d2d', // Dark green background for the app
+    background: '#4b3f33', // Use darkest brown for background
   },
 
   // Typography - keep the same type system
@@ -107,16 +107,16 @@ const darkTheme: Theme = {
         borderRadius: 9999, // Pill shape
       },
       secondary: {
-        backgroundColor: '#1e6349', // Medium dark green instead of dark gray
-        textColor: '#ffffff', // White text for better readability
-        borderColor: '#297a5d',
+        backgroundColor: '#615141', // Dark brown background
+        textColor: '#fdfbf7', // Lightest beige text
+        borderColor: '#7f6a56', // Darker brown border
         borderWidth: 1,
         borderRadius: 9999,
       },
       outline: {
         backgroundColor: 'transparent',
-        textColor: '#4abe91', // Brighter green for better visibility
-        borderColor: '#4abe91',
+        textColor: '#e9d8c0', // Light warm beige text
+        borderColor: '#e9d8c0', // Light warm beige border
         borderWidth: 1,
         borderRadius: 9999,
       },
@@ -127,16 +127,16 @@ const darkTheme: Theme = {
       },
     },
     input: {
-      backgroundColor: '#164e3a', // Less dark green instead of dark gray
-      textColor: '#ffffff', // White text for better readability
-      placeholderColor: '#60d3a7', // Light green for better visibility
+      backgroundColor: '#615141', // Dark brown background
+      textColor: '#fdfbf7', // Lightest beige text
+      placeholderColor: '#b8a18a', // Muted brown placeholder
       borderRadius: 9999,
       padding: 16,
     },
     card: {
-      backgroundColor: '#164e3a', // Less dark green instead of dark gray
+      backgroundColor: '#615141', // Dark brown background
       borderRadius: 16,
-      borderColor: '#297a5d', // Medium green border for better definition
+      borderColor: '#7f6a56', // Darker brown border
       borderWidth: 1,
     },
   },

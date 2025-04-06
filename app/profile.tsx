@@ -165,10 +165,11 @@ function ProfileScreenBase({
   return (
     <SafeAreaView className="flex-1">
       <ThemedView
-        style={{ flex: 1 }}
+        // style={{ flex: 1 }} // Removed flex: 1 here
         lightClassName="bg-background"
         darkClassName="bg-darkBackground">
         <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }} // Added flexGrow: 1 to ensure ScrollView content area can expand
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -190,7 +191,6 @@ function ProfileScreenBase({
                 My Profile
               </ThemedText>
               <View className="flex-row items-center space-x-3">
-                {' '}
                 {/* Increased spacing */}
                 <ThemeToggle compact showLabel={false} />
                 <TouchableOpacity
@@ -208,10 +208,8 @@ function ProfileScreenBase({
                 </TouchableOpacity>
               </View>
             </ThemedView>
-
             {/* Profile Info Section */}
             <ThemedView className="items-center p-6 pt-8">
-              {' '}
               {/* Increased top padding */}
               <View className="relative mb-4">
                 <Image
@@ -258,7 +256,6 @@ function ProfileScreenBase({
               lightClassName="bg-card"
               darkClassName="bg-darkCard">
               <View className="items-center px-2">
-                {' '}
                 {/* Added padding */}
                 <ThemedText
                   className="text-2xl font-bold tracking-tight" // Increased size, added tracking
@@ -280,7 +277,6 @@ function ProfileScreenBase({
                 darkClassName="bg-darkBorder"
               />
               <View className="items-center px-2">
-                {' '}
                 {/* Added padding */}
                 <ThemedText
                   className="text-2xl font-bold tracking-tight" // Increased size, added tracking

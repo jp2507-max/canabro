@@ -20,7 +20,8 @@ function ThemedView({
 
   const themeSpecificClass = isDarkMode ? darkClassName : lightClassName;
 
-  const combinedClassName = `${className} ${themeSpecificClass}`.trim();
+  // Slightly more robust class name combination
+  const combinedClassName = [className, themeSpecificClass].filter(Boolean).join(' ');
 
   return (
     <View className={combinedClassName} style={style} {...props}>

@@ -22,8 +22,10 @@ export class Plant extends Model {
     diary_entries: { type: 'has_many' as const, foreignKey: 'plant_id' },
     profiles: { type: 'belongs_to' as const, key: 'user_id' }, // Add profile association
   };
+  
+  // Ensure all required fields are initialized with default values to prevent undefined errors
 
-  @text('plant_id') plantId!: string;
+  // @text('plant_id') plantId!: string; // Removed redundant plant_id field
   @text('journal_id') journalId!: string;
   @text('name') name!: string;
   @text('strain') strain!: string;

@@ -211,18 +211,18 @@ export const theme: Theme = {
       900: '#064e3b', // Almost black green
     },
 
-    // Neutral palette - grays
+    // Neutral palette - warmer beige/earthy tones
     neutral: {
-      50: '#fafafa', // Almost white
-      100: '#f5f5f5', // Very light gray
-      200: '#e5e5e5', // Light gray
-      300: '#d4d4d4', // Medium light gray
-      400: '#a3a3a3', // Medium gray
-      500: '#737373', // Dark gray
-      600: '#525252', // Darker gray
-      700: '#404040', // Very dark gray
-      800: '#262626', // Almost black
-      900: '#171717', // Black
+      50: '#fdfbf7', // Very light beige/off-white
+      100: '#fbf6ef', // Light beige
+      200: '#f5eadc', // Soft beige
+      300: '#e9d8c0', // Light warm gray/beige
+      400: '#d3bfa8', // Warm gray/light brown
+      500: '#b8a18a', // Muted brown
+      600: '#9c846e', // Medium brown
+      700: '#7f6a56', // Darker brown
+      800: '#615141', // Dark brown
+      900: '#4b3f33', // Very dark brown
     },
 
     // Status colors
@@ -239,7 +239,7 @@ export const theme: Theme = {
       feeding: '#8b5cf6', // Purple for feeding
       harvesting: '#f59e0b', // Orange/yellow for harvesting
     },
-    background: '#ffffff',
+    background: '#fdfbf7', // Use lightest beige for background
   },
 
   // Typography - consistent text styling
@@ -364,9 +364,9 @@ export const theme: Theme = {
         borderRadius: 9999, // Pill shape
       },
       secondary: {
-        backgroundColor: '#ffffff',
-        textColor: '#16a34a',
-        borderColor: '#d1d5db',
+        backgroundColor: '#fdfbf7', // Lightest beige background
+        textColor: '#16a34a', // Keep primary green text
+        borderColor: '#e9d8c0', // Light warm beige border
         borderWidth: 1,
         borderRadius: 9999,
       },
@@ -384,16 +384,16 @@ export const theme: Theme = {
       },
     },
     input: {
-      backgroundColor: '#f9fafb',
-      textColor: '#1f2937',
-      placeholderColor: '#9ca3af',
+      backgroundColor: '#fbf6ef', // Light beige background
+      textColor: '#4b3f33', // Dark brown text
+      placeholderColor: '#b8a18a', // Muted brown placeholder
       borderRadius: 9999,
       padding: 16,
     },
     card: {
-      backgroundColor: '#ffffff',
+      backgroundColor: '#fdfbf7', // Lightest beige background
       borderRadius: 16,
-      borderColor: '#f3f4f6',
+      borderColor: '#f5eadc', // Soft beige border
       borderWidth: 1,
     },
   },

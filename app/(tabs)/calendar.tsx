@@ -21,7 +21,7 @@ import ThemedView from '../../components/ui/ThemedView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { useDatabase } from '../../lib/contexts/DatabaseProvider'; // Keep useDatabase import
 import { useNotifications, TaskNotificationParams } from '../../lib/contexts/NotificationContext';
-import { useTheme } from '../../lib/contexts/ThemeContext';
+import { useTheme } from '../../lib/contexts/ThemeContext'; // Keep useTheme
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh'; // Import the pull-to-refresh hook
 import { Plant } from '../../lib/models/Plant'; // Import Plant model for relation
 import { PlantTask } from '../../lib/models/PlantTask'; // Import WatermelonDB PlantTask model
@@ -33,7 +33,7 @@ interface DateSelectorProps {
 }
 
 function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
-  // const { isDarkMode } = useTheme(); // isDarkMode is not used here
+  const { theme, isDarkMode } = useTheme(); // Get theme object and isDarkMode
 
   const dates = useMemo(() => {
     const result = [];
@@ -46,7 +46,7 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
   }, []); // Calculate only once
 
   return (
-    <View className="mb-4 flex-row">
+    <View style={{ marginBottom: 16, flexDirection: 'row' }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -57,32 +57,52 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
           const isSelected = dateString === selectedDateString;
           const isCurrentDateToday = isToday(date);
 
+          // Determine background color based on selection state
+          const bgColor = isSelected
+            ? theme.colors.primary[600]
+            : isCurrentDateToday
+              ? isDarkMode ? theme.colors.primary[900] : theme.colors.primary[100]
+              : isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100];
+
+          // Determine day text color
+          const dayTextColor = isSelected
+            ? theme.colors.neutral[50]
+            : isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500];
+
+          // Determine date text color
+          const dateTextColor = isSelected
+            ? theme.colors.neutral[50]
+            : isCurrentDateToday
+              ? isDarkMode ? theme.colors.primary[500] : theme.colors.primary[700]
+              : isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[800];
+
           return (
             <TouchableOpacity
               key={index}
-              onPress={() => onDateSelect(date)} // Use the passed handler
-              className={`mx-2 h-16 w-16 items-center justify-center rounded-full ${
-                isSelected
-                  ? 'bg-green-600'
-                  : isCurrentDateToday
-                    ? 'bg-green-100 dark:bg-green-900'
-                    : 'bg-gray-100 dark:bg-gray-800'
-              }`}>
+              onPress={() => onDateSelect(date)}
+              style={{
+                marginHorizontal: 8,
+                height: 64,
+                width: 64,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 32,
+                backgroundColor: bgColor
+              }}>
               <ThemedText
-                className={`text-xs ${
-                  isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'
-                }`}>
-                {format(date, 'E')}
+                style={{
+                  fontSize: 12,
+                  color: dayTextColor
+                }}>
+                {`${format(date, 'E')}`}
               </ThemedText>
               <ThemedText
-                className={`text-lg font-bold ${
-                  isSelected
-                    ? 'text-white'
-                    : isCurrentDateToday
-                      ? 'text-green-700 dark:text-green-500'
-                      : 'text-gray-800 dark:text-gray-300'
-                }`}>
-                {format(date, 'd')}
+                style={{
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                  color: dateTextColor
+                }}>
+                {`${format(date, 'd')}`}
               </ThemedText>
             </TouchableOpacity>
           );
@@ -105,30 +125,42 @@ interface TaskItemProps {
 function TaskItemBase({
   task,
   plant,
-  isDarkMode,
+  isDarkMode, // Keep isDarkMode if needed elsewhere, or get from useTheme
   onComplete,
   onNavigate,
 }: TaskItemProps & { plant: Plant | null }) {
+  const { theme } = useTheme(); // Get theme object
   const plantName = plant?.name ?? 'Loading Plant...'; // Handle loading/null plant
   const taskType = task.taskType as TaskNotificationParams['taskType']; // Cast type
 
+  // Define icon colors based on theme
+  const iconColors: Record<TaskNotificationParams['taskType'] | 'default', string> = {
+    water: theme.colors.status.info, // Use info blue
+    feed: theme.colors.special.feeding, // Use feeding purple
+    prune: theme.colors.primary[600], // Use primary green
+    transplant: '#8b5cf6', // Keep purple for now, maybe add to theme?
+    harvest: theme.colors.special.harvesting, // Use harvesting orange
+    other: theme.colors.neutral[500], // Add 'other' type, use default color
+    default: theme.colors.neutral[500], // Default neutral color
+  };
+  const iconBgClasses: Record<TaskNotificationParams['taskType'] | 'default', string> = {
+    water: 'bg-blue-100 dark:bg-blue-900', // Keep specific status colors for now
+    feed: 'bg-purple-100 dark:bg-purple-900', // Keep specific status colors for now
+    prune: 'bg-primary-100 dark:bg-primary-900', // Use theme primary
+    transplant: 'bg-purple-100 dark:bg-purple-900', // Keep specific status colors for now
+    harvest: 'bg-orange-100 dark:bg-orange-900', // Use orange, maybe add to theme?
+    other: 'bg-neutral-100 dark:bg-neutral-700', // Add 'other' type, use default background
+    default: 'bg-neutral-100 dark:bg-neutral-700', // Use theme neutral
+  };
+
   return (
-    <ThemedView className="mb-4 overflow-hidden rounded-lg bg-white shadow-sm dark:bg-gray-800">
+    // Use theme neutral colors for card background
+    <ThemedView className="mb-4 overflow-hidden rounded-lg bg-neutral-50 shadow-sm dark:bg-neutral-800">
       <View className="flex-row p-4">
         {/* Task type icon */}
         <View
           className={`mr-4 h-12 w-12 items-center justify-center rounded-full ${
-            taskType === 'water'
-              ? 'bg-blue-100 dark:bg-blue-900'
-              : taskType === 'feed'
-                ? 'bg-yellow-100 dark:bg-yellow-900'
-                : taskType === 'prune'
-                  ? 'bg-green-100 dark:bg-green-900'
-                  : taskType === 'transplant'
-                    ? 'bg-purple-100 dark:bg-purple-900'
-                    : taskType === 'harvest'
-                      ? 'bg-red-100 dark:bg-red-900'
-                      : 'bg-gray-100 dark:bg-gray-700'
+            iconBgClasses[taskType] ?? iconBgClasses.default // Use dynamic background class
           }`}>
           <Ionicons
             name={
@@ -145,19 +177,7 @@ function TaskItemBase({
                         : 'calendar'
             }
             size={24}
-            color={
-              taskType === 'water'
-                ? '#3b82f6'
-                : taskType === 'feed'
-                  ? '#f59e0b'
-                  : taskType === 'prune'
-                    ? '#10b981'
-                    : taskType === 'transplant'
-                      ? '#8b5cf6'
-                      : taskType === 'harvest'
-                        ? '#ef4444'
-                        : '#6b7280'
-            }
+            color={iconColors[taskType] ?? iconColors.default} // Use dynamic icon color from theme
           />
         </View>
 
@@ -170,22 +190,27 @@ function TaskItemBase({
             className="mb-1 flex-row items-center"
             disabled={!plant} // Disable if plant is not loaded yet
           >
-            <Ionicons name="leaf" size={14} color={isDarkMode ? '#10b981' : '#047857'} />
-            <ThemedText className="ml-1 text-sm text-green-700 dark:text-green-500">
+            {/* Use theme primary color for leaf icon */}
+            <Ionicons name="leaf" size={14} color={theme.colors.primary[isDarkMode ? 500 : 700]} />
+            {/* Use theme primary color for text */}
+            <ThemedText className="ml-1 text-sm text-primary-700 dark:text-primary-500">
               {plantName}
             </ThemedText>
           </TouchableOpacity>
 
           {task.description && (
-            <ThemedText className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+            // Use theme neutral color for description text
+            <ThemedText className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
               {task.description}
             </ThemedText>
           )}
 
           <View className="flex-row items-center">
-            <Ionicons name="time-outline" size={14} color={isDarkMode ? '#d1d5db' : '#6b7280'} />
-            <ThemedText className="ml-1 text-xs text-gray-500 dark:text-gray-400">
-              {format(parseISO(task.dueDate), 'h:mm a')}
+            {/* Use theme neutral color for time icon */}
+            <Ionicons name="time-outline" size={14} color={theme.colors.neutral[isDarkMode ? 300 : 500]} />
+            {/* Use theme neutral color for time text */}
+            <ThemedText className="ml-1 text-xs text-neutral-500 dark:text-neutral-400">
+              {`${format(parseISO(task.dueDate), 'h:mm a')}`}
             </ThemedText>
           </View>
         </View>
@@ -193,8 +218,10 @@ function TaskItemBase({
         {/* Complete button */}
         <TouchableOpacity
           onPress={() => onComplete(task)} // Pass the full task model instance
-          className="ml-2 h-10 w-10 items-center justify-center self-center rounded-full bg-green-100 dark:bg-green-900">
-          <Ionicons name="checkmark" size={24} color={isDarkMode ? '#10b981' : '#047857'} />
+          // Use theme primary colors for background
+          className="ml-2 h-10 w-10 items-center justify-center self-center rounded-full bg-primary-100 dark:bg-primary-900">
+          {/* Use theme primary color for checkmark icon */}
+          <Ionicons name="checkmark" size={24} color={theme.colors.primary[isDarkMode ? 500 : 700]} />
         </TouchableOpacity>
       </View>
     </ThemedView>
@@ -218,7 +245,7 @@ interface CalendarScreenProps {
 
 function CalendarScreen({ selectedDate, userId }: CalendarScreenProps) {
   const { database } = useDatabase(); // Get database via hook
-  const { isDarkMode } = useTheme();
+  const { theme, isDarkMode } = useTheme(); // Get theme object and isDarkMode
   const {
     isNotificationsEnabled,
     requestPermissions,
@@ -433,48 +460,88 @@ function CalendarScreen({ selectedDate, userId }: CalendarScreenProps) {
   const showEmptyState = !isLoadingTasks && tasks.length === 0 && database; // Only show empty if not loading and DB is ready
 
   return (
-    <ThemedView className="flex-1">
+    <ThemedView style={{ flex: 1 }}>
       {/* FlatList for tasks */}
       <FlatList
+        key="tasks-list"
         data={tasks} // Use tasks from component state
         keyExtractor={(item) => item.id}
         renderItem={renderTaskItem}
-        contentContainerClassName="px-4 pb-4"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing} // Use refreshing from usePullToRefresh
             onRefresh={handleRefresh}
-            colors={['#16a34a']}
-            tintColor={isDarkMode ? '#16a34a' : '#16a34a'}
+            colors={[theme.colors.primary[600]]} // Use theme color
+            tintColor={theme.colors.primary[600]} // Use theme color
           />
         }
-        ListEmptyComponent={
-          showLoadingIndicator ? (
-            <View className="flex-1 items-center justify-center py-12">
-              <ActivityIndicator size="large" color="#16a34a" />
-            </View>
-          ) : showEmptyState ? (
-            <View className="flex-1 items-center justify-center px-6 py-12">
-              <Ionicons
-                name="calendar-outline"
-                size={48}
-                color={isDarkMode ? '#9ca3af' : '#6b7280'}
-              />
-              <ThemedText className="mt-4 text-center text-lg font-semibold text-gray-700 dark:text-gray-300">
-                All Clear!
-              </ThemedText>
-              <ThemedText className="mt-1 text-center text-gray-500 dark:text-gray-400">
-                No tasks scheduled for {format(selectedDate, 'MMMM d, yyyy')}.
-              </ThemedText>
-              <TouchableOpacity
-                // TODO: Verify this route exists and is correct for adding tasks
-                onPress={() => router.push('/(tabs)/index' as any)} // Example: Navigate home or to a task creation screen
-                className="mt-6 flex-row items-center rounded-lg bg-green-600 px-5 py-2.5 shadow">
-                <Ionicons name="add" size={18} color="white" />
-                <ThemedText className="ml-1.5 font-medium text-white">Add New Task</ThemedText>
-              </TouchableOpacity>
-            </View>
-          ) : null // Render nothing if loading and tasks exist, or if not empty
+        ListEmptyComponent={() => {
+          // Loading state
+          if (showLoadingIndicator) {
+            return (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 48 }}>
+                <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+              </View>
+            );
+          }
+          
+          // Empty state
+          if (showEmptyState) {
+            const formattedDate = format(selectedDate, 'MMMM d, yyyy');
+            return (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 48 }}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={48}
+                  color={theme.colors.neutral[isDarkMode ? 400 : 500]}
+                />
+                <ThemedText 
+                  style={{ 
+                    marginTop: 16, 
+                    textAlign: 'center', 
+                    fontSize: 18, 
+                    fontWeight: '600',
+                    color: isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700]
+                  }}>
+                  {"All Clear!"}
+                </ThemedText>
+                <ThemedText 
+                  style={{ 
+                    marginTop: 4, 
+                    textAlign: 'center',
+                    color: isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]
+                  }}>
+                  {`No tasks scheduled for ${formattedDate}.`}
+                </ThemedText>
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/index' as any)}
+                  style={{
+                    marginTop: 24,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: theme.colors.primary[600],
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 3,
+                    elevation: 2
+                  }}>
+                  <Ionicons name="add" size={18} color={theme.colors.neutral[50]} />
+                  <ThemedText style={{ marginLeft: 6, fontWeight: '500', color: theme.colors.neutral[50] }}>
+                    {"Add New Task"}
+                  </ThemedText>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+          
+          // Default case - return null
+          return null;
+        }
         }
       />
     </ThemedView>
@@ -486,11 +553,17 @@ function CalendarScreen({ selectedDate, userId }: CalendarScreenProps) {
 function CalendarScreenContainer() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const { session } = useAuth(); // Get session here to pass userId
+  const { theme, isDarkMode } = useTheme(); // Add theme context
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-      <ThemedView className="px-4 pt-4">
-        <ThemedText className="mb-4 text-2xl font-bold">Calendar</ThemedText>
+    <SafeAreaView 
+      style={{ 
+        flex: 1, 
+        backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50] 
+      }} 
+      edges={['top']}>
+      <ThemedView style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+        <ThemedText style={{ marginBottom: 16, fontSize: 24, fontWeight: 'bold' }}>Calendar</ThemedText>
       </ThemedView>
       {/* Date Selector is rendered here, managing its own interaction via onDateSelect */}
       <DateSelector selectedDate={selectedDate} onDateSelect={setSelectedDate} />

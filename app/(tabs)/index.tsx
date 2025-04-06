@@ -48,7 +48,8 @@ interface HomeScreenProps {
 }
 
 // --- HomeScreen Component ---
-function HomeScreen({ database }: HomeScreenProps) { // Receive database prop
+function HomeScreen({ database }: HomeScreenProps) {
+  // Receive database prop
   const { theme, isDarkMode } = useTheme();
   const navigation = useRouter();
   const { refreshing, handleRefresh } = usePullToRefresh({
@@ -91,50 +92,48 @@ function HomeScreen({ database }: HomeScreenProps) { // Receive database prop
   return (
     <SafeAreaView className="flex-1">
       <ThemedView
-        className="flex-1"
+        // className="flex-1" // Removed flex-1 from ThemedView, SafeAreaView already has it
         lightClassName="bg-neutral-50" // Or potentially white like the image?
         darkClassName="bg-black">
         {/* Header Removed */}
 
-        {/* Content Area */}
-        <ScrollView
-          className="flex-1 px-4 pt-4" // Added pt-4
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 80 }} // Add padding for FAB
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }>
-          {/* Location Title */}
-          <ThemedText
-            className="mb-2 text-3xl font-bold" // Added margin bottom
-            lightClassName="text-neutral-800"
-            darkClassName="text-white">
-            Meine Pflanzen
-          </ThemedText>
-
-          {/* Static Tag Pills */}
-          <View className="mb-4 flex-row">
-            <TagPill text="Halbschatten" isDarkMode={isDarkMode} />
-            <TagPill text="Drinnen" isDarkMode={isDarkMode} />
-            {/* Use plantCount state for the pill */}
-            <TagPill text={`${plantCount} Pflanze${plantCount !== 1 ? 'n' : ''}`} isDarkMode={isDarkMode} />
-          </View>
-
-          {/* Use EnhancedPlantList Component */}
-          <EnhancedPlantList
-            database={database} // Pass database instance
-            isLoading={isLoading} // Pass loading state
-            onCountChange={handleCountChange} // Pass callback
-            // scrollEnabled={false} // Keep FlatList non-scrollable inside ScrollView
-          />
-          {/* Loading/Empty states are now handled inside EnhancedPlantList */}
-
-        </ScrollView>
-
-        {/* Floating Action Button (FAB) Area */}
-        <View className="absolute bottom-6 right-6 items-end">
-          {/* FAB Menu Options (conditionally rendered) */}
-          {isFabMenuOpen && (
+        {/* Content Area - Now directly using EnhancedPlantList as the main scroll container */}
+        <EnhancedPlantList
+          database={database} // Pass database instance
+          isLoading={isLoading} // Pass loading state
+          onCountChange={handleCountChange} // Pass callback
+          refreshing={refreshing} // Pass refreshing state for RefreshControl
+          onRefresh={handleRefresh} // Pass refresh handler
+          // Pass header content as ListHeaderComponent
+          ListHeaderComponent={
+            <View className="px-4 pt-4">
+              {/* Location Title */}
+              <ThemedText
+                className="mb-2 text-3xl font-bold" // Added margin bottom
+                lightClassName="text-neutral-800"
+                darkClassName="text-white">
+                Meine Pflanzen
+              </ThemedText>
+              {/* Static Tag Pills */}
+              <View className="mb-4 flex-row">
+                <TagPill text="Halbschatten" isDarkMode={isDarkMode} />
+                <TagPill text="Drinnen" isDarkMode={isDarkMode} />
+                <TagPill
+                  text={`${plantCount} Pflanze${plantCount !== 1 ? 'n' : ''}`}
+                  isDarkMode={isDarkMode}
+                />
+              </View></View>
+          }
+          // Ensure FlatList inside EnhancedPlantList has appropriate padding/styles
+          // The FlatList itself will now handle the main scrolling
+          // Add paddingBottom to the FlatList's contentContainerStyle inside EnhancedPlantList
+          // to accommodate the FAB. We'll do this in the next step.
+        />
+        {/* Loading/Empty states are handled inside EnhancedPlantList */}
+        {/* Floating Action Button (FAB) Area - Remains outside the list */}
+        <View className="absolute bottom-6 right-6 z-10 items-end">
+          {/* FAB Menu Options (conditionally rendered) - Using ternary operator */}
+          {isFabMenuOpen ? (
             <View className="mb-3 items-end">
               <Pressable
                 className="mb-3 flex-row items-center rounded-full bg-neutral-200 px-4 py-2 dark:bg-neutral-700"
@@ -173,23 +172,21 @@ function HomeScreen({ database }: HomeScreenProps) { // Receive database prop
                 />
               </Pressable>
             </View>
-          )}
-
+          ) : null}
           {/* Main FAB */}
           <TouchableOpacity
             className="h-14 w-14 items-center justify-center rounded-full shadow-lg"
-            style={{ backgroundColor: isFabMenuOpen ? theme.colors.neutral[500] : theme.colors.primary[500] }} // Change color when open
+            style={{
+              backgroundColor: isFabMenuOpen
+                ? theme.colors.neutral[500]
+                : theme.colors.primary[500],
+            }} // Change color when open
             onPress={() => setIsFabMenuOpen(!isFabMenuOpen)}
             accessibilityLabel={isFabMenuOpen ? 'Close actions menu' : 'Open actions menu'}
             accessibilityRole="button">
-            <Ionicons
-              name={isFabMenuOpen ? 'close' : 'add'}
-              size={30}
-              color="white"
-            />
+            <Ionicons name={isFabMenuOpen ? 'close' : 'add'} size={30} color="white" />
           </TouchableOpacity>
         </View>
-
         {/* Add Plant Modal (remains the same) */}
         <Modal
           visible={isAddPlantModalVisible}
@@ -243,12 +240,8 @@ export default function HomeScreenContainer() {
 
   // Ensure database is ready before rendering HomeScreen
   if (!database) {
-    // Optional: Render a loading state until the database is available
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
+    // Render nothing until the database is available to simplify initial render
+    return null;
   }
 
   // Pass database directly as a prop

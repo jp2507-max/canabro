@@ -254,55 +254,56 @@ const EffectTag = ({
   effect: StrainEffectType;
   size?: 'small' | 'large';
 }) => {
-  // const { isDarkMode } = useTheme(); // isDarkMode is unused here
+  const { theme, isDarkMode } = useTheme(); // Get theme
 
-  // Map effects to colors
+  // Map effects to colors using theme
   const effectColors: Record<string, { bg: string; text: string }> = {
-    // Positive effects
+    // Using theme colors - adjust as needed for better semantics
     [StrainEffectType.HAPPY]: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900',
+      bg: 'bg-yellow-100 dark:bg-yellow-900', // Keep yellow for happy
       text: 'text-yellow-800 dark:text-yellow-300',
     },
     [StrainEffectType.RELAXED]: {
-      bg: 'bg-blue-100 dark:bg-blue-900',
+      bg: 'bg-blue-100 dark:bg-blue-900', // Keep blue for relaxed
       text: 'text-blue-800 dark:text-blue-300',
     },
     [StrainEffectType.EUPHORIC]: {
-      bg: 'bg-purple-100 dark:bg-purple-900',
+      bg: 'bg-purple-100 dark:bg-purple-900', // Keep purple for euphoric
       text: 'text-purple-800 dark:text-purple-300',
     },
     [StrainEffectType.UPLIFTED]: {
-      bg: 'bg-green-100 dark:bg-green-900',
-      text: 'text-green-800 dark:text-green-300',
+      bg: 'bg-primary-100 dark:bg-primary-900', // Use primary green for uplifted
+      text: 'text-primary-800 dark:text-primary-300',
     },
     [StrainEffectType.CREATIVE]: {
-      bg: 'bg-pink-100 dark:bg-pink-900',
+      bg: 'bg-pink-100 dark:bg-pink-900', // Keep pink for creative
       text: 'text-pink-800 dark:text-pink-300',
     },
     [StrainEffectType.ENERGETIC]: {
-      bg: 'bg-red-100 dark:bg-red-900',
+      bg: 'bg-red-100 dark:bg-red-900', // Keep red for energetic
       text: 'text-red-800 dark:text-red-300',
     },
     [StrainEffectType.FOCUSED]: {
-      bg: 'bg-indigo-100 dark:bg-indigo-900',
+      bg: 'bg-indigo-100 dark:bg-indigo-900', // Keep indigo for focused
       text: 'text-indigo-800 dark:text-indigo-300',
     },
-    // Potential concerns
     [StrainEffectType.SLEEPY]: {
-      bg: 'bg-gray-100 dark:bg-gray-800',
-      text: 'text-gray-800 dark:text-gray-300',
+      bg: 'bg-neutral-100 dark:bg-neutral-800', // Use theme neutral
+      text: 'text-neutral-800 dark:text-neutral-300',
     },
     [StrainEffectType.HUNGRY]: {
-      bg: 'bg-orange-100 dark:bg-orange-900',
+      bg: 'bg-orange-100 dark:bg-orange-900', // Keep orange for hungry
       text: 'text-orange-800 dark:text-orange-300',
     },
-    // Additional effects could be added here as they become available in the enum
   };
 
-  const style = effectColors[effect] || {
-    bg: 'bg-gray-100 dark:bg-gray-700',
-    text: 'text-gray-800 dark:text-gray-300',
+  // Default style using theme neutral colors
+  const defaultStyle = {
+    bg: 'bg-neutral-100 dark:bg-neutral-700',
+    text: 'text-neutral-800 dark:text-neutral-300',
   };
+
+  const style = effectColors[effect] || defaultStyle;
 
   return (
     <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
@@ -314,62 +315,67 @@ const EffectTag = ({
 };
 
 const FlavorTag = ({ flavor }: { flavor: StrainFlavorType }) => {
-  // Map flavors to colors
+  const { theme, isDarkMode } = useTheme(); // Get theme
+
+  // Map flavors to colors using theme
   const flavorColors: Record<string, { bg: string; text: string }> = {
     [StrainFlavorType.SWEET]: {
-      bg: 'bg-pink-100 dark:bg-pink-900',
+      bg: 'bg-pink-100 dark:bg-pink-900', // Keep pink
       text: 'text-pink-800 dark:text-pink-300',
     },
     [StrainFlavorType.EARTHY]: {
-      bg: 'bg-brown-100 dark:bg-amber-900',
-      text: 'text-amber-800 dark:text-amber-300',
+      bg: 'bg-neutral-200 dark:bg-neutral-700', // Use theme neutral
+      text: 'text-neutral-800 dark:text-neutral-300',
     },
     [StrainFlavorType.CITRUS]: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900',
+      bg: 'bg-yellow-100 dark:bg-yellow-900', // Keep yellow
       text: 'text-yellow-800 dark:text-yellow-300',
     },
     [StrainFlavorType.BERRY]: {
-      bg: 'bg-purple-100 dark:bg-purple-900',
+      bg: 'bg-purple-100 dark:bg-purple-900', // Keep purple
       text: 'text-purple-800 dark:text-purple-300',
     },
     [StrainFlavorType.PINE]: {
-      bg: 'bg-green-100 dark:bg-green-900',
-      text: 'text-green-800 dark:text-green-300',
+      bg: 'bg-primary-100 dark:bg-primary-900', // Use theme primary
+      text: 'text-primary-800 dark:text-primary-300',
     },
     [StrainFlavorType.WOODY]: {
-      bg: 'bg-amber-100 dark:bg-amber-900',
-      text: 'text-amber-800 dark:text-amber-300',
+      bg: 'bg-neutral-300 dark:bg-neutral-600', // Use theme neutral
+      text: 'text-neutral-800 dark:text-neutral-200',
     },
     [StrainFlavorType.DIESEL]: {
-      bg: 'bg-gray-100 dark:bg-gray-800',
-      text: 'text-gray-800 dark:text-gray-300',
+      bg: 'bg-neutral-100 dark:bg-neutral-800', // Use theme neutral
+      text: 'text-neutral-800 dark:text-neutral-300',
     },
     [StrainFlavorType.PUNGENT]: {
-      bg: 'bg-indigo-100 dark:bg-indigo-900',
+      bg: 'bg-indigo-100 dark:bg-indigo-900', // Keep indigo
       text: 'text-indigo-800 dark:text-indigo-300',
     },
     [StrainFlavorType.SPICY]: {
-      bg: 'bg-red-100 dark:bg-red-900',
+      bg: 'bg-red-100 dark:bg-red-900', // Keep red
       text: 'text-red-800 dark:text-red-300',
     },
     [StrainFlavorType.VANILLA]: {
-      bg: 'bg-cream-100 dark:bg-amber-900',
-      text: 'text-amber-800 dark:text-amber-300',
+      bg: 'bg-neutral-100 dark:bg-neutral-900', // Use theme neutral (lightest)
+      text: 'text-neutral-800 dark:text-neutral-300',
     },
     [StrainFlavorType.BLUEBERRY]: {
-      bg: 'bg-blue-100 dark:bg-blue-900',
+      bg: 'bg-blue-100 dark:bg-blue-900', // Keep blue
       text: 'text-blue-800 dark:text-blue-300',
     },
     [StrainFlavorType.GRAPE]: {
-      bg: 'bg-purple-100 dark:bg-purple-900',
+      bg: 'bg-purple-100 dark:bg-purple-900', // Keep purple
       text: 'text-purple-800 dark:text-purple-300',
     },
   };
 
-  const style = flavorColors[flavor] || {
-    bg: 'bg-gray-100 dark:bg-gray-700',
-    text: 'text-gray-800 dark:text-gray-300',
+  // Default style using theme neutral colors
+  const defaultStyle = {
+    bg: 'bg-neutral-100 dark:bg-neutral-700',
+    text: 'text-neutral-800 dark:text-neutral-300',
   };
+
+  const style = flavorColors[flavor] || defaultStyle;
 
   return (
     <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
@@ -380,7 +386,7 @@ const FlavorTag = ({ flavor }: { flavor: StrainFlavorType }) => {
 
 export default function StrainsScreen() {
   useProtectedRoute();
-  const { isDarkMode } = useTheme();
+  const { theme, isDarkMode } = useTheme(); // Get theme object
   // const { database } = useDatabase(); // database is unused
   const { refreshing, handleRefresh } = usePullToRefresh({
     showFeedback: true,
@@ -467,37 +473,44 @@ export default function StrainsScreen() {
   return (
     <ThemedView className="flex-1">
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      <SafeAreaView className="flex-1">
+      {/* Use theme background color for SafeAreaView */}
+      <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 pb-2 pt-2">
           <ThemedText className="text-2xl font-bold">Strains</ThemedText>
           <TouchableOpacity
-            className="rounded-full bg-gray-100 p-2 dark:bg-gray-800"
+            // Use theme neutral colors for filter button background
+            className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800"
             onPress={() => {
               // In a real app, navigate to settings or filter page
               Alert.alert('Coming Soon', 'Filter options will be available here.');
             }}>
-            <Ionicons name="options-outline" size={24} color={isDarkMode ? '#d1d5db' : '#374151'} />
+            {/* Use theme neutral color for icon */}
+            <Ionicons name="options-outline" size={24} color={theme.colors.neutral[isDarkMode ? 300 : 700]} />
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
         <View className="px-4 pb-3">
-          <View className="flex-row items-center rounded-xl bg-gray-100 px-4 dark:bg-gray-800">
-            <Ionicons name="search" size={20} color={isDarkMode ? '#9ca3af' : '#6b7280'} />
+          {/* Use theme neutral colors for search bar background */}
+          <View className="flex-row items-center rounded-xl bg-neutral-100 px-4 dark:bg-neutral-800">
+            {/* Use theme neutral color for icon */}
+            <Ionicons name="search" size={20} color={theme.colors.neutral[isDarkMode ? 400 : 500]} />
             <TextInput
               placeholder="Search strains..."
-              placeholderTextColor={isDarkMode ? '#9ca3af' : '#6b7280'}
-              className="flex-1 px-2 py-3 text-gray-900 dark:text-white"
+              placeholderTextColor={theme.colors.neutral[isDarkMode ? 400 : 500]} // Use theme neutral color
+              // Use theme neutral color for text
+              className="flex-1 px-2 py-3 text-neutral-900 dark:text-neutral-100"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
+                {/* Use theme neutral color for icon */}
                 <Ionicons
                   name="close-circle"
                   size={20}
-                  color={isDarkMode ? '#9ca3af' : '#6b7280'}
+                  color={theme.colors.neutral[isDarkMode ? 400 : 500]}
                 />
               </TouchableOpacity>
             )}
@@ -506,7 +519,8 @@ export default function StrainsScreen() {
 
         {loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={isDarkMode ? '#d1d5db' : '#374151'} />
+            {/* Use theme primary color for activity indicator */}
+            <ActivityIndicator size="large" color={theme.colors.primary[600]} />
           </View>
         ) : (
           <ScrollView
@@ -518,7 +532,8 @@ export default function StrainsScreen() {
                 <View className="mb-2 flex-row items-center justify-between px-4">
                   <ThemedText className="text-lg font-bold">Featured Strains</ThemedText>
                   <TouchableOpacity onPress={() => setSelectedCategory('popular')}>
-                    <ThemedText className="text-sm text-blue-600 dark:text-blue-400">
+                    {/* Use theme primary color for link */}
+                    <ThemedText className="text-sm text-primary-600 dark:text-primary-400">
                       See All
                     </ThemedText>
                   </TouchableOpacity>
@@ -531,7 +546,8 @@ export default function StrainsScreen() {
                     <Pressable
                       key={strain.id}
                       onPress={() => viewStrainDetails(strain)}
-                      className="mr-4 w-72 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                      // Use theme neutral colors for card background
+                      className="mr-4 w-72 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
                       {strain.image_url ? (
                         <Image
                           source={{ uri: strain.image_url }}
@@ -539,29 +555,33 @@ export default function StrainsScreen() {
                           resizeMode="cover"
                         />
                       ) : (
-                        <View className="h-40 w-full items-center justify-center bg-gray-200 dark:bg-gray-700">
+                        // Use theme neutral colors for placeholder background and icon
+                        <View className="h-40 w-full items-center justify-center bg-neutral-200 dark:bg-neutral-700">
                           <MaterialCommunityIcons
                             name="cannabis"
                             size={40}
-                            color={isDarkMode ? '#4b5563' : '#9ca3af'}
+                            color={theme.colors.neutral[isDarkMode ? 500 : 400]}
                           />
                         </View>
                       )}
                       <View className="p-3">
                         <View className="mb-1 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{strain.name}</ThemedText>
-                          <View className="rounded-full bg-green-100 px-2 py-1 dark:bg-green-900">
-                            <ThemedText className="text-xs font-medium capitalize text-green-800 dark:text-green-300">
+                          {/* Use theme primary colors for species tag */}
+                          <View className="rounded-full bg-primary-100 px-2 py-1 dark:bg-primary-900">
+                            <ThemedText className="text-xs font-medium capitalize text-primary-800 dark:text-primary-300">
                               {strain.species}
                             </ThemedText>
                           </View>
                         </View>
+                        {/* Use theme neutral colors for description */}
                         <ThemedText
                           numberOfLines={2}
-                          className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                          className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
                           {strain.description}
                         </ThemedText>
                         <View className="flex-row">
+                          {/* Keep specific colors for THC/CBD tags for now */}
                           <View className="mr-2 rounded-full bg-purple-100 px-2 py-1 dark:bg-purple-900">
                             <ThemedText className="text-xs font-medium text-purple-800 dark:text-purple-300">
                               THC: {strain.thc_content}%
@@ -590,28 +610,26 @@ export default function StrainsScreen() {
                   <TouchableOpacity
                     key={category.id}
                     onPress={() => setSelectedCategory(category.id)}
-                    className={`mr-2 flex-row items-center rounded-full px-4 py-2 
+                    className={`mr-2 flex-row items-center rounded-full px-4 py-2
                       ${
                         selectedCategory === category.id
-                          ? 'bg-green-500 dark:bg-green-700'
-                          : 'bg-gray-200 dark:bg-gray-800'
+                          ? 'bg-primary-600 dark:bg-primary-700' // Use theme primary
+                          : 'bg-neutral-200 dark:bg-neutral-800' // Use theme neutral
                       }`}>
                     <MaterialCommunityIcons
                       name={category.icon as any}
                       size={18}
                       color={
                         selectedCategory === category.id
-                          ? 'white'
-                          : isDarkMode
-                            ? '#d1d5db'
-                            : '#4b5563'
+                          ? theme.colors.neutral[50] // Use theme neutral light
+                          : theme.colors.neutral[isDarkMode ? 300 : 700] // Use theme neutral
                       }
                     />
                     <ThemedText
                       className={`ml-1 ${
                         selectedCategory === category.id
-                          ? 'text-white dark:text-white'
-                          : 'text-gray-900 dark:text-gray-300'
+                          ? 'text-neutral-50 dark:text-neutral-100' // Use theme neutral light
+                          : 'text-neutral-900 dark:text-neutral-300' // Use theme neutral
                       }`}>
                       {category.name}
                     </ThemedText>
@@ -628,12 +646,14 @@ export default function StrainsScreen() {
 
               {filteredStrains.length === 0 ? (
                 <View className="flex-1 items-center justify-center py-8">
+                  {/* Use theme neutral color for icon */}
                   <MaterialCommunityIcons
                     name="cannabis"
                     size={50}
-                    color={isDarkMode ? '#6b7280' : '#9ca3af'}
+                    color={theme.colors.neutral[isDarkMode ? 500 : 400]}
                   />
-                  <ThemedText className="mt-2 text-center text-gray-500 dark:text-gray-400">
+                  {/* Use theme neutral color for text */}
+                  <ThemedText className="mt-2 text-center text-neutral-500 dark:text-neutral-400">
                     No strains found. Try a different search or category.
                   </ThemedText>
                 </View>
@@ -645,7 +665,8 @@ export default function StrainsScreen() {
                   renderItem={({ item }) => (
                     <Pressable
                       onPress={() => viewStrainDetails(item)}
-                      className="mb-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                      // Use theme neutral colors for card background
+                      className="mb-4 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
                       {item.image_url ? (
                         <Image
                           source={{ uri: item.image_url }}
@@ -653,36 +674,40 @@ export default function StrainsScreen() {
                           resizeMode="cover"
                         />
                       ) : (
-                        <View className="h-48 w-full items-center justify-center bg-gray-200 dark:bg-gray-700">
+                        // Use theme neutral colors for placeholder background and icon
+                        <View className="h-48 w-full items-center justify-center bg-neutral-200 dark:bg-neutral-700">
                           <MaterialCommunityIcons
                             name="cannabis"
                             size={40}
-                            color={isDarkMode ? '#4b5563' : '#9ca3af'}
+                            color={theme.colors.neutral[isDarkMode ? 500 : 400]}
                           />
                         </View>
                       )}
                       <View className="p-4">
                         <View className="mb-2 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{item.name}</ThemedText>
-                          <View className="rounded-full bg-green-100 px-2 py-1 dark:bg-green-900">
-                            <ThemedText className="text-xs font-medium capitalize text-green-800 dark:text-green-300">
+                          {/* Use theme primary colors for species tag */}
+                          <View className="rounded-full bg-primary-100 px-2 py-1 dark:bg-primary-900">
+                            <ThemedText className="text-xs font-medium capitalize text-primary-800 dark:text-primary-300">
                               {item.species}
                             </ThemedText>
                           </View>
                         </View>
+                        {/* Use theme neutral colors for description */}
                         <ThemedText
                           numberOfLines={2}
-                          className="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                          className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
                           {item.description}
                         </ThemedText>
+                        {/* Use theme neutral colors for THC/CBD tags */}
                         <View className="mb-3 flex-row">
-                          <View className="mr-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700">
-                            <ThemedText className="text-xs font-medium">
+                          <View className="mr-2 rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
+                            <ThemedText className="text-xs font-medium text-neutral-800 dark:text-neutral-300">
                               THC: {item.thc_content}%
                             </ThemedText>
                           </View>
-                          <View className="rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700">
-                            <ThemedText className="text-xs font-medium">
+                          <View className="rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
+                            <ThemedText className="text-xs font-medium text-neutral-800 dark:text-neutral-300">
                               CBD: {item.cbd_content}%
                             </ThemedText>
                           </View>
@@ -691,7 +716,8 @@ export default function StrainsScreen() {
                         {/* Effects Tags */}
                         {item.effects && item.effects.length > 0 && (
                           <View className="mb-2">
-                            <ThemedText className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+                            {/* Use theme neutral color for label */}
+                            <ThemedText className="mb-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                               Effects:
                             </ThemedText>
                             <View className="flex-row flex-wrap">
@@ -699,8 +725,9 @@ export default function StrainsScreen() {
                                 <EffectTag key={`${item.id}-effect-${idx}`} effect={effect} />
                               ))}
                               {item.effects.length > 3 && (
-                                <View className="mb-2 mr-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700">
-                                  <ThemedText className="text-xs text-gray-600 dark:text-gray-400">
+                                // Use theme neutral colors for "more" tag
+                                <View className="mb-2 mr-2 rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
+                                  <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
                                     +{item.effects.length - 3} more
                                   </ThemedText>
                                 </View>
@@ -712,7 +739,8 @@ export default function StrainsScreen() {
                         {/* Flavors Tags */}
                         {item.flavors && item.flavors.length > 0 && (
                           <View className="mb-3">
-                            <ThemedText className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+                            {/* Use theme neutral color for label */}
+                            <ThemedText className="mb-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                               Flavors:
                             </ThemedText>
                             <View className="flex-row flex-wrap">
@@ -720,8 +748,9 @@ export default function StrainsScreen() {
                                 <FlavorTag key={`${item.id}-flavor-${idx}`} flavor={flavor} />
                               ))}
                               {item.flavors.length > 2 && (
-                                <View className="mb-2 mr-2 rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-700">
-                                  <ThemedText className="text-xs text-gray-600 dark:text-gray-400">
+                                // Use theme neutral colors for "more" tag
+                                <View className="mb-2 mr-2 rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
+                                  <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
                                     +{item.flavors.length - 2} more
                                   </ThemedText>
                                 </View>
@@ -732,6 +761,7 @@ export default function StrainsScreen() {
 
                         <View className="flex-row items-center justify-between">
                           <View className="flex-row items-center">
+                            {/* Use theme neutral color for icon */}
                             <MaterialCommunityIcons
                               name={
                                 item.difficulty === StrainDifficulty.BEGINNER
@@ -741,14 +771,15 @@ export default function StrainsScreen() {
                                     : 'signal-cellular-3'
                               }
                               size={16}
-                              color={isDarkMode ? '#d1d5db' : '#6b7280'}
+                              color={theme.colors.neutral[isDarkMode ? 300 : 500]}
                             />
-                            <ThemedText className="ml-1 text-xs capitalize text-gray-600 dark:text-gray-400">
+                            {/* Use theme neutral color for text */}
+                            <ThemedText className="ml-1 text-xs capitalize text-neutral-600 dark:text-neutral-400">
                               {item.difficulty} to grow
                             </ThemedText>
                           </View>
-
-                          <ThemedText className="text-xs text-gray-500 dark:text-gray-400">
+                          {/* Use theme neutral color for text */}
+                          <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400">
                             {item.flowering_time} weeks to flower
                           </ThemedText>
                         </View>

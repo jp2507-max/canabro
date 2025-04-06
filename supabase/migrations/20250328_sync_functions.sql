@@ -19,7 +19,7 @@ AS $$
 DECLARE
   result JSONB;
   tables TEXT[] := ARRAY['profiles', 'plants', 'grow_journals', 'journal_entries', 'grow_locations', 'diary_entries', 'plant_tasks', 'posts'];
-  table_name TEXT;
+  current_table_name TEXT; -- Renamed variable
   query TEXT;
   changes JSONB := jsonb_build_object();
   table_changes JSONB;
@@ -29,30 +29,67 @@ DECLARE
   deleted_ids JSONB;
   record_row RECORD;
   i INTEGER;
+  column_list TEXT; -- Moved declaration here
 BEGIN
   -- For each table, fetch records updated since last pull
-  FOREACH table_name IN ARRAY tables
+  FOREACH current_table_name IN ARRAY tables -- Use renamed variable
   LOOP
-    -- Initialize the table changes object with empty arrays
-    table_changes := jsonb_build_object(
-      'created', jsonb_build_array(),
-      'updated', jsonb_build_array(),
-      'deleted', jsonb_build_array()
-    );
-    
-    -- Get created and updated records
-    created_records := table_changes->'created';
-    updated_records := table_changes->'updated';
-    
-    -- Construct query for records created/updated since last_pulled_at
-    query := format(
-      'SELECT * FROM %I WHERE user_id = $1 AND ($2::TIMESTAMP IS NULL OR updated_at > $2)',
-      table_name
-    );
-    
-    -- Execute query and build the created/updated arrays
-    FOR record_row IN EXECUTE query USING user_id, last_pulled_at
-    LOOP
+    -- Determine column list based on current_table_name, excluding _status and _changed
+    IF current_table_name = 'profiles' THEN
+      column_list := 'id, user_id, username, full_name, avatar_url, birth_date, bio, created_at, updated_at, experience_level, preferred_grow_method, favorite_strains, growing_since, location, is_certified, certifications, auth_provider, email_verified, last_sign_in';
+    ELSIF current_table_name = 'plants' THEN
+        -- Removed plant_id from the list
+        column_list := 'id, user_id, name, strain, stage, planted_date, location_id, journal_id, created_at, updated_at, growth_stage, height, image_url, strain_id, notes, last_synced_at, is_deleted, cannabis_type, grow_medium, light_condition, location_description';
+    ELSIF current_table_name = 'grow_journals' THEN
+        column_list := 'id, user_id, title, description, plant_strain, start_date, status, created_at, updated_at, journal_id';
+    ELSIF current_table_name = 'journal_entries' THEN
+        column_list := 'id, journal_id, content, image_url, plant_stage, plant_height, water_amount, nutrients, temperature, humidity, light_hours, created_at, updated_at, user_id';
+    ELSIF current_table_name = 'grow_locations' THEN
+        column_list := 'id, user_id, name, climate_zone, is_indoor, grow_medium, lighting_type, is_primary, created_at, updated_at, location_id';
+    ELSIF current_table_name = 'diary_entries' THEN
+        column_list := 'id, user_id, title, content, entry_type, entry_date, created_at, updated_at, plant_id';
+    ELSIF current_table_name = 'plant_tasks' THEN
+        -- This table doesn't have _status/_changed, select all relevant columns
+        column_list := 'id, user_id, plant_id, task_type, title, description, due_date, status, completed_at, created_at, updated_at';
+    ELSIF current_table_name = 'posts' THEN
+        -- This table doesn't have _status/_changed, select all relevant columns
+        column_list := 'id, user_id, content, image_url, plant_stage, plant_strain, likes_count, comments_count, created_at, updated_at';
+      ELSE
+        -- Fallback: Should not happen with the current tables array, but select * as a safety measure.
+        -- Consider logging an error here in a real production scenario.
+        column_list := '*';
+      END IF;
+
+      -- Initialize the table changes object with empty arrays
+      table_changes := jsonb_build_object(
+        'created', jsonb_build_array(),
+        'updated', jsonb_build_array(),
+        'deleted', jsonb_build_array()
+      );
+      
+      -- Get created and updated records
+      created_records := table_changes->'created';
+      updated_records := table_changes->'updated';
+
+      -- Construct query for records created/updated since last_pulled_at
+      -- Use 'id = $1' for profiles table, 'user_id = $1' for others
+      IF current_table_name = 'profiles' THEN -- Use renamed variable
+        -- Compare the UUID PK 'id' with the UUID input parameter '$1'
+        query := format(
+          'SELECT %s FROM %I WHERE id = $1 AND ($2::TIMESTAMP IS NULL OR updated_at > $2)',
+          column_list, current_table_name -- Use renamed variable
+        );
+      ELSE
+        -- Compare the UUID 'user_id' column with the UUID input parameter '$1'
+        query := format(
+          'SELECT %s FROM %I WHERE user_id = $1 AND ($2::TIMESTAMP IS NULL OR updated_at > $2)',
+          column_list, current_table_name -- Use renamed variable
+        );
+      END IF;
+
+      -- Execute query and build the created/updated arrays
+      FOR record_row IN EXECUTE query USING user_id, last_pulled_at
+      LOOP
       -- Convert row to JSON
       IF last_pulled_at IS NULL OR 
          (record_row.created_at = record_row.updated_at) OR
@@ -74,15 +111,18 @@ BEGIN
     
     -- Query for deleted records
     IF EXISTS (
-      SELECT 1 FROM information_schema.tables 
-      WHERE table_schema = 'public' AND 
-            table_name = format('%s_deleted', table_name)
+      SELECT 1 FROM information_schema.tables AS t -- Alias the table for clarity
+      WHERE t.table_schema = 'public' AND
+            t.table_name = format('%s_deleted', current_table_name) -- Use renamed variable in format
     ) THEN
+      -- Query for deleted records - Assuming _deleted tables also use user_id (uuid) correctly
+      -- If profiles_deleted uses a text user_id, this needs adjustment too.
+      -- For now, assume user_id is uuid in _deleted tables.
       query := format(
         'SELECT id FROM %I_deleted WHERE user_id = $1 AND ($2::TIMESTAMP IS NULL OR deleted_at > $2)',
-        table_name
+        current_table_name -- Use renamed variable
       );
-      
+
       -- Execute query to get deleted record IDs
       FOR record_row IN EXECUTE query USING user_id, last_pulled_at
       LOOP
@@ -94,9 +134,10 @@ BEGIN
     END IF;
     
     -- Add this table's changes to the overall changes object
-    changes := jsonb_set(changes, ARRAY[table_name], table_changes);
+    changes := jsonb_set(changes, ARRAY[current_table_name], table_changes); -- Use renamed variable
+    -- Removed nested END; here
   END LOOP;
-  
+
   -- Build the final result with changes and timestamp
   result := jsonb_build_object(
     'changes', changes,
@@ -167,28 +208,10 @@ BEGIN
         jsonb_array_length(table_changes->'deleted') = 0) THEN
       CONTINUE;
     END IF;
-    
-    -- Map the ID field for the current table
-    IF table_name = 'profiles' THEN
-      id_field := 'user_id';
-    ELSIF table_name = 'plants' THEN
-      id_field := 'plant_id';
-    ELSIF table_name = 'grow_journals' THEN
-      id_field := 'journal_id';
-    ELSIF table_name = 'journal_entries' THEN
-      id_field := 'entry_id';
-    ELSIF table_name = 'grow_locations' THEN
-      id_field := 'location_id';
-    ELSIF table_name = 'diary_entries' THEN
-      id_field := 'entry_id';
-    ELSIF table_name = 'plant_tasks' THEN
-      id_field := 'task_id';
-    ELSIF table_name = 'posts' THEN
-      id_field := 'post_id';
-    ELSE
-      id_field := 'id';
-    END IF;
-    
+
+    -- Set the primary key field name (consistently 'id' for these tables)
+    id_field := 'id'; -- Assuming 'id' is the UUID primary key for all relevant tables
+
     -- Process created records
     created_records := table_changes->'created';
     IF jsonb_array_length(created_records) > 0 THEN
@@ -293,14 +316,15 @@ BEGIN
         set_statements := LEFT(set_statements, LENGTH(set_statements) - 2);
         
         -- Build and execute update query
+        -- Apply ::uuid cast to record_id for comparison with uuid primary key
         query := format(
-          'UPDATE %I SET %s WHERE %s = %L',
+          'UPDATE %I SET %s WHERE %s = %L::uuid',
           table_name,
           set_statements,
           id_field,
           record_id
         );
-        
+
         -- Check for conflict with last_pulled_at timestamp
         IF last_pulled_at IS NOT NULL THEN
           query := query || format(' AND (updated_at IS NULL OR updated_at <= %L)', last_pulled_at);
@@ -335,14 +359,15 @@ BEGIN
         END;
         
         -- Then delete from the main table
+        -- Apply ::uuid cast to record_id and user_id for comparison with uuid columns
         query := format(
-          'DELETE FROM %I WHERE %s = %L AND user_id = %L',
+          'DELETE FROM %I WHERE %s = %L::uuid AND user_id = %L::uuid',
           table_name,
           id_field,
           record_id,
           user_id
         );
-        
+
         -- Check for conflict with last_pulled_at timestamp
         IF last_pulled_at IS NOT NULL THEN
           query := query || format(' AND (updated_at IS NULL OR updated_at <= %L)', last_pulled_at);

@@ -6,7 +6,7 @@ import * as FileSystem from 'expo-file-system';
 // import { Observable } from 'rxjs'; // Observable is unused
 // import { Model } from '@nozbe/watermelondb'; // Model is unused
 import { isExpoGo } from '../config';
-import plantSchema from './schema'; // Import the schema directly
+import plantSchema from '../models/schema'; // Corrected import path
 // Import all model classes directly
 import { DiaryEntry } from '../models/DiaryEntry';
 import { GrowJournal } from '../models/GrowJournal';

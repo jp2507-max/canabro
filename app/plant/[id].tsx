@@ -1,9 +1,12 @@
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { Database } from '@nozbe/watermelondb';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { Database, Q } from '@nozbe/watermelondb'; // Import Q
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
 import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams, router } from 'expo-router';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
+// We need the map operator from rxjs
+import { map } from 'rxjs/operators';
 import {
   View,
   Text,
@@ -17,13 +20,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../lib/contexts/ThemeContext';
+import { useDatabase } from '../../lib/contexts/DatabaseProvider'; // Import useDatabase hook
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { Plant } from '../../lib/models/Plant';
 // import supabase from '../../lib/supabase'; // supabase is unused
 
 // Base component that receives the plant from withObservables
 function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
-  const { sync } = useWatermelon();
+  const { sync, database } = useWatermelon();
   const { theme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(plant?.name || '');
@@ -31,7 +35,7 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   const [editedGrowthStage, setEditedGrowthStage] = useState(plant?.growthStage || '');
   const [editedNotes, setEditedNotes] = useState(plant?.notes || '');
   const [newImage, setNewImage] = useState<string | null>(null);
-  // const [isUploadingImage, setIsUploadingImage] = useState(false); // isUploadingImage is unused
+  const [processingImage, setProcessingImage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
 
@@ -42,6 +46,9 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
       setEditedStrain(plant.strain);
       setEditedGrowthStage(plant.growthStage);
       setEditedNotes(plant.notes || '');
+      
+      // Log the image URL for debugging
+      console.log(`Plant image URL: ${plant.imageUrl || 'None'}`);
     }
   }, [plant]);
 
@@ -54,6 +61,12 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={theme.colors.primary[500]} />
           <Text className="mt-4 text-center text-gray-500">Loading plant details...</Text>
+          <TouchableOpacity 
+            className="mt-6 rounded-lg bg-primary-500 px-4 py-2"
+            onPress={() => router.back()}
+          >
+            <Text className="text-white">Go Back</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -64,19 +77,25 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
 
     try {
       setIsSaving(true);
-
-      await plant.update((record) => {
-        record.name = editedName;
-        record.strain = editedStrain;
-        record.growthStage = editedGrowthStage;
-        record.notes = editedNotes;
-        // If we have a new image path from the picker, update it
-        if (newImage) {
-          record.imageUrl = newImage;
-        }
+      
+      // Use database from the component level
+      // Use a database.write transaction instead of direct plant.update
+      await database.write(async () => {
+        await plant.update((record) => {
+          record.name = editedName;
+          record.strain = editedStrain;
+          record.growthStage = editedGrowthStage;
+          record.notes = editedNotes;
+          // If we have a new image path from the picker, update it
+          if (newImage) {
+            // Store the full URI path to the processed image
+            record.imageUrl = newImage;
+          }
+        });
       });
 
-      sync(); // Trigger sync to update Supabase
+      // After successful update, trigger sync to update Supabase
+      sync(); 
       setIsEditing(false);
       setNewImage(null);
     } catch (error) {
@@ -87,7 +106,33 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
     }
   };
 
-  const handleDelete = async () => {
+  // Process and optimize images using ImageManipulator
+const processAndSetImage = async (imageUri: string) => {
+  try {
+    setProcessingImage(true);
+    console.log('Processing image from URI:', imageUri);
+    
+    // Resize and compress the image for better performance
+    const manipResult = await ImageManipulator.manipulateAsync(
+      imageUri,
+      [
+        { resize: { width: 800, height: 800 } }, // Resize to reasonable dimensions
+      ],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG } // Moderate compression
+    );
+    
+    console.log('Image processed successfully. New URI:', manipResult.uri);
+    // Set the processed image URI
+    setNewImage(manipResult.uri);
+  } catch (error) {
+    console.error('Error processing image:', error);
+    Alert.alert('Error', 'Failed to process image');
+  } finally {
+    setProcessingImage(false);
+  }
+};
+
+const handleDelete = async () => {
     if (!plant) return;
 
     Alert.alert(
@@ -100,7 +145,12 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await plant.markAsDeleted();
+              // Use database from component level
+              // Use a write transaction
+              await database.write(async () => {
+                await plant.markAsDeleted();
+              });
+              
               sync(); // Sync with Supabase to delete remotely too
               router.back();
             } catch (error) {
@@ -116,14 +166,15 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   const handleImagePick = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Use MediaTypeOptions which is the correct API
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
       if (!result.canceled) {
-        setNewImage(result.assets[0].uri);
+        // Process the image before setting it
+        await processAndSetImage(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -141,14 +192,15 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Use MediaTypeOptions which is the correct API
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
       if (!result.canceled) {
-        setNewImage(result.assets[0].uri);
+        // Process the image before setting it
+        await processAndSetImage(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Error taking picture:', error);
@@ -165,7 +217,7 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
         <View className="relative">
           {/* Image Section */}
           <View className="h-64 w-full bg-gray-200">
-            {plant.imageUrl || newImage ? (
+            {(plant.imageUrl || newImage) ? (
               <Image
                 source={{ uri: newImage || plant.imageUrl }}
                 className="h-full w-full"
@@ -175,6 +227,12 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
               <View className="h-full w-full items-center justify-center">
                 <FontAwesome5 name="cannabis" size={64} color="#9ca3af" />
                 <Text className="mt-2 text-gray-500">No image available</Text>
+              </View>
+            )}
+            {processingImage && (
+              <View className="absolute inset-0 bg-black bg-opacity-50 items-center justify-center">
+                <ActivityIndicator size="large" color="white" />
+                <Text className="mt-2 text-white">Processing image...</Text>
               </View>
             )}
           </View>
@@ -373,25 +431,105 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   );
 }
 
-// Higher-order component to enhance with database
-const PlantDetailsScreenWithDatabase = withDatabase(PlantDetailsScreenBase);
+// Apply HOCs in the correct order: withDatabase first, then withObservables
 
-// Enhance with observables
-const PlantDetailsScreen = withObservables(
-  ['route'],
+// 1. Enhance the base component with the database prop
+const PlantDetailsWithDB = withDatabase(PlantDetailsScreenBase);
+
+// 2. Enhance the component with observables
+const PlantDetailsEnhanced = withObservables(
+  ['route', 'database'], // Observe changes based on both route and database props
   ({ database, route }: { database: Database; route: any }) => {
-    const id = route?.params?.id;
+    const id = route?.params?.id; // Get the plant ID from route params
 
-    return {
-      // Return null if id is not available
-      plant: id ? database.get<Plant>('plants').findAndObserve(id) : null,
-    };
+    // Ensure database and id are available before attempting to query
+    if (!database) {
+      console.error('[withObservables] Database is missing');
+      return { plant: null }; // Return null props if database isn't available
+    }
+
+    if (!id) {
+      console.error('[withObservables] Plant ID is missing');
+      return { plant: null }; // Return null props if ID isn't available
+    }
+
+    try {
+      console.log(`[withObservables] Querying plant with ID: ${id}`);
+      
+      // Use query().observe() which returns Observable<Model[]>
+      const plantCollection = database.get<Plant>('plants');
+      
+      // Verify the collection exists
+      if (!plantCollection) {
+        console.error('[withObservables] Plant collection not found in database');
+        return { plant: null };
+      }
+      
+      const plantObservable = plantCollection
+        .query(Q.where('id', id))
+        .observe();
+
+      // Map the Observable<Plant[]> to Observable<Plant | null>
+      return {
+        plant: plantObservable.pipe(
+          map((plants) => {
+            if (plants.length === 0) {
+              console.log(`[withObservables] No plant found with ID: ${id}`);
+              return null;
+            }
+            console.log(`[withObservables] Found plant with ID: ${id}`);
+            return plants[0];
+          })
+        ),
+      };
+    } catch (error) {
+      console.error('[withObservables] Error creating plant observable:', error);
+      return { plant: null };
+    }
   }
-)(PlantDetailsScreenWithDatabase);
+)(PlantDetailsWithDB); // Pass the database-enhanced component here
 
+// Wrapper component to handle route parameters and render the enhanced screen
 export default function PlantDetailsWrapper() {
   const params = useLocalSearchParams();
-  const id = params.id as string;
+  const id = params.id as string; // Get the ID from local search params
+  const { database } = useDatabase(); // Get database from context
 
-  return <PlantDetailsScreen route={{ params: { id } }} />;
+  // Ensure we have a valid ID before rendering the enhanced component
+  if (!id) {
+    return (
+      <SafeAreaView className="flex-1 bg-white p-4">
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-center text-red-500">Plant ID is missing</Text>
+          <TouchableOpacity 
+            className="mt-4 rounded-lg bg-primary-500 px-4 py-2"
+            onPress={() => router.back()}
+          >
+            <Text className="text-white">Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Ensure database is available
+  if (!database) {
+    return (
+      <SafeAreaView className="flex-1 bg-white p-4">
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text className="mt-4 text-center text-gray-500">Connecting to database...</Text>
+          <TouchableOpacity 
+            className="mt-6 rounded-lg bg-primary-500 px-4 py-2"
+            onPress={() => router.back()}
+          >
+            <Text className="text-white">Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Pass both the route params and database down to the enhanced component
+  return <PlantDetailsEnhanced route={{ params: { id } }} database={database} />;
 }

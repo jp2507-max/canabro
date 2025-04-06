@@ -84,22 +84,29 @@ export async function checkUnsyncedChanges(database: Database): Promise<boolean>
  * Handles both Date objects and numeric timestamps from WatermelonDB
  */
 function formatDateForSupabase(date: Date | number | string | null): string | null {
-  if (date === null) return null;
+  if (date === null || date === undefined) return null;
 
-  if (typeof date === 'number') {
-    return new Date(date).toISOString();
-  } else if (typeof date === 'string') {
-    // Check if it's already an ISO string
-    if (date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
-      return date;
+  try {
+    if (typeof date === 'number') {
+      // Handle integers that could be timestamps
+      return new Date(date).toISOString();
+    } else if (typeof date === 'string') {
+      // Check if it's already an ISO string
+      if (date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+        return date;
+      }
+      // Try to parse it
+      const parsedDate = new Date(date);
+      return isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString();
+    } else if (date instanceof Date) {
+      return date.toISOString();
     }
-    // Try to parse it
-    const parsedDate = new Date(date);
-    return isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString();
-  } else if (date instanceof Date) {
-    return date.toISOString();
+  } catch (error) {
+    console.error(`Error formatting date: ${date}`, error);
+    return null;
   }
 
+  console.warn(`Unknown date format: ${typeof date}`, date);
   return null;
 }
 
@@ -220,20 +227,53 @@ export async function synchronizeWithServer(
           for (const tableName of Object.keys(changes)) {
             if (!TABLES_TO_SYNC.includes(tableName)) continue;
             const tableChanges = changes[tableName];
+            
+            // Process created records with special handling for timestamps
+            const createdRecords = (tableChanges.created || []).map((record) => {
+              const sanitized = sanitizeRecord(record, tableName);
+              // Double-check timestamp fields are proper ISO strings
+              if (sanitized.created_at && typeof sanitized.created_at === 'number') {
+                sanitized.created_at = new Date(sanitized.created_at).toISOString();
+              }
+              if (sanitized.updated_at && typeof sanitized.updated_at === 'number') {
+                sanitized.updated_at = new Date(sanitized.updated_at).toISOString();
+              }
+              return sanitized;
+            });
+            
+            // Process updated records with special handling for timestamps
+            const updatedRecords = (tableChanges.updated || []).map((record) => {
+              const sanitized = sanitizeRecord(record, tableName);
+              // Double-check timestamp fields are proper ISO strings
+              if (sanitized.created_at && typeof sanitized.created_at === 'number') {
+                sanitized.created_at = new Date(sanitized.created_at).toISOString();
+              }
+              if (sanitized.updated_at && typeof sanitized.updated_at === 'number') {
+                sanitized.updated_at = new Date(sanitized.updated_at).toISOString();
+              }
+              return sanitized;
+            });
+            
             sanitizedChanges[tableName] = {
-              created: (tableChanges.created || []).map((record) =>
-                sanitizeRecord(record, tableName)
-              ),
-              updated: (tableChanges.updated || []).map((record) =>
-                sanitizeRecord(record, tableName)
-              ),
+              created: createdRecords,
+              updated: updatedRecords,
               deleted: (tableChanges.deleted || []).map((id) => ({ id })),
             };
           }
           try {
+            // Ensure lastPulledAt is properly formatted
+            let formattedLastPulledAt = null;
+            if (lastPulledAt) {
+              if (typeof lastPulledAt === 'number') {
+                formattedLastPulledAt = new Date(lastPulledAt).toISOString();
+              } else {
+                formattedLastPulledAt = formatDateForSupabase(lastPulledAt);
+              }
+            }
+            
             const { error } = await supabase.rpc('sync_push', {
               changes: sanitizedChanges,
-              last_pulled_at: lastPulledAt ? formatDateForSupabase(lastPulledAt) : null,
+              last_pulled_at: formattedLastPulledAt,
               user_id: userId,
             });
             if (error) throw new Error(`Sync push failed: ${error.message}`);
@@ -315,32 +355,76 @@ function sanitizeRecord(record: any, table: string): any {
   // Make a copy to avoid mutating the original
   const cleanedRecord = { ...record };
 
+  // Remove WatermelonDB system fields that should not be synced
+  delete cleanedRecord._status;
+  delete cleanedRecord._changed;
+
+  // Ensure id field exists AND is not an empty string or invalid type
+  if (!cleanedRecord.id || typeof cleanedRecord.id !== 'string' || cleanedRecord.id.trim() === '') {
+     // Throw a specific error instead of just warning
+     throw new Error(`Record in table ${table} has missing or invalid primary id: '${cleanedRecord.id}'`);
+  }
+  
+  // Special handling for plants table - convert non-UUID IDs to valid UUIDs
+  // This is necessary because WatermelonDB uses a different ID format than Supabase expects
+  if (table === 'plants') {
+    // Check if the ID is not already a UUID format (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(cleanedRecord.id)) {
+      // Generate a deterministic UUID based on the original ID to ensure consistency
+      // Store the original ID in a local variable (not in the record)
+      const originalId = cleanedRecord.id;
+      
+      // Generate a UUID
+      const newId = uuid();
+      console.log(`Converting plant ID from ${originalId} to UUID format: ${newId}`);
+      cleanedRecord.id = newId;
+    }
+  }
+
+  // Check all potential foreign key fields (ending in _id)
+  for (const key in cleanedRecord) {
+    if (key.endsWith('_id') && key !== 'id' && cleanedRecord[key] === '') {
+      // Throw an error if a foreign key is an empty string
+      throw new Error(`Record in table ${table} (id: ${cleanedRecord.id}) has invalid foreign key ${key}: ''`);
+    }
+  }
+  
   // Format dates for Supabase
+  // Convert field names from camelCase to snake_case for Supabase
   if (cleanedRecord.createdAt) {
-    cleanedRecord.createdAt = formatDateForSupabase(cleanedRecord.createdAt);
+    cleanedRecord.created_at = formatDateForSupabase(cleanedRecord.createdAt);
+    delete cleanedRecord.createdAt; // Remove the camelCase version
   }
 
   if (cleanedRecord.updatedAt) {
-    cleanedRecord.updatedAt = formatDateForSupabase(cleanedRecord.updatedAt);
+    cleanedRecord.updated_at = formatDateForSupabase(cleanedRecord.updatedAt);
+    delete cleanedRecord.updatedAt; // Remove the camelCase version
   }
 
   if (cleanedRecord.lastSyncedAt) {
-    cleanedRecord.lastSyncedAt = formatDateForSupabase(cleanedRecord.lastSyncedAt);
+    cleanedRecord.last_synced_at = formatDateForSupabase(cleanedRecord.lastSyncedAt);
+    delete cleanedRecord.lastSyncedAt; // Remove the camelCase version
   }
 
-  // Convert any other date fields specific to the table
+  // Convert any other date fields specific to the table - using snake_case for Supabase
   // This depends on your schema
   if (table === 'plants' && cleanedRecord.plantedDate) {
-    cleanedRecord.plantedDate = formatDateForSupabase(cleanedRecord.plantedDate);
+    cleanedRecord.planted_date = formatDateForSupabase(cleanedRecord.plantedDate);
+    delete cleanedRecord.plantedDate; // Remove the camelCase version
   }
 
   if ((table === 'journal_entries' || table === 'diary_entries') && cleanedRecord.entryDate) {
-    cleanedRecord.entryDate = formatDateForSupabase(cleanedRecord.entryDate);
+    cleanedRecord.entry_date = formatDateForSupabase(cleanedRecord.entryDate);
+    delete cleanedRecord.entryDate; // Remove the camelCase version
   }
 
   if (table === 'plant_tasks' && cleanedRecord.dueDate) {
-    cleanedRecord.dueDate = formatDateForSupabase(cleanedRecord.dueDate);
+    cleanedRecord.due_date = formatDateForSupabase(cleanedRecord.dueDate);
+    delete cleanedRecord.dueDate; // Remove the camelCase version
   }
+  
+  // The check for id is now done earlier and throws an error if invalid
 
   return cleanedRecord;
 }
