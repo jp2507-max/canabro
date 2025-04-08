@@ -220,6 +220,34 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 10: Add genetics and harvest date columns to plants
+    {
+      toVersion: 10,
+      steps: [
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'is_auto_flower', type: 'boolean', isOptional: true },
+            { name: 'is_feminized', type: 'boolean', isOptional: true },
+            { name: 'thc_content', type: 'number', isOptional: true },
+            { name: 'cbd_content', type: 'number', isOptional: true },
+            { name: 'expected_harvest_date', type: 'string', isOptional: true }, // Using string for date
+          ],
+        }),
+      ],
+    },
+    // Migration to version 11: Add entry_date column to diary_entries
+    {
+      toVersion: 11,
+      steps: [
+        addColumns({
+          table: 'diary_entries',
+          columns: [
+            { name: 'entry_date', type: 'string' }, // Add the missing entry_date column
+          ],
+        }),
+      ],
+    },
   ],
 });
 

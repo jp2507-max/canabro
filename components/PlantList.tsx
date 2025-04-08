@@ -1,41 +1,41 @@
 'use client';
 
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // Added MaterialCommunityIcons
-import { Database, Q } from '@nozbe/watermelondb'; // Added Q
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Database, Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Link, useRouter } from 'expo-router'; // Use Link for navigation item, Import useRouter
-import React, { useEffect } from 'react'; // Added useEffect
+import { Link, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  Image,
+  Image, // Keep one Image import for the fallback/placeholder logic
   ActivityIndicator,
   RefreshControl,
-} from 'react-native'; // Added Image, ActivityIndicator, RefreshControl
+} from 'react-native';
 
-import { useTheme } from '../lib/contexts/ThemeContext'; // Added useTheme
-import { Plant } from '../lib/models/Plant';
-import ThemedText from './ui/ThemedText'; // Added ThemedText
-import ThemedView from './ui/ThemedView'; // Added ThemedView
+import { useTheme } from '../lib/contexts/ThemeContext'; // Corrected path
+import { Plant } from '../lib/models/Plant'; // Ensure Plant is imported
+import ThemedText from './ui/ThemedText';
+import ThemedView from './ui/ThemedView';
 
 interface PlantListComponentProps {
   plants: Plant[];
-  isLoading: boolean; // Add isLoading prop
-  onCountChange?: (count: number) => void; // Callback for plant count
-  ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null; // Add ListHeaderComponent prop
-  refreshing?: boolean; // Add refreshing prop
-  onRefresh?: () => void; // Add onRefresh prop
+  isLoading: boolean;
+  onCountChange?: (count: number) => void;
+  ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 // Mock data function for status icons - replace with real data later
 const getMockStatus = (plantId: string) => {
-  const idNum = parseInt(plantId.slice(-2), 16); // Use plant ID for pseudo-randomness
+  const idNum = parseInt(plantId.slice(-2), 16);
   return {
-    infoPercent: (idNum % 50) + 50, // 50-99%
-    waterDays: (idNum % 7) + 1, // 1-7 days
-    feedDays: (idNum % 14) + 7, // 7-20 days
+    infoPercent: (idNum % 50) + 50,
+    waterDays: (idNum % 7) + 1,
+    feedDays: (idNum % 14) + 7,
   };
 };
 
@@ -71,7 +71,7 @@ const PlantItem = React.memo(({ plant }: { plant: Plant }) => {
   const { theme, isDarkMode } = useTheme();
   const mockStatus = getMockStatus(plant.id);
 
-  // Status Icon Component (Internal to PlantItem or defined outside if reused elsewhere)
+  // Status Icon Component
   const StatusIcon = ({
     iconName,
     text,
@@ -87,26 +87,23 @@ const PlantItem = React.memo(({ plant }: { plant: Plant }) => {
     </View>
   );
 
-  // Get router instance for programmatic navigation
   const router = useRouter();
 
   return (
-    // <Link href={`/plant/${plant.id}`} asChild> // Temporarily removed Link
     <TouchableOpacity
-      className="mb-4 active:opacity-80" // Increased bottom margin
+      className="mb-4 active:opacity-80"
       key={plant.id}
-      onPress={() => router.push(`/plant/${plant.id}`)} // Added onPress handler
-      accessibilityLabel={`View details for plant: ${plant.name}, Strain: ${plant.strain}`}
+      onPress={() => router.push(`/plant/${plant.id}/journal`)} // Navigate to journal screen
+      accessibilityLabel={`View journal for plant: ${plant.name}, Strain: ${plant.strain}`} // Updated accessibility label
       accessibilityRole="button">
       <ThemedView
-        // Remove border and shadow, adjust padding
         className="flex-row items-center rounded-xl p-3"
-        lightClassName="bg-transparent" // Make background transparent or match screen
+        lightClassName="bg-transparent"
         darkClassName="bg-transparent">
         {/* Circular Image */}
         <View className="mr-4 h-16 w-16 overflow-hidden rounded-full">
           {plant.imageUrl ? (
-            <Image
+            <Image // Using react-native Image here
               source={{ uri: plant.imageUrl }}
               className="h-full w-full"
               resizeMode="cover"
@@ -122,51 +119,52 @@ const PlantItem = React.memo(({ plant }: { plant: Plant }) => {
               />
             </View>
           )}
-        </View>{/* Text Info & Status Icons */}
+        </View>
+        {/* Text Info & Status Icons */}
         <View className="flex-1">
           <ThemedText
-            className="text-lg font-semibold" // Keep font size
+            className="text-lg font-semibold"
             lightClassName="text-neutral-800"
             darkClassName="text-white"
             numberOfLines={1}>
             {plant.name}
           </ThemedText>
           <ThemedText
-            className="text-sm" // Keep font size
+            className="text-sm"
             lightClassName="text-neutral-600"
             darkClassName="text-neutral-400"
             numberOfLines={1}>
-            {plant.strain || 'Unknown Strain'} {/* Add fallback */}
+            {plant.strain || 'Unknown Strain'}
           </ThemedText>
           {/* Status Icons Row */}
           <View className="mt-2 flex-row">
             <StatusIcon
               iconName="information-outline"
               text={`${mockStatus.infoPercent}%`}
-              iconColor={theme.colors.primary[500]} // Example color
+              iconColor={theme.colors.primary[500]}
             />
             <StatusIcon
               iconName="water-outline"
               text={`in ${mockStatus.waterDays} Tg.`}
-              iconColor={theme.colors.special.watering} // Use theme's watering color
+              iconColor={theme.colors.special.watering}
             />
             <StatusIcon
-              iconName="leaf" // Using leaf as a placeholder for fertilizer/nutrition
+              iconName="leaf"
               text={`in ${mockStatus.feedDays} Tg.`}
-              iconColor={theme.colors.primary[600]} // Use theme's primary green shade
+              iconColor={theme.colors.primary[600]}
             />
           </View>
-        </View>{/* Right Arrow Icon */}
+        </View>
+        {/* Right Arrow Icon */}
         <View className="ml-2 p-1">
           <MaterialCommunityIcons
             name="chevron-right"
-            size={28} // Slightly larger arrow
+            size={28}
             color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
           />
         </View>
       </ThemedView>
     </TouchableOpacity>
-    // </Link> // Temporarily removed Link
   );
 });
 
@@ -175,13 +173,12 @@ const PlantListComponent = ({
   plants,
   isLoading,
   onCountChange,
-  ListHeaderComponent, // Destructure new prop
-  refreshing = false, // Destructure new prop with default
-  onRefresh, // Destructure new prop
+  ListHeaderComponent,
+  refreshing = false,
+  onRefresh,
 }: PlantListComponentProps) => {
-  const { theme, isDarkMode } = useTheme(); // Get theme for ActivityIndicator color and RefreshControl
+  const { theme, isDarkMode } = useTheme();
 
-  // Report count change when plants array updates
   useEffect(() => {
     if (onCountChange) {
       onCountChange(plants?.length ?? 0);
@@ -203,91 +200,39 @@ const PlantListComponent = ({
   }
 
   return (
-    // Removed outer View flex-1 as FlatList handles layout
     <FlatList
       data={plants}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => <PlantItem plant={item} />}
       ListEmptyComponent={<EmptyPlantList />}
-      ListHeaderComponent={ListHeaderComponent} // Pass header component
+      ListHeaderComponent={ListHeaderComponent}
       refreshControl={
-        // Add RefreshControl
-        onRefresh ? ( // Only add if onRefresh is provided
+        onRefresh ? (
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]} // Color for iOS spinner
-            colors={[theme.colors.primary[500]]} // Color for Android spinner
+            tintColor={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}
+            colors={[theme.colors.primary[500]]}
             progressBackgroundColor={
               isDarkMode ? theme.colors.neutral[800] : theme.colors.background
-            } // Background for Android spinner - Fixed: Use background
+            }
           />
         ) : undefined
       }
-      // Make FlatList scrollable (it's now the main scroller)
       scrollEnabled={true}
-      contentContainerStyle={{ flexGrow: 1, paddingVertical: 5, paddingBottom: 80 }} // Add paddingBottom for FAB
-      // className="flex-1 px-0" // Removed className as a test - padding should be handled by header/items
+      contentContainerStyle={{ flexGrow: 1, paddingVertical: 5, paddingBottom: 80 }}
     />
   );
 };
 
 // Enhanced component with observables
-// It now observes the plants query and also passes an isLoading state
-export const PlantList = withObservables(
-  [],
-  ({ database }: { database: Database }) => {
-    const plantsObserve = database
-      .get<Plant>('plants')
-      .query(Q.where('is_deleted', Q.notEq(true))) // Keep the query specific
-      .observeWithColumns([
-        // Observe relevant columns for PlantItem
-        'name',
-        'strain',
-        'imageUrl',
-        'created_at', // Needed for mock status potentially
-      ]);
-
-    // We need a way to represent the loading state.
-    // withObservables doesn't directly provide a loading flag.
-    // A common pattern is to initially pass null/undefined or an empty array
-    // until the first emission from the observable.
-    // Let's pass the observable itself and handle loading in the component.
-    // *Correction*: withObservables *does* handle the initial state.
-    // It won't render the wrapped component until the observable emits.
-    // However, we might want an explicit loading indicator.
-    // Let's pass `isLoading` based on whether `plants` is available yet.
-    // *Alternative*: We can use a separate state in the parent or enhance `withObservables`.
-    // For simplicity here, let's assume the parent handles initial loading if needed,
-    // and `PlantListComponent` shows loading based on its prop.
-    // The HOC will pass the `plants` array once available.
-
-    return {
-      plants: plantsObserve,
-      // isLoading: plantsObserve === undefined, // This check won't work as expected here
-      // Let's rely on the parent passing an initial loading state or handle inside PlantListComponent
-    };
-  }
-  // We need to map the props correctly. `isLoading` isn't from the observable.
-  // Let's simplify the HOC to only provide `plants` and handle loading/count in the parent screen.
-  // This avoids complexity in the HOC.
-)(
-  // Let's redefine the HOC structure slightly
-  // The base component will just be PlantListComponent
-  PlantListComponent
-);
-
-// Re-exporting with a simpler HOC setup for clarity
 const enhance = withObservables([], ({ database }: { database: Database }) => ({
   plants: database
     .get<Plant>('plants')
     .query(Q.where('is_deleted', Q.notEq(true)))
-    .observeWithColumns(['name', 'strain', 'imageUrl', 'created_at']),
+    .observeWithColumns(['name', 'strain', 'imageUrl', 'created_at']), // Added growthStage
 }));
 
-// Apply the HOC to the base component
 export const EnhancedPlantList = enhance(PlantListComponent);
 
-// Default export remains the enhanced version for backward compatibility if needed,
-// but using EnhancedPlantList might be clearer.
 export default EnhancedPlantList;

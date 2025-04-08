@@ -41,6 +41,11 @@ export class Plant extends Model {
   @text('grow_medium') growMedium?: string; // Added
   @text('light_condition') lightCondition?: string; // Added
   @text('location_description') locationDescription?: string; // Added
+  @field('is_auto_flower') isAutoFlower?: boolean; // Added
+  @field('is_feminized') isFeminized?: boolean; // Added
+  @field('thc_content') thcContent?: number; // Added
+  @field('cbd_content') cbdContent?: number; // Added
+  @text('expected_harvest_date') expectedHarvestDate?: string; // Added (using text for date string)
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;

@@ -13,7 +13,7 @@ export interface Post {
   plant_id?: string; // Optional reference to a plant
   likes_count: number;
   comments_count: number;
-  is_public: boolean;
+  is_public?: boolean; // Made optional as it doesn't exist in DB
   created_at: string;
   updated_at?: string;
 }

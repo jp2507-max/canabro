@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 9, // Increment schema version
+  version: 11, // Increment schema version for diary_entries changes
   tables: [
     tableSchema({
       name: 'profiles',
@@ -42,6 +42,11 @@ export default appSchema({
         { name: 'light_condition', type: 'string', isOptional: true },
         { name: 'location_description', type: 'string', isOptional: true },
         { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'is_auto_flower', type: 'boolean', isOptional: true }, // Added
+        { name: 'is_feminized', type: 'boolean', isOptional: true }, // Added
+        { name: 'thc_content', type: 'number', isOptional: true }, // Added
+        { name: 'cbd_content', type: 'number', isOptional: true }, // Added
+        { name: 'expected_harvest_date', type: 'string', isOptional: true }, // Added (using string for date)
         { name: 'is_deleted', type: 'boolean', isOptional: true },
         { name: 'last_synced_at', type: 'number', isOptional: true },
         { name: 'created_at', type: 'number' },
@@ -86,12 +91,13 @@ export default appSchema({
       name: 'diary_entries',
       columns: [
         { name: 'plant_id', type: 'string', isIndexed: true },
+        { name: 'entry_date', type: 'string' }, // Added entry_date to match model
         { name: 'entry_type', type: 'string' },
         { name: 'content', type: 'string' },
         { name: 'image_url', type: 'string', isOptional: true },
         { name: 'metrics', type: 'string', isOptional: true }, // JSON string for metrics
         { name: 'created_at', type: 'number' },
-        { name: 'updated_at', type: 'number' }, // Removed isOptional: true
+        { name: 'updated_at', type: 'number' },
       ],
     }),
     // Add missing notifications table

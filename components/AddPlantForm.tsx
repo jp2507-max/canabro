@@ -3,8 +3,10 @@
 import { Ionicons } from '@expo/vector-icons'; // Removed unused icons
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { decode } from 'base64-arraybuffer'; // Import decode from base64-arraybuffer
 import { format } from 'date-fns';
 import * as FileSystem from 'expo-file-system';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Add missing import
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -270,16 +272,43 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const uploadImage = async (userId: string): Promise<string | null> => {
     if (!imagePreviewUri) return null;
     setUploadingImage(true);
+    console.log('Starting image processing and upload for URI:', imagePreviewUri); // Added log
     try {
-      const fileBase64 = await FileSystem.readAsStringAsync(imagePreviewUri, {
+      // --- Manipulate Image ---
+      console.log('Manipulating image...');
+      const manipResult = await manipulateAsync(
+        imagePreviewUri, // Use the preview URI
+        [{ resize: { width: 1024 } }], // Resize
+        { compress: 0.7, format: SaveFormat.JPEG } // Compress to JPEG
+      );
+      console.log('Image manipulated:', manipResult.uri, `(${manipResult.width}x${manipResult.height})`);
+      // --- ---
+
+      // Determine the correct MIME type (manipulation forces JPEG)
+      const mimeType = 'image/jpeg';
+      const extension = 'jpg'; // Manipulation forces JPEG
+
+      // Step 1: Read the *manipulated* file as a Base64 string
+      console.log('Reading manipulated file as Base64...');
+      const fileBase64 = await FileSystem.readAsStringAsync(manipResult.uri, { // Use manipResult.uri
         encoding: FileSystem.EncodingType.Base64,
       });
-      const filename = `plant_${Date.now()}.jpg`;
+
+      // Step 2: Convert the Base64 string to an ArrayBuffer
+      console.log('Converting Base64 to ArrayBuffer...');
+      const arrayBuffer = decode(fileBase64);
+      
+      const filename = `plant_${Date.now()}.${extension}`;
       const filePath = `${userId}/${filename}`;
-      console.log('Uploading image to Supabase storage...');
+      
+      // Step 3: Upload the ArrayBuffer with explicit content type
+      console.log('Uploading ArrayBuffer to Supabase storage...');
       const { error: uploadError } = await supabase.storage
         .from('plants')
-        .upload(filePath, fileBase64, { contentType: 'image/jpeg', upsert: true });
+        .upload(filePath, arrayBuffer, { 
+          contentType: mimeType,
+          upsert: false // Set to false to ensure we don't overwrite existing files
+        });
 
       if (uploadError) throw uploadError;
 

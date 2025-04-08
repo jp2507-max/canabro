@@ -8,13 +8,14 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Image,
+  // Image, // Remove RN Image
   FlatList,
   ActivityIndicator,
-  Pressable,
+  Pressable, // Keep Pressable (only once)
   Alert,
-  RefreshControl,
+  RefreshControl, // Add RefreshControl back
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image'; // Import expo-image
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ThemedText from '../../components/ui/ThemedText';
@@ -548,22 +549,16 @@ export default function StrainsScreen() {
                       onPress={() => viewStrainDetails(strain)}
                       // Use theme neutral colors for card background
                       className="mr-4 w-72 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
-                      {strain.image_url ? (
-                        <Image
-                          source={{ uri: strain.image_url }}
-                          className="h-40 w-full"
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        // Use theme neutral colors for placeholder background and icon
-                        <View className="h-40 w-full items-center justify-center bg-neutral-200 dark:bg-neutral-700">
-                          <MaterialCommunityIcons
-                            name="cannabis"
-                            size={40}
-                            color={theme.colors.neutral[isDarkMode ? 500 : 400]}
-                          />
-                        </View>
-                      )}
+                      <ExpoImage
+                        source={{ uri: strain.image_url }}
+                        className="h-40 w-full"
+                        contentFit="cover"
+                        // transition={300} // Temporarily remove transition
+                        recyclingKey={strain.id}
+                        onError={(error) => console.error(`Error loading featured strain image ${strain.id}:`, error)}
+                        placeholder={null} // Temporarily remove placeholder
+                      />
+                      {/* Removed the extra closing tags and placeholder view content */}
                       <View className="p-3">
                         <View className="mb-1 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{strain.name}</ThemedText>
@@ -667,22 +662,16 @@ export default function StrainsScreen() {
                       onPress={() => viewStrainDetails(item)}
                       // Use theme neutral colors for card background
                       className="mb-4 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
-                      {item.image_url ? (
-                        <Image
-                          source={{ uri: item.image_url }}
-                          className="h-48 w-full"
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        // Use theme neutral colors for placeholder background and icon
-                        <View className="h-48 w-full items-center justify-center bg-neutral-200 dark:bg-neutral-700">
-                          <MaterialCommunityIcons
-                            name="cannabis"
-                            size={40}
-                            color={theme.colors.neutral[isDarkMode ? 500 : 400]}
-                          />
-                        </View>
-                      )}
+                      <ExpoImage
+                        source={{ uri: item.image_url }}
+                        className="h-48 w-full"
+                        contentFit="cover"
+                        // transition={300} // Temporarily remove transition
+                        recyclingKey={item.id}
+                        onError={(error) => console.error(`Error loading strain image ${item.id}:`, error)}
+                        placeholder={null} // Temporarily remove placeholder
+                      />
+                       {/* Removed the extra closing tags and placeholder view content */}
                       <View className="p-4">
                         <View className="mb-2 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{item.name}</ThemedText>

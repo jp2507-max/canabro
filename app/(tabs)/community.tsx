@@ -1,82 +1,273 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Q } from '@nozbe/watermelondb';
-import { withObservables } from '@nozbe/watermelondb/react';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router'; // Correctly import useRouter
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, TouchableOpacity, View, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
-import PostItem from '../../components/community/PostItem';
-import TopicList from '../../components/community/TopicList';
-import UserAvatar from '../../components/community/UserAvatar';
+// Import the refactored PostItem and its data type
+import PostItem, { PostData } from '../../components/community/PostItem';
+// Removed TopicList and UserAvatar imports from here
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useDatabase } from '../../lib/contexts/DatabaseProvider'; // Import useDatabase instead of using withDatabase HOC
+// Removed WatermelonDB imports (useDatabase, Q, withObservables, Post model)
 import { useTheme } from '../../lib/contexts/ThemeContext';
-// import { useCommunityPosts } from '../../lib/hooks/useCommunityPosts'; // Removed hook
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
-// import { useProfileData } from '../../lib/hooks/useProfileData'; // Keep for avatar for now, or fetch profile via WDB relation in PostItem
-// WatermelonDB imports
-import { Post } from '../../lib/models/Post'; // Import WatermelonDB Post model
+import supabase from '../../lib/supabase';
+import { PostgrestError } from '@supabase/supabase-js';
+// Removed UserAvatar import
 
-// Topic tags for the horizontal scroll
-const TOPICS = [
-  { id: '1', name: 'wishlistplant', count: 22 },
-  { id: '2', name: 'indoorplants', count: 56 },
-  { id: '3', name: 'plantparent', count: 34 },
-  { id: '4', name: 'monstera', count: 41 },
-  { id: '5', name: 'succulents', count: 29 },
-  { id: '6', name: 'growlights', count: 18 },
-];
+// Constants
+const PAGE_SIZE = 10; // Number of posts to fetch per page
 
-// Define props injected by HOCs
-interface InjectedProps {
-  posts: Post[];
-}
+// Removed TOPICS constant
 
 /**
- * Base Community screen component
+ * Community screen component using Supabase for data.
  */
-function CommunityScreenBase({ posts }: InjectedProps) {
-  useProtectedRoute(); // Keep protected route logic
-  const { theme } = useTheme();
-  const { user } = useAuth(); // Keep auth context
-  // const { profile } = useProfileData(); // Maybe fetch profile via Post relation later
-  const { database, sync, isSyncing } = useDatabase(); // Get database from DatabaseProvider context
+function CommunityScreen() {
+  useProtectedRoute();
+  const { theme, isDarkMode } = useTheme();
+  const { user, session } = useAuth();
+  const insets = useSafeAreaInsets();
+  const router = useRouter(); // Correctly call useRouter
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateScreen, setShowCreateScreen] = useState(false);
-  const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  // const [expandedImage, setExpandedImage] = useState<{ url: string; index: number } | null>(null); // Unused state
+  // Removed activeTopic state
+  const [activeFilter, setActiveFilter] = useState<'trending' | 'following'>('trending'); // State for filter tabs
 
-  // Removed useCommunityPosts hook and its state variables (loading, refreshing, hasMore, etc.)
-  // const { posts, loading, refreshing, hasMore, loadMore, refresh, like, addPost } = useCommunityPosts();
+  // --- Supabase Data Fetching State ---
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Handle topic selection
-  const handleTopicPress = (topicId: string) => {
-    if (activeTopic === topicId) {
-      setActiveTopic(null); // Deselect if already active
-    } else {
-      setActiveTopic(topicId);
+  // --- Like/Unlike State ---
+  const [likingPostId, setLikingPostId] = useState<string | null>(null); // Track which post like is in progress
+
+  // --- Supabase Query Function ---
+  const fetchPosts = useCallback(
+    async (page: number, refreshing = false) => {
+      if (!session) return; // Need user session for auth.uid()
+
+      const limit = PAGE_SIZE;
+      const offset = page * limit;
+
+      console.log(`Fetching posts: page=${page}, offset=${offset}, limit=${limit}`);
+
+      try {
+        // Use standard select instead of RPC
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            profiles ( username, avatar_url )
+          `) // Select post fields and profile fields
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (postsError) {
+          throw postsError;
+        }
+
+        if (!postsData) {
+          setPosts(refreshing ? [] : posts); // Keep existing posts if data is null/undefined
+          setHasMore(false);
+          setFetchError(null);
+          console.log('No posts data returned.');
+          return; // Exit early
+        }
+        
+        // Instead of filtering out posts with old images, we'll keep all posts
+        // but mark the ones with potentially problematic images
+        const filteredPostsData = postsData.map(post => {
+          if (!post.image_url) {
+            // No image, no problem
+            return { ...post, hasCorruptedImage: false };
+          }
+          
+          // Try to determine if this is a new image (uploaded with ArrayBuffer method)
+          // or an old potentially corrupted one
+          try {
+            const parts = post.image_url.split('_');
+            if (parts.length > 1) {
+              const lastPart = parts[parts.length - 1];
+              const timestamp = parseInt(lastPart.split('.')[0] || '0'); // Define timestamp here
+              const now = Date.now();
+              const isNewImage = timestamp > (now - 24 * 60 * 60 * 1000); // Within last 24 hours
+              
+              return { ...post, hasCorruptedImage: !isNewImage };
+            }
+          } catch (e) {
+            console.log('Error parsing image timestamp:', e);
+          }
+          
+          // If we can't determine, assume it might be corrupted but still show it
+          return { ...post, hasCorruptedImage: true };
+        });
+        
+        // Don't filter out any posts, just mark them
+        
+        console.log(`Fetched ${postsData.length} posts, processed ${filteredPostsData.length} posts.`);
+
+        // Fetch likes for the current user for these posts
+        const postIds = filteredPostsData.map(p => p.id);
+        let likedPostIds = new Set<string>(); // Default to empty set
+
+        if (postIds.length > 0 && session?.user?.id) { // Check if there are posts and user is logged in
+          const { data: likesData, error: likesError } = await supabase
+            .from('likes')
+            .select('post_id')
+            .in('post_id', postIds)
+            .eq('user_id', session.user.id);
+
+          if (likesError) {
+            console.warn('Could not fetch user likes:', likesError.message);
+            // Continue without like status if this fails
+          } else {
+            likedPostIds = new Set((likesData || []).map(l => l.post_id));
+          }
+        }
+
+        // Process data: Map db results to PostData interface
+        const newPosts = filteredPostsData.map((post): PostData => {
+          const profile = post.profiles || {};
+          return {
+            id: post.id,
+            content: post.content,
+            image_url: post.image_url, // Ensure image_url is mapped
+            created_at: post.created_at,
+            likes_count: post.likes_count || 0,
+            comments_count: post.comments_count || 0,
+            profiles: profile ? {
+              id: post.user_id, // Assuming user_id on post matches profile id
+              username: profile.username || 'Unknown',
+              avatar_url: profile.avatar_url,
+            } : null,
+            user_has_liked: likedPostIds.has(post.id), // Determine like status
+            hasCorruptedImage: post.hasCorruptedImage || false, // Pass the corruption flag
+          };
+        });
+
+        setPosts((prevPosts) => (refreshing ? newPosts : [...prevPosts, ...newPosts]));
+        setHasMore(newPosts.length === limit);
+        setFetchError(null);
+
+      } catch (err: any) {
+        console.error('Error fetching posts:', err);
+        const errorMessage = (err as PostgrestError)?.message || 'Failed to fetch posts';
+        setFetchError(errorMessage);
+        // Don't wipe posts on error during load more or refresh
+        // setPosts([]); // Avoid clearing posts on error
+      }
+    },
+    [session] // Depend on session
+  );
+
+  // --- Initial Load ---
+  useState(() => {
+    setIsLoading(true);
+    fetchPosts(0, true).finally(() => setIsLoading(false));
+  });
+
+  // --- Refresh Handler ---
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    setCurrentPage(0); // Reset page
+    await fetchPosts(0, true);
+    setIsRefreshing(false);
+  }, [fetchPosts, isRefreshing]);
+
+  // --- Load More Handler ---
+  const handleLoadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore || isRefreshing || isLoading) return;
+
+    console.log('Loading more posts...');
+    setIsLoadingMore(true);
+    const nextPage = currentPage + 1;
+    fetchPosts(nextPage)
+      .then(() => {
+        setCurrentPage(nextPage);
+      })
+      .finally(() => {
+        setIsLoadingMore(false);
+      });
+  }, [isLoadingMore, hasMore, isRefreshing, isLoading, currentPage, fetchPosts]);
+
+  // --- Like/Unlike Handler (Direct RPC Call) ---
+  const handleLike = async (postId: string, currentlyLiked: boolean) => {
+    if (likingPostId === postId || !session) return; // Prevent double-taps or liking when not logged in
+
+    setLikingPostId(postId); // Indicate liking is in progress for this post
+
+    // --- Optimistic Update ---
+    setPosts((prevPosts) =>
+      prevPosts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              user_has_liked: !currentlyLiked,
+              likes_count: currentlyLiked ? p.likes_count - 1 : p.likes_count + 1,
+            }
+          : p
+      )
+    );
+
+    try {
+      // Call the appropriate RPC function
+      const functionName = currentlyLiked ? 'unlike_post' : 'like_post';
+      const { error: likeError } = await supabase.rpc(functionName, { _post_id: postId });
+
+      if (likeError) {
+        throw likeError; // Throw error to trigger catch block
+      }
+
+      // Success: Optimistic update is already correct
+      console.log('Successfully ' + (currentlyLiked ? 'unliked' : 'liked') + ' post: ' + postId);
+    } catch (err) {
+      console.error('Error toggling like:', err);
+
+      // --- Revert Optimistic Update on Error ---
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                user_has_liked: currentlyLiked, // Revert like status
+                likes_count: currentlyLiked ? p.likes_count + 1 : p.likes_count - 1, // Revert count
+              }
+            : p
+        )
+      );
+
+      // Show user feedback
+      Alert.alert('Error', 'Could not ' + (currentlyLiked ? 'unlike' : 'like') + ' the post. Please try again.');
+    } finally {
+      setLikingPostId(null); // Reset liking state for this post
     }
   };
 
-  // Handle user profile navigation
+  // --- Navigation Handlers ---
+  // Removed handleTopicPress
+
   const handleUserPress = (userId: string) => {
-    // Use any type assertion to avoid TypeScript errors with dynamic routes
     router.push(`/profile/${userId}` as any);
   };
 
-  // Handle plant detail navigation
-  const handlePlantPress = (plantId: string) => {
-    // Use any type assertion to avoid TypeScript errors with dynamic routes
-    router.push(`/plant/${plantId}` as any);
+  const handleCommentPress = (postId: string) => {
+    // Navigate to a post detail screen or open a comment modal
+    // router.push(`/post/${postId}` as any); // Example navigation
+    console.log('Comment pressed for post:', postId); // Placeholder
   };
 
-  // Handle create post actions
+  // --- Create Post Handlers ---
   const handleCreatePost = () => {
     setShowCreateModal(false);
     setShowCreateScreen(true);
@@ -84,77 +275,128 @@ function CommunityScreenBase({ posts }: InjectedProps) {
 
   const handleAskQuestion = () => {
     setShowCreateModal(false);
-    // TODO: Navigate to question asking screen
-    // For now, just open the regular post screen
-    setShowCreateScreen(true);
+    setShowCreateScreen(true); // TODO: Differentiate later if needed
   };
 
-  // Called after CreatePostScreen successfully creates a post
   const handlePostCreated = () => {
-    // Optionally trigger sync after local creation
-    sync();
+    // Refresh the feed to show the new post
+    handleRefresh();
   };
 
-  // Reimplement like action using the @writer method on the Post model
-  // Add explicit type for postId
-  const handleLike = async (postId: string) => {
-    console.log('Attempting WatermelonDB like for post:', postId);
-    try {
-      // Find the post first
-      const post = await database.get<Post>('posts').find(postId);
-      // Call the @writer method directly on the post instance
-      await post.incrementLikes();
+  // --- Render Functions ---
+  // Removed renderHeader function entirely
 
-      // Optional: Trigger sync after successful write if needed immediately
-      // await sync();
-    } catch (error) {
-      console.error('Error liking post via WatermelonDB:', error);
-      // Optionally show an alert to the user
-      // Alert.alert("Error", "Could not like the post.");
-    }
-  };
-
-  // Reimplement refresh action
-  const handleRefresh = async () => {
-    console.log('Manual sync triggered on community refresh');
-    await sync({ force: true, showFeedback: true }); // Force sync with backend
-  };
-
-  // Render the header with user avatar and topics
-  const renderHeader = () => (
-    <>
-      <ThemedView className="flex-row items-center justify-between p-4">
-        <ThemedText className="text-2xl font-bold">Community</ThemedText>
-        <TouchableOpacity onPress={() => handleUserPress(user?.id || '')}>
-          <UserAvatar
-            // TODO: Get avatar from user context or fetch profile via relation
-            uri="https://via.placeholder.com/40"
-            verified={false}
-          />
+  const renderListHeader = () => (
+    // This component renders the filter tabs and chat icon
+    <View className="flex-row items-center justify-between px-4 py-3 mb-2">
+      {/* Filter Tabs Container */}
+      <View className="flex-row">
+        <TouchableOpacity
+          onPress={() => setActiveFilter('trending')}
+          className="rounded-full px-4 py-1.5 mr-2"
+        style={{
+          backgroundColor: activeFilter === 'trending'
+            ? isDarkMode ? theme.colors.primary[600] : theme.colors.primary[500]
+            : isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200]
+        }}>
+        <ThemedText
+          className="font-medium"
+          style={{
+            color: activeFilter === 'trending'
+              ? '#FFFFFF'
+              : isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]
+          }}>
+          Trending
+        </ThemedText>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => setActiveFilter('following')}
+        className="rounded-full px-4 py-1.5"
+        style={{
+          backgroundColor: activeFilter === 'following'
+            ? isDarkMode ? theme.colors.primary[600] : theme.colors.primary[500]
+            : isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200]
+          }}>
+          <ThemedText
+            className="font-medium"
+            style={{
+              color: activeFilter === 'following'
+                ? '#FFFFFF'
+                : isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]
+            }}>
+            Following
+          </ThemedText>
         </TouchableOpacity>
-      </ThemedView>
+        {/* Add other filters like Events, Insights later if needed */}
+      </View>
 
-      <TopicList topics={TOPICS} activeTopic={activeTopic} onTopicPress={handleTopicPress} />
-    </>
+      {/* Chat Icon */}
+      <Pressable onPress={() => console.log('Chat pressed')}>
+        {({ pressed }) => (
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={28}
+            color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[600]}
+            style={{ opacity: pressed ? 0.5 : 1 }}
+          />
+        )}
+      </Pressable>
+    </View>
   );
 
-  // Render empty state when no posts are available
-  // Loading is handled implicitly by withObservables (renders empty/null initially)
-  const renderEmptyState = () => {
-    // Can add a loading indicator if posts is null/undefined initially if desired
-    // if (posts === null) return <ActivityIndicator />;
 
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
     return (
-      <ThemedView className="flex-1 items-center justify-center py-20">
+      <View className="py-6">
+        <ActivityIndicator size="small" color={theme.colors.primary[500]} />
+      </View>
+    );
+  };
+
+  const renderEmptyState = () => {
+    // Show loading indicator during initial load
+    if (isLoading) {
+      return (
+        <View className="flex-1 items-center justify-center py-20">
+          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+        </View>
+      );
+    }
+    // Show error message if fetch failed
+    if (fetchError) {
+      return (
+        <ThemedView className="flex-1 items-center justify-center py-20 px-8">
+          <Ionicons name="alert-circle-outline" size={50} color={theme.colors.status.danger} style={{ marginBottom: 16 }} />
+          <ThemedText className="mb-2 text-center text-lg font-bold" darkClassName="text-red-400" lightClassName="text-red-600">
+            Error Loading Posts
+          </ThemedText>
+          <ThemedText className="mb-4 text-center" darkClassName="text-neutral-400" lightClassName="text-neutral-600">
+            {fetchError}
+          </ThemedText>
+          <TouchableOpacity
+            onPress={handleRefresh}
+            className="rounded-full px-6 py-3"
+            style={{ backgroundColor: theme.colors.primary[500] }}>
+            <ThemedText className="font-bold text-white">Try Again</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+      );
+    }
+    // Show empty state if no posts and no error
+    return (
+      <ThemedView className="flex-1 items-center justify-center py-20 px-8">
         <Ionicons
           name="leaf-outline"
           size={50}
-          color={theme.colors.neutral[400]}
+          color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
           style={{ marginBottom: 16 }}
         />
-        <ThemedText className="mb-2 text-center text-lg font-bold">No Posts Yet</ThemedText>
-        <ThemedText className="mb-8 px-8 text-center text-neutral-500">
-          Be the first to share your plants with the community!
+        <ThemedText className="mb-2 text-center text-lg font-bold" darkClassName="text-neutral-300" lightClassName="text-neutral-700">
+          No Posts Yet
+        </ThemedText>
+        <ThemedText className="mb-8 text-center" darkClassName="text-neutral-400" lightClassName="text-neutral-500">
+          Be the first to share your plants or ask a question!
         </ThemedText>
         <TouchableOpacity
           onPress={() => setShowCreateModal(true)}
@@ -167,41 +409,50 @@ function CommunityScreenBase({ posts }: InjectedProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1" edges={['top']}>
-      <ThemedView className="flex-1" lightClassName="bg-neutral-100" darkClassName="bg-neutral-950">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
+      {/* Apply background color to SafeAreaView */}
+      <ThemedView className="flex-1" lightClassName="bg-neutral-50" darkClassName="bg-black">
+        {/* Removed absolutely positioned header icon */}
+
         <FlatList
           data={posts}
           keyExtractor={(item) => item.id}
-          ListHeaderComponent={renderHeader}
+          extraData={posts} // Add extraData prop tied to the posts state
+          renderItem={({ item }) => ( // Corrected implicit return syntax
+            <View className="px-3">
+              <PostItem
+                post={item}
+                currentUserId={user?.id}
+                onLike={handleLike}
+                onComment={handleCommentPress}
+                onUserPress={handleUserPress}
+              />
+            </View>
+          )} // Correct closing for renderItem
+          ListHeaderComponent={renderListHeader}
           ListEmptyComponent={renderEmptyState}
-          renderItem={({ item }) => (
-            <PostItem
-              post={item} // Pass the WatermelonDB Post model instance
-              onLike={handleLike} // Use new handler
-              onComment={(postId: string) => router.push(`/post/${postId}` as any)} // Add type for postId
-              onUserPress={handleUserPress}
-              onPlantPress={handlePlantPress}
-              // Add explicit types for url and index
-              // onImagePress={(url: string, index: number) => setExpandedImage({ url, index })} // Removed as expandedImage state is unused
-            />
-          )}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          ListFooterComponent={renderFooter}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          contentContainerStyle={{ paddingBottom: 80 }}
           refreshControl={
             <RefreshControl
-              refreshing={isSyncing} // Use isSyncing state
-              onRefresh={handleRefresh} // Use new handler
-              colors={[theme.colors.primary[500]]}
-              tintColor={theme.colors.primary[500]}
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={[theme.colors.primary[500]]} // Spinner color for Android
+              tintColor={theme.colors.primary[500]} // Spinner color for iOS
+              progressBackgroundColor={isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100]} // Background for spinner
             />
           }
-          // Removed onEndReached and related props for pagination
         />
 
         {/* Floating action button */}
         <TouchableOpacity
-          className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full shadow-lg"
+          className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full shadow-lg dark:shadow-neutral-900"
           style={{ backgroundColor: theme.colors.primary[500] }}
-          onPress={() => setShowCreateModal(true)}>
+          onPress={() => setShowCreateModal(true)}
+          accessibilityLabel="Create new post"
+          accessibilityRole="button">
           <Ionicons name="add" size={30} color="white" />
         </TouchableOpacity>
 
@@ -217,37 +468,12 @@ function CommunityScreenBase({ posts }: InjectedProps) {
         <CreatePostScreen
           visible={showCreateScreen}
           onClose={() => setShowCreateScreen(false)}
-          onSuccess={handlePostCreated}
+          onSuccess={handlePostCreated} // Refresh feed on success
         />
       </ThemedView>
     </SafeAreaView>
   );
 }
 
-// Create a custom HOC that provides posts from the database
-const enhance = withObservables([], () => {
-  // Get database directly from the imported database instance
-  const db = require('../../lib/database/database').default;
-
-  // Check if database is available before trying to query
-  if (!db) {
-    console.error('Database instance is not available in withObservables');
-    return { posts: [] };
-  }
-
-  try {
-    // Use the database to query posts
-    return {
-      posts: db
-        .get('posts')
-        .query(Q.where('is_deleted', false), Q.sortBy('created_at', Q.desc))
-        .observe(),
-    };
-  } catch (error) {
-    console.error('Error setting up observable query:', error);
-    return { posts: [] };
-  }
-});
-
-// Export the enhanced component
-export default enhance(CommunityScreenBase);
+// Export the component directly (no HOC needed)
+export default CommunityScreen;

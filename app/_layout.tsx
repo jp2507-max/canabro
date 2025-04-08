@@ -51,8 +51,7 @@ function AppWithTheme() {
         <Stack.Screen
           name="plant/[id]"
           options={{
-            title: 'Plant Details',
-            headerBackTitle: 'Back',
+            headerShown: false, // Remove header for this screen
           }}
         />
       </Stack>

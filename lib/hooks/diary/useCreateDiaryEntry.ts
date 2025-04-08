@@ -13,17 +13,9 @@ export interface CreateDiaryEntryData {
   content: string;
   entry_date: string;
   image_url?: string;
-  metrics?: {
-    water_amount?: number;
-    nutrient_amount?: number;
-    ph_level?: number;
-    temperature?: number;
-    humidity?: number;
-    light_hours?: number;
-    ppm?: number;
-  };
+  metrics?: Record<string, any>; // Allow flexible metrics object
   is_public?: boolean;
-  tags?: string[];
+  tags?: string[]; // Keep tags if used elsewhere, though not in current form
 }
 
 /**

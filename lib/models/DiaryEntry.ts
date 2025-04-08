@@ -13,6 +13,7 @@ export class DiaryEntry extends Model {
   @text('entry_type') entryType!: string;
   @text('content') content!: string;
   @text('image_url') imageUrl?: string;
+  @field('metrics') metrics?: string; // Added metrics field (JSON string)
   @text('user_id') userId!: string;
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;

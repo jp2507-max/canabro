@@ -21,10 +21,10 @@ export function adaptPostFromDB(dbPost: any): Post {
     user_id: dbPost.user_id,
     content: dbPost.content,
     image_url: dbPost.image_url,
-    plant_id: dbPost.plant_id,
+    // plant_id: dbPost.plant_id, // Removed - Doesn't exist in live schema
     likes_count: dbPost.likes_count || 0,
     comments_count: dbPost.comments_count || 0,
-    is_public: dbPost.is_public,
+    // is_public: dbPost.is_public, // Removed non-existent field from adapter
     created_at: dbPost.created_at,
     updated_at: dbPost.updated_at,
   };
@@ -93,31 +93,37 @@ export async function createPost(post: {
   user_id: string;
   content: string;
   image_url?: string;
-  plant_id?: string;
-  is_public?: boolean;
-}): Promise<Post | null> {
+  // plant_id?: string; // Removed - Doesn't exist in live schema (has plant_stage/strain instead)
+  // is_public?: boolean; // Removed non-existent field from type definition
+}): Promise<boolean> { // Changed return type to boolean for success/failure
   try {
-    const { data, error } = await supabase
+    // Perform insert without selecting the result
+    const { error } = await supabase
       .from('posts')
       .insert([
         {
           user_id: post.user_id,
           content: post.content,
           image_url: post.image_url,
-          plant_id: post.plant_id,
-          is_public: post.is_public ?? true,
+          // plant_id: post.plant_id, // Removed non-existent column
+          // is_public: undefined, // Removed non-existent column
           likes_count: 0,
           comments_count: 0,
         },
-      ])
-      .select()
-      .single();
+      ]);
+      // Removed .select().single()
 
-    if (error) throw error;
-    return adaptPostFromDB(data);
+    if (error) {
+        console.error('Error during post insert:', error);
+        throw error; // Re-throw the error
+    }
+
+    // If insert succeeded without error, return true
+    return true;
   } catch (error) {
-    console.error('Error creating post:', error);
-    return null;
+    // Log the error but let the caller handle UI feedback
+    console.error('Error in createPost function:', error);
+    return false; // Indicate failure
   }
 }
 
@@ -176,25 +182,33 @@ export async function getComments(postId: string): Promise<CommentWithUser[]> {
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching comments:', error);
+      throw error; // Re-throw the error after logging
+    }
 
-    return (data || []).map((comment) => ({
-      id: comment.id,
-      post_id: comment.post_id,
-      user_id: comment.user_id,
-      content: comment.content,
-      likes_count: comment.likes_count || 0,
-      created_at: comment.created_at,
-      updated_at: comment.updated_at,
+    // Map the database results to the CommentWithUser interface
+    const comments = (data || []).map((dbComment: any): CommentWithUser => ({ // Use dbComment as parameter
+      id: dbComment.id,
+      post_id: dbComment.post_id,
+      user_id: dbComment.user_id,
+      content: dbComment.content,
+      likes_count: dbComment.likes_count || 0,
+      created_at: dbComment.created_at,
+      updated_at: dbComment.updated_at, // Assuming updated_at exists, add if needed
       user: {
-        id: comment.user_id,
-        username: comment.profiles?.username || 'Unknown',
-        avatar_url: comment.profiles?.avatar_url,
+        id: dbComment.user_id,
+        username: dbComment.profiles?.username || 'Unknown', // Access profile via dbComment
+        avatar_url: dbComment.profiles?.avatar_url, // Access profile via dbComment
       },
     }));
+
+    return comments; // Return the mapped comments
+
   } catch (error) {
-    console.error('Error fetching comments:', error);
-    return [];
+    // Catch block now only handles errors thrown from the try block
+    console.error('Error in getComments function:', error);
+    return []; // Return empty array on error
   }
 }
 

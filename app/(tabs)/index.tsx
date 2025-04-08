@@ -11,18 +11,16 @@ import {
   View,
   Text,
   TouchableOpacity,
-  // TouchableHighlight, // No longer needed for tabs
   ScrollView,
-  // TextInput, // No longer needed
   Image,
   FlatList,
   Modal,
   RefreshControl,
   ActivityIndicator,
   Alert,
-  Pressable, // Keep Pressable for FAB potentially
+  Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'; // Import useSafeAreaInsets
 
 import { AddPlantForm } from '../../components/AddPlantForm';
 import { EnhancedPlantList } from '../../components/PlantList'; // Import EnhancedPlantList
@@ -31,6 +29,7 @@ import ThemedView from '../../components/ui/ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../lib/hooks/useWatermelon'; // Keep for database instance
+import Constants from 'expo-constants';
 import { Plant } from '../../lib/models/Plant'; // Keep Plant type if needed elsewhere
 
 // --- Tag Pill Component ---
@@ -51,7 +50,7 @@ interface HomeScreenProps {
 function HomeScreen({ database }: HomeScreenProps) {
   // Receive database prop
   const { theme, isDarkMode } = useTheme();
-  const navigation = useRouter();
+  const router = useRouter(); // Use router consistently
   const { refreshing, handleRefresh } = usePullToRefresh({
     showFeedback: true,
     forceSync: true,
@@ -62,6 +61,10 @@ function HomeScreen({ database }: HomeScreenProps) {
 
   // FAB Menu State
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+  const insets = useSafeAreaInsets(); // Get safe area insets
+
+  // Check if in development mode
+  const isDevelopment = Constants.expoConfig?.extra?.ENV === 'development' || __DEV__;
 
   // Callback to update plant count and loading state
   const handleCountChange = (count: number) => {
@@ -90,12 +93,13 @@ function HomeScreen({ database }: HomeScreenProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
+      {/* Apply background color to SafeAreaView */}
       <ThemedView
-        // className="flex-1" // Removed flex-1 from ThemedView, SafeAreaView already has it
-        lightClassName="bg-neutral-50" // Or potentially white like the image?
+        className="flex-1" // Add flex-1 back here
+        lightClassName="bg-neutral-50"
         darkClassName="bg-black">
-        {/* Header Removed */}
+        {/* Removed absolutely positioned profile icon */}
 
         {/* Content Area - Now directly using EnhancedPlantList as the main scroll container */}
         <EnhancedPlantList
@@ -107,13 +111,29 @@ function HomeScreen({ database }: HomeScreenProps) {
           // Pass header content as ListHeaderComponent
           ListHeaderComponent={
             <View className="px-4 pt-4">
-              {/* Location Title */}
-              <ThemedText
-                className="mb-2 text-3xl font-bold" // Added margin bottom
-                lightClassName="text-neutral-800"
-                darkClassName="text-white">
-                Meine Pflanzen
-              </ThemedText>
+              {/* Header Row: Title + Icon */}
+              <View className="flex-row items-center justify-between mb-2">
+                <ThemedText
+                  className="text-3xl font-bold" // Removed margin bottom here
+                  lightClassName="text-neutral-800"
+                  darkClassName="text-white">
+                  Meine Pflanzen
+                </ThemedText>
+                {/* Profile Icon */}
+                <Pressable
+                  onPress={() => router.push('/profile')}
+                  accessibilityLabel="View profile"
+                  accessibilityRole="button">
+                  {({ pressed }) => (
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={32}
+                      color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[600]}
+                      style={{ opacity: pressed ? 0.5 : 1 }}
+                    />
+                  )}
+                </Pressable>
+              </View>
               {/* Static Tag Pills */}
               <View className="mb-4 flex-row">
                 <TagPill text="Halbschatten" isDarkMode={isDarkMode} />
