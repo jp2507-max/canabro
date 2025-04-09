@@ -402,33 +402,30 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         strainToUse ? JSON.stringify(strainToUse) : 'None'
       );
 
-      // SUPER SAFE strain handling - avoid any possible type errors
-      // Define a simple strain type that doesn't depend on any external data
-      const defaultStrainType = 'hybrid' as 'hybrid' | 'indica' | 'sativa';
-      const defaultStrainId = 'unknown';
-      
-      // Don't even try to access selectedStrain - just use the form data directly
-      // This completely avoids the 'Cannot read property type of undefined' error
-      const strainName = data.strain || 'Unknown Strain';
-      
-      // Map cannabis type directly from the form data, with a safe default
-      const cannabisTypeValue = data.cannabis_type || CannabisType.Unknown;
-      
-      // Create the plant data with safe values - avoid any reference to selectedStrain
-      const plantDataToSave = {
-        name: data.name || 'Unnamed Plant',
-        strain: strainName,
-        planted_date: data.planted_date.toISOString().split('T')[0],
-        growth_stage: data.growth_stage || GrowthStage.SEEDLING,
-        notes: data.notes || '',
-        image_url: finalImageUrl || undefined,
-        cannabisType: cannabisTypeValue,
-        growMedium: data.grow_medium || GrowMedium.Soil,
-        lightCondition: data.light_condition || LightCondition.Artificial,
-        locationDescription: data.location_description || GrowLocation.Indoor,
-        strainId: defaultStrainId, // Use the default value directly
-        userId: user.id,
-      };
+    // Use the ID from the selected/found strain, or undefined if none
+    const finalStrainId = strainToUse?.id !== 'unknown' ? strainToUse?.id : undefined;
+
+    // Use the form data directly for name
+    const strainName = data.strain || 'Unknown Strain'; // Keep using form data for name
+
+    // Map cannabis type directly from the form data, with a safe default
+    const cannabisTypeValue = data.cannabis_type || CannabisType.Unknown;
+
+    // Create the plant data using the correct strain ID
+    const plantDataToSave = {
+      name: data.name || 'Unnamed Plant',
+      strain: strainName, // Keep using form data for name
+      planted_date: data.planted_date.toISOString().split('T')[0],
+      growth_stage: data.growth_stage || GrowthStage.SEEDLING,
+      notes: data.notes || '',
+      image_url: finalImageUrl || undefined,
+      cannabisType: cannabisTypeValue,
+      growMedium: data.grow_medium || GrowMedium.Soil,
+      lightCondition: data.light_condition || LightCondition.Artificial,
+      locationDescription: data.location_description || GrowLocation.Indoor,
+      strainId: finalStrainId, // Use the correctly determined ID or undefined
+      userId: user.id,
+    };
 
       console.log('Plant data being saved:', JSON.stringify(plantDataToSave));
 

@@ -64,12 +64,21 @@ export function useCreatePlant() {
 
     // If successful and we have a database instance, also create locally
     if (result.data && database.database) {
+      // --- DEBUG LOG ---
+      console.log('[useCreatePlant] Supabase result ID:', result.data?.id);
+      // --- END DEBUG LOG ---
       try {
+        // --- DEBUG LOG --- Add log *before* the write operation
+        console.log('[useCreatePlant] Supabase result ID before local create:', result.data?.id);
+        // --- END DEBUG LOG ---
         await database.database.write(async () => {
           const plantCollection = database.database.get('plants');
-          await plantCollection.create((plant: any) => {
+          await plantCollection.create((plant: any) => { // Keep 'any' for now, but be cautious
+            // Explicitly set the ID first using _raw.id
+            plant._raw.id = result.data!.id;
+            // Now assign the rest of the properties
             Object.assign(plant, {
-              id: result.data!.id,
+              // id: result.data!.id, // ID is already set above
               name: result.data!.name,
               strain: result.data!.strain,
               strain_id: result.data!.strain_id,

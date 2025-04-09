@@ -14,22 +14,24 @@ import {
 import { DiaryEntry } from './DiaryEntry';
 import { GrowJournal } from './GrowJournal';
 import { Profile } from './Profile'; // Import Profile model
+import { Strain } from './Strain'; // Import Strain model
 
 export class Plant extends Model {
   static table = 'plants';
   static associations: Associations = {
-    grow_journals: { type: 'belongs_to' as const, key: 'journal_id' },
-    diary_entries: { type: 'has_many' as const, foreignKey: 'plant_id' },
-    profiles: { type: 'belongs_to' as const, key: 'user_id' }, // Add profile association
+    // grow_journals: { type: 'belongs_to' as const, key: 'journal_id' }, // TEST: Comment out
+    diary_entries: { type: 'has_many' as const, foreignKey: 'plant_id' }, // Keep children
+    // profiles: { type: 'belongs_to' as const, key: 'user_id' }, // TEST: Comment out
+    strains: { type: 'belongs_to' as const, key: 'strain_id' }, // Fixed: Changed from 'strain' to 'strains'
   };
-  
+
   // Ensure all required fields are initialized with default values to prevent undefined errors
 
   // @text('plant_id') plantId!: string; // Removed redundant plant_id field
   @text('journal_id') journalId!: string;
   @text('name') name!: string;
   @text('strain') strain!: string;
-  @text('strain_id') strainId?: string;
+  @text('strain_id') strainId?: string | null; // Allow null for optional relation
   @text('planted_date') plantedDate!: string;
   @text('growth_stage') growthStage!: string;
   @field('height') height?: number;
@@ -52,8 +54,9 @@ export class Plant extends Model {
   @field('is_deleted') isDeleted?: boolean;
 
   // Relations
-  @relation('grow_journals', 'journal_id') journal!: GrowJournal;
-  @relation('profiles', 'user_id') profile!: Profile; // Add profile relation
+  // @relation('grow_journals', 'journal_id') journal!: GrowJournal; // TEST: Comment out
+  // @relation('profiles', 'user_id') profile!: Profile; // TEST: Comment out
+  @relation('strains', 'strain_id') strainObj?: Strain; // Fixed: Changed from 'strain' to 'strains'
 
   // Children collections
   @children('diary_entries') diaryEntries!: Query<DiaryEntry>;

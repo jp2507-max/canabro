@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 11, // Increment schema version for diary_entries changes
+  version: 13, // Increment schema version for schema correction
   tables: [
     tableSchema({
       name: 'profiles',
@@ -120,7 +120,7 @@ export default appSchema({
     tableSchema({
       name: 'strains',
       columns: [
-        { name: 'strain_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's `id`
+        // { name: 'strain_id', type: 'string' }, // REMOVED: Incorrect column definition. WatermelonDB uses implicit 'id'.
         { name: 'name', type: 'string', isIndexed: true },
         { name: 'type', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },

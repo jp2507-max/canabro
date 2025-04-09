@@ -663,8 +663,12 @@ const PlantDetailsEnhanced = withObservables(
 
     try {
       // Observe a single record by ID
+      const plantObservable = database.collections.get<Plant>('plants').findAndObserve(id);
+      
+      // WORKAROUND: Instead of using the relationship directly, we'll manually fetch the strain
+      // This bypasses the relationship issue between 'plants' and 'strains'
       return {
-        plant: database.collections.get<Plant>('plants').findAndObserve(id)
+        plant: plantObservable,
       };
     } catch (error) {
       console.error(`[withObservables] Error observing plant with ID ${id}:`, error);

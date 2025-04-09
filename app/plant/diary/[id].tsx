@@ -459,24 +459,33 @@ const PlantDiaryScreenWithDatabase = withDatabase(PlantDiaryScreenBase);
 
 // Enhance with observables
 const PlantDiaryScreen = withObservables(
-  ['route'],
+  ['route', 'database'],
   ({ database, route }: { database: Database; route: any }) => {
     const plantId = route?.params?.id;
 
-    if (!plantId) {
+    if (!plantId || !database) {
+      console.error('[PlantDiaryScreen] Missing plantId or database:', { plantId, hasDb: !!database });
       return {
         plant: null,
         diaryEntries: [],
       };
     }
 
-    return {
-      plant: database.get<Plant>('plants').findAndObserve(plantId),
-      diaryEntries: database
-        .get<DiaryEntry>('diary_entries')
-        .query(Q.where('plant_id', plantId))
-        .observe(),
-    };
+    try {
+      return {
+        plant: database.get<Plant>('plants').findAndObserve(plantId),
+        diaryEntries: database
+          .get<DiaryEntry>('diary_entries')
+          .query(Q.where('plant_id', plantId))
+          .observe(),
+      };
+    } catch (error) {
+      console.error('[PlantDiaryScreen] Error setting up observables:', error);
+      return {
+        plant: null,
+        diaryEntries: [],
+      };
+    }
   }
 )(PlantDiaryScreenWithDatabase);
 
@@ -484,6 +493,27 @@ const PlantDiaryScreen = withObservables(
 export default function PlantDiaryWrapper() {
   const params = useLocalSearchParams();
   const id = params.id as string;
+  const { database } = useWatermelon(); // Get database from context
 
-  return <PlantDiaryScreen route={{ params: { id } }} />;
+  // Show loading state if database is not ready
+  if (!database) {
+    return (
+      <SafeAreaView className="flex-1">
+        <ThemedView 
+          className="flex-1 items-center justify-center p-4"
+          lightClassName="bg-white"
+          darkClassName="bg-neutral-900">
+          <ActivityIndicator size="large" color="#10b981" />
+          <ThemedText 
+            className="mt-4 text-center"
+            lightClassName="text-neutral-600"
+            darkClassName="text-neutral-400">
+            Loading plant data...
+          </ThemedText>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
+
+  return <PlantDiaryScreen route={{ params: { id } }} database={database} />;
 }

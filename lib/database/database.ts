@@ -1,7 +1,9 @@
 // Standard Imports for Schema and Models
 import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
+import { setGenerator } from '@nozbe/watermelondb/utils/common/randomId'; // Import setGenerator
 import * as FileSystem from 'expo-file-system';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
 // import { Observable } from 'rxjs'; // Observable is unused
 // import { Model } from '@nozbe/watermelondb'; // Model is unused
@@ -19,6 +21,9 @@ import { Post } from '../models/Post';
 import { Profile } from '../models/Profile';
 import { Strain } from '../models/Strain';
 import migrations from '../models/migrations';
+
+// Set ID generator BEFORE adapter creation
+setGenerator(() => uuidv4());
 
 // Database file paths for reset functionality
 const DB_NAME = 'canabro.db'; // Keep DB Name consistent

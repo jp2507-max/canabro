@@ -21,6 +21,7 @@ import ThemedView from '../components/ui/ThemedView';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { useTheme } from '../lib/contexts/ThemeContext';
 import usePullToRefresh from '../lib/hooks/usePullToRefresh'; // Import the new hook
+import { resetDatabase, checkRecordExistsLocally } from '../lib/utils/database'; // Import reset and check functions
 // import { useProtectedRoute } from '../lib/hooks/useProtectedRoute'; // Removed as HOC handles data loading
 // import { useProfileData } from '../lib/hooks/useProfileData'; // Removed hook
 // import useWatermelon from '../lib/hooks/useWatermelon'; // useWatermelon is unused
@@ -321,6 +322,28 @@ function ProfileScreenBase({
                 value={profile.getCertifications ? profile.getCertifications() : []}
               />
             </ThemedView>
+
+            {/* --- TEMPORARY DEBUG BUTTONS --- */}
+            <View className="mx-4 my-4 items-center border-t border-dashed border-red-400 pt-4">
+              <TouchableOpacity
+                onPress={() => checkRecordExistsLocally('plants', '21b50a5d-7e47-495e-ac52-83ab56e0c2ae')}
+                className="mb-2 rounded-lg bg-blue-600 px-4 py-2 active:opacity-70">
+                <ThemedText className="font-semibold text-white">
+                  TEMP: Check if Plant Exists Locally
+                </ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={resetDatabase}
+                className="mb-2 rounded-lg bg-orange-600 px-4 py-2 active:opacity-70">
+                <ThemedText className="font-semibold text-white">
+                  TEMP: Reset Local Database
+                </ThemedText>
+              </TouchableOpacity>
+              <ThemedText className="text-center text-xs text-gray-500">
+                (Use if sync issues persist. Clears local data, requires re-sync.)
+              </ThemedText>
+            </View>
+            {/* --- END TEMPORARY DEBUG BUTTON --- */}
           </View>
         </ScrollView>
       </ThemedView>

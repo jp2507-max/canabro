@@ -1,10 +1,13 @@
 import { Model } from '@nozbe/watermelondb';
+import { Associations } from '@nozbe/watermelondb/Model';
 import { field, date, readonly, text, relation } from '@nozbe/watermelondb/decorators';
+
+import { Plant } from './Plant';
 
 export class DiaryEntry extends Model {
   static table = 'diary_entries';
-  static associations = {
-    plants: { type: 'belongs_to' as const, key: 'plant_id' },
+  static associations: Associations = {
+    plant: { type: 'belongs_to' as const, key: 'plant_id' },
   };
 
   @text('entry_id') entryId!: string;
@@ -20,5 +23,5 @@ export class DiaryEntry extends Model {
   @date('last_synced_at') lastSyncedAt?: Date;
   @field('is_deleted') isDeleted?: boolean;
 
-  @relation('plants', 'plant_id') plant: any;
+  @relation('plant', 'plant_id') plant!: Plant;
 }

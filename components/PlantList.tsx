@@ -93,7 +93,7 @@ const PlantItem = React.memo(({ plant }: { plant: Plant }) => {
     <TouchableOpacity
       className="mb-4 active:opacity-80"
       key={plant.id}
-      onPress={() => router.push(`/plant/${plant.id}/journal`)} // Navigate to journal screen
+      onPress={() => router.push(`/plant/diary/${plant.id}`)} // Fixed path to diary screen
       accessibilityLabel={`View journal for plant: ${plant.name}, Strain: ${plant.strain}`} // Updated accessibility label
       accessibilityRole="button">
       <ThemedView

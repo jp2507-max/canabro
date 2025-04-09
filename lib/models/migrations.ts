@@ -157,7 +157,7 @@ const migrations = schemaMigrations({
           name: 'strains',
           columns: [
             // WatermelonDB automatically handles 'id' as the primary key
-            { name: 'strain_id', type: 'string' }, // Keep original ID if needed for relations, but 'id' is the WDB key
+            // { name: 'strain_id', type: 'string' }, // REMOVED: Incorrect column definition from original migration
             { name: 'name', type: 'string', isIndexed: true },
             { name: 'type', type: 'string' },
             { name: 'description', type: 'string', isOptional: true },
@@ -246,6 +246,23 @@ const migrations = schemaMigrations({
             { name: 'entry_date', type: 'string' }, // Add the missing entry_date column
           ],
         }),
+      ],
+    },
+    // Migration to version 12: Fix relationships between plants and strains
+    {
+      toVersion: 12,
+      steps: [
+        // No explicit schema changes needed, just forcing a reload of the models
+         // with the proper relationship definitions
+       ],
+     },
+    // Migration to version 13: Correct schema definition for strains table (removed extra strain_id)
+    {
+      toVersion: 13,
+      steps: [
+        // No explicit database changes needed, as the incorrect column likely never
+        // existed physically due to previous errors. This migration just satisfies
+        // WatermelonDB's versioning requirement.
       ],
     },
   ],

@@ -1,12 +1,19 @@
-import { Model } from '@nozbe/watermelondb';
+import { Model, Q } from '@nozbe/watermelondb';
 import { Associations } from '@nozbe/watermelondb/Model';
 import { field, date, readonly, text } from '@nozbe/watermelondb/decorators';
 
 export class Strain extends Model {
   static table = 'strains';
-  static associations: Associations = {};
+  static associations: Associations = {
+    plants: { type: 'has_many' as const, foreignKey: 'strain_id' },
+  };
+  
+  // Add a getter for plants to avoid direct relationship access
+  get plants() {
+    return this.collections.get('plants').query(Q.where('strain_id', this.id));
+  }
 
-  @text('strain_id') strainId!: string;
+  // @text('strain_id') strainId!: string; // REMOVED: Corresponds to incorrect schema column
   @text('name') name!: string;
   @text('type') type!: string;
   @text('description') description?: string;

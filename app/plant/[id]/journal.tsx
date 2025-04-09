@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,20 +8,26 @@ import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
 import DiaryEntryItem from '../../../components/diary/DiaryEntryItem'; // Import the new component
 import { useTheme } from '../../../lib/contexts/ThemeContext';
-import { usePlant } from '../../../lib/hooks/plants/usePlant';
+import { usePlant } from '../../../lib/hooks/plants/usePlant'; // Restore usePlant
 import { useDiaryEntries } from '../../../lib/hooks/diary/useDiaryEntries'; // Import the hook
 
 // Commented placeholder block fully removed
 
 export default function PlantJournalScreen() {
-  const { id: plantId } = useLocalSearchParams<{ id: string }>();
+  const { id: routePlantId } = useLocalSearchParams<{ id: string }>(); // Rename to avoid confusion
   const router = useRouter();
   const { theme, isDarkMode } = useTheme();
-  const { data: plant, loading: isLoadingPlant, error: plantError } = usePlant(plantId);
-  const { entries, isLoading: isLoadingEntries, error: entriesError } = useDiaryEntries(plantId ?? ''); // Use the hook
+  // Fetch plant data using the route ID (which is likely the WatermelonDB ID)
+  const { data: plant, loading: isLoadingPlant, error: plantError } = usePlant(routePlantId); // Restore usePlant
 
-  // Ensure plantId is valid before proceeding
-  if (!plantId) {
+  // Removed problematic useEffect block that called the old getStrainData method
+
+  // Fetch diary entries ONLY when the plant data is loaded
+  // Use the plant ID directly from the route since that's what the diary entries are linked to
+  const { entries, isLoading: isLoadingEntries, error: entriesError } = useDiaryEntries(routePlantId);
+
+  // Ensure routePlantId is valid before proceeding (basic check)
+  if (!routePlantId) {
      // Optionally render an error state or redirect
      return (
        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -34,14 +40,16 @@ export default function PlantJournalScreen() {
 
 
   const handleAddNewEntry = () => {
-    // Navigate to the create diary entry screen for this plant
-    router.push(`/plant/${plantId}/diary/create`);
+    // Navigate to the create diary entry screen using the route ID
+    router.push(`/plant/${routePlantId}/diary/create`);
   };
 
   const handleGoToPlantDetails = () => {
-    router.push(`/plant/${plantId}`);
+    // Navigate to the plant detail screen using the route ID
+    router.push(`/plant/${routePlantId}`);
   };
 
+  // Display loading indicator while plant data is loading
   if (isLoadingPlant) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -93,6 +101,7 @@ export default function PlantJournalScreen() {
           <ThemedText className="text-xl font-bold">{plant.name}</ThemedText>
           <ThemedText className="text-sm" lightClassName="text-neutral-600" darkClassName="text-neutral-400">
             Strain: {plant.strain || 'N/A'}
+            {/* Avoid accessing strainObj directly until relationship is fixed */}
           </ThemedText>
           {/* Add more info like planted date, current stage etc. */}
         </ThemedView>
