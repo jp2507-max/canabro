@@ -53,7 +53,7 @@ export function useSupabaseItem<T>(options: UseSupabaseItemOptions<T>) {
         .from(options.table)
         .select(options.select || '*')
         .eq(options.matchColumn, options.matchValue)
-        .single();
+        .single(); // Revert back to single()
 
       if (error) throw error;
 

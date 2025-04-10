@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, TouchableOpacity, View, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import CommentModal from '../../components/community/CommentModal'; // Import CommentModal
 import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
 // Import the refactored PostItem and its data type
@@ -36,8 +37,11 @@ function CommunityScreen() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateScreen, setShowCreateScreen] = useState(false);
-  // Removed activeTopic state
   const [activeFilter, setActiveFilter] = useState<'trending' | 'following'>('trending'); // State for filter tabs
+
+  // --- Comment Modal State ---
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   // --- Supabase Data Fetching State ---
   const [posts, setPosts] = useState<PostData[]>([]);
@@ -261,10 +265,20 @@ function CommunityScreen() {
     router.push(`/profile/${userId}` as any);
   };
 
+  // --- Comment Modal Handlers ---
+  const handleOpenComments = (postId: string) => {
+    setSelectedPostId(postId);
+    setIsCommentModalVisible(true);
+  };
+
+  const handleCloseComments = () => {
+    setIsCommentModalVisible(false);
+    setSelectedPostId(null);
+  };
+
+  // Update handleCommentPress to use handleOpenComments
   const handleCommentPress = (postId: string) => {
-    // Navigate to a post detail screen or open a comment modal
-    // router.push(`/post/${postId}` as any); // Example navigation
-    console.log('Comment pressed for post:', postId); // Placeholder
+    handleOpenComments(postId);
   };
 
   // --- Create Post Handlers ---
@@ -470,6 +484,15 @@ function CommunityScreen() {
           onClose={() => setShowCreateScreen(false)}
           onSuccess={handlePostCreated} // Refresh feed on success
         />
+
+        {/* Comment Modal */}
+        {selectedPostId && ( // Only render if a post is selected
+          <CommentModal
+            postId={selectedPostId}
+            isVisible={isCommentModalVisible}
+            onClose={handleCloseComments}
+          />
+        )}
       </ThemedView>
     </SafeAreaView>
   );

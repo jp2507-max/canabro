@@ -1,66 +1,64 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React from 'react';
+import { ScrollView, View } from 'react-native'; // Removed SafeAreaView, added View
+// Removed DiaryEntryForm import
 
 import EntryTypeSelector, { DiaryEntryType } from '../../../../components/diary/EntryTypeSelector';
-import DiaryEntryForm from '../../../../components/diary/DiaryEntryForm';
 import ThemedView from '../../../../components/ui/ThemedView';
-import ThemedText from '../../../../components/ui/ThemedText'; // Added import for ThemedText
+import ThemedText from '../../../../components/ui/ThemedText';
 import { useTheme } from '../../../../lib/contexts/ThemeContext';
 
 export default function CreateDiaryEntryScreen() {
   const { id: plantId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { theme } = useTheme();
-  const [selectedEntryType, setSelectedEntryType] = useState<DiaryEntryType | null>(null);
+  const { theme, isDarkMode } = useTheme(); // Added isDarkMode
 
-  const handleTypeSelect = (type: DiaryEntryType) => {
-    setSelectedEntryType(type);
+  // Removed selectedEntryType state and related handlers
+
+  const handleNavigateToForm = (type: DiaryEntryType) => {
+    // Navigate to a dedicated form screen, passing plantId and type
+    // TODO: Define the actual route for the form screen
+    console.log(`Navigate to form for type: ${type}, plant: ${plantId}`);
+    // Example navigation (adjust route as needed):
+    // router.push(`/plant/${plantId}/diary/form?type=${type}`);
   };
 
-  const handleCancel = () => {
-    // If a type is selected, go back to the type selector, otherwise go back to the journal
-    if (selectedEntryType) {
-      setSelectedEntryType(null);
-    } else {
-      router.back();
-    }
-  };
-
-  const handleSubmitSuccess = () => {
-    router.back(); // Go back to the journal screen after successful submission
-  };
-
-  // Determine screen title based on state
-  const screenTitle = selectedEntryType ? `New ${selectedEntryType} Entry` : 'Select Entry Type';
 
   if (!plantId) {
-    // Handle case where plantId is missing (shouldn't happen with proper routing)
+    // Use ThemedView for error state
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <ThemedView className="flex-1 items-center justify-center">
-          <ThemedText>Error: Plant ID is missing.</ThemedText>
-        </ThemedView>
-      </SafeAreaView>
+      <ThemedView className="flex-1 items-center justify-center p-4" lightClassName="bg-neutral-50" darkClassName="bg-neutral-900">
+         <Stack.Screen options={{ title: 'Error', headerStyle: { backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50] }, headerTintColor: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900] }} />
+        <ThemedText className="text-lg text-status-danger">Error: Plant ID is missing.</ThemedText>
+      </ThemedView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Stack.Screen options={{ title: screenTitle }} />
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        {!selectedEntryType ? (
-          <EntryTypeSelector onSelectType={handleTypeSelect} />
-        ) : (
-          <DiaryEntryForm
-            plantId={plantId}
-            entryType={selectedEntryType}
-            onSubmitSuccess={handleSubmitSuccess}
-            onCancel={handleCancel}
-          />
-        )}
+    // Use ThemedView for the main container
+    <ThemedView className="flex-1" lightClassName="bg-neutral-50" darkClassName="bg-neutral-900">
+      <Stack.Screen
+        options={{
+          title: 'Neuer Eintrag', // Static title from image 4
+          headerStyle: {
+            backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50],
+          },
+          headerTintColor: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
+          headerShadowVisible: false,
+          // Add back button customization if needed
+        }}
+      />
+      {/* Use ScrollView directly inside ThemedView */}
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}>
+         {/* Subtitle */}
+         <ThemedText className="mb-6 text-base" lightClassName="text-neutral-600" darkClassName="text-neutral-400">
+           Wähle eine der folgenden Aktionen aus, um sie in dein Grow-Tagebuch einzutragen
+         </ThemedText>
+
+         {/* Render the type selector - it will be modified next */}
+         <EntryTypeSelector onSelectType={handleNavigateToForm} />
+
       </ScrollView>
-    </SafeAreaView>
+    </ThemedView>
   );
 }

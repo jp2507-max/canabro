@@ -75,7 +75,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Reverted to deprecated version to fix TS error
+      mediaTypes: ['images'], // Use lowercase string literal 'images'
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,

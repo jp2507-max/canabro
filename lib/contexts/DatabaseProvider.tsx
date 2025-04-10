@@ -18,7 +18,7 @@ type DatabaseContextType = {
   database: Database;
   sync: (options?: { showFeedback?: boolean; force?: boolean }) => Promise<boolean>; // Update function signature
   isSyncing: boolean;
-  hasUnsyncedChanges: () => Promise<boolean>; // Keep this check
+  hasUnsyncedChanges: () => Promise<boolean>;
   lastSyncTime: Date | null;
   resetDatabase: () => Promise<boolean>; // Keep reset functionality
 };
