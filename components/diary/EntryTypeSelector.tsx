@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, TouchableOpacity, FlatList } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React from 'react';
+import { TouchableOpacity, FlatList } from 'react-native';
 
+import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 
 // Define the entry types based on user requirements
 export type DiaryEntryType =
@@ -56,11 +56,15 @@ export default function EntryTypeSelector({ onSelectType }: EntryTypeSelectorPro
     <TouchableOpacity
       onPress={() => onSelectType(item.type)}
       className="mb-2 flex-row items-center rounded-lg p-4 active:opacity-70"
-      style={{ backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100] }}>
+      style={{
+        backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100],
+      }}>
       <MaterialCommunityIcons
         name={item.icon}
         size={24}
-        color={item.iconColor || (isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700])}
+        color={
+          item.iconColor || (isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700])
+        }
         className="mr-4"
       />
       <ThemedText className="text-base">{item.label}</ThemedText>

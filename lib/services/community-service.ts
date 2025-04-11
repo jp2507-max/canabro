@@ -95,27 +95,26 @@ export async function createPost(post: {
   image_url?: string;
   // plant_id?: string; // Removed - Doesn't exist in live schema (has plant_stage/strain instead)
   // is_public?: boolean; // Removed non-existent field from type definition
-}): Promise<boolean> { // Changed return type to boolean for success/failure
+}): Promise<boolean> {
+  // Changed return type to boolean for success/failure
   try {
     // Perform insert without selecting the result
-    const { error } = await supabase
-      .from('posts')
-      .insert([
-        {
-          user_id: post.user_id,
-          content: post.content,
-          image_url: post.image_url,
-          // plant_id: post.plant_id, // Removed non-existent column
-          // is_public: undefined, // Removed non-existent column
-          likes_count: 0,
-          comments_count: 0,
-        },
-      ]);
-      // Removed .select().single()
+    const { error } = await supabase.from('posts').insert([
+      {
+        user_id: post.user_id,
+        content: post.content,
+        image_url: post.image_url,
+        // plant_id: post.plant_id, // Removed non-existent column
+        // is_public: undefined, // Removed non-existent column
+        likes_count: 0,
+        comments_count: 0,
+      },
+    ]);
+    // Removed .select().single()
 
     if (error) {
-        console.error('Error during post insert:', error);
-        throw error; // Re-throw the error
+      console.error('Error during post insert:', error);
+      throw error; // Re-throw the error
     }
 
     // If insert succeeded without error, return true
@@ -188,23 +187,25 @@ export async function getComments(postId: string): Promise<CommentWithUser[]> {
     }
 
     // Map the database results to the CommentWithUser interface
-    const comments = (data || []).map((dbComment: any): CommentWithUser => ({ // Use dbComment as parameter
-      id: dbComment.id,
-      post_id: dbComment.post_id,
-      user_id: dbComment.user_id,
-      content: dbComment.content,
-      likes_count: dbComment.likes_count || 0,
-      created_at: dbComment.created_at,
-      updated_at: dbComment.updated_at, // Assuming updated_at exists, add if needed
-      user: {
-        id: dbComment.user_id,
-        username: dbComment.profiles?.username || 'Unknown', // Access profile via dbComment
-        avatar_url: dbComment.profiles?.avatar_url, // Access profile via dbComment
-      },
-    }));
+    const comments = (data || []).map(
+      (dbComment: any): CommentWithUser => ({
+        // Use dbComment as parameter
+        id: dbComment.id,
+        post_id: dbComment.post_id,
+        user_id: dbComment.user_id,
+        content: dbComment.content,
+        likes_count: dbComment.likes_count || 0,
+        created_at: dbComment.created_at,
+        updated_at: dbComment.updated_at, // Assuming updated_at exists, add if needed
+        user: {
+          id: dbComment.user_id,
+          username: dbComment.profiles?.username || 'Unknown', // Access profile via dbComment
+          avatar_url: dbComment.profiles?.avatar_url, // Access profile via dbComment
+        },
+      })
+    );
 
     return comments; // Return the mapped comments
-
   } catch (error) {
     // Catch block now only handles errors thrown from the try block
     console.error('Error in getComments function:', error);

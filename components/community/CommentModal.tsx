@@ -1,9 +1,9 @@
 // Removed duplicate Ionicons import
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system'; // Import FileSystem
-import * as ImagePicker from 'expo-image-picker';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import { decode } from 'base64-arraybuffer'; // Import decode
+import * as FileSystem from 'expo-file-system'; // Import FileSystem
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
@@ -22,12 +22,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '../../lib/contexts/ThemeContext';
-import { useAuth } from '../../lib/contexts/AuthProvider';
-import { Comment, CreateCommentData } from '../../lib/types/community';
-import supabase from '../../lib/supabase';
 import CommentItem from './CommentItem';
-import StorageImage from '../ui/StorageImage';
+import { useAuth } from '../../lib/contexts/AuthProvider';
+import { useTheme } from '../../lib/contexts/ThemeContext';
+import supabase from '../../lib/supabase';
+import { Comment } from '../../lib/types/community';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 
@@ -47,7 +46,12 @@ interface CommentWithProfile extends Comment {
   image_url?: string | null;
 }
 
-export default function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentModalProps) {
+export default function CommentModal({
+  postId,
+  isVisible,
+  onClose,
+  onCommentAdded,
+}: CommentModalProps) {
   const { theme, isDarkMode } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -57,22 +61,12 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [commentsCount, setCommentsCount] = useState(0);
-  const [userProfile, setUserProfile] = useState<{ username: string; avatar_url: string | null }>({
-    username: user?.email?.split('@')[0] || 'User',
-    avatar_url: null
-  });
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   // Removed keyboardHeight state and listeners
-
-  // Fetch the user profile immediately when component mounts
-  useEffect(() => {
-    if (user) {
-      fetchUserProfile();
-    }
-  }, [user]);
 
   // Fetch comments when modal becomes visible
   useEffect(() => {
@@ -85,27 +79,6 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
       setIsLoading(true);
     }
   }, [isVisible, postId]);
-
-  // Fetch the current user's profile information
-  const fetchUserProfile = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setUserProfile(data);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-    }
-  };
 
   // Animate modal appearance
   useEffect(() => {
@@ -132,20 +105,24 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
     try {
       const { data, error, count } = await supabase
         .from('comments')
-        .select(`
+        .select(
+          `
           *,
           profiles (username, avatar_url)
-        `, { count: 'exact' })
+        `,
+          { count: 'exact' }
+        )
         .eq('post_id', postId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       // Transform data to include profile information
-      const commentsWithProfiles = data?.map(comment => ({
-        ...comment,
-        profile: comment.profiles as { username: string; avatar_url: string | null },
-      })) || [];
+      const commentsWithProfiles =
+        data?.map((comment) => ({
+          ...comment,
+          profile: comment.profiles as { username: string; avatar_url: string | null },
+        })) || [];
 
       setComments(commentsWithProfiles);
       if (count !== null) setCommentsCount(count);
@@ -193,7 +170,10 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant camera roll permissions to attach photos.');
+        Alert.alert(
+          'Permission Required',
+          'Please grant camera roll permissions to attach photos.'
+        );
         return;
       }
 
@@ -241,7 +221,11 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
         [{ resize: { width: 1024 } }], // Resize
         { compress: 0.7, format: SaveFormat.JPEG } // Compress and save as JPEG
       );
-      console.log('Comment image manipulated:', manipResult.uri, `(${manipResult.width}x${manipResult.height})`);
+      console.log(
+        'Comment image manipulated:',
+        manipResult.uri,
+        `(${manipResult.width}x${manipResult.height})`
+      );
 
       // Determine the correct MIME type and extension
       const mimeType = 'image/jpeg';
@@ -317,14 +301,13 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
       }
 
       // Call RPC function *without* image URL
-      const { error: rpcError } = await supabase
-        .rpc('create_comment', {
-          p_post_id: postId,
-          p_content: commentText.trim(),
-          p_user_id: user.id,
-          // p_image_url: imageUrl // REMOVED - Function doesn't accept it
-        });
-        // Removed .throwOnError() to handle error manually if needed
+      const { error: rpcError } = await supabase.rpc('create_comment', {
+        p_post_id: postId,
+        p_content: commentText.trim(),
+        p_user_id: user.id,
+        // p_image_url: imageUrl // REMOVED - Function doesn't accept it
+      });
+      // Removed .throwOnError() to handle error manually if needed
 
       if (rpcError) {
         console.error('Error calling create_comment RPC:', rpcError);
@@ -341,10 +324,12 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
       // Important: Fetch based on user_id and post_id, ordered by creation time descending
       const { data: commentData, error: fetchError } = await supabase
         .from('comments')
-        .select(`
+        .select(
+          `
           *,
           profiles (username, avatar_url)
-        `)
+        `
+        )
         .eq('post_id', postId)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -388,11 +373,10 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
         // Call the callback if provided
         if (onCommentAdded) onCommentAdded();
       } else {
-         console.warn('Could not fetch the newly created comment after RPC call.');
-         Alert.alert('Warning', 'Comment added, but could not immediately display it.');
-         // Maybe try fetching again or inform user?
+        console.warn('Could not fetch the newly created comment after RPC call.');
+        Alert.alert('Warning', 'Comment added, but could not immediately display it.');
+        // Maybe try fetching again or inform user?
       }
-
     } catch (error) {
       console.error('Error adding comment:', error);
       // Show error to user
@@ -411,39 +395,26 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
 
   // Render a comment item
   const renderComment = ({ item }: { item: CommentWithProfile }) => (
-    <CommentItem
-      comment={item}
-      currentUserId={user?.id}
-    />
+    <CommentItem comment={item} currentUserId={user?.id} />
   );
 
   // Theme colors for UI elements
   const inputBgColor = isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[100];
   const inputTextColor = isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900];
   const placeholderTextColor = isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500];
-  const sendButtonColor = theme.colors.primary[500];
+
   const headerBg = isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[50];
   const modalBg = isDarkMode ? theme.colors.neutral[900] : theme.colors.background; // Use theme background for light mode
-  const dividerColor = isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200];
 
   return (
-    <Modal
-      animationType="none"
-      transparent={true}
-      visible={isVisible}
-      onRequestClose={onClose}
-    >
+    <Modal animationType="none" transparent visible={isVisible} onRequestClose={onClose}>
       <Animated.View
         style={{
           flex: 1,
           backgroundColor: 'rgba(0,0,0,0.5)',
           opacity: fadeAnim,
-        }}
-      >
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={onClose}
-        >
+        }}>
+        <Pressable style={{ flex: 1 }} onPress={onClose}>
           <Animated.View
             style={{
               flex: 1,
@@ -453,54 +424,53 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
               borderTopRightRadius: 20,
               overflow: 'hidden',
               // Removed marginBottom: keyboardHeight
-              transform: [{
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [300, 0],
-                }),
-              }],
-            }}
-          >
+              transform: [
+                {
+                  translateY: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [300, 0],
+                  }),
+                },
+              ],
+            }}>
             <Pressable style={{ flex: 1 }}>
               {/* Header is outside KAV */}
-                <ThemedView
-                  className="flex-row items-center justify-between px-4 py-3 border-b"
-                  style={{ backgroundColor: headerBg }}
-                  lightClassName="border-neutral-200"
-                  darkClassName="border-neutral-700">
-                  <View className="flex-row items-center">
-                    <ThemedText className="text-lg font-bold">Comments</ThemedText>
-                    {commentsCount > 0 && (
-                      <ThemedText
-                        className="ml-2 text-sm font-medium"
-                        darkClassName="text-neutral-400"
-                        lightClassName="text-neutral-500"
-                      >
-                        {commentsCount}
-                      </ThemedText>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    onPress={onClose}
-                    accessibilityLabel="Close comments"
-                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700]}
-                    />
-                  </TouchableOpacity>
-                </ThemedView>
-                {/* KAV wraps FlatList and Input Area */}
-                <KeyboardAvoidingView
-                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Reverted behavior
-                  style={{ flex: 1 }}
-                  keyboardVerticalOffset={insets.bottom + 10} // Reverted offset
-                >
-                  {/* Comment List */}
+              <ThemedView
+                className="flex-row items-center justify-between border-b px-4 py-3"
+                style={{ backgroundColor: headerBg }}
+                lightClassName="border-neutral-200"
+                darkClassName="border-neutral-700">
+                <View className="flex-row items-center">
+                  <ThemedText className="text-lg font-bold">Comments</ThemedText>
+                  {commentsCount > 0 && (
+                    <ThemedText
+                      className="ml-2 text-sm font-medium"
+                      darkClassName="text-neutral-400"
+                      lightClassName="text-neutral-500">
+                      {commentsCount}
+                    </ThemedText>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={onClose}
+                  accessibilityLabel="Close comments"
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700]}
+                  />
+                </TouchableOpacity>
+              </ThemedView>
+              {/* KAV wraps FlatList and Input Area */}
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Reverted behavior
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={insets.bottom + 10} // Reverted offset
+              >
+                {/* Comment List */}
                 {isLoading ? (
-                  <View className="flex-1 justify-center items-center">
+                  <View className="flex-1 items-center justify-center">
                     <ActivityIndicator size="large" color={theme.colors.primary[500]} />
                   </View>
                 ) : (
@@ -512,7 +482,7 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
                     refreshing={isRefreshing}
                     onRefresh={handleRefresh}
                     ListEmptyComponent={
-                      <ThemedView className="flex-1 justify-center items-center p-8">
+                      <ThemedView className="flex-1 items-center justify-center p-8">
                         <Ionicons
                           name="chatbubble-outline"
                           size={40}
@@ -521,18 +491,14 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
                         <ThemedText
                           className="mt-3 text-center text-base"
                           darkClassName="text-neutral-400"
-                          lightClassName="text-neutral-500"
-                        >
+                          lightClassName="text-neutral-500">
                           No comments yet. Be the first to share your thoughts!
                         </ThemedText>
                         <TouchableOpacity
                           onPress={focusCommentInput}
-                          className="mt-4 px-5 py-2 rounded-full"
-                          style={{ backgroundColor: theme.colors.primary[500] }}
-                        >
-                          <ThemedText className="text-white font-medium">
-                            Add Comment
-                          </ThemedText>
+                          className="mt-4 rounded-full px-5 py-2"
+                          style={{ backgroundColor: theme.colors.primary[500] }}>
+                          <ThemedText className="font-medium text-white">Add Comment</ThemedText>
                         </TouchableOpacity>
                       </ThemedView>
                     }
@@ -544,7 +510,7 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
 
                 {/* Input Area */}
                 <ThemedView
-                  className="flex-row items-center p-3 border-t"
+                  className="flex-row items-center border-t p-3"
                   style={{ backgroundColor: headerBg }} // Removed explicit paddingBottom
                   lightClassName="border-neutral-200"
                   darkClassName="border-neutral-700">
@@ -554,14 +520,16 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
                   <View className="flex-1">
                     {/* Selected Image Preview */}
                     {selectedImage && (
-                      <View className="mb-2 relative">
+                      <View className="relative mb-2">
                         <Image
                           source={{ uri: selectedImage }}
                           style={{
                             width: '100%',
                             height: 120,
                             borderRadius: 8,
-                            backgroundColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200]
+                            backgroundColor: isDarkMode
+                              ? theme.colors.neutral[700]
+                              : theme.colors.neutral[200],
                           }}
                           resizeMode="cover"
                         />
@@ -578,8 +546,7 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
-                          accessibilityLabel="Remove image"
-                        >
+                          accessibilityLabel="Remove image">
                           <Ionicons name="close" size={16} color="white" />
                         </TouchableOpacity>
                       </View>
@@ -588,7 +555,7 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
                     {/* Input Field */}
                     <TextInput
                       ref={inputRef}
-                      className="flex-1 rounded-[20px] px-[15px] py-[10px] text-base max-h-[100px]"
+                      className="max-h-[100px] flex-1 rounded-[20px] px-[15px] py-[10px] text-base"
                       style={{ backgroundColor: inputBgColor, color: inputTextColor }}
                       placeholder="Add a comment..."
                       placeholderTextColor={placeholderTextColor}
@@ -606,12 +573,13 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
                   <TouchableOpacity
                     onPress={handleAttachPhoto} // Changed to present choice
                     disabled={isSubmitting || isUploading}
-                    className="ml-2 p-2 rounded-full"
+                    className="ml-2 rounded-full p-2"
                     style={{
-                      backgroundColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[300],
+                      backgroundColor: isDarkMode
+                        ? theme.colors.neutral[700]
+                        : theme.colors.neutral[300],
                     }}
-                    accessibilityLabel="Attach photo"
-                  >
+                    accessibilityLabel="Attach photo">
                     <Ionicons
                       name="camera-outline"
                       size={18}
@@ -622,22 +590,23 @@ export default function CommentModal({ postId, isVisible, onClose, onCommentAdde
                   {/* Send Button */}
                   <TouchableOpacity
                     onPress={handleAddComment}
-                    disabled={(!commentText.trim() && !selectedImage) || isSubmitting || isUploading}
-                    className="ml-2 p-2 rounded-full"
+                    disabled={
+                      (!commentText.trim() && !selectedImage) || isSubmitting || isUploading
+                    }
+                    className="ml-2 rounded-full p-2"
                     style={{
-                      backgroundColor: (!commentText.trim() && !selectedImage) || isSubmitting || isUploading
-                        ? isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200]
-                        : theme.colors.primary[500]
+                      backgroundColor:
+                        (!commentText.trim() && !selectedImage) || isSubmitting || isUploading
+                          ? isDarkMode
+                            ? theme.colors.neutral[700]
+                            : theme.colors.neutral[200]
+                          : theme.colors.primary[500],
                     }}
                     accessibilityLabel="Send comment">
                     {isSubmitting || isUploading ? (
                       <ActivityIndicator size="small" color="white" />
                     ) : (
-                      <Ionicons
-                        name="send"
-                        size={18}
-                        color="white"
-                      />
+                      <Ionicons name="send" size={18} color="white" />
                     )}
                   </TouchableOpacity>
                 </ThemedView>

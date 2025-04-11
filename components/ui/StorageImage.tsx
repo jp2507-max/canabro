@@ -47,7 +47,7 @@ export default function StorageImage({
   // Generate a cache-busting URL if needed
   const getProcessedUrl = (originalUrl: string | null) => {
     if (!originalUrl) return null;
-    
+
     // Add a cache-busting parameter if not already present
     if (!originalUrl.includes('?')) {
       return `${originalUrl}?t=${Date.now()}`;
@@ -59,18 +59,20 @@ export default function StorageImage({
   const renderPlaceholder = () => {
     if (isLoading && !hasError) {
       return (
-        <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator 
-            size="small" 
-            color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]} 
+        <View
+          style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator
+            size="small"
+            color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}
           />
         </View>
       );
     }
-    
+
     if (hasError) {
       return (
-        <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+        <View
+          style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
           <Ionicons
             name={fallbackIconName as any} // Type assertion to fix TypeScript error
             size={fallbackIconSize}
@@ -79,7 +81,7 @@ export default function StorageImage({
         </View>
       );
     }
-    
+
     return null;
   };
 
@@ -120,7 +122,8 @@ export default function StorageImage({
           setIsLoading(false);
           setHasError(false);
         }}
-        onError={(error: any) => { // Type annotation for error parameter
+        onError={(error: any) => {
+          // Type annotation for error parameter
           console.error(`Error loading image: ${imageUrl}`, error);
           setIsLoading(false);
           setHasError(true);

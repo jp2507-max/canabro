@@ -73,7 +73,8 @@ export function useCreatePlant() {
         // --- END DEBUG LOG ---
         await database.database.write(async () => {
           const plantCollection = database.database.get('plants');
-          await plantCollection.create((plant: any) => { // Keep 'any' for now, but be cautious
+          await plantCollection.create((plant: any) => {
+            // Keep 'any' for now, but be cautious
             // Explicitly set the ID first using _raw.id
             plant._raw.id = result.data!.id;
             // Now assign the rest of the properties

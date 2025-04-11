@@ -221,7 +221,7 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
               className="mb-4 flex-row items-center rounded-lg p-4"
               lightClassName="bg-white"
               darkClassName="bg-neutral-800">
-              <View className="bg-primary-100 mr-3 h-12 w-12 items-center justify-center rounded-full">
+              <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-primary-100">
                 <Ionicons name="leaf-outline" size={24} color={theme.colors.primary[500]} />
               </View>
               <View className="flex-1">
@@ -279,7 +279,7 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
             {!isAddingEntry && (
               <View className="absolute bottom-4 right-4">
                 <Pressable
-                  className="bg-primary-500 h-14 w-14 items-center justify-center rounded-full shadow-xl"
+                  className="h-14 w-14 items-center justify-center rounded-full bg-primary-500 shadow-xl"
                   onPress={() => {
                     setIsAddingEntry(true);
                     setTimeout(() => {
@@ -364,7 +364,7 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
 
                 {/* Submit Button */}
                 <Pressable
-                  className="bg-primary-500 items-center rounded-lg py-3"
+                  className="items-center rounded-lg bg-primary-500 py-3"
                   onPress={handleAddEntry}
                   disabled={isSubmitting || !entryContent.trim()}
                   style={({ pressed }) => [
@@ -464,7 +464,10 @@ const PlantDiaryScreen = withObservables(
     const plantId = route?.params?.id;
 
     if (!plantId || !database) {
-      console.error('[PlantDiaryScreen] Missing plantId or database:', { plantId, hasDb: !!database });
+      console.error('[PlantDiaryScreen] Missing plantId or database:', {
+        plantId,
+        hasDb: !!database,
+      });
       return {
         plant: null,
         diaryEntries: [],
@@ -499,12 +502,12 @@ export default function PlantDiaryWrapper() {
   if (!database) {
     return (
       <SafeAreaView className="flex-1">
-        <ThemedView 
+        <ThemedView
           className="flex-1 items-center justify-center p-4"
           lightClassName="bg-white"
           darkClassName="bg-neutral-900">
           <ActivityIndicator size="large" color="#10b981" />
-          <ThemedText 
+          <ThemedText
             className="mt-4 text-center"
             lightClassName="text-neutral-600"
             darkClassName="text-neutral-400">

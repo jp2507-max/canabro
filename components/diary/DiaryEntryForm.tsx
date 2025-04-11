@@ -1,20 +1,28 @@
-import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, Text, Image } from 'react-native'; // Added Text, Image imports
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system'; // Import FileSystem
 import { decode } from 'base64-arraybuffer'; // Import decode
+import * as FileSystem from 'expo-file-system'; // Import FileSystem
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
+import * as ImagePicker from 'expo-image-picker';
+import React, { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Text,
+  Image,
+} from 'react-native'; // Added Text, Image imports
 import * as z from 'zod';
 
+import { DiaryEntryType } from './EntryTypeSelector';
+import { useTheme } from '../../lib/contexts/ThemeContext';
+import { useCreateDiaryEntry } from '../../lib/hooks/diary/useCreateDiaryEntry'; // Uncomment hook import
+import supabase from '../../lib/supabase'; // Import supabase client
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import supabase from '../../lib/supabase'; // Import supabase client
-import { useTheme } from '../../lib/contexts/ThemeContext';
-import { DiaryEntryType } from './EntryTypeSelector';
-import { useCreateDiaryEntry } from '../../lib/hooks/diary/useCreateDiaryEntry'; // Uncomment hook import
 
 // Define base schema
 const baseSchema = z.object({
@@ -60,10 +68,11 @@ const getValidationSchema = (entryType: DiaryEntryType) => {
 // Define the form data type based on a union or a generic approach if possible
 // For simplicity now, let's use a broad type and refine if needed
 type DiaryEntryFormData = z.infer<typeof baseSchema> & {
-  metrics?: z.infer<typeof wateringMetricsSchema> |
-            z.infer<typeof feedingMetricsSchema> |
-            z.infer<typeof environmentMetricsSchema> |
-            Record<string, unknown>; // Allow flexible metrics
+  metrics?:
+    | z.infer<typeof wateringMetricsSchema>
+    | z.infer<typeof feedingMetricsSchema>
+    | z.infer<typeof environmentMetricsSchema>
+    | Record<string, unknown>; // Allow flexible metrics
 };
 
 interface DiaryEntryFormProps {
@@ -82,7 +91,12 @@ export default function DiaryEntryForm({
   const { theme, isDarkMode } = useTheme();
   // const [isSubmitting, setIsSubmitting] = useState(false); // Remove local submitting state
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const { createDiaryEntry, loading: isSubmitting, error: submissionError, reset: resetMutation } = useCreateDiaryEntry(); // Use hook state
+  const {
+    createDiaryEntry,
+    loading: isSubmitting,
+
+    reset: resetMutation,
+  } = useCreateDiaryEntry(); // Use hook state
 
   // Get the dynamic schema based on the entryType prop
   const validationSchema = getValidationSchema(entryType);
@@ -92,7 +106,7 @@ export default function DiaryEntryForm({
     handleSubmit,
     formState: { errors },
     reset,
-    watch, // Use watch to potentially react to metric field changes if needed
+    // Use watch to potentially react to metric field changes if needed
   } = useForm<DiaryEntryFormData>({
     resolver: zodResolver(validationSchema), // Use dynamic schema
     defaultValues: {
@@ -112,12 +126,15 @@ export default function DiaryEntryForm({
     try {
       // Manipulate Image
       console.log('Manipulating image...');
-      const manipResult = await manipulateAsync(
-        imageUri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.7, format: SaveFormat.JPEG }
+      const manipResult = await manipulateAsync(imageUri, [{ resize: { width: 1024 } }], {
+        compress: 0.7,
+        format: SaveFormat.JPEG,
+      });
+      console.log(
+        'Image manipulated:',
+        manipResult.uri,
+        `(${manipResult.width}x${manipResult.height})`
       );
-      console.log('Image manipulated:', manipResult.uri, `(${manipResult.width}x${manipResult.height})`);
 
       const mimeType = 'image/jpeg';
       const extension = 'jpg';
@@ -169,7 +186,7 @@ export default function DiaryEntryForm({
   };
   // --- ---
 
-   // Function to handle image picking
+  // Function to handle image picking
   const pickImage = async () => {
     // Request permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -194,7 +211,8 @@ export default function DiaryEntryForm({
 
   const onSubmit = async (data: DiaryEntryFormData) => {
     // Prepare data for submission - metrics is now passed as an object
-    const submissionData: any = { // Use 'any' temporarily or define a more precise type matching CreateDiaryEntryData
+    const submissionData: any = {
+      // Use 'any' temporarily or define a more precise type matching CreateDiaryEntryData
       plant_id: plantId,
       entry_type: entryType,
       entry_date: data.entry_date,
@@ -211,13 +229,13 @@ export default function DiaryEntryForm({
       // Get the authenticated user asynchronously
       const { data: userData, error: userError } = await supabase.auth.getUser();
 
-       if (userError || !userData?.user) {
-          console.error('Error getting user:', userError);
-          Alert.alert('Error', 'User not authenticated. Cannot upload image.');
-          // No need to set submitting state here, hook handles it
-          return;
-       }
-       const userId = userData.user.id;
+      if (userError || !userData?.user) {
+        console.error('Error getting user:', userError);
+        Alert.alert('Error', 'User not authenticated. Cannot upload image.');
+        // No need to set submitting state here, hook handles it
+        return;
+      }
+      const userId = userData.user.id;
 
       // Proceed with upload using the obtained userId
       uploadedImageUrl = await uploadImage(userId, selectedImageUri);
@@ -286,7 +304,9 @@ export default function DiaryEntryForm({
             <TextInput
               style={inputStyle}
               placeholder="YYYY-MM-DD"
-              placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+              placeholderTextColor={
+                isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+              }
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -295,20 +315,30 @@ export default function DiaryEntryForm({
             />
           )}
         />
-        {errors.entry_date && <ThemedText className="mt-1 text-sm text-status-danger">{errors.entry_date.message}</ThemedText>}
+        {errors.entry_date && (
+          <ThemedText className="mt-1 text-sm text-status-danger">
+            {errors.entry_date.message}
+          </ThemedText>
+        )}
       </View>
 
       {/* Notes Input */}
       <View className="mb-4">
-      <ThemedText className="mb-1 text-sm font-medium">Notes {entryType === 'note' ? '' : '(Optional)'}</ThemedText>
-      <Controller
-        control={control}
-        name="content"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={textAreaStyle}
-            placeholder={entryType === 'note' ? 'Enter your note...' : 'Add any relevant notes...'}
-            placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+        <ThemedText className="mb-1 text-sm font-medium">
+          Notes {entryType === 'note' ? '' : '(Optional)'}
+        </ThemedText>
+        <Controller
+          control={control}
+          name="content"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={textAreaStyle}
+              placeholder={
+                entryType === 'note' ? 'Enter your note...' : 'Add any relevant notes...'
+              }
+              placeholderTextColor={
+                isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+              }
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -316,7 +346,11 @@ export default function DiaryEntryForm({
             />
           )}
         />
-        {errors.content && <ThemedText className="mt-1 text-sm text-status-danger">{errors.content.message}</ThemedText>}
+        {errors.content && (
+          <ThemedText className="mt-1 text-sm text-status-danger">
+            {errors.content.message}
+          </ThemedText>
+        )}
       </View>
 
       {/* Image Picker Section */}
@@ -328,7 +362,11 @@ export default function DiaryEntryForm({
             lightClassName="border-neutral-300 bg-neutral-100"
             darkClassName="border-neutral-600 bg-neutral-700">
             {selectedImageUri ? (
-              <Image source={{ uri: selectedImageUri }} className="h-full w-full rounded-lg" resizeMode="cover" />
+              <Image
+                source={{ uri: selectedImageUri }}
+                className="h-full w-full rounded-lg"
+                resizeMode="cover"
+              />
             ) : (
               <>
                 <MaterialCommunityIcons
@@ -336,7 +374,10 @@ export default function DiaryEntryForm({
                   size={32}
                   color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]}
                 />
-                <ThemedText className="mt-1 text-xs" lightClassName="text-neutral-500" darkClassName="text-neutral-400">
+                <ThemedText
+                  className="mt-1 text-xs"
+                  lightClassName="text-neutral-500"
+                  darkClassName="text-neutral-400">
                   Tap to add image
                 </ThemedText>
               </>
@@ -344,13 +385,15 @@ export default function DiaryEntryForm({
           </ThemedView>
         </TouchableOpacity>
         {selectedImageUri && (
-           <TouchableOpacity onPress={() => setSelectedImageUri(null)} className="mt-2 self-start rounded bg-status-danger/80 px-2 py-1">
-             <Text className="text-xs text-white">Remove Image</Text>
-           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setSelectedImageUri(null)}
+            className="mt-2 self-start rounded bg-status-danger/80 px-2 py-1">
+            <Text className="text-xs text-white">Remove Image</Text>
+          </TouchableOpacity>
         )}
       </View>
 
-       {/* Conditional Metrics Fields */}
+      {/* Conditional Metrics Fields */}
       {entryType === 'watering' && (
         <View className="mb-4">
           <ThemedText className="mb-2 text-sm font-medium">Watering Details</ThemedText>
@@ -362,7 +405,9 @@ export default function DiaryEntryForm({
                 <TextInput
                   style={[inputStyle, { flex: 1, marginRight: theme.spacing[2] }]}
                   placeholder="Amount"
-                  placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                  placeholderTextColor={
+                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                  }
                   onBlur={onBlur}
                   onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
                   value={value?.toString() ?? ''}
@@ -378,7 +423,9 @@ export default function DiaryEntryForm({
                 <TextInput
                   style={[inputStyle, { flex: 1 }]}
                   placeholder="Unit (ml/L)"
-                  placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                  placeholderTextColor={
+                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                  }
                   onChangeText={onChange}
                   value={value as string | undefined} // Explicit cast
                 />
@@ -390,22 +437,24 @@ export default function DiaryEntryForm({
       )}
 
       {entryType === 'feeding' && (
-         <View className="mb-4">
+        <View className="mb-4">
           <ThemedText className="mb-2 text-sm font-medium">Feeding Details</ThemedText>
-           <Controller
-              control={control}
-              name="metrics.product_name"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[inputStyle, { marginBottom: theme.spacing[2]}]}
-                  placeholder="Product Name (Optional)"
-                  placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value as string | undefined} // Explicit cast
-                />
-              )}
-            />
+          <Controller
+            control={control}
+            name="metrics.product_name"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[inputStyle, { marginBottom: theme.spacing[2] }]}
+                placeholder="Product Name (Optional)"
+                placeholderTextColor={
+                  isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                }
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value as string | undefined} // Explicit cast
+              />
+            )}
+          />
           <View className="flex-row">
             <Controller
               control={control}
@@ -414,7 +463,9 @@ export default function DiaryEntryForm({
                 <TextInput
                   style={[inputStyle, { flex: 1, marginRight: theme.spacing[2] }]}
                   placeholder="Amount"
-                  placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                  placeholderTextColor={
+                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                  }
                   onBlur={onBlur}
                   onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
                   value={value?.toString() ?? ''}
@@ -430,7 +481,9 @@ export default function DiaryEntryForm({
                 <TextInput
                   style={[inputStyle, { flex: 1 }]}
                   placeholder="Unit (ml/L)"
-                  placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                  placeholderTextColor={
+                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                  }
                   onChangeText={onChange}
                   value={value as string | undefined} // Explicit cast
                 />
@@ -440,7 +493,7 @@ export default function DiaryEntryForm({
         </View>
       )}
 
-       {entryType === 'environment' && (
+      {entryType === 'environment' && (
         <View className="mb-4">
           <ThemedText className="mb-2 text-sm font-medium">Environment Readings</ThemedText>
           <View className="flex-row">
@@ -451,7 +504,9 @@ export default function DiaryEntryForm({
                 <TextInput
                   style={[inputStyle, { flex: 1, marginRight: theme.spacing[2] }]}
                   placeholder="Temp (°C/°F)"
-                  placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                  placeholderTextColor={
+                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                  }
                   onBlur={onBlur}
                   onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
                   value={value?.toString() ?? ''}
@@ -463,10 +518,12 @@ export default function DiaryEntryForm({
               control={control}
               name="metrics.humidity"
               render={({ field: { onChange, onBlur, value } }) => (
-                 <TextInput
+                <TextInput
                   style={[inputStyle, { flex: 1 }]}
                   placeholder="Humidity (%)"
-                  placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+                  placeholderTextColor={
+                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                  }
                   onBlur={onBlur}
                   // Ensure onChange handles potential NaN from parseFloat
                   onChangeText={(text) => {
@@ -479,7 +536,7 @@ export default function DiaryEntryForm({
               )}
             />
           </View>
-           {/* Add specific errors for metrics if needed */}
+          {/* Add specific errors for metrics if needed */}
         </View>
       )}
 
@@ -489,7 +546,9 @@ export default function DiaryEntryForm({
           <TouchableOpacity
             onPress={onCancel}
             className="mr-3 rounded-full px-6 py-3"
-            style={{ backgroundColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200] }}
+            style={{
+              backgroundColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200],
+            }}
             disabled={isSubmitting}>
             <ThemedText className="font-medium">Cancel</ThemedText>
           </TouchableOpacity>

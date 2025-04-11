@@ -1,448 +1,531 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Database } from '@nozbe/watermelondb'; // Re-add Database import
-import { withObservables } from '@nozbe/watermelondb/react'; // Use HOC
-import React, { ComponentType } from 'react'; // Import React
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Database } from '@nozbe/watermelondb';
+import { withObservables } from '@nozbe/watermelondb/react';
+import { Stack, useRouter } from 'expo-router';
+import React, { ComponentType, useCallback } from 'react';
 import {
   View,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   ScrollView,
   RefreshControl,
+  Text, // Added Text import
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { of as of$ } from 'rxjs';
-import { switchMap } from 'rxjs/operators'; // Import ComponentType for explicit typing
+import { of as of$ } from 'rxjs'; // Import Observable
+import { switchMap, catchError } from 'rxjs/operators'; // Import catchError
 
+import StorageImage from '../components/ui/StorageImage'; // Added StorageImage
 import ThemeToggle from '../components/ui/ThemeToggle';
 import ThemedText from '../components/ui/ThemedText';
 import ThemedView from '../components/ui/ThemedView';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { useTheme } from '../lib/contexts/ThemeContext';
-import usePullToRefresh from '../lib/hooks/usePullToRefresh'; // Import the new hook
-import { resetDatabase, checkRecordExistsLocally } from '../lib/utils/database'; // Import reset and check functions
-// import { useProtectedRoute } from '../lib/hooks/useProtectedRoute'; // Removed as HOC handles data loading
-// import { useProfileData } from '../lib/hooks/useProfileData'; // Removed hook
-// import useWatermelon from '../lib/hooks/useWatermelon'; // useWatermelon is unused
-import { Profile } from '../lib/models/Profile'; // Import WatermelonDB Profile model
-// --- Container Component ---
-// Imports needed for observables in enhance HOC
+import usePullToRefresh from '../lib/hooks/usePullToRefresh';
+import { Profile } from '../lib/models/Profile';
+import { resetDatabase, checkRecordExistsLocally } from '../lib/utils/database';
 
-// Helper component to render profile details (Keep as is)
 interface ProfileDetailProps {
   label: string;
   value?: string | string[] | null;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
-function ProfileDetail({ label, value }: ProfileDetailProps) {
-  // const { isDarkMode } = useTheme(); // isDarkMode is unused
+function ProfileDetail({ label, value, icon }: ProfileDetailProps) {
+  const { isDarkMode, theme } = useTheme();
   const displayValue = value || 'Not specified';
+  const hasValue = value && (Array.isArray(value) ? value.length > 0 : true);
 
   return (
-    <View className="mb-4">
-      <ThemedText
-        className="mb-1 text-sm font-semibold uppercase tracking-wider"
-        lightClassName="text-muted-foreground"
-        darkClassName="text-darkMutedForeground">
-        {label}
-      </ThemedText>
+    <ThemedView
+      className="mb-3 rounded-lg p-3" // Reduced margin, padding, rounded-lg
+      lightClassName="bg-neutral-100" // Lighter background
+      darkClassName="bg-neutral-800">
+      <View className="mb-1.5 flex-row items-center">
+        {icon && (
+          <Ionicons
+            name={icon}
+            size={18} // Slightly smaller icon
+            color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[600]}
+            style={{ marginRight: 6 }}
+          />
+        )}
+        <ThemedText
+          className="text-xs font-medium uppercase tracking-wide" // Smaller, less bold label
+          lightClassName="text-neutral-500"
+          darkClassName="text-neutral-400">
+          {label}
+        </ThemedText>
+      </View>
+
       {Array.isArray(displayValue) ? (
-        <View className="flex-row flex-wrap">
-          {displayValue.length > 0 ? (
+        <View className="-mb-1 -mr-1 flex-row flex-wrap">
+          {hasValue ? (
             displayValue.map((item, index) => (
               <ThemedView
                 key={index}
-                className="mb-2 mr-2 rounded-full px-3 py-1"
-                lightClassName="bg-secondary"
-                darkClassName="bg-darkSecondary">
+                className="mb-1 mr-1 rounded-full px-2.5 py-0.5" // Smaller tags
+                lightClassName="bg-primary-100"
+                darkClassName="bg-primary-800">
                 <ThemedText
-                  className="text-sm"
-                  lightClassName="text-secondary-foreground"
-                  darkClassName="text-darkSecondaryForeground">
+                  className="text-xs" // Smaller text
+                  lightClassName="text-primary-700"
+                  darkClassName="text-primary-200">
                   {item || ''}
                 </ThemedText>
               </ThemedView>
             ))
           ) : (
             <ThemedText
-              className="text-base"
-              lightClassName="text-foreground"
-              darkClassName="text-darkForeground">
-              None
+              className="text-sm italic" // Italic for 'None'
+              lightClassName="text-neutral-500"
+              darkClassName="text-neutral-500">
+              None specified
             </ThemedText>
           )}
         </View>
       ) : (
         <ThemedText
-          className="text-base"
-          lightClassName="text-foreground"
-          darkClassName="text-darkForeground">
+          className={`text-sm ${!hasValue ? 'italic' : ''}`} // Smaller text, italic if no value
+          lightClassName={hasValue ? 'text-neutral-700' : 'text-neutral-500'}
+          darkClassName={hasValue ? 'text-neutral-200' : 'text-neutral-500'}>
           {displayValue}
         </ThemedText>
       )}
-    </View>
+    </ThemedView>
   );
 }
 
-// Define the props for the base component (receives profile and counts from HOC)
-interface ProfileScreenBaseProps {
-  profile: Profile | null;
-  plantsCount: number | undefined; // Allow undefined initially
-  postsCount: number | undefined; // Allow undefined initially
+interface StatItemProps {
+  value: number | string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}
+
+function StatItem({ value, label, icon }: StatItemProps) {
+  const { isDarkMode, theme } = useTheme();
+
+  return (
+    <ThemedView
+      className="mx-1.5 flex-1 items-center rounded-lg p-3" // Adjusted padding, margin, rounding
+      lightClassName="bg-neutral-100" // Lighter background
+      darkClassName="bg-neutral-800">
+      <Ionicons
+        name={icon}
+        size={22} // Slightly smaller icon
+        color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[600]}
+        style={{ marginBottom: 6 }}
+      />
+      <ThemedText
+        className="text-lg font-semibold tracking-tight" // Smaller, less bold value
+        lightClassName="text-neutral-800"
+        darkClassName="text-neutral-100">
+        {String(value)}
+      </ThemedText>
+      <ThemedText
+        className="mt-0.5 text-xs uppercase tracking-wide" // Smaller, uppercase label
+        lightClassName="text-neutral-500"
+        darkClassName="text-neutral-400">
+        {label}
+      </ThemedText>
+    </ThemedView>
+  );
 }
 
 // Base component - receives profile and counts directly from HOC
+// Props should match the resolved types from EnhancedProps
+interface ProfileScreenBaseProps {
+  profile: Profile | null;
+  plantsCount: number; // Expect number, not undefined
+  postsCount: number; // Expect number, not undefined
+}
+
 function ProfileScreenBase({
   profile,
-  plantsCount: initialPlantsCount,
-  postsCount: initialPostsCount,
+  plantsCount, // Use directly
+  postsCount, // Use directly
 }: ProfileScreenBaseProps) {
-  const { signOut } = useAuth(); // user is unused
+  const { signOut } = useAuth(); // Get user for profile ID check
   const { theme, isDarkMode } = useTheme();
+  const router = useRouter();
+  // Removed imageError state, handled by StorageImage
+
   const { refreshing, handleRefresh } = usePullToRefresh({
-    showFeedback: true, // Provide visual feedback during refresh
-    forceSync: true, // Trigger a full sync on refresh
+    showFeedback: true,
+    forceSync: true, // Keep forceSync for profile data
   });
 
-  // Provide default values for counts if undefined
-  const plantsCount = initialPlantsCount ?? 0;
-  const postsCount = initialPostsCount ?? 0;
+  // Removed nullish coalescing - HOC provides numbers
+  // const plantsCount = initialPlantsCount ?? 0;
+  // const postsCount = initialPostsCount ?? 0;
 
-  const handleSignOut = async () => {
+  const handleEditProfile = useCallback(() => {
+    // Ensure we have a profile ID before navigating
+    if (profile?.id) {
+      router.push(`/profile/edit/${profile.id}` as any); // Pass profile ID
+    } else {
+      Alert.alert('Error', 'Cannot edit profile without a valid ID.');
+    }
+  }, [router, profile?.id]);
+
+  const handleSignOut = useCallback(async () => {
     try {
       await signOut();
-      // Optional: Navigate to login screen after sign out
-      // router.replace('/(auth)/login');
-    } catch (signOutError) {
-      // Renamed error variable
-      console.error('Sign out error:', signOutError);
-      Alert.alert(
-        'Error signing out',
-        signOutError instanceof Error ? signOutError.message : 'Please try again'
-      );
+    } catch (error) {
+      console.error('Sign out error:', error);
+      Alert.alert('Error Signing Out', error instanceof Error ? error.message : 'Please try again');
     }
-  };
+  }, [signOut]);
 
-  const handleEditProfile = () => {
-    // Navigate to the edit profile screen (implement later)
-    console.log('Navigate to Edit Profile Screen');
-    // router.push('/profile/edit'); // Example navigation
-  };
+  // Removed handleAvatarError, handled by StorageImage
 
-  // Handle loading state (profile is null initially from withObservables)
-  // Handle error state (profile might remain null, or HOC could pass an error prop if designed)
+  // Improved loading state
   if (!profile) {
-    // Show loading indicator or a 'not found' message after a delay?
-    // For simplicity, show loading initially, assuming profile will load.
-    // If it stays null, it means not found or error.
     return (
       <ThemedView
         className="flex-1 items-center justify-center p-4"
         lightClassName="bg-background"
         darkClassName="bg-darkBackground">
-        <ActivityIndicator
-          size="large"
-          color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[600]}
-        />
+        <ActivityIndicator size="large" color={theme.colors.primary[isDarkMode ? 400 : 500]} />
         <ThemedText
-          className="mt-2"
-          lightClassName="text-muted-foreground"
-          darkClassName="text-darkMutedForeground">
+          className="mt-3 text-base"
+          lightClassName="text-neutral-600"
+          darkClassName="text-neutral-400">
           Loading Profile...
         </ThemedText>
-        {/* Consider adding a message if it remains null after a timeout */}
       </ThemedView>
     );
   }
 
-  // Format join date from profile.createdAt (WatermelonDB model uses Date object)
-  const joinDate = profile.createdAt; // Already a Date object
-  const formattedJoinDate = joinDate.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
+  const joinDate = profile.createdAt;
+  const formattedJoinDate = joinDate
+    ? joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : 'Unknown';
+
+  // Use StorageImage component
+  const avatarUrl = profile.avatarUrl;
 
   return (
-    <SafeAreaView className="flex-1">
-      <ThemedView
-        // style={{ flex: 1 }} // Removed flex: 1 here
-        lightClassName="bg-background"
-        darkClassName="bg-darkBackground">
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }} // Added flexGrow: 1 to ensure ScrollView content area can expand
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={[theme.colors.primary[500]]}
-              tintColor={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[600]}
-            />
-          }>
-          <View className="pb-20">
-            {/* Header */}
-            <ThemedView
-              className="flex-row items-center justify-between border-b px-4 py-4" // Increased padding
-              lightClassName="border-border"
-              darkClassName="border-darkBorder">
-              <ThemedText
-                className="text-xl font-bold tracking-tight" // Added tracking
-                lightClassName="text-foreground"
-                darkClassName="text-darkForeground">
-                My Profile
-              </ThemedText>
-              <View className="flex-row items-center space-x-3">
-                {/* Increased spacing */}
-                <ThemeToggle compact showLabel={false} />
-                <TouchableOpacity
-                  onPress={handleSignOut}
-                  className="rounded-lg p-2 active:opacity-70" // Changed shape, added active state
-                  accessibilityLabel="Sign Out"
-                  accessibilityRole="button"
-                  accessibilityHint="Logs you out of the application" // Added hint
-                >
-                  <Ionicons
-                    name="log-out-outline"
-                    size={26}
-                    color={isDarkMode ? theme.colors.status.danger : theme.colors.status.danger}
-                  />
-                </TouchableOpacity>
-              </View>
-            </ThemedView>
-            {/* Profile Info Section */}
-            <ThemedView className="items-center p-6 pt-8">
-              {/* Increased top padding */}
-              <View className="relative mb-4">
-                <Image
-                  source={{ uri: profile.avatarUrl || 'https://via.placeholder.com/150' }}
-                  className="h-28 w-28 rounded-full border-4" // Increased size and border
-                  style={{
-                    borderColor: isDarkMode ? theme.colors.primary[500] : theme.colors.primary[500],
-                  }} // Consistent color
-                  accessibilityLabel={`${profile.username}'s profile picture`} // More descriptive label
-                  accessibilityRole="image"
-                />
-                {/* Optional: Add an edit icon overlay for avatar */}
-              </View>
-              <ThemedText
-                className="mb-1 text-2xl font-bold tracking-tight" // Added tracking
-                lightClassName="text-foreground"
-                darkClassName="text-darkForeground">
-                {profile.username}
-              </ThemedText>
-              <ThemedText
-                className="mb-4 text-sm" // Added margin bottom
-                lightClassName="text-muted-foreground"
-                darkClassName="text-darkMutedForeground">
-                Joined {formattedJoinDate}
-              </ThemedText>
-              <TouchableOpacity
-                onPress={handleEditProfile}
-                className="bg-primary dark:bg-darkPrimary mt-2 rounded-full px-6 py-2.5 shadow-sm active:opacity-80" // Adjusted padding, added shadow
-                accessibilityLabel="Edit Profile"
-                accessibilityRole="button"
-                accessibilityHint="Navigates to the profile editing screen">
-                <ThemedText
-                  className="text-base font-semibold" // Increased font size
-                  lightClassName="text-primary-foreground"
-                  darkClassName="text-darkPrimaryForeground">
-                  Edit Profile
-                </ThemedText>
-              </TouchableOpacity>
-            </ThemedView>
-
-            {/* Stats Section */}
-            <ThemedView
-              className="mx-4 mb-8 flex-row justify-around rounded-lg p-5 shadow-md" // Increased margin, padding, roundedness, shadow
-              lightClassName="bg-card"
-              darkClassName="bg-darkCard">
-              <View className="items-center px-2">
-                {/* Added padding */}
-                <ThemedText
-                  className="text-2xl font-bold tracking-tight" // Increased size, added tracking
-                  lightClassName="text-foreground"
-                  darkClassName="text-darkForeground">
-                  {String(plantsCount)}
-                </ThemedText>
-                <ThemedText
-                  className="mt-0.5 text-sm" // Added margin top
-                  lightClassName="text-muted-foreground"
-                  darkClassName="text-darkMutedForeground">
-                  Plants
-                </ThemedText>
-              </View>
-              {/* Divider */}
-              <ThemedView
-                className="h-full w-px"
-                lightClassName="bg-border"
-                darkClassName="bg-darkBorder"
+    <SafeAreaView className="bg-background flex-1 dark:bg-neutral-900" edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary[500]]}
+            tintColor={theme.colors.primary[isDarkMode ? 400 : 600]}
+          />
+        }>
+        {/* Header */}
+        <ThemedView
+          className="flex-row items-center justify-between border-b p-4"
+          lightClassName="border-neutral-200"
+          darkClassName="border-neutral-700">
+          <ThemedText
+            className="text-xl font-bold tracking-tight"
+            lightClassName="text-neutral-800"
+            darkClassName="text-neutral-100">
+            My Profile
+          </ThemedText>
+          <View className="flex-row items-center space-x-2">
+            <ThemeToggle compact showLabel={false} />
+            <TouchableOpacity
+              onPress={handleSignOut}
+              className="rounded-full p-2 active:opacity-70"
+              accessibilityLabel="Sign Out"
+              accessibilityRole="button"
+              accessibilityHint="Logs you out of the application">
+              <Ionicons
+                name="log-out-outline"
+                size={24} // Slightly smaller icon
+                color={theme.colors.status.danger} // Use theme color directly
               />
-              <View className="items-center px-2">
-                {/* Added padding */}
-                <ThemedText
-                  className="text-2xl font-bold tracking-tight" // Increased size, added tracking
-                  lightClassName="text-foreground"
-                  darkClassName="text-darkForeground">
-                  {String(postsCount)}
-                </ThemedText>
-                <ThemedText
-                  className="mt-0.5 text-sm" // Added margin top
-                  lightClassName="text-muted-foreground"
-                  darkClassName="text-darkMutedForeground">
-                  Posts
-                </ThemedText>
-              </View>
-            </ThemedView>
-
-            {/* Details Section */}
-            <ThemedView
-              className="mx-4 mb-8 rounded-lg p-5 shadow-md" // Increased margin, padding, roundedness, shadow
-              lightClassName="bg-card"
-              darkClassName="bg-darkCard">
-              {/* Added a title for the details section */}
-              <ThemedText
-                className="mb-5 text-lg font-semibold"
-                lightClassName="text-foreground"
-                darkClassName="text-darkForeground">
-                About Me
-              </ThemedText>
-              <ProfileDetail label="Bio" value={profile.bio} />
-              <ProfileDetail label="Experience Level" value={profile.experienceLevel} />
-              <ProfileDetail label="Preferred Grow Method" value={profile.preferredGrowMethod} />
-              {/* Use helper methods for serialized fields with null checks */}
-              <ProfileDetail
-                label="Favorite Strains"
-                value={profile.getFavoriteStrains ? profile.getFavoriteStrains() : []}
-              />
-              <ProfileDetail label="Location" value={profile.location} />
-              <ProfileDetail label="Growing Since" value={profile.growingSince} />
-              <ProfileDetail label="Certified" value={profile.isCertified ? 'Yes' : 'No'} />
-              <ProfileDetail
-                label="Certifications"
-                value={profile.getCertifications ? profile.getCertifications() : []}
-              />
-            </ThemedView>
-
-            {/* --- TEMPORARY DEBUG BUTTONS --- */}
-            <View className="mx-4 my-4 items-center border-t border-dashed border-red-400 pt-4">
-              <TouchableOpacity
-                onPress={() => checkRecordExistsLocally('plants', '21b50a5d-7e47-495e-ac52-83ab56e0c2ae')}
-                className="mb-2 rounded-lg bg-blue-600 px-4 py-2 active:opacity-70">
-                <ThemedText className="font-semibold text-white">
-                  TEMP: Check if Plant Exists Locally
-                </ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={resetDatabase}
-                className="mb-2 rounded-lg bg-orange-600 px-4 py-2 active:opacity-70">
-                <ThemedText className="font-semibold text-white">
-                  TEMP: Reset Local Database
-                </ThemedText>
-              </TouchableOpacity>
-              <ThemedText className="text-center text-xs text-gray-500">
-                (Use if sync issues persist. Clears local data, requires re-sync.)
-              </ThemedText>
-            </View>
-            {/* --- END TEMPORARY DEBUG BUTTON --- */}
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </ThemedView>
+        </ThemedView>
+
+        {/* Profile Header Section */}
+        <ThemedView
+          className="items-center p-6 pb-8" // Increased bottom padding
+          lightClassName="bg-neutral-50" // Lighter background
+          darkClassName="bg-neutral-800">
+          <View className="relative mb-4">
+            <StorageImage
+              url={avatarUrl || null} // Ensure null is passed if undefined
+              width={120} // Slightly smaller avatar
+              height={120}
+              borderRadius={60} // Keep it circular
+              contentFit="cover"
+              fallbackIconName="person-circle-outline" // More appropriate fallback
+              fallbackIconSize={60}
+              accessibilityLabel={`${profile.username || 'User'}'s profile picture`}
+            />
+            {/* Edit avatar button - positioned slightly differently */}
+            <TouchableOpacity
+              onPress={handleEditProfile} // Re-using edit profile for simplicity
+              className="absolute -bottom-1 -right-1 h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-primary-500 active:opacity-80 dark:border-neutral-800" // Use dark: prefix
+              accessibilityLabel="Edit profile picture"
+              accessibilityRole="button">
+              <Ionicons name="camera-outline" size={18} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          <ThemedText
+            className="text-2xl font-bold tracking-tight"
+            lightClassName="text-neutral-800"
+            darkClassName="text-neutral-100">
+            {profile.username || 'User'} {/* Removed fullName */}
+          </ThemedText>
+          {/* Removed conditional username display */}
+          <ThemedText
+            className="mt-1.5 text-xs" // Smaller text
+            lightClassName="text-neutral-500"
+            darkClassName="text-neutral-500">
+            Member since {formattedJoinDate}
+          </ThemedText>
+
+          {/* Edit Profile Button - Refined Style */}
+          <TouchableOpacity
+            onPress={handleEditProfile}
+            className="mt-5 flex-row items-center rounded-full border border-primary-500 bg-primary-500 px-5 py-2.5 active:opacity-80 dark:border-primary-400 dark:bg-transparent" // Use dark: prefix
+            accessibilityLabel="Edit Profile"
+            accessibilityRole="button"
+            accessibilityHint="Opens the profile editing screen">
+            <MaterialCommunityIcons
+              name="account-edit-outline" // Outline icon
+              size={16}
+              color={isDarkMode ? theme.colors.primary[400] : 'white'}
+              style={{ marginRight: 6 }}
+            />
+            <ThemedText
+              className="text-sm font-medium" // Smaller font
+              lightClassName="text-white"
+              darkClassName="text-primary-400">
+              Edit Profile
+            </ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
+        {/* Stats Section */}
+        <ThemedView
+          className="mx-4 my-5" // Keep margins
+          lightClassName="bg-transparent"
+          darkClassName="bg-transparent">
+          <View className="flex-row justify-around">
+            {/* Removed problematic text node that was here */}
+            <StatItem value={plantsCount} label="Plants" icon="leaf-outline" />
+            <StatItem value={postsCount} label="Posts" icon="chatbubble-ellipses-outline" />
+            {/* Placeholder for Following - consider hiding if always 0 */}
+            <StatItem value={0} label="Following" icon="people-outline" />
+          </View>
+        </ThemedView>
+
+        {/* Bio Section - Improved Styling */}
+        {profile.bio && (
+          <ThemedView
+            className="mx-4 mb-5 rounded-xl p-4" // Keep card style
+            lightClassName="bg-white border border-neutral-200" // Add border for light mode
+            darkClassName="bg-neutral-800">
+            <ThemedText
+              className="mb-1.5 text-sm font-semibold uppercase tracking-wider" // Match ProfileDetail label
+              lightClassName="text-neutral-500"
+              darkClassName="text-neutral-400">
+              Bio
+            </ThemedText>
+            <ThemedText
+              className="text-base leading-relaxed" // Better line height for readability
+              lightClassName="text-neutral-700"
+              darkClassName="text-neutral-300">
+              {profile.bio}
+            </ThemedText>
+          </ThemedView>
+        )}
+
+        {/* Details Section - Grouped in a Card */}
+        <ThemedView
+          className="mx-4 mb-8 rounded-xl p-4" // Card style
+          lightClassName="bg-white border border-neutral-200" // Add border for light mode
+          darkClassName="bg-neutral-800">
+          <ThemedText
+            className="mb-4 text-base font-semibold" // Slightly smaller title
+            lightClassName="text-neutral-700"
+            darkClassName="text-neutral-200">
+            Grower Details
+          </ThemedText>
+
+          <ProfileDetail
+            label="Experience Level"
+            value={profile.experienceLevel}
+            icon="trophy-outline"
+          />
+          <ProfileDetail
+            label="Preferred Method"
+            value={profile.preferredGrowMethod}
+            icon="flask-outline"
+          />
+          <ProfileDetail
+            label="Favorite Strains"
+            value={profile.getFavoriteStrains ? profile.getFavoriteStrains() : []}
+            icon="leaf-outline"
+          />
+          <ProfileDetail label="Location" value={profile.location} icon="location-outline" />
+          <ProfileDetail
+            label="Growing Since"
+            value={profile.growingSince}
+            icon="calendar-outline"
+          />
+          <ProfileDetail
+            label="Certifications"
+            value={profile.getCertifications ? profile.getCertifications() : []}
+            icon="ribbon-outline"
+          />
+        </ThemedView>
+
+        {/* Debug section - Conditionally render or remove for production */}
+        {__DEV__ && ( // Only show in development mode
+          <View className="mx-4 my-4 items-center border-t border-neutral-400 pt-4 dark:border-neutral-600">
+            <ThemedText className="mb-3 text-sm font-semibold text-neutral-600 dark:text-neutral-400">
+              Debug Tools (Dev Only)
+            </ThemedText>
+            <TouchableOpacity
+              onPress={() =>
+                checkRecordExistsLocally('plants', '21b50a5d-7e47-495e-ac52-83ab56e0c2ae')
+              }
+              className="mb-2 rounded-lg bg-blue-600 px-4 py-2 active:opacity-70">
+              <Text className="font-semibold text-white">Check Plant Exists</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={resetDatabase}
+              className="mb-2 rounded-lg bg-orange-600 px-4 py-2 active:opacity-70">
+              <Text className="font-semibold text-white">Reset Local DB</Text>
+            </TouchableOpacity>
+            <ThemedText className="text-center text-xs text-neutral-500 dark:text-neutral-500">
+              (Use if sync issues persist. Clears local data.)
+            </ThemedText>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-// --- HOC to fetch profile data and counts ---
-// Define props expected by the HOC
+// --- Data Fetching HOC ---
 interface ProfileContainerProps {
   userId: string;
 }
 
+// Removed ProfileObservables type definition
+
+// Simplify HOC call - remove explicit generics, let TS infer
 const enhance = withObservables(
-  ['userId'], // Inputs that trigger re-evaluation
+  ['userId'], // Observe changes to userId
   ({ userId }: ProfileContainerProps) => {
-    // Get database instance
-    const db = require('../lib/database/database').default as Database;
-
-    // Check if database is available before trying to query
-    if (!db) {
-      console.error('[Profile enhance] Database instance is not available.');
-      // Return an empty object or an observable of null/empty array
-      return { profile: null }; // Or potentially: { profile: of$(null) } if using RxJS explicitly
-    }
-
+    // Dynamically require database inside the function to avoid potential circular dependencies
+    // or issues during initialization.
+    const getDb = () => require('../lib/database/database').default as Database;
+    let db: Database | null = null;
     try {
-      // Query for the profile based on userId
-      // IMPORTANT: Check how your Profile model is identified.
-      // Option 1: If the WatermelonDB record ID *is* the Supabase user ID:
-      const profileQuery = db.get<Profile>('profiles').findAndObserve(userId);
-
-      // Option 2: If the WatermelonDB record ID is different, and you have a 'user_id' column:
-      // const profileQuery = db.get<Profile>('profiles')
-      //   .query(Q.where('user_id', userId), Q.take(1)) // Ensure only one result
-      //   .observe()
-      //   .query(Q.where('user_id', userId), Q.take(1))
-      //   .observe()
-      //   .pipe(switchMap(results => of$(results[0] || null))); // Example if using user_id column
-
-      // profileQuery is already an observable from findAndObserve
-      const profileObservable = profileQuery; // No need for .observe()
-
-      // Observe counts using switchMap, correctly handling potential null profile
-      const plantsCountObservable = profileObservable.pipe(
-        switchMap((p: Profile | null) => (p ? p.plants.observeCount() : of$(0))) // Explicitly type p
-      );
-      const postsCountObservable = profileObservable.pipe(
-        switchMap((p: Profile | null) => (p ? p.posts.observeCount() : of$(0))) // Explicitly type p
-      );
-
-      return {
-        profile: profileObservable, // Pass the profile observable directly
-        plantsCount: plantsCountObservable,
-        postsCount: postsCountObservable,
-      };
-    } catch (error) {
-      console.error(`[Profile enhance] Error setting up observables for userId ${userId}:`, error);
-      // Return observables of null/0 in case of error
+      db = getDb();
+    } catch (e) {
+      console.error('[Profile enhance] Failed to get Database instance:', e);
+      // Return observables emitting default/error values if DB fails
       return {
         profile: of$(null),
         plantsCount: of$(0),
         postsCount: of$(0),
       };
     }
+
+    if (!db) {
+      console.error('[Profile enhance] Database instance is null after require.');
+      return {
+        profile: of$(null),
+        plantsCount: of$(0),
+        postsCount: of$(0),
+      };
+    }
+
+    try {
+      // Observe the profile, handling potential errors within the observable pipeline
+      const profileObservable = db
+        .get<Profile>('profiles')
+        .findAndObserve(userId)
+        .pipe(
+          catchError((error) => {
+            console.error(`[Profile enhance] Error observing profile for userId ${userId}:`, error);
+            return of$(null); // Emit null if observation fails
+          })
+        ); // This now returns Observable<Profile | null>
+
+      // Observe counts based on the profile (which might be null)
+      // Use switchMap to switch to the count observable when the profile emits
+      // Use of$(0) as a fallback if the profile is null or doesn't exist
+      const plantsCountObservable = profileObservable.pipe(
+        switchMap((p: Profile | null) => (p ? p.plants.observeCount(false) : of$(0))) // isExpensive = false
+      );
+      const postsCountObservable = profileObservable.pipe(
+        switchMap((p: Profile | null) => (p ? p.posts.observeCount(false) : of$(0))) // isExpensive = false
+      );
+
+      return {
+        profile: profileObservable,
+        plantsCount: plantsCountObservable,
+        postsCount: postsCountObservable,
+      };
+    } catch (error) {
+      // Catch potential errors during initial DB access or setup (outside the observable pipeline)
+      console.error(`[Profile enhance] Error setting up observables for userId ${userId}:`, error);
+      // Return observables matching the structure expected by EnhancedProps keys
+      return {
+        profile: of$(null),
+        plantsCount: of$(0),
+        postsCount: of$(0),
+      };
+    }
+    // Removed the outer try/catch block's return for profile: of$(null) as it's handled inside the pipe now.
   }
 );
 
-// Manages getting the userId and rendering the enhanced component
+// --- Container Component ---
+// This component gets the userId and passes it to the HOC
 const ProfileScreenContainer: React.FC = () => {
   const { user } = useAuth();
+  const { theme, isDarkMode } = useTheme(); // Get theme for loading state
   const userId = user?.id;
 
-  // If no user session, show authenticating message or redirect
+  // Improved Authentication Check / Loading State
   if (!userId) {
     return (
       <ThemedView
         className="flex-1 items-center justify-center p-4"
         lightClassName="bg-background"
-        darkClassName="bg-darkBackground">
+        darkClassName="bg-neutral-900">
+        <ActivityIndicator size="large" color={theme.colors.primary[isDarkMode ? 400 : 500]} />
         <ThemedText
-          className="text-center text-lg"
-          lightClassName="text-muted-foreground"
-          darkClassName="text-darkMutedForeground">
+          className="mt-3 text-base"
+          lightClassName="text-neutral-600"
+          darkClassName="text-neutral-400">
           Authenticating...
         </ThemedText>
-        <ActivityIndicator size="large" />
       </ThemedView>
     );
   }
 
-  // Enhance the base component
-  // Need to cast ProfileScreenBase because enhance adds props that aren't in ProfileScreenBaseProps
+  // Apply the HOC to the base component
+  // Reinstate explicit casting as it helps TS understand the prop transformation
   const EnhancedProfileScreen = enhance(
-    ProfileScreenBase as ComponentType<ProfileScreenBaseProps & ProfileContainerProps>
+    ProfileScreenBase as ComponentType<ProfileScreenBaseProps> // Cast base component
   );
 
-  return <EnhancedProfileScreen userId={userId} />;
+  // Render the enhanced component, passing the userId
+  // The HOC removes userId and adds the enhanced props (profile, plantsCount, postsCount)
+  return <EnhancedProfileScreen userId={userId} />; // Pass userId to the HOC wrapper
 };
 
-// Export the container component as the default export for this screen
+// Removed StyleSheet as NativeWind is used primarily
+// const styles = StyleSheet.create({ ... });
+
 export default ProfileScreenContainer;

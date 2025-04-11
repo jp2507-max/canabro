@@ -1,8 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
+import { PostgrestError } from '@supabase/supabase-js';
 import { useRouter } from 'expo-router'; // Correctly import useRouter
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, TouchableOpacity, View, Alert } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  TouchableOpacity,
+  View,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CommentModal from '../../components/community/CommentModal'; // Import CommentModal
 import CreatePostModal from '../../components/community/CreatePostModal';
@@ -17,7 +26,6 @@ import { useAuth } from '../../lib/contexts/AuthProvider';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 import supabase from '../../lib/supabase';
-import { PostgrestError } from '@supabase/supabase-js';
 // Removed UserAvatar import
 
 // Constants
@@ -32,7 +40,7 @@ function CommunityScreen() {
   useProtectedRoute();
   const { theme, isDarkMode } = useTheme();
   const { user, session } = useAuth();
-  const insets = useSafeAreaInsets();
+
   const router = useRouter(); // Correctly call useRouter
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -69,10 +77,12 @@ function CommunityScreen() {
         // Use standard select instead of RPC
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
-          .select(`
+          .select(
+            `
             *,
             profiles ( username, avatar_url )
-          `) // Select post fields and profile fields
+          `
+          ) // Select post fields and profile fields
           .order('created_at', { ascending: false })
           .range(offset, offset + limit - 1);
 
@@ -87,44 +97,47 @@ function CommunityScreen() {
           console.log('No posts data returned.');
           return; // Exit early
         }
-        
+
         // Instead of filtering out posts with old images, we'll keep all posts
         // but mark the ones with potentially problematic images
-        const filteredPostsData = postsData.map(post => {
+        const filteredPostsData = postsData.map((post) => {
           if (!post.image_url) {
             // No image, no problem
             return { ...post, hasCorruptedImage: false };
           }
-          
+
           // Try to determine if this is a new image (uploaded with ArrayBuffer method)
           // or an old potentially corrupted one
           try {
             const parts = post.image_url.split('_');
             if (parts.length > 1) {
               const lastPart = parts[parts.length - 1];
-              const timestamp = parseInt(lastPart.split('.')[0] || '0'); // Define timestamp here
+              const timestamp = parseInt(lastPart.split('.')[0] || '0', 10); // Define timestamp here, add radix 10
               const now = Date.now();
-              const isNewImage = timestamp > (now - 24 * 60 * 60 * 1000); // Within last 24 hours
-              
+              const isNewImage = timestamp > now - 24 * 60 * 60 * 1000; // Within last 24 hours
+
               return { ...post, hasCorruptedImage: !isNewImage };
             }
           } catch (e) {
             console.log('Error parsing image timestamp:', e);
           }
-          
+
           // If we can't determine, assume it might be corrupted but still show it
           return { ...post, hasCorruptedImage: true };
         });
-        
+
         // Don't filter out any posts, just mark them
-        
-        console.log(`Fetched ${postsData.length} posts, processed ${filteredPostsData.length} posts.`);
+
+        console.log(
+          `Fetched ${postsData.length} posts, processed ${filteredPostsData.length} posts.`
+        );
 
         // Fetch likes for the current user for these posts
-        const postIds = filteredPostsData.map(p => p.id);
+        const postIds = filteredPostsData.map((p) => p.id);
         let likedPostIds = new Set<string>(); // Default to empty set
 
-        if (postIds.length > 0 && session?.user?.id) { // Check if there are posts and user is logged in
+        if (postIds.length > 0 && session?.user?.id) {
+          // Check if there are posts and user is logged in
           const { data: likesData, error: likesError } = await supabase
             .from('likes')
             .select('post_id')
@@ -135,7 +148,7 @@ function CommunityScreen() {
             console.warn('Could not fetch user likes:', likesError.message);
             // Continue without like status if this fails
           } else {
-            likedPostIds = new Set((likesData || []).map(l => l.post_id));
+            likedPostIds = new Set((likesData || []).map((l) => l.post_id));
           }
         }
 
@@ -149,11 +162,13 @@ function CommunityScreen() {
             created_at: post.created_at,
             likes_count: post.likes_count || 0,
             comments_count: post.comments_count || 0,
-            profiles: profile ? {
-              id: post.user_id, // Assuming user_id on post matches profile id
-              username: profile.username || 'Unknown',
-              avatar_url: profile.avatar_url,
-            } : null,
+            profiles: profile
+              ? {
+                  id: post.user_id, // Assuming user_id on post matches profile id
+                  username: profile.username || 'Unknown',
+                  avatar_url: profile.avatar_url,
+                }
+              : null,
             user_has_liked: likedPostIds.has(post.id), // Determine like status
             hasCorruptedImage: post.hasCorruptedImage || false, // Pass the corruption flag
           };
@@ -162,7 +177,6 @@ function CommunityScreen() {
         setPosts((prevPosts) => (refreshing ? newPosts : [...prevPosts, ...newPosts]));
         setHasMore(newPosts.length === limit);
         setFetchError(null);
-
       } catch (err: any) {
         console.error('Error fetching posts:', err);
         const errorMessage = (err as PostgrestError)?.message || 'Failed to fetch posts';
@@ -252,7 +266,10 @@ function CommunityScreen() {
       );
 
       // Show user feedback
-      Alert.alert('Error', 'Could not ' + (currentlyLiked ? 'unlike' : 'like') + ' the post. Please try again.');
+      Alert.alert(
+        'Error',
+        'Could not ' + (currentlyLiked ? 'unlike' : 'like') + ' the post. Please try again.'
+      );
     } finally {
       setLikingPostId(null); // Reset liking state for this post
     }
@@ -302,41 +319,57 @@ function CommunityScreen() {
 
   const renderListHeader = () => (
     // This component renders the filter tabs and chat icon
-    <View className="flex-row items-center justify-between px-4 py-3 mb-2">
+    <View className="mb-2 flex-row items-center justify-between px-4 py-3">
       {/* Filter Tabs Container */}
       <View className="flex-row">
         <TouchableOpacity
           onPress={() => setActiveFilter('trending')}
-          className="rounded-full px-4 py-1.5 mr-2"
-        style={{
-          backgroundColor: activeFilter === 'trending'
-            ? isDarkMode ? theme.colors.primary[600] : theme.colors.primary[500]
-            : isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200]
-        }}>
-        <ThemedText
-          className="font-medium"
+          className="mr-2 rounded-full px-4 py-1.5"
           style={{
-            color: activeFilter === 'trending'
-              ? '#FFFFFF'
-              : isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]
-          }}>
-          Trending
-        </ThemedText>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => setActiveFilter('following')}
-        className="rounded-full px-4 py-1.5"
-        style={{
-          backgroundColor: activeFilter === 'following'
-            ? isDarkMode ? theme.colors.primary[600] : theme.colors.primary[500]
-            : isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200]
+            backgroundColor:
+              activeFilter === 'trending'
+                ? isDarkMode
+                  ? theme.colors.primary[600]
+                  : theme.colors.primary[500]
+                : isDarkMode
+                  ? theme.colors.neutral[700]
+                  : theme.colors.neutral[200],
           }}>
           <ThemedText
             className="font-medium"
             style={{
-              color: activeFilter === 'following'
-                ? '#FFFFFF'
-                : isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]
+              color:
+                activeFilter === 'trending'
+                  ? '#FFFFFF'
+                  : isDarkMode
+                    ? theme.colors.neutral[200]
+                    : theme.colors.neutral[700],
+            }}>
+            Trending
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setActiveFilter('following')}
+          className="rounded-full px-4 py-1.5"
+          style={{
+            backgroundColor:
+              activeFilter === 'following'
+                ? isDarkMode
+                  ? theme.colors.primary[600]
+                  : theme.colors.primary[500]
+                : isDarkMode
+                  ? theme.colors.neutral[700]
+                  : theme.colors.neutral[200],
+          }}>
+          <ThemedText
+            className="font-medium"
+            style={{
+              color:
+                activeFilter === 'following'
+                  ? '#FFFFFF'
+                  : isDarkMode
+                    ? theme.colors.neutral[200]
+                    : theme.colors.neutral[700],
             }}>
             Following
           </ThemedText>
@@ -357,7 +390,6 @@ function CommunityScreen() {
       </Pressable>
     </View>
   );
-
 
   const renderFooter = () => {
     if (!isLoadingMore) return null;
@@ -380,12 +412,23 @@ function CommunityScreen() {
     // Show error message if fetch failed
     if (fetchError) {
       return (
-        <ThemedView className="flex-1 items-center justify-center py-20 px-8">
-          <Ionicons name="alert-circle-outline" size={50} color={theme.colors.status.danger} style={{ marginBottom: 16 }} />
-          <ThemedText className="mb-2 text-center text-lg font-bold" darkClassName="text-red-400" lightClassName="text-red-600">
+        <ThemedView className="flex-1 items-center justify-center px-8 py-20">
+          <Ionicons
+            name="alert-circle-outline"
+            size={50}
+            color={theme.colors.status.danger}
+            style={{ marginBottom: 16 }}
+          />
+          <ThemedText
+            className="mb-2 text-center text-lg font-bold"
+            darkClassName="text-red-400"
+            lightClassName="text-red-600">
             Error Loading Posts
           </ThemedText>
-          <ThemedText className="mb-4 text-center" darkClassName="text-neutral-400" lightClassName="text-neutral-600">
+          <ThemedText
+            className="mb-4 text-center"
+            darkClassName="text-neutral-400"
+            lightClassName="text-neutral-600">
             {fetchError}
           </ThemedText>
           <TouchableOpacity
@@ -399,17 +442,23 @@ function CommunityScreen() {
     }
     // Show empty state if no posts and no error
     return (
-      <ThemedView className="flex-1 items-center justify-center py-20 px-8">
+      <ThemedView className="flex-1 items-center justify-center px-8 py-20">
         <Ionicons
           name="leaf-outline"
           size={50}
           color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
           style={{ marginBottom: 16 }}
         />
-        <ThemedText className="mb-2 text-center text-lg font-bold" darkClassName="text-neutral-300" lightClassName="text-neutral-700">
+        <ThemedText
+          className="mb-2 text-center text-lg font-bold"
+          darkClassName="text-neutral-300"
+          lightClassName="text-neutral-700">
           No Posts Yet
         </ThemedText>
-        <ThemedText className="mb-8 text-center" darkClassName="text-neutral-400" lightClassName="text-neutral-500">
+        <ThemedText
+          className="mb-8 text-center"
+          darkClassName="text-neutral-400"
+          lightClassName="text-neutral-500">
           Be the first to share your plants or ask a question!
         </ThemedText>
         <TouchableOpacity
@@ -432,7 +481,9 @@ function CommunityScreen() {
           data={posts}
           keyExtractor={(item) => item.id}
           extraData={posts} // Add extraData prop tied to the posts state
-          renderItem={({ item }) => ( // Corrected implicit return syntax
+          renderItem={(
+            { item } // Corrected implicit return syntax
+          ) => (
             <View className="px-3">
               <PostItem
                 post={item}
@@ -455,7 +506,9 @@ function CommunityScreen() {
               onRefresh={handleRefresh}
               colors={[theme.colors.primary[500]]} // Spinner color for Android
               tintColor={theme.colors.primary[500]} // Spinner color for iOS
-              progressBackgroundColor={isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100]} // Background for spinner
+              progressBackgroundColor={
+                isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100]
+              } // Background for spinner
             />
           }
         />

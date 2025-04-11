@@ -12,8 +12,6 @@ import {
 } from '@nozbe/watermelondb/decorators';
 
 import { DiaryEntry } from './DiaryEntry';
-import { GrowJournal } from './GrowJournal';
-import { Profile } from './Profile'; // Import Profile model
 import { Strain } from './Strain'; // Import Strain model
 
 export class Plant extends Model {

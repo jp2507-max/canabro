@@ -1,6 +1,7 @@
 'use client';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image'; // Import expo-image
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -15,7 +16,6 @@ import {
   Alert,
   RefreshControl, // Add RefreshControl back
 } from 'react-native';
-import { Image as ExpoImage } from 'expo-image'; // Import expo-image
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ThemedText from '../../components/ui/ThemedText';
@@ -255,8 +255,6 @@ const EffectTag = ({
   effect: StrainEffectType;
   size?: 'small' | 'large';
 }) => {
-  const { theme, isDarkMode } = useTheme(); // Get theme
-
   // Map effects to colors using theme
   const effectColors: Record<string, { bg: string; text: string }> = {
     // Using theme colors - adjust as needed for better semantics
@@ -316,8 +314,6 @@ const EffectTag = ({
 };
 
 const FlavorTag = ({ flavor }: { flavor: StrainFlavorType }) => {
-  const { theme, isDarkMode } = useTheme(); // Get theme
-
   // Map flavors to colors using theme
   const flavorColors: Record<string, { bg: string; text: string }> = {
     [StrainFlavorType.SWEET]: {
@@ -487,7 +483,11 @@ export default function StrainsScreen() {
               Alert.alert('Coming Soon', 'Filter options will be available here.');
             }}>
             {/* Use theme neutral color for icon */}
-            <Ionicons name="options-outline" size={24} color={theme.colors.neutral[isDarkMode ? 300 : 700]} />
+            <Ionicons
+              name="options-outline"
+              size={24}
+              color={theme.colors.neutral[isDarkMode ? 300 : 700]}
+            />
           </TouchableOpacity>
         </View>
 
@@ -496,7 +496,11 @@ export default function StrainsScreen() {
           {/* Use theme neutral colors for search bar background */}
           <View className="flex-row items-center rounded-xl bg-neutral-100 px-4 dark:bg-neutral-800">
             {/* Use theme neutral color for icon */}
-            <Ionicons name="search" size={20} color={theme.colors.neutral[isDarkMode ? 400 : 500]} />
+            <Ionicons
+              name="search"
+              size={20}
+              color={theme.colors.neutral[isDarkMode ? 400 : 500]}
+            />
             <TextInput
               placeholder="Search strains..."
               placeholderTextColor={theme.colors.neutral[isDarkMode ? 400 : 500]} // Use theme neutral color
@@ -555,7 +559,9 @@ export default function StrainsScreen() {
                         contentFit="cover"
                         // transition={300} // Temporarily remove transition
                         recyclingKey={strain.id}
-                        onError={(error) => console.error(`Error loading featured strain image ${strain.id}:`, error)}
+                        onError={(error) =>
+                          console.error(`Error loading featured strain image ${strain.id}:`, error)
+                        }
                         placeholder={null} // Temporarily remove placeholder
                       />
                       {/* Removed the extra closing tags and placeholder view content */}
@@ -668,10 +674,12 @@ export default function StrainsScreen() {
                         contentFit="cover"
                         // transition={300} // Temporarily remove transition
                         recyclingKey={item.id}
-                        onError={(error) => console.error(`Error loading strain image ${item.id}:`, error)}
+                        onError={(error) =>
+                          console.error(`Error loading strain image ${item.id}:`, error)
+                        }
                         placeholder={null} // Temporarily remove placeholder
                       />
-                       {/* Removed the extra closing tags and placeholder view content */}
+                      {/* Removed the extra closing tags and placeholder view content */}
                       <View className="p-4">
                         <View className="mb-2 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{item.name}</ThemedText>

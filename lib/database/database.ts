@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid'; // Import uuid
 // import { Observable } from 'rxjs'; // Observable is unused
 // import { Model } from '@nozbe/watermelondb'; // Model is unused
 import { isExpoGo } from '../config';
-import plantSchema from '../models/schema'; // Corrected import path
 // Import all model classes directly
 import { DiaryEntry } from '../models/DiaryEntry';
 import { GrowJournal } from '../models/GrowJournal';
@@ -21,6 +20,7 @@ import { Post } from '../models/Post';
 import { Profile } from '../models/Profile';
 import { Strain } from '../models/Strain';
 import migrations from '../models/migrations';
+import plantSchema from '../models/schema'; // Corrected import path
 
 // Set ID generator BEFORE adapter creation
 setGenerator(() => uuidv4());

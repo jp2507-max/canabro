@@ -11,7 +11,8 @@ import { DiaryEntry } from '../../types/diary';
 /**
  * Hook to fetch diary entries for a specific plant
  */
-export function useDiaryEntries(plantId: string | null | undefined) { // Allow null/undefined
+export function useDiaryEntries(plantId: string | null | undefined) {
+  // Allow null/undefined
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);

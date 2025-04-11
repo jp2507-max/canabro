@@ -1,15 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs, useRouter } from 'expo-router';
-import { View, ActivityIndicator, Pressable } from 'react-native'; // Keep Pressable
+import { Tabs } from 'expo-router';
+import { View, ActivityIndicator } from 'react-native'; // Keep Pressable
 
 // Import useAuth and UserAvatar
-import { useAuth } from '../../lib/contexts/AuthProvider';
-import UserAvatar from '../../components/community/UserAvatar'; // Adjust path if needed
+
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 
-
 export default function TabsLayout() {
-  const router = useRouter();
   // Protect all tab routes
   const { isLoading } = useProtectedRoute();
 

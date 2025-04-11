@@ -1,10 +1,11 @@
 /**
  * Database utility functions
  */
+
 import { Alert } from 'react-native';
-import { Q } from '@nozbe/watermelondb'; // Re-add Q
-import { Plant } from '../models/Plant'; // Import Plant model for proper typing
+
 import database from '../database/database'; // Corrected import path
+import { Plant } from '../models/Plant'; // Import Plant model for proper typing
 
 /**
  * Reset the database to fix schema issues
@@ -14,7 +15,7 @@ import database from '../database/database'; // Corrected import path
 export async function resetDatabase(): Promise<void> {
   try {
     console.log('[Database] Starting reset process...');
-    
+
     // Step 1: First try the standard database reset
     try {
       await database.write(async () => {
@@ -24,13 +25,13 @@ export async function resetDatabase(): Promise<void> {
     } catch (err) {
       console.warn('[Database] Standard reset failed, continuing with other steps:', err);
     }
-    
+
     // Step 2: Add a specific fix for plants-strains relationship
     // This corrects any existing plants with invalid strain relationships
     try {
       const plantsCollection = database.get<Plant>('plants');
       const plants = await plantsCollection.query().fetch();
-      
+
       await database.write(async () => {
         for (const plant of plants) {
           if (plant.strainId) {
@@ -46,9 +47,12 @@ export async function resetDatabase(): Promise<void> {
     } catch (relationErr) {
       console.warn('[Database] Error updating plant relationships:', relationErr);
     }
-    
+
     console.log('[Database] Reset completed successfully');
-    Alert.alert('Database Reset', 'Database has been reset. The app will work better after a restart.');
+    Alert.alert(
+      'Database Reset',
+      'Database has been reset. The app will work better after a restart.'
+    );
 
     return Promise.resolve();
   } catch (error) {
@@ -73,14 +77,20 @@ export function checkDatabaseSchema(): void {
 /**
  * Checks if a specific record exists in the local WatermelonDB.
  */
-export async function checkRecordExistsLocally(tableName: string, recordId: string): Promise<boolean> {
+export async function checkRecordExistsLocally(
+  tableName: string,
+  recordId: string
+): Promise<boolean> {
   console.log(`Checking for record ${recordId} in table ${tableName}...`);
   try {
     const collection = database.get(tableName);
     const record = await collection.find(recordId);
     const exists = !!record;
     console.log(`Record ${recordId} in ${tableName} ${exists ? 'found' : 'NOT found'} locally.`);
-    Alert.alert('Record Check', `Record ${recordId} in ${tableName} ${exists ? 'found' : 'NOT found'} locally.`);
+    Alert.alert(
+      'Record Check',
+      `Record ${recordId} in ${tableName} ${exists ? 'found' : 'NOT found'} locally.`
+    );
     return exists;
   } catch (error: any) {
     // find() throws an error if not found

@@ -45,6 +45,7 @@ You are an expert in TypeScript, React Native, Expo, and Mobile UI development.
   - Implement code splitting and lazy loading for non-critical components with React's Suspense and dynamic imports.
   - Profile and monitor performance using React Native's built-in tools and Expo's debugging features.
   - Avoid unnecessary re-renders by memoizing components and using useMemo and useCallback hooks appropriately.
+  - We are a company that only accepts excellent, professional, and highly efficient code. Always ensure your output meets the highest standards of software engineering.
 
   Navigation
   - Leverage deep linking and universal links for better user engagement and navigation flow.

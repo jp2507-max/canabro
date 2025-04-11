@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 13, // Increment schema version for schema correction
+  version: 15, // Increment version for schema changes
   tables: [
     tableSchema({
       name: 'profiles',
@@ -19,8 +19,15 @@ export default appSchema({
         { name: 'experience_level', type: 'string', isOptional: true },
         { name: 'preferred_grow_method', type: 'string', isOptional: true },
         { name: 'bio', type: 'string', isOptional: true },
+        { name: 'location', type: 'string', isOptional: true }, // Added
+        { name: 'growing_since', type: 'string', isOptional: true }, // Added
+        { name: 'favorite_strains', type: 'string', isOptional: true }, // Added (stores JSON string)
+        { name: 'is_certified', type: 'boolean', isOptional: true }, // Added
+        { name: 'certifications', type: 'string', isOptional: true }, // Added (stores JSON string)
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' }, // Removed isOptional: true
+        { name: 'last_synced_at', type: 'number', isOptional: true }, // Added for migration 14
+        { name: 'is_deleted', type: 'boolean', isOptional: true }, // Added
       ],
     }),
     tableSchema({

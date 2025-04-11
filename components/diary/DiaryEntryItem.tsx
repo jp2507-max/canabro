@@ -1,14 +1,14 @@
-import React from 'react';
-import { View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import dayjs from 'dayjs'; // For date formatting
+import React from 'react';
+import { View } from 'react-native';
 
-import ThemedText from '../ui/ThemedText';
-import ThemedView from '../ui/ThemedView';
-import StorageImage from '../ui/StorageImage'; // Use StorageImage for Supabase URLs
+import { DiaryEntryType } from './EntryTypeSelector'; // Import entry type definitions
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { DiaryEntry } from '../../lib/types/diary'; // Import the correct type
-import { DiaryEntryType } from './EntryTypeSelector'; // Import entry type definitions
+import StorageImage from '../ui/StorageImage'; // Use StorageImage for Supabase URLs
+import ThemedText from '../ui/ThemedText';
+import ThemedView from '../ui/ThemedView';
 
 interface DiaryEntryItemProps {
   entry: DiaryEntry;
@@ -33,7 +33,11 @@ const getEntryTypeDetails = (type: DiaryEntryType, theme: any) => {
 };
 
 // Helper to render metrics nicely
-const renderMetrics = (metrics: Record<string, any> | undefined | null, theme: any, isDarkMode: boolean) => {
+const renderMetrics = (
+  metrics: Record<string, any> | undefined | null,
+  theme: any,
+  isDarkMode: boolean
+) => {
   if (!metrics || typeof metrics !== 'object' || Object.keys(metrics).length === 0) {
     return null;
   }
@@ -43,16 +47,15 @@ const renderMetrics = (metrics: Record<string, any> | undefined | null, theme: a
   if (typeof metrics === 'string') {
     try {
       parsedMetrics = JSON.parse(metrics);
-    } catch (e) {
-      console.error('Failed to parse metrics JSON string:', metrics);
+    } catch (error) {
+      console.error('Failed to parse metrics JSON string:', metrics, error); // Log the error too
       return <ThemedText className="text-xs text-status-danger">Invalid metrics data</ThemedText>;
     }
   }
 
   if (typeof parsedMetrics !== 'object' || parsedMetrics === null) {
-     return null;
+    return null;
   }
-
 
   return (
     <View className="mt-2 flex-row flex-wrap">
@@ -60,8 +63,12 @@ const renderMetrics = (metrics: Record<string, any> | undefined | null, theme: a
         <View
           key={key}
           className="mb-1 mr-2 rounded bg-neutral-200 px-2 py-0.5 dark:bg-neutral-700">
-          <ThemedText className="text-xs" lightClassName="text-neutral-700" darkClassName="text-neutral-300">
-            <ThemedText className="font-medium">{key.replace(/_/g, ' ')}:</ThemedText> {String(value)}
+          <ThemedText
+            className="text-xs"
+            lightClassName="text-neutral-700"
+            darkClassName="text-neutral-300">
+            <ThemedText className="font-medium">{key.replace(/_/g, ' ')}:</ThemedText>{' '}
+            {String(value)}
           </ThemedText>
         </View>
       ))}
@@ -79,10 +86,9 @@ export default function DiaryEntryItem({ entry }: DiaryEntryItemProps) {
   try {
     // Assuming entry_date is YYYY-MM-DD or a full ISO string
     formattedDate = dayjs(entry.entry_date).format('MMM D, YYYY');
-  } catch (e) {
-    console.error('Error formatting date:', entry.entry_date, e);
+  } catch (error) {
+    console.error('Error formatting date:', entry.entry_date, error);
   }
-
 
   return (
     <ThemedView
@@ -104,11 +110,19 @@ export default function DiaryEntryItem({ entry }: DiaryEntryItemProps) {
         <View className="mb-2 flex-row items-center justify-between">
           {/* Type Icon and Label */}
           <View className="flex-row items-center">
-            <MaterialCommunityIcons name={icon as any} size={18} color={iconColor} className="mr-2" />
+            <MaterialCommunityIcons
+              name={icon as any}
+              size={18}
+              color={iconColor}
+              className="mr-2"
+            />
             <ThemedText className="font-semibold">{label}</ThemedText>
           </View>
           {/* Date */}
-          <ThemedText className="text-xs" lightClassName="text-neutral-500" darkClassName="text-neutral-400">
+          <ThemedText
+            className="text-xs"
+            lightClassName="text-neutral-500"
+            darkClassName="text-neutral-400">
             {formattedDate}
           </ThemedText>
         </View>

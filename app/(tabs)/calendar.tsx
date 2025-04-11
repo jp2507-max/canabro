@@ -61,20 +61,30 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
           const bgColor = isSelected
             ? theme.colors.primary[600]
             : isCurrentDateToday
-              ? isDarkMode ? theme.colors.primary[900] : theme.colors.primary[100]
-              : isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100];
+              ? isDarkMode
+                ? theme.colors.primary[900]
+                : theme.colors.primary[100]
+              : isDarkMode
+                ? theme.colors.neutral[800]
+                : theme.colors.neutral[100];
 
           // Determine day text color
           const dayTextColor = isSelected
             ? theme.colors.neutral[50]
-            : isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500];
+            : isDarkMode
+              ? theme.colors.neutral[400]
+              : theme.colors.neutral[500];
 
           // Determine date text color
           const dateTextColor = isSelected
             ? theme.colors.neutral[50]
             : isCurrentDateToday
-              ? isDarkMode ? theme.colors.primary[500] : theme.colors.primary[700]
-              : isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[800];
+              ? isDarkMode
+                ? theme.colors.primary[500]
+                : theme.colors.primary[700]
+              : isDarkMode
+                ? theme.colors.neutral[300]
+                : theme.colors.neutral[800];
 
           return (
             <TouchableOpacity
@@ -87,12 +97,12 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 32,
-                backgroundColor: bgColor
+                backgroundColor: bgColor,
               }}>
               <ThemedText
                 style={{
                   fontSize: 12,
-                  color: dayTextColor
+                  color: dayTextColor,
                 }}>
                 {`${format(date, 'E')}`}
               </ThemedText>
@@ -100,7 +110,7 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
                 style={{
                   fontSize: 18,
                   fontWeight: 'bold',
-                  color: dateTextColor
+                  color: dateTextColor,
                 }}>
                 {`${format(date, 'd')}`}
               </ThemedText>
@@ -207,7 +217,11 @@ function TaskItemBase({
 
           <View className="flex-row items-center">
             {/* Use theme neutral color for time icon */}
-            <Ionicons name="time-outline" size={14} color={theme.colors.neutral[isDarkMode ? 300 : 500]} />
+            <Ionicons
+              name="time-outline"
+              size={14}
+              color={theme.colors.neutral[isDarkMode ? 300 : 500]}
+            />
             {/* Use theme neutral color for time text */}
             <ThemedText className="ml-1 text-xs text-neutral-500 dark:text-neutral-400">
               {`${format(parseISO(task.dueDate), 'h:mm a')}`}
@@ -221,7 +235,11 @@ function TaskItemBase({
           // Use theme primary colors for background
           className="ml-2 h-10 w-10 items-center justify-center self-center rounded-full bg-primary-100 dark:bg-primary-900">
           {/* Use theme primary color for checkmark icon */}
-          <Ionicons name="checkmark" size={24} color={theme.colors.primary[isDarkMode ? 500 : 700]} />
+          <Ionicons
+            name="checkmark"
+            size={24}
+            color={theme.colors.primary[isDarkMode ? 500 : 700]}
+          />
         </TouchableOpacity>
       </View>
     </ThemedView>
@@ -480,37 +498,51 @@ function CalendarScreen({ selectedDate, userId }: CalendarScreenProps) {
           // Loading state
           if (showLoadingIndicator) {
             return (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 48 }}>
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 24,
+                  paddingVertical: 48,
+                }}>
                 <ActivityIndicator size="large" color={theme.colors.primary[600]} />
               </View>
             );
           }
-          
+
           // Empty state
           if (showEmptyState) {
             const formattedDate = format(selectedDate, 'MMMM d, yyyy');
             return (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 48 }}>
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 24,
+                  paddingVertical: 48,
+                }}>
                 <Ionicons
                   name="calendar-outline"
                   size={48}
                   color={theme.colors.neutral[isDarkMode ? 400 : 500]}
                 />
-                <ThemedText 
-                  style={{ 
-                    marginTop: 16, 
-                    textAlign: 'center', 
-                    fontSize: 18, 
-                    fontWeight: '600',
-                    color: isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700]
-                  }}>
-                  {"All Clear!"}
-                </ThemedText>
-                <ThemedText 
-                  style={{ 
-                    marginTop: 4, 
+                <ThemedText
+                  style={{
+                    marginTop: 16,
                     textAlign: 'center',
-                    color: isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700],
+                  }}>
+                  All Clear!
+                </ThemedText>
+                <ThemedText
+                  style={{
+                    marginTop: 4,
+                    textAlign: 'center',
+                    color: isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500],
                   }}>
                   {`No tasks scheduled for ${formattedDate}.`}
                 </ThemedText>
@@ -528,21 +560,21 @@ function CalendarScreen({ selectedDate, userId }: CalendarScreenProps) {
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.1,
                     shadowRadius: 3,
-                    elevation: 2
+                    elevation: 2,
                   }}>
                   <Ionicons name="add" size={18} color={theme.colors.neutral[50]} />
-                  <ThemedText style={{ marginLeft: 6, fontWeight: '500', color: theme.colors.neutral[50] }}>
-                    {"Add New Task"}
+                  <ThemedText
+                    style={{ marginLeft: 6, fontWeight: '500', color: theme.colors.neutral[50] }}>
+                    Add New Task
                   </ThemedText>
                 </TouchableOpacity>
               </View>
             );
           }
-          
+
           // Default case - return null
           return null;
-        }
-        }
+        }}
       />
     </ThemedView>
   );
@@ -556,14 +588,16 @@ function CalendarScreenContainer() {
   const { theme, isDarkMode } = useTheme(); // Add theme context
 
   return (
-    <SafeAreaView 
-      style={{ 
-        flex: 1, 
-        backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50] 
-      }} 
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50],
+      }}
       edges={['top']}>
       <ThemedView style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-        <ThemedText style={{ marginBottom: 16, fontSize: 24, fontWeight: 'bold' }}>Calendar</ThemedText>
+        <ThemedText style={{ marginBottom: 16, fontSize: 24, fontWeight: 'bold' }}>
+          Calendar
+        </ThemedText>
       </ThemedView>
       {/* Date Selector is rendered here, managing its own interaction via onDateSelect */}
       <DateSelector selectedDate={selectedDate} onDateSelect={setSelectedDate} />

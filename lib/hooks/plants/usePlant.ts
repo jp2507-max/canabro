@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plant } from '../../types';
-import { useSupabaseItem } from '../supabase';
+
 import { useDatabase } from '../../contexts/DatabaseProvider'; // Restore context import
 import { Plant as PlantModel } from '../../models/Plant';
+import { Plant } from '../../types';
+import { useSupabaseItem } from '../supabase';
 
 /**
  * Hook for fetching a single plant by ID
@@ -15,7 +16,11 @@ export function usePlant(plantId: string | null) {
   const [localError, setLocalError] = useState<Error | null>(null); // Restore local state
 
   // Fetch from Supabase
-  const { data: remoteData, loading: remoteLoading, error: remoteError } = useSupabaseItem<Plant>({
+  const {
+    data: remoteData,
+    loading: remoteLoading,
+    error: remoteError,
+  } = useSupabaseItem<Plant>({
     table: 'plants',
     matchColumn: 'id',
     matchValue: plantId,

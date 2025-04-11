@@ -1,26 +1,13 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 // Revert back to HOC: Import Q from core, default import for withObservables
-import { Database, Q } from '@nozbe/watermelondb'; // Added Database import
-import withObservables from '@nozbe/with-observables'; // Default import
+import { Database } from '@nozbe/watermelondb'; // Added Database import
 import { BlurView as ExpoBlurView } from 'expo-blur';
 // import { LinearGradient } from 'expo-linear-gradient'; // No longer needed
-import { Link, useRouter } from 'expo-router'; // Keep Link and useRouter
-import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'expo-router'; // Keep Link and useRouter
+import { useState } from 'react';
 import * as React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  FlatList,
-  Modal,
-  RefreshControl,
-  ActivityIndicator,
-  Alert,
-  Pressable,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'; // Import useSafeAreaInsets
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // Import useSafeAreaInsets
 
 import { AddPlantForm } from '../../components/AddPlantForm';
 import { EnhancedPlantList } from '../../components/PlantList'; // Import EnhancedPlantList
@@ -29,8 +16,6 @@ import ThemedView from '../../components/ui/ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../lib/hooks/useWatermelon'; // Keep for database instance
-import Constants from 'expo-constants';
-import { Plant } from '../../lib/models/Plant'; // Keep Plant type if needed elsewhere
 
 // --- Tag Pill Component ---
 const TagPill = ({ text, isDarkMode }: { text: string; isDarkMode: boolean }) => (
@@ -61,10 +46,7 @@ function HomeScreen({ database }: HomeScreenProps) {
 
   // FAB Menu State
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
-  const insets = useSafeAreaInsets(); // Get safe area insets
-
-  // Check if in development mode
-  const isDevelopment = Constants.expoConfig?.extra?.ENV === 'development' || __DEV__;
+  // Get safe area insets
 
   // Callback to update plant count and loading state
   const handleCountChange = (count: number) => {
@@ -112,7 +94,7 @@ function HomeScreen({ database }: HomeScreenProps) {
           ListHeaderComponent={
             <View className="px-4 pt-4">
               {/* Header Row: Title + Icon */}
-              <View className="flex-row items-center justify-between mb-2">
+              <View className="mb-2 flex-row items-center justify-between">
                 <ThemedText
                   className="text-3xl font-bold" // Removed margin bottom here
                   lightClassName="text-neutral-800"
@@ -142,7 +124,8 @@ function HomeScreen({ database }: HomeScreenProps) {
                   text={`${plantCount} Pflanze${plantCount !== 1 ? 'n' : ''}`}
                   isDarkMode={isDarkMode}
                 />
-              </View></View>
+              </View>
+            </View>
           }
           // Ensure FlatList inside EnhancedPlantList has appropriate padding/styles
           // The FlatList itself will now handle the main scrolling

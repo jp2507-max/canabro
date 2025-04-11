@@ -1,9 +1,9 @@
 'use client';
 
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Database, Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
   View,
@@ -15,10 +15,10 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import { useTheme } from '../lib/contexts/ThemeContext'; // Corrected path
-import { Plant } from '../lib/models/Plant'; // Ensure Plant is imported
 import ThemedText from './ui/ThemedText';
 import ThemedView from './ui/ThemedView';
+import { useTheme } from '../lib/contexts/ThemeContext'; // Corrected path
+import { Plant } from '../lib/models/Plant'; // Ensure Plant is imported
 
 interface PlantListComponentProps {
   plants: Plant[];
@@ -219,7 +219,7 @@ const PlantListComponent = ({
           />
         ) : undefined
       }
-      scrollEnabled={true}
+      scrollEnabled
       contentContainerStyle={{ flexGrow: 1, paddingVertical: 5, paddingBottom: 80 }}
     />
   );

@@ -1,4 +1,4 @@
-import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // Added Ionicons & MaterialCommunityIcons
+import { Ionicons } from '@expo/vector-icons'; // Added Ionicons & MaterialCommunityIcons
 import dayjs from 'dayjs'; // Using dayjs for relative time
 import relativeTime from 'dayjs/plugin/relativeTime'; // Import plugin
 import React from 'react';
@@ -7,9 +7,9 @@ import { Pressable, TouchableOpacity, View } from 'react-native';
 import UserAvatar from './UserAvatar';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 // Removed WatermelonDB imports (Post, Profile, Plant, withObservables, of$)
+import StorageImage from '../ui/StorageImage';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import StorageImage from '../ui/StorageImage';
 
 dayjs.extend(relativeTime); // Extend dayjs with the plugin
 
@@ -104,10 +104,16 @@ function PostItem({
         {/* Add verification later if needed */}
         <UserAvatar uri={avatarUrl || 'https://via.placeholder.com/40'} verified={false} />
         <View className="ml-3 flex-1">
-          <ThemedText className="font-semibold" darkClassName="text-neutral-100" lightClassName="text-neutral-900">
+          <ThemedText
+            className="font-semibold"
+            darkClassName="text-neutral-100"
+            lightClassName="text-neutral-900">
             {displayName}
           </ThemedText>
-          <ThemedText className="text-xs" darkClassName="text-neutral-400" lightClassName="text-neutral-500">
+          <ThemedText
+            className="text-xs"
+            darkClassName="text-neutral-400"
+            lightClassName="text-neutral-500">
             {timeAgo}
           </ThemedText>
           {/* Optional: Add Plant Link Here if needed */}
@@ -151,7 +157,7 @@ function PostItem({
       )}
 
       {/* Action Buttons & Counts */}
-      <View className="flex-row items-center justify-start border-t px-3 py-2 dark:border-neutral-700 light:border-neutral-200">
+      <View className="light:border-neutral-200 flex-row items-center justify-start border-t px-3 py-2 dark:border-neutral-700">
         {/* Like Button */}
         <TouchableOpacity
           onPress={handleLikePress}
@@ -161,7 +167,13 @@ function PostItem({
           <Ionicons
             name={post.user_has_liked ? 'heart' : 'heart-outline'}
             size={20}
-            color={post.user_has_liked ? theme.colors.status.danger : (isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600])}
+            color={
+              post.user_has_liked
+                ? theme.colors.status.danger
+                : isDarkMode
+                  ? theme.colors.neutral[400]
+                  : theme.colors.neutral[600]
+            }
           />
           {post.likes_count > 0 && (
             <ThemedText

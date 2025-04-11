@@ -19,7 +19,6 @@ import {
   ActivityIndicator,
   ScrollView, // Use ScrollView instead of FlatList
   KeyboardAvoidingView,
-  Platform,
   Modal,
 } from 'react-native';
 import { z } from 'zod';
@@ -33,7 +32,7 @@ import { useDatabase } from '../lib/hooks/useDatabase';
 import useWatermelon from '../lib/hooks/useWatermelon';
 import { Plant } from '../lib/models/Plant';
 import { scheduleInitialPlantNotifications } from '../lib/services/NotificationService';
-import { generateId } from '../lib/services/sync-service'; // Import generateId for UUID generation
+// Import generateId for UUID generation
 import supabase from '../lib/supabase';
 import { GrowthStage } from '../lib/types/plant'; // Removed unused CreatePlantData
 
@@ -140,15 +139,12 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const { theme, isDarkMode } = useTheme();
   const { database } = useDatabase();
   const { sync } = useWatermelon();
-  
+
   // Track the current step by ID instead of index for more reliable navigation
   const [currentStepId, setCurrentStepId] = useState<string>(FORM_STEPS[0].id);
-  
+
   // Find the current step object based on currentStepId
-  const currentStepObj = FORM_STEPS.find(step => step.id === currentStepId) || FORM_STEPS[0];
-  
-  // Find the current step index (for progress indicator)
-  const currentStepIndex = FORM_STEPS.findIndex(step => step.id === currentStepId);
+  const currentStepObj = FORM_STEPS.find((step) => step.id === currentStepId) || FORM_STEPS[0];
 
   // --- React Hook Form Setup ---
   const {
@@ -190,12 +186,12 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   // Step navigation - Updated to use validation trigger and currentStepId
   const goToNextStep = async () => {
     // Find the current step index based on currentStepId
-    const stepIndex = FORM_STEPS.findIndex(step => step.id === currentStepId);
+    const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
     // Get the current step object
     const stepObj = FORM_STEPS[stepIndex];
     // Get fields for the current step
     const fieldsToValidate = stepObj.fields;
-    
+
     // Trigger validation only for the current step's fields
     const isValidStep = await trigger(fieldsToValidate.length > 0 ? fieldsToValidate : undefined);
 
@@ -207,14 +203,17 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       const errorMessage = firstErrorField
         ? errors[firstErrorField as keyof PlantFormData]?.message
         : 'Please correct the errors before proceeding.';
-      Alert.alert('Validation Error', errorMessage?.toString() || 'Please check the highlighted fields.');
+      Alert.alert(
+        'Validation Error',
+        errorMessage?.toString() || 'Please check the highlighted fields.'
+      );
     }
   };
 
   const goToPreviousStep = () => {
     // Find the current step index based on currentStepId
-    const stepIndex = FORM_STEPS.findIndex(step => step.id === currentStepId);
-    
+    const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
+
     if (stepIndex > 0) {
       setCurrentStepId(FORM_STEPS[stepIndex - 1].id);
     } else {
@@ -281,7 +280,11 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         [{ resize: { width: 1024 } }], // Resize
         { compress: 0.7, format: SaveFormat.JPEG } // Compress to JPEG
       );
-      console.log('Image manipulated:', manipResult.uri, `(${manipResult.width}x${manipResult.height})`);
+      console.log(
+        'Image manipulated:',
+        manipResult.uri,
+        `(${manipResult.width}x${manipResult.height})`
+      );
       // --- ---
 
       // Determine the correct MIME type (manipulation forces JPEG)
@@ -290,24 +293,25 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
       // Step 1: Read the *manipulated* file as a Base64 string
       console.log('Reading manipulated file as Base64...');
-      const fileBase64 = await FileSystem.readAsStringAsync(manipResult.uri, { // Use manipResult.uri
+      const fileBase64 = await FileSystem.readAsStringAsync(manipResult.uri, {
+        // Use manipResult.uri
         encoding: FileSystem.EncodingType.Base64,
       });
 
       // Step 2: Convert the Base64 string to an ArrayBuffer
       console.log('Converting Base64 to ArrayBuffer...');
       const arrayBuffer = decode(fileBase64);
-      
+
       const filename = `plant_${Date.now()}.${extension}`;
       const filePath = `${userId}/${filename}`;
-      
+
       // Step 3: Upload the ArrayBuffer with explicit content type
       console.log('Uploading ArrayBuffer to Supabase storage...');
       const { error: uploadError } = await supabase.storage
         .from('plants')
-        .upload(filePath, arrayBuffer, { 
+        .upload(filePath, arrayBuffer, {
           contentType: mimeType,
-          upsert: false // Set to false to ensure we don't overwrite existing files
+          upsert: false, // Set to false to ensure we don't overwrite existing files
         });
 
       if (uploadError) throw uploadError;
@@ -356,31 +360,31 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       }
 
       console.log('Creating plant with strain:', data.strain);
-      
+
       // IMPORTANT: Create a hardcoded fallback strain to avoid type errors
       // This ensures we always have a valid strain object with a type property
       const fallbackStrain = {
-        id: "unknown",
-        name: data.strain || "Unknown Strain",
-        type: "hybrid" as 'hybrid' | 'indica' | 'sativa',
+        id: 'unknown',
+        name: data.strain || 'Unknown Strain',
+        type: 'hybrid' as 'hybrid' | 'indica' | 'sativa',
         thcContent: 0,
         cbdContent: 0,
-        description: "",
+        description: '',
         effects: [],
         flavors: [],
-        growDifficulty: "moderate" as 'easy' | 'moderate' | 'hard'
+        growDifficulty: 'moderate' as 'easy' | 'moderate' | 'hard',
       };
-      
+
       // First try to use the selected strain from state
       let strainToUse = selectedStrain;
-      
+
       // If no strain is selected, try to find one by name
       if (!strainToUse && data.strain) {
         try {
           // Import the function to get a strain by name
           const { searchStrainsByName } = await import('../lib/data/strains');
           const matchingStrains = searchStrainsByName(data.strain);
-          
+
           if (matchingStrains && matchingStrains.length > 0) {
             // Use the first matching strain
             strainToUse = matchingStrains[0];
@@ -390,42 +394,39 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           console.error('Error finding strain by name:', err);
         }
       }
-      
+
       // If we still don't have a valid strain, use the fallback
       if (!strainToUse) {
         strainToUse = fallbackStrain;
         console.log('Using fallback strain:', JSON.stringify(strainToUse));
       }
-      
-      console.log(
-        'Selected strain object:',
-        strainToUse ? JSON.stringify(strainToUse) : 'None'
-      );
 
-    // Use the ID from the selected/found strain, or undefined if none
-    const finalStrainId = strainToUse?.id !== 'unknown' ? strainToUse?.id : undefined;
+      console.log('Selected strain object:', strainToUse ? JSON.stringify(strainToUse) : 'None');
 
-    // Use the form data directly for name
-    const strainName = data.strain || 'Unknown Strain'; // Keep using form data for name
+      // Use the ID from the selected/found strain, or undefined if none
+      const finalStrainId = strainToUse?.id !== 'unknown' ? strainToUse?.id : undefined;
 
-    // Map cannabis type directly from the form data, with a safe default
-    const cannabisTypeValue = data.cannabis_type || CannabisType.Unknown;
+      // Use the form data directly for name
+      const strainName = data.strain || 'Unknown Strain'; // Keep using form data for name
 
-    // Create the plant data using the correct strain ID
-    const plantDataToSave = {
-      name: data.name || 'Unnamed Plant',
-      strain: strainName, // Keep using form data for name
-      planted_date: data.planted_date.toISOString().split('T')[0],
-      growth_stage: data.growth_stage || GrowthStage.SEEDLING,
-      notes: data.notes || '',
-      image_url: finalImageUrl || undefined,
-      cannabisType: cannabisTypeValue,
-      growMedium: data.grow_medium || GrowMedium.Soil,
-      lightCondition: data.light_condition || LightCondition.Artificial,
-      locationDescription: data.location_description || GrowLocation.Indoor,
-      strainId: finalStrainId, // Use the correctly determined ID or undefined
-      userId: user.id,
-    };
+      // Map cannabis type directly from the form data, with a safe default
+      const cannabisTypeValue = data.cannabis_type || CannabisType.Unknown;
+
+      // Create the plant data using the correct strain ID
+      const plantDataToSave = {
+        name: data.name || 'Unnamed Plant',
+        strain: strainName, // Keep using form data for name
+        planted_date: data.planted_date.toISOString().split('T')[0],
+        growth_stage: data.growth_stage || GrowthStage.SEEDLING,
+        notes: data.notes || '',
+        image_url: finalImageUrl || undefined,
+        cannabisType: cannabisTypeValue,
+        growMedium: data.grow_medium || GrowMedium.Soil,
+        lightCondition: data.light_condition || LightCondition.Artificial,
+        locationDescription: data.location_description || GrowLocation.Indoor,
+        strainId: finalStrainId, // Use the correctly determined ID or undefined
+        userId: user.id,
+      };
 
       console.log('Plant data being saved:', JSON.stringify(plantDataToSave));
 
@@ -434,7 +435,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       await database.write(async () => {
         try {
           const plantsCollection = database.get<Plant>('plants');
-          
+
           const newPlant = await plantsCollection.create((plant: Plant) => {
             plant.name = plantDataToSave.name || 'Unnamed Plant';
             plant.strain = plantDataToSave.strain || 'Unknown Strain';
@@ -447,12 +448,12 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             plant.growMedium = plantDataToSave.growMedium || GrowMedium.Soil;
             plant.lightCondition = plantDataToSave.lightCondition || LightCondition.Artificial;
             plant.locationDescription = plantDataToSave.locationDescription || GrowLocation.Indoor;
-            
+
             if (plantDataToSave.image_url) {
               plant.imageUrl = plantDataToSave.image_url;
             }
           });
-          
+
           newPlantId = newPlant.id;
           console.log('Plant created successfully with ID:', newPlantId);
         } catch (error) {
@@ -1263,8 +1264,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   // Helper for progress indicator (updated to use currentStepId)
   const renderProgressIndicator = () => {
     // Find the current step index based on currentStepId
-    const stepIndex = FORM_STEPS.findIndex(step => step.id === currentStepId);
-    
+    const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
+
     return (
       <ThemedView
         className="mb-8 mt-2 w-full flex-row justify-between px-1"
@@ -1285,22 +1286,23 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     );
   };
 
-
   return (
     <KeyboardAvoidingView
       behavior="padding" // Changed behavior to 'padding' for consistency
       className="bg-background dark:bg-darkBackground flex-1">
       {/* Use ScrollView for the form content */}
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView className="px-4 pb-20 pt-4">
           {/* Header */}
           <ThemedView className="mb-2 flex-row items-center justify-between">
             <TouchableOpacity
               onPress={goToPreviousStep}
               style={{ marginLeft: -8, padding: 8 }}
-              accessibilityLabel={FORM_STEPS.findIndex(step => step.id === currentStepId) === 0 ? 'Cancel' : 'Previous Step'}
+              accessibilityLabel={
+                FORM_STEPS.findIndex((step) => step.id === currentStepId) === 0
+                  ? 'Cancel'
+                  : 'Previous Step'
+              }
               accessibilityRole="button">
               <Ionicons
                 name="arrow-back"
@@ -1344,10 +1346,14 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                   justifyContent: 'center',
                   borderRadius: 8,
                   padding: 16,
-                  backgroundColor: isSubmitting ? 
-                    (isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[300]) : 
-                    (isDarkMode ? theme.colors.primary[700] : theme.colors.primary[500]),
-                  opacity: isSubmitting ? 0.5 : 1
+                  backgroundColor: isSubmitting
+                    ? isDarkMode
+                      ? theme.colors.neutral[700]
+                      : theme.colors.neutral[300]
+                    : isDarkMode
+                      ? theme.colors.primary[700]
+                      : theme.colors.primary[500],
+                  opacity: isSubmitting ? 0.5 : 1,
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Add plant">
@@ -1370,7 +1376,9 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                 onPress={goToNextStep}
                 activeOpacity={0.7}
                 style={{
-                  backgroundColor: isDarkMode ? theme.colors.primary[700] : theme.colors.primary[500],
+                  backgroundColor: isDarkMode
+                    ? theme.colors.primary[700]
+                    : theme.colors.primary[500],
                   borderRadius: 8,
                   padding: 16,
                   alignItems: 'center',

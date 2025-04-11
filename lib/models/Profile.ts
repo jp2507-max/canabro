@@ -5,25 +5,28 @@ import { field, date, readonly, text, children } from '@nozbe/watermelondb/decor
 import { Plant } from './Plant'; // Import Plant model
 import { Post } from './Post'; // Import Post model
 
+/**
+ * Profile model representing user profiles in the database
+ */
 export class Profile extends Model {
   static table = 'profiles';
   static associations: Associations = {
     plants: { type: 'has_many' as const, foreignKey: 'user_id' },
     posts: { type: 'has_many' as const, foreignKey: 'user_id' },
-    // Add other associations here if needed (e.g., follows)
   };
 
   @text('user_id') userId!: string;
   @text('username') username!: string;
+  @text('display_name') displayName?: string;
   @text('avatar_url') avatarUrl?: string;
-  @text('bio') bio?: string;
   @text('experience_level') experienceLevel?: string;
   @text('preferred_grow_method') preferredGrowMethod?: string;
-  @text('favorite_strains') favoriteStrains?: string; // Serialized array
-  @text('growing_since') growingSince?: string; // Date as ISO string
+  @text('bio') bio?: string;
   @text('location') location?: string;
+  @text('growing_since') growingSince?: string;
+  @text('favorite_strains') favoriteStrains?: string;
   @field('is_certified') isCertified?: boolean;
-  @text('certifications') certifications?: string; // Serialized array
+  @text('certifications') certifications?: string;
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;
@@ -33,19 +36,30 @@ export class Profile extends Model {
   @children('plants') plants!: Query<Plant>;
   @children('posts') posts!: Query<Post>;
 
-  // Helper methods to handle serialized arrays
+  /**
+   * Returns parsed favorite strains array from serialized storage
+   */
   getFavoriteStrains(): string[] {
     return this.favoriteStrains ? JSON.parse(this.favoriteStrains) : [];
   }
 
+  /**
+   * Sets favorite strains by serializing to JSON string
+   */
   setFavoriteStrains(strains: string[]): void {
     this.favoriteStrains = JSON.stringify(strains);
   }
 
+  /**
+   * Returns parsed certifications array from serialized storage
+   */
   getCertifications(): string[] {
     return this.certifications ? JSON.parse(this.certifications) : [];
   }
 
+  /**
+   * Sets certifications by serializing to JSON string
+   */
   setCertifications(certs: string[]): void {
     this.certifications = JSON.stringify(certs);
   }

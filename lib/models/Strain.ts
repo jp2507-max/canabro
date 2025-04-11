@@ -7,7 +7,7 @@ export class Strain extends Model {
   static associations: Associations = {
     plants: { type: 'has_many' as const, foreignKey: 'strain_id' },
   };
-  
+
   // Add a getter for plants to avoid direct relationship access
   get plants() {
     return this.collections.get('plants').query(Q.where('strain_id', this.id));

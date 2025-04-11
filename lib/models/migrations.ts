@@ -253,9 +253,9 @@ const migrations = schemaMigrations({
       toVersion: 12,
       steps: [
         // No explicit schema changes needed, just forcing a reload of the models
-         // with the proper relationship definitions
-       ],
-     },
+        // with the proper relationship definitions
+      ],
+    },
     // Migration to version 13: Correct schema definition for strains table (removed extra strain_id)
     {
       toVersion: 13,
@@ -263,6 +263,35 @@ const migrations = schemaMigrations({
         // No explicit database changes needed, as the incorrect column likely never
         // existed physically due to previous errors. This migration just satisfies
         // WatermelonDB's versioning requirement.
+      ],
+    },
+    // Migration to version 14: Add last_synced_at column to profiles table
+    {
+      toVersion: 14,
+      steps: [
+        addColumns({
+          table: 'profiles',
+          columns: [{ name: 'last_synced_at', type: 'number', isOptional: true }],
+        }),
+      ],
+    },
+    // Migration to version 15: Add missing profile columns to match schema v15
+    {
+      toVersion: 15,
+      steps: [
+        addColumns({
+          table: 'profiles',
+          columns: [
+            { name: 'location', type: 'string', isOptional: true },
+            { name: 'growing_since', type: 'string', isOptional: true },
+            { name: 'favorite_strains', type: 'string', isOptional: true }, // Stores JSON string
+            { name: 'is_certified', type: 'boolean', isOptional: true },
+            { name: 'certifications', type: 'string', isOptional: true }, // Stores JSON string
+            // Note: is_deleted was added in migration to version 2, but let's ensure it's here
+            // If it already exists, addColumns should handle it gracefully.
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
       ],
     },
   ],

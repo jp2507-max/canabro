@@ -4,11 +4,16 @@
       "type": "stdio",
       "command": "npx",
       "args": [
-        "-y", 
-        "@supabase/mcp-server-supabase@latest", 
-        "--access-token", 
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
         "sbp_fc66a7ece07233012c7c4428b8266e5b7c2aee50"
       ]
+    },
+    "SequentialThinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     }
   }
 }
