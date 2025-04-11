@@ -54,6 +54,13 @@ function AppWithTheme() {
             headerShown: false, // Remove header for this screen
           }}
         />
+        {/* Add configuration for the catalog detail screen */}
+        <Stack.Screen
+          name="catalog/[strain_id]"
+          options={{
+            headerShown: false, // Hide header during loading and after
+          }}
+        />
       </Stack>
     </>
   );

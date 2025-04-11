@@ -1,23 +1,25 @@
 'use client';
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image as ExpoImage } from 'expo-image'; // Import expo-image
 import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router'; // Import useRouter
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   TouchableOpacity,
   ScrollView,
   TextInput,
-  // Image, // Remove RN Image
   FlatList,
   ActivityIndicator,
-  Pressable, // Keep Pressable (only once)
-  Alert,
-  RefreshControl, // Add RefreshControl back
+  Pressable,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import EffectTag from '../../components/strains/EffectTag';
+import FlavorTag from '../../components/strains/FlavorTag';
+import StrainFilterModal, { ActiveFilters } from '../../components/strains/StrainFilterModal'; // Import Modal
+import StorageImage from '../../components/ui/StorageImage';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
@@ -43,13 +45,13 @@ const CATEGORIES = [
 // Mock strains data (in a real app, this would come from your backend)
 const MOCK_STRAINS: Strain[] = [
   {
-    id: '1',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // Replaced with UUID
     name: 'OG Kush',
     species: StrainSpecies.HYBRID,
     thc_content: 20,
     cbd_content: 0.3,
     description: 'OG Kush is a legendary strain with a strong, fuel-like aroma and euphoric high.',
-    image_url: 'https://leafly-public.imgix.net/strains/photos/jjpNJdwSQPeregHTfbJt_OG-Kush-1.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.RELAXED,
       StrainEffectType.HAPPY,
@@ -67,15 +69,14 @@ const MOCK_STRAINS: Strain[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: '2',
+    id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', // Replaced with UUID
     name: 'Blue Dream',
     species: StrainSpecies.HYBRID,
     thc_content: 18,
     cbd_content: 0.1,
     description:
       'Blue Dream is a sativa-dominant hybrid known for its balanced effects and sweet berry aroma.',
-    image_url:
-      'https://leafly-public.imgix.net/strains/photos/gaDeFIaSRV23V6XvE43a_blue-dream-1.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.RELAXED,
       StrainEffectType.HAPPY,
@@ -93,14 +94,14 @@ const MOCK_STRAINS: Strain[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: '3',
+    id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef0', // Replaced with UUID
     name: 'Girl Scout Cookies',
     species: StrainSpecies.HYBRID,
     thc_content: 23,
     cbd_content: 0.2,
     description:
       'GSC is a hybrid strain with a sweet and earthy aroma, known for its potent effects.',
-    image_url: 'https://leafly-public.imgix.net/strains/photos/SMKn4NVmRBmlCUWyPLwj_cookies-1.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.RELAXED,
       StrainEffectType.HAPPY,
@@ -118,15 +119,14 @@ const MOCK_STRAINS: Strain[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: '4',
+    id: 'c3d4e5f6-a7b8-9012-3456-7890abcdef01', // Replaced with UUID
     name: 'Northern Lights',
     species: StrainSpecies.INDICA,
     thc_content: 16,
     cbd_content: 0.1,
     description:
       'Northern Lights is a pure indica strain known for its resinous buds and resilient growth.',
-    image_url:
-      'https://leafly-public.imgix.net/strains/photos/JlFmcIgXR7SD7zL6rGR0_northern-lights-1.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.RELAXED,
       StrainEffectType.SLEEPY,
@@ -144,15 +144,14 @@ const MOCK_STRAINS: Strain[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: '5',
+    id: 'd4e5f6a7-b8c9-0123-4567-890abcdef012', // Replaced with UUID
     name: 'Sour Diesel',
     species: StrainSpecies.SATIVA,
     thc_content: 19,
     cbd_content: 0.2,
     description:
       'Sour Diesel is a fast-acting sativa with a pungent diesel aroma, delivering energizing effects.',
-    image_url:
-      'https://leafly-public.imgix.net/strains/photos/lSTyn2nURy207UJaZHBZ_sour-diesel-1.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.ENERGETIC,
       StrainEffectType.HAPPY,
@@ -170,14 +169,13 @@ const MOCK_STRAINS: Strain[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: '6',
+    id: 'e5f6a7b8-c9d0-1234-5678-90abcdef0123', // Replaced with UUID
     name: 'Granddaddy Purple',
     species: StrainSpecies.INDICA,
     thc_content: 17,
     cbd_content: 0.1,
     description: 'GDP is a famous indica strain with dense purple buds and grape flavor.',
-    image_url:
-      'https://leafly-public.imgix.net/strains/photos/N3qGtLCSQKabpBg7phbf_granddaddy-purple-20.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.RELAXED,
       StrainEffectType.SLEEPY,
@@ -195,14 +193,14 @@ const MOCK_STRAINS: Strain[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: '7',
+    id: 'f6a7b8c9-d0e1-2345-6789-0abcdef01234', // Replaced with UUID
     name: 'Jack Herer',
     species: StrainSpecies.SATIVA,
     thc_content: 18,
     cbd_content: 0.2,
     description:
       'Jack Herer is a sativa-dominant strain that delivers a clear-headed, blissful high.',
-    image_url: 'https://leafly-public.imgix.net/strains/photos/g9EE8xWSR2OJZiPhvdcE_jack-herer.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.HAPPY,
       StrainEffectType.UPLIFTED,
@@ -220,15 +218,14 @@ const MOCK_STRAINS: Strain[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: '8',
+    id: 'a7b8c9d0-e1f2-3456-7890-bcdef0123456', // Replaced with UUID
     name: 'Durban Poison',
     species: StrainSpecies.SATIVA,
     thc_content: 20,
     cbd_content: 0.02,
     description:
       'Durban Poison is a pure sativa with an energetic and uplifting high, perfect for daytime use.',
-    image_url:
-      'https://leafly-public.imgix.net/strains/photos/9yIX8jjTRB28gDc4hgHx_durban-poison-5.jpg',
+    image_url: undefined, // Use fallback icon (match type string | undefined)
     effects: [
       StrainEffectType.ENERGETIC,
       StrainEffectType.FOCUSED,
@@ -247,167 +244,56 @@ const MOCK_STRAINS: Strain[] = [
   },
 ];
 
-// Define Components for Reuse
-const EffectTag = ({
-  effect,
-  size = 'small',
-}: {
-  effect: StrainEffectType;
-  size?: 'small' | 'large';
-}) => {
-  // Map effects to colors using theme
-  const effectColors: Record<string, { bg: string; text: string }> = {
-    // Using theme colors - adjust as needed for better semantics
-    [StrainEffectType.HAPPY]: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900', // Keep yellow for happy
-      text: 'text-yellow-800 dark:text-yellow-300',
-    },
-    [StrainEffectType.RELAXED]: {
-      bg: 'bg-blue-100 dark:bg-blue-900', // Keep blue for relaxed
-      text: 'text-blue-800 dark:text-blue-300',
-    },
-    [StrainEffectType.EUPHORIC]: {
-      bg: 'bg-purple-100 dark:bg-purple-900', // Keep purple for euphoric
-      text: 'text-purple-800 dark:text-purple-300',
-    },
-    [StrainEffectType.UPLIFTED]: {
-      bg: 'bg-primary-100 dark:bg-primary-900', // Use primary green for uplifted
-      text: 'text-primary-800 dark:text-primary-300',
-    },
-    [StrainEffectType.CREATIVE]: {
-      bg: 'bg-pink-100 dark:bg-pink-900', // Keep pink for creative
-      text: 'text-pink-800 dark:text-pink-300',
-    },
-    [StrainEffectType.ENERGETIC]: {
-      bg: 'bg-red-100 dark:bg-red-900', // Keep red for energetic
-      text: 'text-red-800 dark:text-red-300',
-    },
-    [StrainEffectType.FOCUSED]: {
-      bg: 'bg-indigo-100 dark:bg-indigo-900', // Keep indigo for focused
-      text: 'text-indigo-800 dark:text-indigo-300',
-    },
-    [StrainEffectType.SLEEPY]: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800', // Use theme neutral
-      text: 'text-neutral-800 dark:text-neutral-300',
-    },
-    [StrainEffectType.HUNGRY]: {
-      bg: 'bg-orange-100 dark:bg-orange-900', // Keep orange for hungry
-      text: 'text-orange-800 dark:text-orange-300',
-    },
-  };
-
-  // Default style using theme neutral colors
-  const defaultStyle = {
-    bg: 'bg-neutral-100 dark:bg-neutral-700',
-    text: 'text-neutral-800 dark:text-neutral-300',
-  };
-
-  const style = effectColors[effect] || defaultStyle;
-
-  return (
-    <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
-      <ThemedText className={`${style.text} text-xs ${size === 'large' ? 'font-medium' : ''}`}>
-        {effect}
-      </ThemedText>
-    </View>
-  );
-};
-
-const FlavorTag = ({ flavor }: { flavor: StrainFlavorType }) => {
-  // Map flavors to colors using theme
-  const flavorColors: Record<string, { bg: string; text: string }> = {
-    [StrainFlavorType.SWEET]: {
-      bg: 'bg-pink-100 dark:bg-pink-900', // Keep pink
-      text: 'text-pink-800 dark:text-pink-300',
-    },
-    [StrainFlavorType.EARTHY]: {
-      bg: 'bg-neutral-200 dark:bg-neutral-700', // Use theme neutral
-      text: 'text-neutral-800 dark:text-neutral-300',
-    },
-    [StrainFlavorType.CITRUS]: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900', // Keep yellow
-      text: 'text-yellow-800 dark:text-yellow-300',
-    },
-    [StrainFlavorType.BERRY]: {
-      bg: 'bg-purple-100 dark:bg-purple-900', // Keep purple
-      text: 'text-purple-800 dark:text-purple-300',
-    },
-    [StrainFlavorType.PINE]: {
-      bg: 'bg-primary-100 dark:bg-primary-900', // Use theme primary
-      text: 'text-primary-800 dark:text-primary-300',
-    },
-    [StrainFlavorType.WOODY]: {
-      bg: 'bg-neutral-300 dark:bg-neutral-600', // Use theme neutral
-      text: 'text-neutral-800 dark:text-neutral-200',
-    },
-    [StrainFlavorType.DIESEL]: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800', // Use theme neutral
-      text: 'text-neutral-800 dark:text-neutral-300',
-    },
-    [StrainFlavorType.PUNGENT]: {
-      bg: 'bg-indigo-100 dark:bg-indigo-900', // Keep indigo
-      text: 'text-indigo-800 dark:text-indigo-300',
-    },
-    [StrainFlavorType.SPICY]: {
-      bg: 'bg-red-100 dark:bg-red-900', // Keep red
-      text: 'text-red-800 dark:text-red-300',
-    },
-    [StrainFlavorType.VANILLA]: {
-      bg: 'bg-neutral-100 dark:bg-neutral-900', // Use theme neutral (lightest)
-      text: 'text-neutral-800 dark:text-neutral-300',
-    },
-    [StrainFlavorType.BLUEBERRY]: {
-      bg: 'bg-blue-100 dark:bg-blue-900', // Keep blue
-      text: 'text-blue-800 dark:text-blue-300',
-    },
-    [StrainFlavorType.GRAPE]: {
-      bg: 'bg-purple-100 dark:bg-purple-900', // Keep purple
-      text: 'text-purple-800 dark:text-purple-300',
-    },
-  };
-
-  // Default style using theme neutral colors
-  const defaultStyle = {
-    bg: 'bg-neutral-100 dark:bg-neutral-700',
-    text: 'text-neutral-800 dark:text-neutral-300',
-  };
-
-  const style = flavorColors[flavor] || defaultStyle;
-
-  return (
-    <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
-      <ThemedText className={`${style.text} text-xs`}>{flavor}</ThemedText>
-    </View>
-  );
-};
+// Removed EffectTag and FlavorTag definitions
 
 export default function StrainsScreen() {
   useProtectedRoute();
+  const router = useRouter(); // Add router hook
   const { theme, isDarkMode } = useTheme(); // Get theme object
-  // const { database } = useDatabase(); // database is unused
+  // const { database } = useDatabase(); // database is unused - removed
   const { refreshing, handleRefresh } = usePullToRefresh({
     showFeedback: true,
     forceSync: true,
   });
   const [loading, setLoading] = useState(true);
   const [strains, setStrains] = useState<Strain[]>([]);
-  // const [strainsByCategory, setStrainsByCategory] = useState<{ [key: string]: Strain[] }>({}); // strainsByCategory is unused
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all'); // Keep for category buttons for now
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ // State for active filters
+    species: null,
+    effects: [],
+    flavors: [],
+    minThc: null,
+    maxThc: null,
+    minCbd: null,
+    maxCbd: null,
+  });
 
-  // Filter strains based on search query
+  // Filter strains based on search query AND active filters
   const filteredStrains = strains.filter((strain) => {
     const matchesSearch =
       searchQuery === '' ||
       strain.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      strain.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      (strain.description && strain.description.toLowerCase().includes(searchQuery.toLowerCase())); // Check if description exists
 
-    const matchesCategory =
-      selectedCategory === 'all' ||
-      strain.species === selectedCategory ||
-      (selectedCategory === 'popular' && strains.indexOf(strain) < 4); // First 4 strains are considered popular
+    // --- Apply Active Filters ---
+    const matchesSpecies = !activeFilters.species || strain.species === activeFilters.species;
 
-    return matchesSearch && matchesCategory;
+    // Check if the strain includes ALL selected effects
+    const matchesEffects =
+      activeFilters.effects.length === 0 ||
+      activeFilters.effects.every((effect) => strain.effects?.includes(effect));
+
+    // Check if the strain includes ALL selected flavors
+    const matchesFlavors =
+      activeFilters.flavors.length === 0 ||
+      activeFilters.flavors.every((flavor) => strain.flavors?.includes(flavor));
+
+    // TODO: Add filtering logic for potency based on activeFilters
+
+    // Combine search and filter logic
+    return matchesSearch && matchesSpecies && matchesEffects && matchesFlavors;
   });
 
   // Featured strains (top rated or newly added)
@@ -448,23 +334,25 @@ export default function StrainsScreen() {
     loadStrains();
   }, []);
 
-  // View strain details (would navigate to a detail screen in a real app)
+  // View strain details - navigate to the detail screen
   const viewStrainDetails = (strain: Strain) => {
-    // In a real app, navigate to a detail screen
-    // router.push(`/strain/${strain.id}`);
+    // Navigate to the dynamic route for strain details in the 'catalog' directory
+    router.push({
+      pathname: '/catalog/[strain_id]', // Correct path to the detail page
+      params: { strain_id: strain.id }, // Use 'strain_id' as the parameter name
+    });
+  };
 
-    // Instead of just showing an alert, let's create a modal view in the future
-    // For now, enhancing the Alert dialog
-    Alert.alert(
-      strain.name,
-      `${strain.description}\n\nTHC: ${strain.thc_content}% | CBD: ${strain.cbd_content}%\n\nGrow Difficulty: ${strain.difficulty}\nFlowering Time: ${strain.flowering_time} weeks\n\nEffects: ${strain.effects?.join(', ') || 'None'}\nFlavors: ${strain.flavors?.join(', ') || 'None'}`,
-      [
-        {
-          text: 'Close',
-          style: 'cancel',
-        },
-      ]
-    );
+  // Function to open the filter modal
+  const openFilterModal = () => {
+    setIsFilterModalVisible(true);
+  };
+
+  // Function to handle applying filters from the modal
+  const handleApplyFilters = (newFilters: ActiveFilters) => {
+    setActiveFilters(newFilters);
+    // Optionally reset category selection when applying filters?
+    // setSelectedCategory('all');
   };
 
   return (
@@ -478,10 +366,9 @@ export default function StrainsScreen() {
           <TouchableOpacity
             // Use theme neutral colors for filter button background
             className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800"
-            onPress={() => {
-              // In a real app, navigate to settings or filter page
-              Alert.alert('Coming Soon', 'Filter options will be available here.');
-            }}>
+            onPress={openFilterModal} // Call function to open filter modal
+            accessibilityLabel="Open strain filters"
+            accessibilityRole="button">
             {/* Use theme neutral color for icon */}
             <Ionicons
               name="options-outline"
@@ -522,6 +409,14 @@ export default function StrainsScreen() {
           </View>
         </View>
 
+        {/* Filter Modal */}
+        <StrainFilterModal
+          isVisible={isFilterModalVisible}
+          onClose={() => setIsFilterModalVisible(false)}
+          initialFilters={activeFilters}
+          onApplyFilters={handleApplyFilters}
+        />
+
         {loading ? (
           <View className="flex-1 items-center justify-center">
             {/* Use theme primary color for activity indicator */}
@@ -551,20 +446,17 @@ export default function StrainsScreen() {
                     <Pressable
                       key={strain.id}
                       onPress={() => viewStrainDetails(strain)}
+                      accessibilityLabel={`View details for ${strain.name}`}
+                      accessibilityRole="button"
                       // Use theme neutral colors for card background
                       className="mr-4 w-72 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
-                      <ExpoImage
-                        source={{ uri: strain.image_url }}
-                        className="h-40 w-full"
+                      <StorageImage
+                        url={strain.image_url ?? null} // Provide null fallback for undefined
+                        width="100%"
+                        height={160} // h-40 equivalent
                         contentFit="cover"
-                        // transition={300} // Temporarily remove transition
-                        recyclingKey={strain.id}
-                        onError={(error) =>
-                          console.error(`Error loading featured strain image ${strain.id}:`, error)
-                        }
-                        placeholder={null} // Temporarily remove placeholder
+                        accessibilityLabel={`${strain.name} image`}
                       />
-                      {/* Removed the extra closing tags and placeholder view content */}
                       <View className="p-3">
                         <View className="mb-1 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{strain.name}</ThemedText>
@@ -611,6 +503,9 @@ export default function StrainsScreen() {
                   <TouchableOpacity
                     key={category.id}
                     onPress={() => setSelectedCategory(category.id)}
+                    accessibilityLabel={`Filter by ${category.name}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: selectedCategory === category.id }}
                     className={`mr-2 flex-row items-center rounded-full px-4 py-2
                       ${
                         selectedCategory === category.id
@@ -666,20 +561,17 @@ export default function StrainsScreen() {
                   renderItem={({ item }) => (
                     <Pressable
                       onPress={() => viewStrainDetails(item)}
+                      accessibilityLabel={`View details for ${item.name}`}
+                      accessibilityRole="button"
                       // Use theme neutral colors for card background
                       className="mb-4 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
-                      <ExpoImage
-                        source={{ uri: item.image_url }}
-                        className="h-48 w-full"
+                      <StorageImage
+                        url={item.image_url ?? null} // Provide null fallback for undefined
+                        width="100%"
+                        height={192} // h-48 equivalent
                         contentFit="cover"
-                        // transition={300} // Temporarily remove transition
-                        recyclingKey={item.id}
-                        onError={(error) =>
-                          console.error(`Error loading strain image ${item.id}:`, error)
-                        }
-                        placeholder={null} // Temporarily remove placeholder
+                        accessibilityLabel={`${item.name} image`}
                       />
-                      {/* Removed the extra closing tags and placeholder view content */}
                       <View className="p-4">
                         <View className="mb-2 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{item.name}</ThemedText>
@@ -718,8 +610,8 @@ export default function StrainsScreen() {
                               Effects:
                             </ThemedText>
                             <View className="flex-row flex-wrap">
-                              {item.effects.slice(0, 3).map((effect, idx) => (
-                                <EffectTag key={`${item.id}-effect-${idx}`} effect={effect} />
+                              {item.effects.slice(0, 3).map((effect) => (
+                                <EffectTag key={`${item.id}-effect-${effect}`} effect={effect} />
                               ))}
                               {item.effects.length > 3 && (
                                 // Use theme neutral colors for "more" tag
@@ -741,8 +633,8 @@ export default function StrainsScreen() {
                               Flavors:
                             </ThemedText>
                             <View className="flex-row flex-wrap">
-                              {item.flavors.slice(0, 2).map((flavor, idx) => (
-                                <FlavorTag key={`${item.id}-flavor-${idx}`} flavor={flavor} />
+                              {item.flavors.slice(0, 2).map((flavor) => (
+                                <FlavorTag key={`${item.id}-flavor-${flavor}`} flavor={flavor} />
                               ))}
                               {item.flavors.length > 2 && (
                                 // Use theme neutral colors for "more" tag

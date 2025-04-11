@@ -729,13 +729,19 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               darkClassName="text-darkForeground">
               Cannabis Type
             </ThemedText>
-            <ThemedView className="-m-1 flex-row flex-wrap">
+            <ThemedView className="-m-1 flex-row flex-wrap" collapsable={false}> {/* Add collapsable */}
               {Object.values(CannabisType).map((type) => {
                 const isSelected = value === type;
                 return (
                   <TouchableOpacity
                     key={type}
-                    className={`m-1 rounded-full border px-4 py-2.5 active:opacity-80 ${isSelected ? 'bg-primary border-primary dark:bg-darkPrimary dark:border-darkPrimary' : 'bg-background border-border dark:bg-darkBackground dark:border-darkBorder'}`}
+                    className={`m-1 rounded-full border px-4 py-2.5`} // Keep base styles in className
+                    style={[ // Apply conditional styles via style prop
+                      isSelected
+                        ? { backgroundColor: theme.colors.primary[isDarkMode ? 700 : 500], borderColor: theme.colors.primary[isDarkMode ? 800 : 600] }
+                        : { backgroundColor: theme.colors.background, borderColor: theme.colors.neutral[isDarkMode ? 700 : 200] }
+                    ]}
+                    activeOpacity={0.7}
                     onPress={() => {
                       onChange(type);
                     }}
@@ -743,7 +749,14 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                     accessibilityState={{ checked: isSelected }}
                     accessibilityLabel={type}>
                     <ThemedText
-                      className={`font-medium ${isSelected ? 'text-primary-foreground dark:text-darkPrimaryForeground' : 'text-foreground dark:text-darkForeground'}`}>
+                       // Use theme colors for text based on selection
+                      style={{
+                        fontWeight: '500',
+                        color: isSelected
+                          ? theme.colors.neutral[isDarkMode ? 50 : 900] // High contrast text for selected
+                          : theme.colors.neutral[isDarkMode ? 300 : 700] // Default text color
+                      }}
+                    >
                       {type}
                     </ThemedText>
                   </TouchableOpacity>
@@ -771,14 +784,20 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               darkClassName="text-darkForeground">
               Initial Growth Stage *
             </ThemedText>
-            <ThemedView className="-m-1 flex-row flex-wrap">
+            <ThemedView className="-m-1 flex-row flex-wrap" collapsable={false}> {/* Add collapsable */}
               {Object.values(GrowthStage).map((stage) => {
                 const isSelected = value === stage;
                 const label = stage.charAt(0).toUpperCase() + stage.slice(1).replace(/_/g, ' ');
                 return (
                   <TouchableOpacity
                     key={stage}
-                    className={`m-1 rounded-full border px-4 py-2.5 active:opacity-80 ${isSelected ? 'bg-primary border-primary dark:bg-darkPrimary dark:border-darkPrimary' : 'bg-background border-border dark:bg-darkBackground dark:border-darkBorder'}`}
+                    className={`m-1 rounded-full border px-4 py-2.5`} // Keep base styles in className
+                    style={[ // Apply conditional styles via style prop
+                      isSelected
+                        ? { backgroundColor: theme.colors.primary[isDarkMode ? 700 : 500], borderColor: theme.colors.primary[isDarkMode ? 800 : 600] }
+                        : { backgroundColor: theme.colors.background, borderColor: theme.colors.neutral[isDarkMode ? 700 : 200] }
+                    ]}
+                    activeOpacity={0.7}
                     onPress={() => {
                       onChange(stage);
                     }}
@@ -786,7 +805,14 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                     accessibilityState={{ checked: isSelected }}
                     accessibilityLabel={label}>
                     <ThemedText
-                      className={`font-medium ${isSelected ? 'text-primary-foreground dark:text-darkPrimaryForeground' : 'text-foreground dark:text-darkForeground'}`}>
+                      // Use theme colors for text based on selection
+                       style={{
+                        fontWeight: '500',
+                        color: isSelected
+                          ? theme.colors.neutral[isDarkMode ? 50 : 900] // High contrast text for selected
+                          : theme.colors.neutral[isDarkMode ? 300 : 700] // Default text color
+                      }}
+                    >
                       {label}
                     </ThemedText>
                   </TouchableOpacity>

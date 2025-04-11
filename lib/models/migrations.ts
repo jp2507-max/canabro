@@ -294,6 +294,14 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 16: Remove favorite_strains column definition from profiles schema
+    // No database steps needed as the column was only removed from the schema definition.
+    {
+      toVersion: 16,
+      steps: [
+        // No explicit steps needed here. WatermelonDB handles schema updates based on schema.ts.
+      ],
+    },
   ],
 });
 

@@ -24,7 +24,7 @@ export class Profile extends Model {
   @text('bio') bio?: string;
   @text('location') location?: string;
   @text('growing_since') growingSince?: string;
-  @text('favorite_strains') favoriteStrains?: string;
+  // Removed: @text('favorite_strains') favoriteStrains?: string;
   @field('is_certified') isCertified?: boolean;
   @text('certifications') certifications?: string;
   @readonly @date('created_at') createdAt!: Date;
@@ -36,19 +36,7 @@ export class Profile extends Model {
   @children('plants') plants!: Query<Plant>;
   @children('posts') posts!: Query<Post>;
 
-  /**
-   * Returns parsed favorite strains array from serialized storage
-   */
-  getFavoriteStrains(): string[] {
-    return this.favoriteStrains ? JSON.parse(this.favoriteStrains) : [];
-  }
-
-  /**
-   * Sets favorite strains by serializing to JSON string
-   */
-  setFavoriteStrains(strains: string[]): void {
-    this.favoriteStrains = JSON.stringify(strains);
-  }
+  // Removed getFavoriteStrains and setFavoriteStrains methods
 
   /**
    * Returns parsed certifications array from serialized storage

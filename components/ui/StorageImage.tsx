@@ -33,15 +33,17 @@ export default function StorageImage({
   accessibilityLabel = 'Image',
 }: StorageImageProps) {
   const { theme, isDarkMode } = useTheme();
-  const [isLoading, setIsLoading] = useState(true);
+  // Keep only the corrected useState declarations
+  const [isLoading, setIsLoading] = useState(!!url); // Initialize loading based on initial url presence
   const [hasError, setHasError] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(url);
+  // Keep track of the url prop internally if needed, but base rendering logic on the prop directly
+  const [internalUrl, setInternalUrl] = useState<string | null>(url);
 
-  // Handle URL changes
+  // Handle URL changes - reset state
   useEffect(() => {
-    setImageUrl(url);
+    setInternalUrl(url);
     setHasError(false);
-    setIsLoading(true);
+    setIsLoading(!!url); // Reset loading state based on new url prop
   }, [url]);
 
   // Generate a cache-busting URL if needed
@@ -85,50 +87,61 @@ export default function StorageImage({
     return null;
   };
 
-  // If no URL, show placeholder
-  if (!imageUrl) {
+  // *** Check the 'url' prop directly ***
+  // If the url prop is falsy (null or undefined), render the fallback immediately.
+  if (!url) {
     return (
       <View
         style={{
+          width: width as any,
+          height: height as any,
+          borderRadius,
+          backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200],
+          overflow: 'hidden',
+          justifyContent: 'center', // Center fallback icon
+          alignItems: 'center', // Center fallback icon
+        }}>
+         <Ionicons
+            name={fallbackIconName as any} // Type assertion to fix TypeScript error
+            size={fallbackIconSize}
+            color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
+          />
+      </View>
+    );
+  }
+
+  // If url prop is truthy, proceed to render the Image component
+  return (
+    <View
+      style={{
           width: width as any, // Type assertion to fix TypeScript error
           height: height as any, // Type assertion to fix TypeScript error
           borderRadius,
           backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200],
           overflow: 'hidden',
-        }}>
-        {renderPlaceholder()}
-      </View>
-    );
-  }
-
-  return (
-    <View
-      style={{
-        width: width as any, // Type assertion to fix TypeScript error
-        height: height as any, // Type assertion to fix TypeScript error
-        borderRadius,
-        backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200],
-        overflow: 'hidden',
       }}>
       <Image
-        source={{ uri: getProcessedUrl(imageUrl) }}
+        // Use the 'url' prop directly for the source URI after processing
+        source={{ uri: getProcessedUrl(url) }}
         style={{ width: '100%', height: '100%' }}
         contentFit={contentFit}
         accessibilityLabel={accessibilityLabel}
         transition={300}
         cachePolicy="memory-disk"
+        // Reset loading state only if the URL prop is truthy initially
         onLoadStart={() => setIsLoading(true)}
         onLoad={() => {
           setIsLoading(false);
           setHasError(false);
         }}
         onError={(error: any) => {
-          // Type annotation for error parameter
-          console.error(`Error loading image: ${imageUrl}`, error);
+          // Log the actual URL prop that failed
+          console.error(`Error loading image: ${url}`, error);
           setIsLoading(false);
           setHasError(true);
         }}
       />
+      {/* Show placeholder overlay only if loading or error occurred */}
       {(isLoading || hasError) && renderPlaceholder()}
     </View>
   );
