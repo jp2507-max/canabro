@@ -2,8 +2,8 @@
 
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router'; // Import useRouter
-import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -13,255 +13,41 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
+  Image, // Import Image for placeholder
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import EffectTag from '../../components/strains/EffectTag';
 import FlavorTag from '../../components/strains/FlavorTag';
-import StrainFilterModal, { ActiveFilters } from '../../components/strains/StrainFilterModal'; // Import Modal
-import StorageImage from '../../components/ui/StorageImage';
+import StrainFilterModal, { ActiveFilters } from '../../components/strains/StrainFilterModal';
+// Removed StorageImage import for now
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
-import { useTheme } from '../../lib/contexts/ThemeContext';
-import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
-import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
-import {
-  Strain,
-  StrainSpecies,
-  StrainEffectType,
-  StrainFlavorType,
-  StrainDifficulty,
-} from '../../lib/types/strain';
+import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
+import { useStrainsByType } from '@/lib/hooks/strains/useStrainsByType'; // Use the new hook
+import { TheCannabisApiStrain } from '@/lib/types/the-cannabis-api'; // Use the new type
+import { StrainSpecies } from '@/lib/types/strain'; // Keep species enum for filter modal compatibility
 
-// Define filter categories
-const CATEGORIES = [
-  { id: 'all', name: 'All Strains', icon: 'cannabis' },
-  { id: StrainSpecies.INDICA, name: 'Indica', icon: 'moon-waning-crescent' },
+// Define StrainType based on the new API
+type StrainType = 'indica' | 'sativa' | 'hybrid';
+
+// Updated categories to match StrainType and simplify
+const CATEGORIES_NEW: { id: StrainType; name: string; icon: string }[] = [
   { id: StrainSpecies.SATIVA, name: 'Sativa', icon: 'white-balance-sunny' },
+  { id: StrainSpecies.INDICA, name: 'Indica', icon: 'moon-waning-crescent' },
   { id: StrainSpecies.HYBRID, name: 'Hybrid', icon: 'palette-swatch' },
-  { id: 'popular', name: 'Popular', icon: 'star' },
 ];
-
-// Mock strains data (in a real app, this would come from your backend)
-const MOCK_STRAINS: Strain[] = [
-  {
-    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // Replaced with UUID
-    name: 'OG Kush',
-    species: StrainSpecies.HYBRID,
-    thc_content: 20,
-    cbd_content: 0.3,
-    description: 'OG Kush is a legendary strain with a strong, fuel-like aroma and euphoric high.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.RELAXED,
-      StrainEffectType.HAPPY,
-      StrainEffectType.EUPHORIC,
-      StrainEffectType.UPLIFTED,
-      StrainEffectType.SLEEPY,
-    ],
-    flavors: [StrainFlavorType.EARTHY, StrainFlavorType.PINE, StrainFlavorType.WOODY],
-    difficulty: StrainDifficulty.INTERMEDIATE,
-    flowering_time: 8,
-    yield_indoor: 'medium',
-    yield_outdoor: 'medium',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', // Replaced with UUID
-    name: 'Blue Dream',
-    species: StrainSpecies.HYBRID,
-    thc_content: 18,
-    cbd_content: 0.1,
-    description:
-      'Blue Dream is a sativa-dominant hybrid known for its balanced effects and sweet berry aroma.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.RELAXED,
-      StrainEffectType.HAPPY,
-      StrainEffectType.EUPHORIC,
-      StrainEffectType.CREATIVE,
-      StrainEffectType.ENERGETIC,
-    ],
-    flavors: [StrainFlavorType.BERRY, StrainFlavorType.SWEET, StrainFlavorType.BLUEBERRY],
-    difficulty: StrainDifficulty.BEGINNER,
-    flowering_time: 10,
-    yield_indoor: 'high',
-    yield_outdoor: 'high',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef0', // Replaced with UUID
-    name: 'Girl Scout Cookies',
-    species: StrainSpecies.HYBRID,
-    thc_content: 23,
-    cbd_content: 0.2,
-    description:
-      'GSC is a hybrid strain with a sweet and earthy aroma, known for its potent effects.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.RELAXED,
-      StrainEffectType.HAPPY,
-      StrainEffectType.EUPHORIC,
-      StrainEffectType.UPLIFTED,
-      StrainEffectType.CREATIVE,
-    ],
-    flavors: [StrainFlavorType.SWEET, StrainFlavorType.EARTHY, StrainFlavorType.VANILLA],
-    difficulty: StrainDifficulty.INTERMEDIATE,
-    flowering_time: 9,
-    yield_indoor: 'medium',
-    yield_outdoor: 'medium',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'c3d4e5f6-a7b8-9012-3456-7890abcdef01', // Replaced with UUID
-    name: 'Northern Lights',
-    species: StrainSpecies.INDICA,
-    thc_content: 16,
-    cbd_content: 0.1,
-    description:
-      'Northern Lights is a pure indica strain known for its resinous buds and resilient growth.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.RELAXED,
-      StrainEffectType.SLEEPY,
-      StrainEffectType.HAPPY,
-      StrainEffectType.HUNGRY,
-      StrainEffectType.EUPHORIC,
-    ],
-    flavors: [StrainFlavorType.SWEET, StrainFlavorType.SPICY, StrainFlavorType.EARTHY],
-    difficulty: StrainDifficulty.BEGINNER,
-    flowering_time: 7,
-    yield_indoor: 'high',
-    yield_outdoor: 'high',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'd4e5f6a7-b8c9-0123-4567-890abcdef012', // Replaced with UUID
-    name: 'Sour Diesel',
-    species: StrainSpecies.SATIVA,
-    thc_content: 19,
-    cbd_content: 0.2,
-    description:
-      'Sour Diesel is a fast-acting sativa with a pungent diesel aroma, delivering energizing effects.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.ENERGETIC,
-      StrainEffectType.HAPPY,
-      StrainEffectType.UPLIFTED,
-      StrainEffectType.FOCUSED,
-      StrainEffectType.CREATIVE,
-    ],
-    flavors: [StrainFlavorType.DIESEL, StrainFlavorType.PUNGENT, StrainFlavorType.CITRUS],
-    difficulty: StrainDifficulty.INTERMEDIATE,
-    flowering_time: 10,
-    yield_indoor: 'medium',
-    yield_outdoor: 'medium',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'e5f6a7b8-c9d0-1234-5678-90abcdef0123', // Replaced with UUID
-    name: 'Granddaddy Purple',
-    species: StrainSpecies.INDICA,
-    thc_content: 17,
-    cbd_content: 0.1,
-    description: 'GDP is a famous indica strain with dense purple buds and grape flavor.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.RELAXED,
-      StrainEffectType.SLEEPY,
-      StrainEffectType.HAPPY,
-      StrainEffectType.HUNGRY,
-      StrainEffectType.EUPHORIC,
-    ],
-    flavors: [StrainFlavorType.GRAPE, StrainFlavorType.BERRY, StrainFlavorType.SWEET],
-    difficulty: StrainDifficulty.BEGINNER,
-    flowering_time: 8,
-    yield_indoor: 'medium',
-    yield_outdoor: 'medium',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'f6a7b8c9-d0e1-2345-6789-0abcdef01234', // Replaced with UUID
-    name: 'Jack Herer',
-    species: StrainSpecies.SATIVA,
-    thc_content: 18,
-    cbd_content: 0.2,
-    description:
-      'Jack Herer is a sativa-dominant strain that delivers a clear-headed, blissful high.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.HAPPY,
-      StrainEffectType.UPLIFTED,
-      StrainEffectType.CREATIVE,
-      StrainEffectType.ENERGETIC,
-      StrainEffectType.FOCUSED,
-    ],
-    flavors: [StrainFlavorType.EARTHY, StrainFlavorType.PINE, StrainFlavorType.WOODY],
-    difficulty: StrainDifficulty.INTERMEDIATE,
-    flowering_time: 9,
-    yield_indoor: 'medium',
-    yield_outdoor: 'medium',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'a7b8c9d0-e1f2-3456-7890-bcdef0123456', // Replaced with UUID
-    name: 'Durban Poison',
-    species: StrainSpecies.SATIVA,
-    thc_content: 20,
-    cbd_content: 0.02,
-    description:
-      'Durban Poison is a pure sativa with an energetic and uplifting high, perfect for daytime use.',
-    image_url: undefined, // Use fallback icon (match type string | undefined)
-    effects: [
-      StrainEffectType.ENERGETIC,
-      StrainEffectType.FOCUSED,
-      StrainEffectType.HAPPY,
-      StrainEffectType.CREATIVE,
-      StrainEffectType.UPLIFTED,
-    ],
-    flavors: [StrainFlavorType.SWEET, StrainFlavorType.PINE, StrainFlavorType.EARTHY],
-    difficulty: StrainDifficulty.BEGINNER,
-    flowering_time: 9,
-    yield_indoor: 'high',
-    yield_outdoor: 'high',
-    is_auto_flower: false,
-    is_feminized: true,
-    created_at: new Date().toISOString(),
-  },
-];
-
-// Removed EffectTag and FlavorTag definitions
 
 export default function StrainsScreen() {
   useProtectedRoute();
-  const router = useRouter(); // Add router hook
-  const { theme, isDarkMode } = useTheme(); // Get theme object
-  // const { database } = useDatabase(); // database is unused - removed
-  const { refreshing, handleRefresh } = usePullToRefresh({
-    showFeedback: true,
-    forceSync: true,
-  });
-  const [loading, setLoading] = useState(true);
-  const [strains, setStrains] = useState<Strain[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('all'); // Keep for category buttons for now
+  const router = useRouter();
+  const { theme, isDarkMode } = useTheme();
+  const [selectedStrainType, setSelectedStrainType] = useState<StrainType>('sativa'); // Default to 'sativa'
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ // State for active filters
-    species: null,
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+    species: null, // Keep for filter modal, but primary fetch is by type
     effects: [],
     flavors: [],
     minThc: null,
@@ -270,106 +56,113 @@ export default function StrainsScreen() {
     maxCbd: null,
   });
 
-  // Filter strains based on search query AND active filters
-  const filteredStrains = strains.filter((strain) => {
-    const matchesSearch =
-      searchQuery === '' ||
-      strain.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (strain.description && strain.description.toLowerCase().includes(searchQuery.toLowerCase())); // Check if description exists
+  // --- Data Fetching with TanStack Query ---
+  const {
+    data: strains = [], // Default to empty array
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+  } = useStrainsByType(selectedStrainType); // Fetch based on selected type
 
-    // --- Apply Active Filters ---
-    const matchesSpecies = !activeFilters.species || strain.species === activeFilters.species;
+  // --- Filtering Logic (Client-side) ---
+  const filteredStrains = useMemo(() => {
+    return strains.filter((strain: TheCannabisApiStrain) => {
+      // Match search query (name or description)
+      const matchesSearch =
+        searchQuery === '' ||
+        strain.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (strain.description && strain.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    // Check if the strain includes ALL selected effects
-    const matchesEffects =
-      activeFilters.effects.length === 0 ||
-      activeFilters.effects.every((effect) => strain.effects?.includes(effect));
+      // Match species filter from modal (secondary filter)
+      const matchesSpecies =
+        !activeFilters.species ||
+        strain.type.toLowerCase() === activeFilters.species.toLowerCase();
 
-    // Check if the strain includes ALL selected flavors
-    const matchesFlavors =
-      activeFilters.flavors.length === 0 ||
-      activeFilters.flavors.every((flavor) => strain.flavors?.includes(flavor));
+      // Match effects filter (check if strain effects include ALL selected filter effects)
+      const matchesEffects =
+        activeFilters.effects.length === 0 ||
+        activeFilters.effects.every((effectFilter) =>
+          strain.effects?.map((e) => e.toLowerCase()).includes(effectFilter.toLowerCase())
+        );
 
-    // TODO: Add filtering logic for potency based on activeFilters
+      // Match flavors filter (check if strain flavors include ALL selected filter flavors)
+      const matchesFlavors =
+        activeFilters.flavors.length === 0 ||
+        activeFilters.flavors.every((flavorFilter) =>
+          strain.flavor?.map((f) => f.toLowerCase()).includes(flavorFilter.toLowerCase())
+        );
 
-    // Combine search and filter logic
-    return matchesSearch && matchesSpecies && matchesEffects && matchesFlavors;
-  });
+      // TODO: Add client-side filtering for potency if needed and if data becomes available
 
-  // Featured strains (top rated or newly added)
+      return matchesSearch && matchesSpecies && matchesEffects && matchesFlavors;
+    });
+  }, [strains, searchQuery, activeFilters]);
+
+  // Featured strains (simple slice for now)
   const featuredStrains = useMemo(() => {
-    return strains.slice(0, 3); // Just take the first 3 for now
-  }, [strains]);
+    // Sort by rating (desc) and take top 5 from the currently filtered list
+    return [...filteredStrains] // Create a copy before sorting
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 5);
+  }, [filteredStrains]);
 
-  // Fetch strains data (would connect to your backend in a real app)
-  useEffect(() => {
-    const loadStrains = async () => {
-      try {
-        setLoading(true);
-        // In a real app, you'd fetch from your API here
-        // For now, using mock data
-
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        setStrains(MOCK_STRAINS);
-
-        // Organize strains by category - This state is unused, removing the setter call
-        // const byCategory: { [key: string]: Strain[] } = {
-        //   all: MOCK_STRAINS,
-        //   [StrainSpecies.INDICA]: MOCK_STRAINS.filter((s) => s.species === StrainSpecies.INDICA),
-        //   [StrainSpecies.SATIVA]: MOCK_STRAINS.filter((s) => s.species === StrainSpecies.SATIVA),
-        //   [StrainSpecies.HYBRID]: MOCK_STRAINS.filter((s) => s.species === StrainSpecies.HYBRID),
-        //   popular: MOCK_STRAINS.slice(0, 4), // Just a simple way to mock "popular" strains
-        // };
-        // setStrainsByCategory(byCategory);
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading strains:', error);
-        setLoading(false);
-      }
-    };
-
-    loadStrains();
-  }, []);
-
-  // View strain details - navigate to the detail screen
-  const viewStrainDetails = (strain: Strain) => {
-    // Navigate to the dynamic route for strain details in the 'catalog' directory
+  // --- Navigation ---
+  const viewStrainDetails = (strain: TheCannabisApiStrain) => {
+    if (!strain._id) { // Use _id from the new API
+      console.warn('Cannot view details for strain without _id:', strain);
+      return;
+    }
     router.push({
-      pathname: '/catalog/[strain_id]', // Correct path to the detail page
-      params: { strain_id: strain.id }, // Use 'strain_id' as the parameter name
+      pathname: '/catalog/[strain_id]',
+      params: {
+        strain_id: strain._id, // Pass the MongoDB _id as the route parameter
+        // strain_name is no longer needed for lookup if we use ID
+      },
     });
   };
 
-  // Function to open the filter modal
-  const openFilterModal = () => {
-    setIsFilterModalVisible(true);
-  };
+  // --- Modal Handling ---
+  const openFilterModal = () => setIsFilterModalVisible(true);
+  const handleApplyFilters = (newFilters: ActiveFilters) => setActiveFilters(newFilters);
 
-  // Function to handle applying filters from the modal
-  const handleApplyFilters = (newFilters: ActiveFilters) => {
-    setActiveFilters(newFilters);
-    // Optionally reset category selection when applying filters?
-    // setSelectedCategory('all');
-  };
+  // --- Render ---
+  if (error && !isLoading && strains.length === 0) {
+    return (
+      <ThemedView className="flex-1 items-center justify-center p-4">
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <MaterialCommunityIcons
+          name="alert-circle-outline"
+          size={48}
+          color={theme.colors.primary[500]}
+        />
+        <ThemedText className="mt-4 text-lg font-semibold text-primary-600 dark:text-primary-400">
+          Error Loading Strains
+        </ThemedText>
+        <ThemedText className="mt-2 text-center text-neutral-600 dark:text-neutral-400">
+          {error instanceof Error ? error.message : 'An unknown error occurred.'}
+        </ThemedText>
+        <TouchableOpacity
+          onPress={() => refetch()}
+          className="mt-6 rounded-lg bg-primary-600 px-6 py-3">
+          <ThemedText className="font-semibold text-white">Retry</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView className="flex-1">
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      {/* Use theme background color for SafeAreaView */}
       <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
         {/* Header */}
         <View className="flex-row items-center justify-between px-4 pb-2 pt-2">
           <ThemedText className="text-2xl font-bold">Strains</ThemedText>
           <TouchableOpacity
-            // Use theme neutral colors for filter button background
             className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800"
-            onPress={openFilterModal} // Call function to open filter modal
+            onPress={openFilterModal}
             accessibilityLabel="Open strain filters"
             accessibilityRole="button">
-            {/* Use theme neutral color for icon */}
             <Ionicons
               name="options-outline"
               size={24}
@@ -380,9 +173,7 @@ export default function StrainsScreen() {
 
         {/* Search Bar */}
         <View className="px-4 pb-3">
-          {/* Use theme neutral colors for search bar background */}
           <View className="flex-row items-center rounded-xl bg-neutral-100 px-4 dark:bg-neutral-800">
-            {/* Use theme neutral color for icon */}
             <Ionicons
               name="search"
               size={20}
@@ -390,15 +181,13 @@ export default function StrainsScreen() {
             />
             <TextInput
               placeholder="Search strains..."
-              placeholderTextColor={theme.colors.neutral[isDarkMode ? 400 : 500]} // Use theme neutral color
-              // Use theme neutral color for text
+              placeholderTextColor={theme.colors.neutral[isDarkMode ? 400 : 500]}
               className="flex-1 px-2 py-3 text-neutral-900 dark:text-neutral-100"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                {/* Use theme neutral color for icon */}
                 <Ionicons
                   name="close-circle"
                   size={20}
@@ -417,26 +206,31 @@ export default function StrainsScreen() {
           onApplyFilters={handleApplyFilters}
         />
 
-        {loading ? (
+        {isLoading && strains.length === 0 ? (
           <View className="flex-1 items-center justify-center">
-            {/* Use theme primary color for activity indicator */}
             <ActivityIndicator size="large" color={theme.colors.primary[600]} />
           </View>
         ) : (
           <ScrollView
             className="flex-1"
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
+            refreshControl={
+              <RefreshControl
+                refreshing={isFetching}
+                onRefresh={refetch}
+                tintColor={theme.colors.primary[600]}
+                title="Refreshing strains..."
+                titleColor={theme.colors.neutral[isDarkMode ? 300 : 700]}
+              />
+            }>
             {/* Featured Strains */}
-            {searchQuery.length === 0 && (
+            {searchQuery.length === 0 &&
+            activeFilters.effects.length === 0 &&
+            activeFilters.flavors.length === 0 &&
+            !activeFilters.species &&
+            featuredStrains.length > 0 && (
               <View className="mb-6">
                 <View className="mb-2 flex-row items-center justify-between px-4">
                   <ThemedText className="text-lg font-bold">Featured Strains</ThemedText>
-                  <TouchableOpacity onPress={() => setSelectedCategory('popular')}>
-                    {/* Use theme primary color for link */}
-                    <ThemedText className="text-sm text-primary-600 dark:text-primary-400">
-                      See All
-                    </ThemedText>
-                  </TouchableOpacity>
                 </View>
                 <ScrollView
                   horizontal
@@ -444,48 +238,38 @@ export default function StrainsScreen() {
                   contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}>
                   {featuredStrains.map((strain) => (
                     <Pressable
-                      key={strain.id}
+                      key={strain._id} // Use _id as key
                       onPress={() => viewStrainDetails(strain)}
                       accessibilityLabel={`View details for ${strain.name}`}
                       accessibilityRole="button"
-                      // Use theme neutral colors for card background
                       className="mr-4 w-72 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
-                      <StorageImage
-                        url={strain.image_url ?? null} // Provide null fallback for undefined
-                        width="100%"
-                        height={160} // h-40 equivalent
-                        contentFit="cover"
-                        accessibilityLabel={`${strain.name} image`}
-                      />
+                      {/* Placeholder Image - API doesn't provide images */}
+                      <View className="h-40 w-full items-center justify-center bg-neutral-200 dark:bg-neutral-700">
+                         <MaterialCommunityIcons name="flower-tulip" size={60} color={theme.colors.neutral[400]} />
+                      </View>
                       <View className="p-3">
                         <View className="mb-1 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{strain.name}</ThemedText>
-                          {/* Use theme primary colors for species tag */}
                           <View className="rounded-full bg-primary-100 px-2 py-1 dark:bg-primary-900">
                             <ThemedText className="text-xs font-medium capitalize text-primary-800 dark:text-primary-300">
-                              {strain.species}
+                              {strain.type}
                             </ThemedText>
                           </View>
                         </View>
-                        {/* Use theme neutral colors for description */}
                         <ThemedText
                           numberOfLines={2}
                           className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
-                          {strain.description}
+                          {strain.description || 'No description available.'}
                         </ThemedText>
-                        <View className="flex-row">
-                          {/* Keep specific colors for THC/CBD tags for now */}
-                          <View className="mr-2 rounded-full bg-purple-100 px-2 py-1 dark:bg-purple-900">
-                            <ThemedText className="text-xs font-medium text-purple-800 dark:text-purple-300">
-                              THC: {strain.thc_content}%
-                            </ThemedText>
-                          </View>
-                          <View className="rounded-full bg-blue-100 px-2 py-1 dark:bg-blue-900">
-                            <ThemedText className="text-xs font-medium text-blue-800 dark:text-blue-300">
-                              CBD: {strain.cbd_content}%
-                            </ThemedText>
-                          </View>
-                        </View>
+                         {/* Display Rating */}
+                         {strain.rating !== undefined && (
+                            <View className="flex-row items-center">
+                              <Ionicons name="star" size={16} color="#FFC107" />
+                              <ThemedText className="ml-1 text-sm text-neutral-600 dark:text-neutral-400">
+                                {strain.rating.toFixed(1)}
+                              </ThemedText>
+                           </View>
+                         )}
                       </View>
                     </Pressable>
                   ))}
@@ -493,39 +277,39 @@ export default function StrainsScreen() {
               </View>
             )}
 
-            {/* Category Filter */}
+            {/* Category Filter Buttons */}
             <View className="mb-4">
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingLeft: 16, paddingRight: 8 }}>
-                {CATEGORIES.map((category) => (
+                {CATEGORIES_NEW.map((category) => (
                   <TouchableOpacity
                     key={category.id}
-                    onPress={() => setSelectedCategory(category.id)}
+                    onPress={() => setSelectedStrainType(category.id)} // Set the strain type for the hook
                     accessibilityLabel={`Filter by ${category.name}`}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: selectedCategory === category.id }}
+                    accessibilityState={{ selected: selectedStrainType === category.id }}
                     className={`mr-2 flex-row items-center rounded-full px-4 py-2
-                      ${
-                        selectedCategory === category.id
-                          ? 'bg-primary-600 dark:bg-primary-700' // Use theme primary
-                          : 'bg-neutral-200 dark:bg-neutral-800' // Use theme neutral
-                      }`}>
+                    ${
+                      selectedStrainType === category.id
+                        ? 'bg-primary-600 dark:bg-primary-700'
+                        : 'bg-neutral-200 dark:bg-neutral-800'
+                    }`}>
                     <MaterialCommunityIcons
                       name={category.icon as any}
                       size={18}
                       color={
-                        selectedCategory === category.id
-                          ? theme.colors.neutral[50] // Use theme neutral light
-                          : theme.colors.neutral[isDarkMode ? 300 : 700] // Use theme neutral
+                        selectedStrainType === category.id
+                          ? theme.colors.neutral[50]
+                          : theme.colors.neutral[isDarkMode ? 300 : 700]
                       }
                     />
                     <ThemedText
                       className={`ml-1 ${
-                        selectedCategory === category.id
-                          ? 'text-neutral-50 dark:text-neutral-100' // Use theme neutral light
-                          : 'text-neutral-900 dark:text-neutral-300' // Use theme neutral
+                        selectedStrainType === category.id
+                          ? 'text-neutral-50 dark:text-neutral-100'
+                          : 'text-neutral-900 dark:text-neutral-300'
                       }`}>
                       {category.name}
                     </ThemedText>
@@ -537,84 +321,77 @@ export default function StrainsScreen() {
             {/* Strain Listings */}
             <View className="mb-6 px-4">
               <ThemedText className="mb-4 text-lg font-bold">
-                {CATEGORIES.find((c) => c.id === selectedCategory)?.name || 'All Strains'}
+                {/* Adjust title based on filters/search */}
+                {searchQuery
+                  ? `Search Results for "${searchQuery}"`
+                  : activeFilters.species ||
+                      activeFilters.effects.length > 0 ||
+                      activeFilters.flavors.length > 0
+                    ? 'Filtered Strains'
+                    : CATEGORIES_NEW.find((c) => c.id === selectedStrainType)?.name || 'Strains'}
               </ThemedText>
 
-              {filteredStrains.length === 0 ? (
+              {filteredStrains.length === 0 && !isLoading ? (
                 <View className="flex-1 items-center justify-center py-8">
-                  {/* Use theme neutral color for icon */}
                   <MaterialCommunityIcons
-                    name="cannabis"
+                    name="cannabis-off"
                     size={50}
                     color={theme.colors.neutral[isDarkMode ? 500 : 400]}
                   />
-                  {/* Use theme neutral color for text */}
                   <ThemedText className="mt-2 text-center text-neutral-500 dark:text-neutral-400">
-                    No strains found. Try a different search or category.
+                    No strains found matching your criteria.
                   </ThemedText>
                 </View>
               ) : (
                 <FlatList
                   data={filteredStrains}
-                  keyExtractor={(item) => item.id}
-                  scrollEnabled={false}
+                  keyExtractor={(item) => item._id} // Use _id as key
+                  scrollEnabled={false} // Already inside a ScrollView
                   renderItem={({ item }) => (
                     <Pressable
                       onPress={() => viewStrainDetails(item)}
                       accessibilityLabel={`View details for ${item.name}`}
                       accessibilityRole="button"
-                      // Use theme neutral colors for card background
                       className="mb-4 overflow-hidden rounded-xl bg-neutral-50 shadow-sm dark:bg-neutral-800">
-                      <StorageImage
-                        url={item.image_url ?? null} // Provide null fallback for undefined
-                        width="100%"
-                        height={192} // h-48 equivalent
-                        contentFit="cover"
-                        accessibilityLabel={`${item.name} image`}
-                      />
+                      {/* Placeholder Image */}
+                       <View className="h-48 w-full items-center justify-center bg-neutral-200 dark:bg-neutral-700">
+                         <MaterialCommunityIcons name="flower-tulip" size={60} color={theme.colors.neutral[400]} />
+                       </View>
                       <View className="p-4">
                         <View className="mb-2 flex-row items-center justify-between">
                           <ThemedText className="text-lg font-semibold">{item.name}</ThemedText>
-                          {/* Use theme primary colors for species tag */}
                           <View className="rounded-full bg-primary-100 px-2 py-1 dark:bg-primary-900">
                             <ThemedText className="text-xs font-medium capitalize text-primary-800 dark:text-primary-300">
-                              {item.species}
+                              {item.type}
                             </ThemedText>
                           </View>
                         </View>
-                        {/* Use theme neutral colors for description */}
                         <ThemedText
                           numberOfLines={2}
                           className="mb-2 text-sm text-neutral-600 dark:text-neutral-400">
-                          {item.description}
+                          {item.description || 'No description available.'}
                         </ThemedText>
-                        {/* Use theme neutral colors for THC/CBD tags */}
-                        <View className="mb-3 flex-row">
-                          <View className="mr-2 rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
-                            <ThemedText className="text-xs font-medium text-neutral-800 dark:text-neutral-300">
-                              THC: {item.thc_content}%
-                            </ThemedText>
-                          </View>
-                          <View className="rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
-                            <ThemedText className="text-xs font-medium text-neutral-800 dark:text-neutral-300">
-                              CBD: {item.cbd_content}%
-                            </ThemedText>
-                          </View>
-                        </View>
+                          {/* Display Rating */}
+                          {item.rating !== undefined && (
+                            <View className="mb-3 flex-row items-center">
+                              <Ionicons name="star" size={16} color="#FFC107" />
+                              <ThemedText className="ml-1 text-sm text-neutral-600 dark:text-neutral-400">
+                                {item.rating.toFixed(1)}
+                              </ThemedText>
+                           </View>
+                         )}
 
                         {/* Effects Tags */}
                         {item.effects && item.effects.length > 0 && (
                           <View className="mb-2">
-                            {/* Use theme neutral color for label */}
                             <ThemedText className="mb-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                               Effects:
                             </ThemedText>
                             <View className="flex-row flex-wrap">
                               {item.effects.slice(0, 3).map((effect) => (
-                                <EffectTag key={`${item.id}-effect-${effect}`} effect={effect} />
+                                <EffectTag key={`${item._id}-effect-${effect}`} effect={effect} />
                               ))}
                               {item.effects.length > 3 && (
-                                // Use theme neutral colors for "more" tag
                                 <View className="mb-2 mr-2 rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
                                   <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
                                     +{item.effects.length - 3} more
@@ -626,52 +403,25 @@ export default function StrainsScreen() {
                         )}
 
                         {/* Flavors Tags */}
-                        {item.flavors && item.flavors.length > 0 && (
+                        {item.flavor && item.flavor.length > 0 && (
                           <View className="mb-3">
-                            {/* Use theme neutral color for label */}
                             <ThemedText className="mb-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                               Flavors:
                             </ThemedText>
                             <View className="flex-row flex-wrap">
-                              {item.flavors.slice(0, 2).map((flavor) => (
-                                <FlavorTag key={`${item.id}-flavor-${flavor}`} flavor={flavor} />
+                              {item.flavor.slice(0, 2).map((flavor) => (
+                                <FlavorTag key={`${item._id}-flavor-${flavor}`} flavor={flavor} />
                               ))}
-                              {item.flavors.length > 2 && (
-                                // Use theme neutral colors for "more" tag
+                              {item.flavor.length > 2 && (
                                 <View className="mb-2 mr-2 rounded-full bg-neutral-100 px-2 py-1 dark:bg-neutral-700">
                                   <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
-                                    +{item.flavors.length - 2} more
+                                    +{item.flavor.length - 2} more
                                   </ThemedText>
                                 </View>
                               )}
                             </View>
                           </View>
                         )}
-
-                        <View className="flex-row items-center justify-between">
-                          <View className="flex-row items-center">
-                            {/* Use theme neutral color for icon */}
-                            <MaterialCommunityIcons
-                              name={
-                                item.difficulty === StrainDifficulty.BEGINNER
-                                  ? 'signal-cellular-1'
-                                  : item.difficulty === StrainDifficulty.INTERMEDIATE
-                                    ? 'signal-cellular-2'
-                                    : 'signal-cellular-3'
-                              }
-                              size={16}
-                              color={theme.colors.neutral[isDarkMode ? 300 : 500]}
-                            />
-                            {/* Use theme neutral color for text */}
-                            <ThemedText className="ml-1 text-xs capitalize text-neutral-600 dark:text-neutral-400">
-                              {item.difficulty} to grow
-                            </ThemedText>
-                          </View>
-                          {/* Use theme neutral color for text */}
-                          <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {item.flowering_time} weeks to flower
-                          </ThemedText>
-                        </View>
                       </View>
                     </Pressable>
                   )}

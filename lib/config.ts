@@ -1,74 +1,32 @@
-/**
- * CanaBro app configuration
- *
- * This file contains configuration settings for the CanaBro app
- */
+// Supabase Config
+export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-import Constants from 'expo-constants';
+// Cannlytics Config
+export const CANNLYTICS_API_KEY = process.env.EXPO_PUBLIC_CANNLYTICS_API_KEY;
+export const CANNLYTICS_API_URL = process.env.EXPO_PUBLIC_CANNLYTICS_API_URL;
 
-// Environment detection
-export const isExpoGo = Constants.appOwnership === 'expo';
-export const isDevelopment = process.env.NODE_ENV === 'development' || isExpoGo;
+// Environment Config
+export const isDevelopment = process.env.NODE_ENV === 'development';
 
-// Authentication settings
+// Auth Config (Define the missing object)
 export const authConfig = {
-  // Force dev authentication bypass in Expo Go
-  forceDevBypass: false, // Disabled auth bypass as we're no longer using Expo Go
-
-  // Whether to use a mock database adapter
-  useMockAdapter: false, // This setting is overridden in Expo Go anyway
-
-  // Default mock user ID for development
-  mockUserId: '00000000-0000-0000-0000-000000000000',
-
-  // Default mock user email for development
-  mockUserEmail: 'dev@example.com',
-
-  // Mock token expiry (30 days)
-  mockTokenExpiryDays: 30,
-
-  // Whether to log auth details for debugging
-  enableAuthLogging: isDevelopment,
+  forceDevBypass: false, // Set to true to enable dev bypass (ensure devBypassAuth logic is uncommented)
+  enableAuthLogging: isDevelopment, // Enable logging only in development
+  mockUserId: 'mock-user-id', // Placeholder ID for dev bypass
+  mockUserEmail: 'dev@example.com', // Placeholder email for dev bypass
+  mockTokenExpiryDays: 7, // Placeholder expiry for dev bypass
 };
 
-// API configuration
-export const apiConfig = {
-  // Base URL for API requests
-  baseUrl: Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || '',
+// Validate essential configuration
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('Supabase URL or Anon Key is missing. Please check your .env file.');
+  // Optionally throw an error or provide default values if appropriate
+  // throw new Error('Supabase configuration is incomplete.');
+}
 
-  // Default timeout for API requests (in ms)
-  timeout: 10000,
-
-  // Whether to retry failed requests
-  enableRetry: true,
-
-  // Maximum number of retries
-  maxRetries: 3,
-};
-
-// Feature flags
-export const featureFlags = {
-  // Enable the AI diagnosis feature
-  enableAiDiagnosis: false,
-
-  // Enable the community forum feature
-  enableCommunity: true,
-
-  // Enable plant tracking
-  enablePlantTracking: true,
-
-  // Enable grow journal
-  enableGrowJournal: true,
-
-  // Enable strain catalog
-  enableStrainCatalog: true,
-};
-
-// Export configuration object
-export default {
-  isExpoGo,
-  isDevelopment,
-  authConfig,
-  apiConfig,
-  featureFlags,
-};
+if (!CANNLYTICS_API_KEY || !CANNLYTICS_API_URL) {
+  console.error('Cannlytics API Key or URL is missing. Please check your .env file.');
+  // Optionally throw an error or provide default values if appropriate
+  // throw new Error('Cannlytics configuration is incomplete.');
+}
