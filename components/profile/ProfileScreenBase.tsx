@@ -68,7 +68,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
 
         {/* Profile Details */}
         <ProfileDetail label="Username" value={profile?.username} icon="person" />
-        <ProfileDetail label="Email" value={profile?.email} icon="mail" />
+        <ProfileDetail label="User ID" value={profile?.userId} icon="mail" />
         <ProfileDetail label="Experience" value={profile?.experienceLevel} icon="medal" />
         <ProfileDetail label="Grow Method" value={profile?.preferredGrowMethod} icon="flower" />
         

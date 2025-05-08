@@ -69,7 +69,7 @@ export async function handleTableConflicts(
       try {
         // Check which IDs already exist locally
         const existingRecords = await collection.query(Q.where('id', Q.oneOf(createdIds))).fetch();
-        const existingIds = new Set(existingRecords.map(record => record.id));
+        const existingIds = new Set(existingRecords.map((record: { id: string }) => record.id));
         
         // Move existing records from created to updated
         if (existingIds.size > 0) {

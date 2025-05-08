@@ -21,7 +21,8 @@ export function useOnlineManager() {
 
     // Clean up subscription on unmount
     return () => {
-      onlineManager.setEventListener(undefined);
+      // Use an empty function instead of undefined
+      onlineManager.setEventListener(() => undefined);
     };
   }, []);
 }
