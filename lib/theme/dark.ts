@@ -38,6 +38,20 @@ const darkTheme: Theme = {
       900: '#fdfbf7', // Very light beige/off-white (was 50 light) - Use for high contrast text
     },
 
+    // Yellow palette - darker/muted yellow shades
+    yellow: {
+      50: '#FDF6B2',
+      100: '#FCE96A',
+      200: '#FACA15',
+      300: '#E3A008',
+      400: '#C27803',
+      500: '#9F580A',
+      600: '#8E4B10',
+      700: '#723B13',
+      800: '#633112',
+      900: '#422006',
+    },
+
     // Status colors - maintain recognition but adjust for dark mode
     status: {
       success: '#22c55e', // Brighter success green

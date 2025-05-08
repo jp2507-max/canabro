@@ -20,34 +20,36 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import StorageImage from '../../components/ui/StorageImage';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
+import PlantImageSection from '../../screens/PlantImageSection';
 import { useDatabase } from '../../lib/contexts/DatabaseProvider';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { Plant } from '../../lib/models/Plant'; // GrowthStage enum is not exported/used in model
 import { colors as themeColors } from '../../lib/theme'; // Import theme colors directly if needed
+import { formatDate, formatBoolean, formatNumber } from '../../screens/plantHelpers';
 
 // Helper to format dates
-const formatDate = (dateString: string | null | undefined) => {
-  if (!dateString) return 'Not set';
-  return dayjs(dateString).format('MMMM D, YYYY');
-};
+// const formatDate = (dateString: string | null | undefined) => {
+//   if (!dateString) return 'Not set';
+//   return dayjs(dateString).format('MMMM D, YYYY');
+// };
 
 // Helper to format boolean values
-const formatBoolean = (value: boolean | null | undefined) => {
-  if (value === null || value === undefined) return 'N/A';
-  return value ? 'Yes' : 'No';
-};
+// const formatBoolean = (value: boolean | null | undefined) => {
+//   if (value === null || value === undefined) return 'N/A';
+//   return value ? 'Yes' : 'No';
+// };
 
 // Helper to format numbers (e.g., height, THC/CBD)
-const formatNumber = (value: number | null | undefined, unit: string = '') => {
-  if (value === null || value === undefined) return 'Not set';
-  return `${value}${unit}`;
-};
+// const formatNumber = (value: number | null | undefined, unit: string = '') => {
+//   if (value === null || value === undefined) return 'Not set';
+//   return `${value}${unit}`;
+// };
 
 // Base component receiving the plant observable
 function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   const { sync, database } = useWatermelon();
-  const { isDarkMode } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [editedStrain, setEditedStrain] = useState('');
@@ -142,22 +144,10 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
     }
   };
 
-  const processAndSetImage = async (imageUri: string) => {
-    try {
-      setProcessingImage(true);
-      const manipResult = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [{ resize: { width: 800 } }], // Resize width, height adjusts automatically
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      setNewImage(manipResult.uri);
-    } catch (error) {
-      console.error('Error processing image:', error);
-      Alert.alert('Error', 'Failed to process image');
-    } finally {
-      setProcessingImage(false);
-    }
-  };
+  // --- IMAGE HANDLERS MOVED TO PlantImageSection ---
+  // function processAndSetImage(imageUri: string) { ... }
+  // async function handleImagePick() { ... }
+  // async function handleTakePicture() { ... }
 
   const handleDelete = async () => {
     if (!plant) return;
@@ -185,44 +175,6 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
         },
       ]
     );
-  };
-
-  const handleImagePick = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1], // Keep aspect ratio for consistency
-        quality: 0.8, // Use quality instead of compression here
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        await processAndSetImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
-    }
-  };
-
-  const handleTakePicture = async () => {
-    try {
-      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-      if (cameraPermission.status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera access is required.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        await processAndSetImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to take picture');
-    }
   };
 
   // Cancel Edit
@@ -359,43 +311,14 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
         </ThemedView>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
-          {/* Image Section */}
-          <View className="relative h-72 w-full">
-            <StorageImage
-              url={newImage || plant.imageUrl || null} // Pass null if no image
-              width="100%"
-              height="100%"
-              contentFit="cover"
-              fallbackIconName="cannabis" // Use FontAwesome5 name
-              fallbackIconSize={64}
-              accessibilityLabel={`Image of ${plant.name}`}
-            />
-            {processingImage && (
-              <View
-                style={StyleSheet.absoluteFill}
-                className="items-center justify-center bg-black/50">
-                <ActivityIndicator size="large" color="white" />
-                <ThemedText className="mt-2 text-white">Processing...</ThemedText>
-              </View>
-            )}
-            {/* Image Edit Buttons (only in edit mode) */}
-            {isEditing && (
-              <View className="absolute bottom-4 right-4 flex-row space-x-2">
-                <TouchableOpacity
-                  className="rounded-full bg-black/50 p-3"
-                  onPress={handleTakePicture}
-                  accessibilityLabel="Take picture">
-                  <Ionicons name="camera" size={24} color="white" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="rounded-full bg-black/50 p-3"
-                  onPress={handleImagePick}
-                  accessibilityLabel="Choose image from library">
-                  <Ionicons name="image" size={24} color="white" />
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
+          {/* --- IMAGE SECTION --- */}
+          <PlantImageSection
+            initialImageUri={newImage ?? plant?.imageUrl ?? null}
+            isEditing={isEditing}
+            isDarkMode={isDarkMode}
+            theme={theme}
+            onImageChange={setNewImage}
+          />
 
           {/* Main Content Area */}
           <ThemedView className="p-4">

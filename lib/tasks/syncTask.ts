@@ -5,7 +5,7 @@ import * as TaskManager from 'expo-task-manager';
 
 // Import the singleton database instance and the sync function
 import database from '../database/database';
-import { synchronizeWithServer } from '../services/sync-service';
+import { synchronizeWithServer, checkUnsyncedChanges } from '../services/sync-service';
 
 export const BACKGROUND_SYNC_TASK = 'background-sync';
 const LAST_USER_ID_KEY = 'last_active_user_id';
@@ -44,12 +44,19 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
       console.log(`[${BACKGROUND_SYNC_TASK}] No active user ID found. Skipping sync.`);
       return BackgroundFetch.BackgroundFetchResult.NoData;
     }
+    
+    // 3. Check if we have any changes to sync
+    const hasChanges = await checkUnsyncedChanges(database);
+    if (!hasChanges) {
+      console.log(`[${BACKGROUND_SYNC_TASK}] No unsynced changes. Skipping sync.`);
+      return BackgroundFetch.BackgroundFetchResult.NoData;
+    }
 
     console.log(
       `[${BACKGROUND_SYNC_TASK}] Network online, User ID found: ${userId}. Attempting sync...`
     );
 
-    // 3. Perform the synchronization
+    // 4. Perform the synchronization
     // Note: synchronizeWithServer already includes mutex locking
     const syncSuccess = await synchronizeWithServer(database, userId);
 

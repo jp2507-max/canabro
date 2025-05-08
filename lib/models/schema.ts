@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 16, // Incremented version for schema change
+  version: 18, // Incremented version for adding strain_object_id to favorite_strains table
   tables: [
     tableSchema({
       name: 'profiles',
@@ -20,7 +20,7 @@ export default appSchema({
         { name: 'preferred_grow_method', type: 'string', isOptional: true },
         { name: 'bio', type: 'string', isOptional: true },
         { name: 'location', type: 'string', isOptional: true }, // Added
-        { name: 'growing_since', type: 'string', isOptional: true }, // Added
+        { name: 'growing_since', type: 'number', isOptional: true }, // Changed to store dates as numbers
         // { name: 'favorite_strains', type: 'string', isOptional: true }, // REMOVED
         { name: 'is_certified', type: 'boolean', isOptional: true }, // Added
         { name: 'certifications', type: 'string', isOptional: true }, // Added (stores JSON string)
@@ -174,6 +174,16 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
         { name: 'last_synced_at', type: 'number', isOptional: true },
         { name: 'is_deleted', type: 'boolean', isOptional: true },
+      ],
+    }),
+    tableSchema({
+      name: 'favorite_strains',
+      columns: [
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'strain_id', type: 'string', isIndexed: true },
+        { name: 'strain_object_id', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
       ],
     }),
   ],

@@ -23,7 +23,7 @@ export class Profile extends Model {
   @text('preferred_grow_method') preferredGrowMethod?: string;
   @text('bio') bio?: string;
   @text('location') location?: string;
-  @text('growing_since') growingSince?: string;
+  @date('growing_since') growingSince?: Date;
   @text('favorite_strains') favoriteStrains?: string;
   @field('is_certified') isCertified?: boolean;
   @text('certifications') certifications?: string;

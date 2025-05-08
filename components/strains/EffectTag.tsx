@@ -7,6 +7,7 @@ import ThemedText from '../ui/ThemedText';
 interface EffectTagProps {
   effect: string; // Accept string from API
   size?: 'small' | 'large';
+  emoji?: boolean;
 }
 
 // Map effect strings (lowercase) to colors
@@ -73,11 +74,29 @@ const defaultStyle = {
   text: 'text-neutral-800 dark:text-neutral-300',
 };
 
+// Emoji mapping for effects
+const effectEmojis: Record<string, string> = {
+  happy: '😊',
+  relaxed: '😌',
+  euphoric: '🤩',
+  uplifted: '🚀',
+  creative: '🎨',
+  energetic: '⚡',
+  focused: '🎯',
+  sleepy: '💤',
+  hungry: '🍔',
+  talkative: '🗣️',
+  giggly: '😂',
+  tingly: '✨',
+  aroused: '🔥',
+};
+
 /**
  * Renders a tag representing a strain effect with appropriate styling.
  * Accepts effect as a string from the API.
  */
-export default function EffectTag({ effect, size = 'small' }: EffectTagProps) {
+export default function EffectTag({ effect, size = 'small', emoji }: EffectTagProps) {
+  if (typeof effect !== 'string' || !effect.trim()) return null;
   // Normalize the effect string (lowercase) for mapping
   const normalizedEffect = effect.toLowerCase();
   const style = effectColors[normalizedEffect] || defaultStyle;
@@ -85,10 +104,12 @@ export default function EffectTag({ effect, size = 'small' }: EffectTagProps) {
   // Capitalize the first letter for display
   const displayEffect = effect.charAt(0).toUpperCase() + effect.slice(1);
 
+  const emojiIcon = emoji ? effectEmojis[normalizedEffect] || '' : '';
+
   return (
     <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
       <ThemedText className={`${style.text} text-xs ${size === 'large' ? 'font-medium' : ''}`}>
-        {displayEffect}
+        {emojiIcon ? `${emojiIcon} ` : ''}{displayEffect}
       </ThemedText>
     </View>
   );

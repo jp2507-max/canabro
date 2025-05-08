@@ -2,7 +2,6 @@
  * Export all plant-related hooks from a single entry point
  */
 
-export * from './usePlants';
 export * from './usePlant';
 export * from './useCreatePlant';
 export * from './useUpdatePlant';

@@ -76,27 +76,56 @@ export enum StrainFlavorType {
 export interface Strain {
   id: string;
   name: string;
-  species: StrainSpecies;
-  description?: string;
-  thc_content?: number; // percentage
-  cbd_content?: number; // percentage
+  species?: StrainSpecies;
+  description?: string | string[];
+  thc?: string | number;
+  cbd?: string | number;
   origin?: string;
-  flowering_time?: number; // in weeks
+  genetics?: string;
+  type?: string;
+  floweringTime?: string;
+  floweringType?: string;
+  growDifficulty?: string;
+  yieldIndoor?: string;
+  yieldOutdoor?: string;
+  effects?: string[];
+  flavors?: string[];
+  medicalUses?: string[];
+  negativeEffects?: string[];
+  growingTips?: string;
+  image?: string;
+  imageUrl?: string;
+  breeder?: string;
+  isAutoFlower?: boolean;
+  isFeminized?: boolean;
+  heightIndoor?: string;
+  heightOutdoor?: string;
+  parents?: string[];
+  harvestTimeOutdoor?: string;
+  link?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // legacy fields for compatibility
+  species_legacy?: StrainSpecies;
+  description_legacy?: string;
+  thc_content?: number;
+  cbd_content?: number;
+  flowering_time?: number;
   difficulty?: StrainDifficulty;
   yield_indoor?: string;
   yield_outdoor?: string;
-  effects?: StrainEffectType[];
-  flavors?: StrainFlavorType[];
+  effects_legacy?: StrainEffectType[];
+  flavors_legacy?: StrainFlavorType[];
   medical_uses?: string[];
   negative_effects?: string[];
   growing_tips?: string;
   image_url?: string;
-  breeder?: string;
+  breeder_legacy?: string;
   is_auto_flower?: boolean;
   is_feminized?: boolean;
   height_indoor?: string;
   height_outdoor?: string;
-  created_at: string;
+  created_at?: string;
   updated_at?: string;
 }
 

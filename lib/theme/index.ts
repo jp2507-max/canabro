@@ -33,6 +33,18 @@ export interface Theme {
       800: string;
       900: string;
     };
+    yellow: {
+      50: string;
+      100: string;
+      200: string;
+      300: string;
+      400: string;
+      500: string;
+      600: string;
+      700: string;
+      800: string;
+      900: string;
+    };
     status: {
       success: string;
       warning: string;
@@ -223,6 +235,20 @@ export const theme: Theme = {
       700: '#7f6a56', // Darker brown
       800: '#615141', // Dark brown
       900: '#4b3f33', // Very dark brown
+    },
+
+    // Yellow palette
+    yellow: {
+      50: '#FFFBEB',
+      100: '#FEF3C7',
+      200: '#FDE68A',
+      300: '#FCD34D',
+      400: '#FBBF24',
+      500: '#F59E42',
+      600: '#D97706',
+      700: '#B45309',
+      800: '#92400E',
+      900: '#78350F',
     },
 
     // Status colors

@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid'; // Import uuid
 import { isExpoGo } from '../config';
 // Import all model classes directly
 import { DiaryEntry } from '../models/DiaryEntry';
+import { FavoriteStrain } from '../models/FavoriteStrain';
 import { GrowJournal } from '../models/GrowJournal';
 import { GrowLocation } from '../models/GrowLocation';
 import { JournalEntry } from '../models/JournalEntry';
@@ -68,6 +69,7 @@ const modelClasses = [
   Strain,
   PlantTask,
   Post,
+  FavoriteStrain,
 ];
 
 // Create appropriate adapter based on configuration

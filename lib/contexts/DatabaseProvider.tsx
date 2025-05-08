@@ -4,19 +4,20 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { ActivityIndicator, View, Text, Alert } from 'react-native';
 
 import { useAuth } from './AuthProvider';
-import { useSyncStatus } from './SyncContext'; // Import useSyncStatus
+// Import the SyncProvider component instead of the hook
+import { SyncProvider } from './SyncContext';
+// Import shared types from SyncTypes
+import { isValidUuid, MIN_SYNC_INTERVAL_MS, SyncOptions } from './SyncTypes';
 // Import database instance as default, and resetDatabase as named
 import database, { resetDatabase as resetWatermelonDB } from '../database/database';
 import { forceResetDatabaseIfNeeded } from '../database/resetUtil';
 // Import the centralized sync function and background task helpers
-import { synchronizeWithServer } from '../services/sync-service';
+import { synchronizeWithServer, loadSyncMetadata } from '../services/sync-service';
 import { registerBackgroundSyncAsync, setLastActiveUserId } from '../tasks/syncTask'; // Import task functions
-
-const MIN_SYNC_INTERVAL_MS = 30000; // 30 seconds
 
 type DatabaseContextType = {
   database: Database;
-  sync: (options?: { showFeedback?: boolean; force?: boolean }) => Promise<boolean>; // Update function signature
+  sync: (options?: SyncOptions) => Promise<boolean>; // Use SyncOptions type
   isSyncing: boolean;
   hasUnsyncedChanges: () => Promise<boolean>;
   lastSyncTime: Date | null;
@@ -28,27 +29,31 @@ const DatabaseContext = createContext<DatabaseContextType | null>(null);
 export const useDatabase = () => {
   const context = useContext(DatabaseContext);
   if (!context) {
-    // This error remains valid if used outside the provider
     throw new Error('useDatabase must be used within a DatabaseProvider');
   }
-  // No need to check context.database anymore, as the provider ensures it's set
   return context;
 };
 
+// Modify the DatabaseProvider component to handle potential missing SyncContext
 export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session } = useAuth();
-  // Use SyncContext for sync state
-  const { isSyncing, lastSyncTime, setIsSyncing, setLastSyncTime, setSyncError } = useSyncStatus();
-  const [isInitializing, setIsInitializing] = useState(true); // Keep local state for initialization
-  const [databaseError, setDatabaseError] = useState<Error | null>(null); // Keep local state for DB errors
-
+  
+  // Use state hooks for sync-related state 
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [databaseError, setDatabaseError] = useState<Error | null>(null);
+  
+  // Create internal state for sync status
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [syncError, setSyncError] = useState<Error | null>(null);
+  
   // Use refs to manage interval and setup state reliably
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
   const syncSetupDoneRef = useRef<boolean>(false);
   const currentUserIdRef = useRef<string | null | undefined>(undefined);
   const syncInProgressRef = useRef<boolean>(false);
 
-  // Effect for initial setup like forceResetDatabaseIfNeeded (Keep this)
+  // Effect for initial setup like forceResetDatabaseIfNeeded
   useEffect(() => {
     let isMounted = true;
     const performInitialSetup = async () => {
@@ -57,8 +62,20 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         // Only run the reset check here. The database instance is already created.
         await forceResetDatabaseIfNeeded();
+        
+        // Load sync metadata from localStorage for fault tolerance
+        const syncMetadata = await loadSyncMetadata(database);
+        if (syncMetadata.lastSyncTime) {
+          setLastSyncTime(new Date(syncMetadata.lastSyncTime));
+          console.log('[DatabaseProvider] Restored last sync time:', new Date(syncMetadata.lastSyncTime).toISOString());
+        }
+        
+        if (syncMetadata.lastSyncError) {
+          console.log('[DatabaseProvider] Found previous sync error:', syncMetadata.lastSyncError.message);
+        }
+        
         if (isMounted) {
-          setDatabaseError(null); // Clear any previous error if reset check succeeds
+          setDatabaseError(null);
         }
       } catch (error) {
         console.error('Database initialization/reset check error:', error);
@@ -113,58 +130,59 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Stable sync function that doesn't recreate on session changes
   const sync = useCallback(async () => {
-    // Use syncInProgressRef to avoid concurrent calls within the component
-    if (syncInProgressRef.current || !session?.user) {
+    const userId = session?.user?.id;
+    if (syncInProgressRef.current || !isValidUuid(userId)) {
       console.log(
-        `Sync skipped: syncInProgressRef=${syncInProgressRef.current}, session=${session ? 'exists' : 'null'}`
+        `Sync skipped: syncInProgressRef=${syncInProgressRef.current}, userId=${userId}`
       );
-      return;
+      return false;
     }
 
     // Local flag to track sync in progress (component level protection)
     syncInProgressRef.current = true;
-    setIsSyncing(true); // Use context setter
+    setIsSyncing(true);
     setSyncError(null); // Clear previous errors on new sync attempt
 
     try {
       console.log('Starting sync via synchronizeWithServer...');
       // Call the imported sync function (which has its own mechanism to prevent concurrent calls)
-      const syncSuccess = await synchronizeWithServer(database, session.user.id);
+      // Add null check for session before accessing session.user.id
+      if (!session || !session.user) {
+        throw new Error('No active session for synchronization');
+      }
+      const syncSuccess = await synchronizeWithServer(database, session.user.id, false, false);
 
       if (syncSuccess) {
         const now = new Date();
         setLastSyncTime(now);
         console.log('Sync finished successfully via synchronizeWithServer at', now.toISOString());
+        return true;
       } else {
         console.warn('Sync via synchronizeWithServer reported failure.');
-        // Optionally set an error if sync reports failure but doesn't throw
-        // setSyncError(new Error('Synchronization reported failure.'));
+        return false;
       }
     } catch (error) {
       const syncErr = error instanceof Error ? error : new Error(String(error));
       console.error('Error during sync via synchronizeWithServer:', syncErr);
-      setSyncError(syncErr); // Use context setter for errors
+      setSyncError(syncErr);
       Alert.alert('Sync Error', `Failed to sync with the server: ${syncErr.message}`);
+      return false;
     } finally {
       syncInProgressRef.current = false;
-      setIsSyncing(false); // Use context setter
+      setIsSyncing(false);
     }
-  }, [session?.user?.id, setIsSyncing, setLastSyncTime, setSyncError]); // Add context setters to dependencies
-
-  // Create a debounced version of the sync function - This is unused now
-  // const debouncedSync = useMemo(() => {
-  //   // Debounce the sync function with a 2-second wait time
-  //   // leading: false ensures it only triggers after the wait time
-  //   // trailing: true ensures it triggers after the wait time if called during the wait
-  //   return debounce(sync, 2000, { leading: false, trailing: true });
-  // }, [sync]); // Recreate debounced function only if sync function identity changes
+  }, [session?.user?.id]);
 
   // Enhanced sync function that respects the throttling interval and provides user feedback
   const enhancedSync = useCallback(
-    async (options?: { showFeedback?: boolean; force?: boolean }): Promise<boolean> => {
-      // First check if a sync is already in progress
+    async (options?: SyncOptions): Promise<boolean> => {
       if (syncInProgressRef.current) {
         console.log('Sync already in progress, skipping...');
+        return false;
+      }
+      const userId = session?.user?.id;
+      if (!isValidUuid(userId)) {
+        console.log('Enhanced sync skipped: invalid or missing userId', userId);
         return false;
       }
 
@@ -204,20 +222,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       // If we get here, we can attempt to sync
-      try {
-        console.log('Starting sync through enhanced sync function...');
-        // Pass the force option to the synchronizeWithServer function
-        const syncSuccess = await synchronizeWithServer(
-          database,
-          session?.user?.id || '',
-          false,
-          options?.force
-        );
-        return syncSuccess;
-      } catch (error) {
-        console.error('Enhanced sync error:', error);
-        return false;
-      }
+      return sync();
     },
     [sync, lastSyncTime, session?.user?.id]
   );
@@ -232,7 +237,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Error checking for unsynced changes:', error);
       return false;
     }
-  }, []); // No dependencies needed as it uses imported database
+  }, []);
 
   // Track user session changes and manage sync process
   useEffect(() => {
@@ -255,15 +260,13 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.log('[DatabaseProvider] User logged in or changed. Starting initial sync...');
       syncSetupDoneRef.current = true;
 
-      // Perform initial sync (use the regular sync, not debounced, and force it)
+      // Perform initial sync
       sync();
 
       // Set up periodic sync with a reasonable interval (5 minutes = 300,000ms)
       console.log('[DatabaseProvider] Setting up periodic sync interval (5 minutes)...');
       intervalIdRef.current = setInterval(
         () => {
-          // Don't use debouncedSync here - use the regular sync
-          // The interval itself provides the delay between calls
           sync();
         },
         5 * 60 * 1000
@@ -299,7 +302,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLastActiveUserId(session?.user?.id ?? null);
   }, [session?.user?.id]);
 
-  // Render loading indicator during initial setup/reset check (Keep this)
+  // Render loading indicator during initial setup/reset check
   if (isInitializing) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -311,7 +314,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   }
 
-  // Render error state if initialization/reset check failed (Keep this)
+  // Render error state if initialization/reset check failed
   if (databaseError) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
@@ -327,19 +330,22 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   }
 
-  // Provide the context value using the imported database instance and the debounced sync
+  // Create the database context value
+  const databaseContextValue = {
+    database,
+    sync: enhancedSync,
+    isSyncing,
+    hasUnsyncedChanges: checkUnsyncedChanges,
+    lastSyncTime,
+    resetDatabase: resetWatermelonDB,
+  };
+
+  // Provide the database context, and wrap children with the SyncProvider to break the dependency cycle
   return (
-    <DatabaseContext.Provider
-      value={{
-        database, // Pass the imported instance
-        // Expose the enhanced sync function instead of the debounced one
-        sync: enhancedSync,
-        isSyncing, // Get from SyncContext
-        hasUnsyncedChanges: checkUnsyncedChanges, // Keep this utility
-        lastSyncTime, // Get from SyncContext
-        resetDatabase: resetWatermelonDB, // Pass the imported reset function
-      }}>
-      {children}
+    <DatabaseContext.Provider value={databaseContextValue}>
+      <SyncProvider database={database}>
+        {children}
+      </SyncProvider>
     </DatabaseContext.Provider>
   );
 };

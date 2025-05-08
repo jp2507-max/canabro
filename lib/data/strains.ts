@@ -20,7 +20,7 @@ export interface Strain {
  */
 export const popularStrains: Strain[] = [
   {
-    id: '1',
+    id: 'b7f7c7d0-0001-4b5b-8e1c-111111111111',
     name: 'OG Kush',
     type: 'hybrid',
     thcContent: 23,
@@ -32,7 +32,7 @@ export const popularStrains: Strain[] = [
     growDifficulty: 'moderate',
   },
   {
-    id: '2',
+    id: 'b7f7c7d0-0002-4b5b-8e1c-222222222222',
     name: 'Blue Dream',
     type: 'hybrid',
     thcContent: 18,
@@ -284,4 +284,27 @@ export const searchStrainsByName = (query: string): Strain[] => {
  */
 export const getStrainById = (id: string): Strain | undefined => {
   return popularStrains.find((strain) => strain.id === id);
+};
+
+/**
+ * Get strains by type (indica, sativa, hybrid)
+ */
+export const getStrainsByType = (type: 'indica' | 'sativa' | 'hybrid'): Strain[] => {
+  return popularStrains.filter((strain) => strain.type === type);
+};
+
+/**
+ * Get effects for a strain by ID
+ */
+export const getEffectsByStrainId = (id: string): string[] => {
+  const strain = getStrainById(id);
+  return strain?.effects || [];
+};
+
+/**
+ * Get flavors for a strain by ID
+ */
+export const getFlavorsByStrainId = (id: string): string[] => {
+  const strain = getStrainById(id);
+  return strain?.flavors || [];
 };

@@ -302,6 +302,33 @@ const migrations = schemaMigrations({
         // No explicit steps needed here. WatermelonDB handles schema updates based on schema.ts.
       ],
     },
+    // Migration to version 17: Add favorite_strains table
+    {
+      toVersion: 17,
+      steps: [
+        createTable({
+          name: 'favorite_strains',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'strain_id', type: 'string', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 18: Add strain_object_id column to favorite_strains table
+    {
+      toVersion: 18,
+      steps: [
+        addColumns({
+          table: 'favorite_strains',
+          columns: [
+            { name: 'strain_object_id', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

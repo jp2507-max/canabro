@@ -70,6 +70,7 @@ export default {
     extra: {
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      rapidApiKey: process.env.RAPIDAPI_KEY, // Add this line
       router: {
         origin: false,
       },

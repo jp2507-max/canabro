@@ -16,6 +16,7 @@ export { GrowLocation } from './GrowLocation';
 export { JournalEntry } from './JournalEntry';
 export { Post } from './Post';
 export { PlantTask } from './PlantTask';
+export { FavoriteStrain } from './FavoriteStrain';
 
 // Export database
 export { database };

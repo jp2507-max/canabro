@@ -48,6 +48,7 @@ interface PostItemProps {
   onUserPress: (userId: string) => void;
   // onPlantPress?: (plantId: string) => void; // Keep if plant data is included
   onImagePress?: (imageUrl: string) => void;
+  liking?: boolean;
 }
 
 /**
@@ -62,6 +63,7 @@ function PostItem({
   onUserPress,
   // onPlantPress,
   onImagePress,
+  liking,
 }: PostItemProps) {
   const { theme, isDarkMode } = useTheme();
   const author = post.profiles; // Extracted for clarity

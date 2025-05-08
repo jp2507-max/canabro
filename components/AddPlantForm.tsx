@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Ionicons } from '@expo/vector-icons'; // Removed unused icons
@@ -34,7 +35,7 @@ import { Plant } from '../lib/models/Plant';
 import { scheduleInitialPlantNotifications } from '../lib/services/NotificationService';
 // Import generateId for UUID generation
 import supabase from '../lib/supabase';
-import { GrowthStage } from '../lib/types/plant'; // Removed unused CreatePlantData
+import { GrowthStage } from '../lib/types/plant'; // Removed unused CreatePlantData - Reverted import type
 
 // Enums for the form (Consider moving to types/plant.ts or a dedicated enums file)
 enum GrowLocation {
@@ -141,10 +142,16 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const { sync } = useWatermelon();
 
   // Track the current step by ID instead of index for more reliable navigation
-  const [currentStepId, setCurrentStepId] = useState<string>(FORM_STEPS[0].id);
+  const [currentStepId, setCurrentStepId] = useState<string>(FORM_STEPS[0]?.id ?? 'photo');
 
   // Find the current step object based on currentStepId
-  const currentStepObj = FORM_STEPS.find((step) => step.id === currentStepId) || FORM_STEPS[0];
+  // Added nullish coalescing for safety, though FORM_STEPS[0] should always exist
+  const currentStepObj = FORM_STEPS.find((step) => step.id === currentStepId) ?? FORM_STEPS[0];
+  // Add an explicit check here for currentStepObj although ?? FORM_STEPS[0] should guarantee it
+  if (!currentStepObj) {
+      // This should be unreachable, but satisfies TS stricter checks in some contexts
+      throw new Error("Current step object could not be determined.");
+  }
 
   // --- React Hook Form Setup ---
   const {
@@ -187,26 +194,40 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const goToNextStep = async () => {
     // Find the current step index based on currentStepId
     const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
-    // Get the current step object
+    // Get the current step object (add check for safety)
     const stepObj = FORM_STEPS[stepIndex];
-    // Get fields for the current step
-    const fieldsToValidate = stepObj.fields;
+    if (!stepObj) {
+      console.error("Could not find step object for index:", stepIndex);
+      return; // Should not happen, but prevents crash
+    }
+    // Get fields for the current step using optional chaining
+    const fieldsToValidate = stepObj.fields; // Removed optional chaining (?.) since we've already checked stepObj exists
+    if (!fieldsToValidate) {
+        console.error("Could not find fields for step object:", stepObj); // stepObj is guaranteed by the check above
+        return; // Prevent proceeding if fields are missing
+    }
 
     // Trigger validation only for the current step's fields
     const isValidStep = await trigger(fieldsToValidate.length > 0 ? fieldsToValidate : undefined);
 
     if (isValidStep && stepIndex < FORM_STEPS.length - 1) {
-      setCurrentStepId(FORM_STEPS[stepIndex + 1].id);
+      // Ensure next step exists before setting
+      const nextStepId = FORM_STEPS[stepIndex + 1]?.id;
+      if (nextStepId) {
+        setCurrentStepId(nextStepId);
+      } else {
+        console.error("Could not find next step ID for index:", stepIndex + 1);
+      }
     } else if (!isValidStep) {
       console.log('Validation errors on step:', currentStepId, errors);
       const firstErrorField = fieldsToValidate.find((field: keyof PlantFormData) => errors[field]);
-      const errorMessage = firstErrorField
-        ? errors[firstErrorField as keyof PlantFormData]?.message
+      // Refined check for errorMessage - ensure errorObject is checked
+      const errorObject = firstErrorField ? errors[firstErrorField] : undefined;
+      const errorMessage = errorObject?.message
+        ? String(errorObject.message) // Ensure it's a string
         : 'Please correct the errors before proceeding.';
-      Alert.alert(
-        'Validation Error',
-        errorMessage?.toString() || 'Please check the highlighted fields.'
-      );
+      // Simplified Alert.alert call
+      Alert.alert('Validation Error', errorMessage);
     }
   };
 
@@ -215,7 +236,14 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
 
     if (stepIndex > 0) {
-      setCurrentStepId(FORM_STEPS[stepIndex - 1].id);
+      // Add check for safety, though stepIndex > 0 implies FORM_STEPS[stepIndex - 1] exists
+      const previousStepId = FORM_STEPS[stepIndex - 1]?.id;
+      if (previousStepId) {
+          setCurrentStepId(previousStepId);
+      } else {
+          console.error("Could not find previous step ID for index:", stepIndex - 1);
+          router.back(); // Fallback
+      }
     } else {
       router.back();
     }
@@ -386,8 +414,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           const matchingStrains = searchStrainsByName(data.strain);
 
           if (matchingStrains && matchingStrains.length > 0) {
-            // Use the first matching strain
-            strainToUse = matchingStrains[0];
+            // Use the first matching strain, ensure it's Strain | null
+            strainToUse = matchingStrains[0] ?? null;
             console.log('Found strain by name search:', JSON.stringify(strainToUse));
           }
         } catch (err) {
@@ -439,11 +467,12 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           const newPlant = await plantsCollection.create((plant: Plant) => {
             plant.name = plantDataToSave.name || 'Unnamed Plant';
             plant.strain = plantDataToSave.strain || 'Unknown Strain';
-            plant.plantedDate = plantDataToSave.planted_date;
+            plant.plantedDate = plantDataToSave.planted_date ?? '';
             plant.growthStage = plantDataToSave.growth_stage;
             plant.notes = plantDataToSave.notes || '';
             plant.userId = plantDataToSave.userId;
-            plant.strainId = plantDataToSave.strainId || undefined;
+            // Assign strainId using ?? null to satisfy model type (string | null | undefined)
+            plant.strainId = plantDataToSave.strainId ?? null;
             plant.cannabisType = plantDataToSave.cannabisType || CannabisType.Unknown;
             plant.growMedium = plantDataToSave.growMedium || GrowMedium.Soil;
             plant.lightCondition = plantDataToSave.lightCondition || LightCondition.Artificial;
@@ -464,13 +493,18 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
       if (newPlantId) {
         try {
-          await scheduleInitialPlantNotifications(
-            newPlantId,
-            data.name,
-            data.growth_stage,
-            data.planted_date
-          );
-          console.log('Plant notifications scheduled successfully');
+          // Add defaults directly in the call and ensure planted_date is valid
+          if (data.planted_date instanceof Date) {
+            await scheduleInitialPlantNotifications(
+              newPlantId,
+              plantDataToSave.name ?? 'Unnamed Plant',
+              plantDataToSave.growth_stage ?? GrowthStage.SEEDLING,
+              data.planted_date
+            );
+            console.log('Plant notifications scheduled successfully');
+          } else {
+             console.error('Error scheduling notifications: planted_date is invalid.');
+          }
         } catch (notifError) {
           console.error('Error scheduling plant notifications:', notifError);
         }
@@ -486,7 +520,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       reset();
       setImagePreviewUri(null);
       setSelectedStrain(null);
-      setCurrentStepId(FORM_STEPS[0].id);
+      setCurrentStepId(FORM_STEPS[0]?.id ?? 'photo');
       if (onSuccess) onSuccess();
       Alert.alert('Success', 'Plant added successfully!');
       router.back();
@@ -1291,14 +1325,16 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const renderProgressIndicator = () => {
     // Find the current step index based on currentStepId
     const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
+    // Handle case where stepIndex might be -1 if currentStepId is somehow invalid
+    const currentStepNumber = stepIndex >= 0 ? stepIndex + 1 : 1;
 
     return (
       <ThemedView
         className="mb-8 mt-2 w-full flex-row justify-between px-1"
-        accessibilityLabel={`Step ${stepIndex + 1} of ${FORM_STEPS.length}`}>
+        accessibilityLabel={`Step ${currentStepNumber} of ${FORM_STEPS.length}`}>
         {FORM_STEPS.map((step, index) => (
           <ThemedView
-            key={step.id}
+            key={step.id} // Use step.id which is guaranteed unique
             className={`mx-0.5 h-1 flex-1 rounded-full ${
               index < stepIndex
                 ? 'bg-primary dark:bg-darkPrimary'
@@ -1344,13 +1380,13 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             </ThemedText>
             <ThemedView className="w-10" />
           </ThemedView>
-          {/* Description (remains the same) */}
-          {currentStepObj.description && (
+          {/* Description (remains the same) - Ensured optional chaining on access */}
+          {currentStepObj?.description && (
             <ThemedText
               className="mb-4 text-center"
               lightClassName="text-muted-foreground"
               darkClassName="text-darkMutedForeground">
-              {currentStepObj.description}
+              {currentStepObj?.description}
             </ThemedText>
           )}
           {/* Progress indicator (remains the same) */}
@@ -1361,7 +1397,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
           {/* Navigation buttons - Updated */}
           <ThemedView className="mt-8 space-y-3">
-            {currentStepId === FORM_STEPS[FORM_STEPS.length - 1].id ? (
+            {currentStepId === (FORM_STEPS[FORM_STEPS.length - 1]?.id ?? 'dates') ? (
               <TouchableOpacity
                 onPress={handleSubmit(onSubmit)}
                 activeOpacity={0.7}

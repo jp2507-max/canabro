@@ -6,6 +6,7 @@ import ThemedText from '../ui/ThemedText';
 
 interface FlavorTagProps {
   flavor: string; // Accept string (aroma) from API
+  emoji?: boolean;
 }
 
 // Map flavor/aroma strings (lowercase) to colors
@@ -112,7 +113,8 @@ const defaultStyle = {
  * Renders a tag representing a strain flavor/aroma with appropriate styling.
  * Accepts flavor/aroma as a string from the API.
  */
-export default function FlavorTag({ flavor }: FlavorTagProps) {
+export default function FlavorTag({ flavor, emoji }: FlavorTagProps) {
+  if (typeof flavor !== 'string' || !flavor.trim()) return null;
   // Normalize the flavor/aroma string (lowercase) for mapping
   const normalizedFlavor = flavor.toLowerCase();
   const style = flavorColors[normalizedFlavor] || defaultStyle;
@@ -120,9 +122,38 @@ export default function FlavorTag({ flavor }: FlavorTagProps) {
   // Capitalize the first letter for display
   const displayFlavor = flavor.charAt(0).toUpperCase() + flavor.slice(1);
 
+  // Emoji mapping for flavors
+  const flavorEmojis: Record<string, string> = {
+    sweet: '🍬',
+    earthy: '🌱',
+    citrus: '🍋',
+    berry: '🫐',
+    pine: '🌲',
+    woody: '🪵',
+    diesel: '⛽',
+    pungent: '👃',
+    spicy: '🌶️',
+    vanilla: '🍦',
+    blueberry: '🫐',
+    grape: '🍇',
+    skunk: '🦨',
+    tropical: '🥭',
+    mint: '🌿',
+    cheese: '🧀',
+    chemical: '⚗️',
+    pepper: '🫑',
+    flowery: '🌸',
+    lavender: '💜',
+    lemon: '🍋',
+    lime: '🍈',
+  };
+  const emojiIcon = emoji ? flavorEmojis[normalizedFlavor] || '' : '';
+
   return (
     <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
-      <ThemedText className={`${style.text} text-xs`}>{displayFlavor}</ThemedText>
+      <ThemedText className={`${style.text} text-xs`}>
+        {emojiIcon ? `${emojiIcon} ` : ''}{displayFlavor}
+      </ThemedText>
     </View>
   );
 }
