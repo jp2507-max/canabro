@@ -52,7 +52,7 @@ export const SYNC_METADATA_KEYS = {
   LAST_SYNC_TIMESTAMP: 'sync_last_timestamp',
   LAST_SYNC_SUMMARY: 'sync_last_summary',
   LAST_SYNC_ERROR: 'sync_last_error',
-  SYNC_CONFIG: 'sync_config'
+  SYNC_CONFIG: 'sync_config',
 };
 
 /**
@@ -84,5 +84,5 @@ export interface CacheEntry<T> {
 export const SYNC_CONSTANTS = {
   MIN_SYNC_INTERVAL_MS: 30 * 1000, // 30 seconds
   SYNC_LOCK_TIMEOUT_MS: 30 * 1000, // 30 seconds
-  MAX_CONCURRENT_REQUESTS: 5
+  MAX_CONCURRENT_REQUESTS: 5,
 };

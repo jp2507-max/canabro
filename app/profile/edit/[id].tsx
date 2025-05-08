@@ -108,7 +108,7 @@ export default function EditProfileScreen() {
   const [location, setLocation] = useState('');
   const [experienceLevel, setExperienceLevel] = useState('');
   const [preferredGrowMethod, setPreferredGrowMethod] = useState('');
-  const [growingSince, setGrowingSince] = useState('');
+  const [growingSince, setGrowingSince] = useState<string>('');
   // TODO: Add state for array fields like favoriteStrains, certifications
 
   // Fetch profile data
@@ -151,7 +151,15 @@ export default function EditProfileScreen() {
       setLocation(profile.location || '');
       setExperienceLevel(profile.experienceLevel || '');
       setPreferredGrowMethod(profile.preferredGrowMethod || '');
-      setGrowingSince(profile.growingSince || '');
+
+      // Format date to string if it exists, otherwise use empty string
+      if (profile.growingSince) {
+        const dateStr = profile.growingSince.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        setGrowingSince(dateStr || ''); // Handle potential undefined with empty string fallback
+      } else {
+        setGrowingSince('');
+      }
+
       // TODO: Initialize array fields
     }
   }, [profile]); // Run only when the profile state object changes
@@ -185,7 +193,14 @@ export default function EditProfileScreen() {
           p.location = location.trim();
           p.experienceLevel = experienceLevel.trim();
           p.preferredGrowMethod = preferredGrowMethod.trim();
-          p.growingSince = growingSince.trim();
+
+          // Convert string date to Date object if not empty
+          if (growingSince.trim()) {
+            p.growingSince = new Date(growingSince.trim());
+          } else {
+            p.growingSince = undefined;
+          }
+
           // TODO: Update array fields
         });
       });

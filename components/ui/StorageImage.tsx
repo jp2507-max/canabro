@@ -101,11 +101,11 @@ export default function StorageImage({
           justifyContent: 'center', // Center fallback icon
           alignItems: 'center', // Center fallback icon
         }}>
-         <Ionicons
-            name={fallbackIconName as any} // Type assertion to fix TypeScript error
-            size={fallbackIconSize}
-            color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
-          />
+        <Ionicons
+          name={fallbackIconName as any} // Type assertion to fix TypeScript error
+          size={fallbackIconSize}
+          color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
+        />
       </View>
     );
   }
@@ -114,11 +114,11 @@ export default function StorageImage({
   return (
     <View
       style={{
-          width: width as any, // Type assertion to fix TypeScript error
-          height: height as any, // Type assertion to fix TypeScript error
-          borderRadius,
-          backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200],
-          overflow: 'hidden',
+        width: width as any, // Type assertion to fix TypeScript error
+        height: height as any, // Type assertion to fix TypeScript error
+        borderRadius,
+        backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200],
+        overflow: 'hidden',
       }}>
       <Image
         // Use the 'url' prop directly for the source URI after processing

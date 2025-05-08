@@ -5,19 +5,19 @@
 import { Database } from '@nozbe/watermelondb';
 import { synchronize } from '@nozbe/watermelondb/sync';
 import type { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
+
+import { handleTableConflicts, getPriorityForTable } from './conflict-resolver';
+import { sanitizeRecord, isValidUuid } from './data-sanitizer';
+import { getSyncLogger, persistSyncMetadata, updateSyncMetrics } from './metrics';
+import { getNetworkStatus, getSyncConfig } from './network-manager';
+import {
+  validateRecord,
+  validateRecordBatch,
+  validateProfileChanges,
+  sanitizeProfileRecords,
+} from './record-validator';
 import { SYNC_CONSTANTS } from './types';
 import { executeRpcWithRetry, syncMutex } from './utils';
-import { getNetworkStatus, getSyncConfig } from './network-manager';
-import { sanitizeRecord } from './data-sanitizer';
-import { handleTableConflicts, getPriorityForTable } from './conflict-resolver';
-import { getSyncLogger, persistSyncMetadata, updateSyncMetrics } from './metrics';
-import { isValidUuid } from './data-sanitizer';
-import { 
-  validateRecord, 
-  validateRecordBatch,
-  validateProfileChanges, 
-  sanitizeProfileRecords 
-} from './record-validator';
 
 // Track sync attempts to avoid too many logs
 let recentSyncAttempts = 0;
@@ -45,11 +45,15 @@ export async function synchronizeWithServer(
     console.warn(`[Sync Service] Skipping sync: invalid or missing userId:`, userId);
     return false;
   }
-  
+
   const callTimestamp = Date.now(); // Timestamp for this specific call attempt
-  
+
   // Check if we've synced recently (unless forceSync is true)
-  if (!forceSync && !isFirstSync && callTimestamp - lastSuccessfulSyncTime < SYNC_CONSTANTS.MIN_SYNC_INTERVAL_MS) {
+  if (
+    !forceSync &&
+    !isFirstSync &&
+    callTimestamp - lastSuccessfulSyncTime < SYNC_CONSTANTS.MIN_SYNC_INTERVAL_MS
+  ) {
     // Limit logging of frequent sync attempts to avoid console spam
     recentSyncAttempts++;
     const shouldLog = callTimestamp - lastSyncAttemptLogTime > 5000; // Only log once every 5 seconds
@@ -80,8 +84,12 @@ export async function synchronizeWithServer(
     return false;
   }
 
-  console.log(`[Sync Service @ ${callTimestamp}] Network status: ${networkStatus.type}, metered: ${networkStatus.isMetered}`);
-  console.log(`[Sync Service @ ${callTimestamp}] Sync config: ${syncConfig.tablesToSync.length} tables, batch size: ${syncConfig.batchSize}`);
+  console.log(
+    `[Sync Service @ ${callTimestamp}] Network status: ${networkStatus.type}, metered: ${networkStatus.isMetered}`
+  );
+  console.log(
+    `[Sync Service @ ${callTimestamp}] Sync config: ${syncConfig.tablesToSync.length} tables, batch size: ${syncConfig.batchSize}`
+  );
 
   // Check if the mutex is already locked
   if (syncMutex.isLocked()) {
@@ -115,20 +123,19 @@ export async function synchronizeWithServer(
       // You can only use turbo mode if the local database is empty
       const syncIsEmpty = await database.adapter.getLocal('sync_is_empty');
       const useTurboMode = isFirstSync && syncIsEmpty === 'true';
-      
+
       if (useTurboMode) {
         console.log('[Sync Service] Using Turbo mode for first sync');
       }
-      
+
       const syncLog = getSyncLogger().newLog(); // Create a new log entry
 
       await synchronize({
         database,
         log: syncLog, // Pass the log object
         pullChanges: async ({ lastPulledAt, schemaVersion, migration }) => {
-          const lastPulledAtISO = lastPulledAt ? 
-            (new Date(lastPulledAt).toISOString()) : null;
-          
+          const lastPulledAtISO = lastPulledAt ? new Date(lastPulledAt).toISOString() : null;
+
           try {
             // Add networkType and tablesToSync info to improve server-side handling
             const data = await executeRpcWithRetry('sync_pull', {
@@ -139,24 +146,24 @@ export async function synchronizeWithServer(
               use_turbo: useTurboMode,
               network_type: networkStatus.type,
               tables_to_sync: syncConfig.tablesToSync,
-              include_media: syncConfig.includeMedia
+              include_media: syncConfig.includeMedia,
             });
-            
+
             if (useTurboMode) {
               // For turbo mode, return the raw JSON string without parsing
               console.log(`[Turbo Sync] Received turbo sync data`);
-              const json = data ? JSON.stringify(data) : "{}"; // Ensure empty object is a string
+              const json = data ? JSON.stringify(data) : '{}'; // Ensure empty object is a string
               return { syncJson: json };
             } else {
               // Standard sync processing
               const receivedChanges = data?.changes || {};
               const ensuredChanges: Record<string, SyncTableChangeSet> = {};
-              
+
               // Initialize empty changes for all tracked tables
               for (const table of syncConfig.tablesToSync) {
                 ensuredChanges[table] = { created: [], updated: [], deleted: [] };
               }
-              
+
               // Process changes for each table
               for (const table of Object.keys(receivedChanges)) {
                 if (syncConfig.tablesToSync.includes(table)) {
@@ -165,12 +172,12 @@ export async function synchronizeWithServer(
                     // Get profile data
                     const createdProfiles = receivedChanges[table]?.created || [];
                     const updatedProfiles = receivedChanges[table]?.updated || [];
-                    
+
                     try {
                       // Validate and sanitize all profile records upfront to catch any issues
                       const validCreated = [];
                       const validUpdated = [];
-                      
+
                       // Filter out invalid created records
                       for (const profile of createdProfiles) {
                         try {
@@ -178,24 +185,24 @@ export async function synchronizeWithServer(
                             console.warn(`Skipping invalid profile: not an object`);
                             continue;
                           }
-                          
+
                           // Clean up WatermelonDB internal fields
                           const cleanedProfile = { ...profile };
                           delete cleanedProfile._status;
                           delete cleanedProfile._changed;
-                          
+
                           // Ensure ID is valid
                           if (!cleanedProfile.id || typeof cleanedProfile.id !== 'string') {
                             console.warn(`Skipping invalid profile: missing or invalid ID`);
                             continue;
                           }
-                          
+
                           validCreated.push(cleanedProfile);
                         } catch (validationError) {
                           console.warn(`Skipping invalid profile record:`, validationError);
                         }
                       }
-                      
+
                       // Filter out invalid updated records
                       for (const profile of updatedProfiles) {
                         try {
@@ -203,24 +210,24 @@ export async function synchronizeWithServer(
                             console.warn(`Skipping invalid profile update: not an object`);
                             continue;
                           }
-                          
+
                           // Clean up WatermelonDB internal fields
                           const cleanedProfile = { ...profile };
                           delete cleanedProfile._status;
                           delete cleanedProfile._changed;
-                          
+
                           // Ensure ID is valid
                           if (!cleanedProfile.id || typeof cleanedProfile.id !== 'string') {
                             console.warn(`Skipping invalid profile update: missing or invalid ID`);
                             continue;
                           }
-                          
+
                           validUpdated.push(cleanedProfile);
                         } catch (validationError) {
                           console.warn(`Skipping invalid profile update record:`, validationError);
                         }
                       }
-                      
+
                       // Check local database for all profiles that are in the created array
                       // to determine if they already exist locally
                       const existingProfileIds = new Set();
@@ -239,11 +246,14 @@ export async function synchronizeWithServer(
                             // Profile doesn't exist locally, which is expected for most created records
                           }
                         }
-                        
+
                         // IMPORTANT FIX: Also check if user's own profile exists locally
                         // to avoid the error where we move it to created when it already exists
                         for (const profile of validUpdated) {
-                          const isUserOwnProfile = profile.user_id === userId || profile.userId === userId || profile.id === userId;
+                          const isUserOwnProfile =
+                            profile.user_id === userId ||
+                            profile.userId === userId ||
+                            profile.id === userId;
                           if (isUserOwnProfile) {
                             try {
                               // Try to find the user's profile by ID
@@ -260,37 +270,44 @@ export async function synchronizeWithServer(
                       } catch (dbError) {
                         console.warn('[Sync] Error checking for existing profiles:', dbError);
                       }
-                      
+
                       // Move created profiles to updated if they already exist locally
                       const finalCreated = [];
                       const finalUpdated = [...validUpdated];
-                      
+
                       for (const profile of validCreated) {
                         if (existingProfileIds.has(profile.id) || profile.id === userId) {
-                          console.log(`[Diagnostic info] Moving profile ${profile.id} from created to updated as it already exists locally`);
+                          console.log(
+                            `[Diagnostic info] Moving profile ${profile.id} from created to updated as it already exists locally`
+                          );
                           finalUpdated.push(profile);
                         } else {
                           finalCreated.push(profile);
                         }
                       }
-                      
+
                       // Also handle the case where server sends updates for profiles that don't exist locally
                       const movedToCreated = [];
                       const remainingUpdated = [];
-                      
+
                       for (const profile of finalUpdated) {
                         // If this is the user's own profile that might be missing locally
-                        const isUserOwnProfile = profile.user_id === userId || profile.userId === userId || profile.id === userId;
+                        const isUserOwnProfile =
+                          profile.user_id === userId ||
+                          profile.userId === userId ||
+                          profile.id === userId;
                         const existsLocally = existingProfileIds.has(profile.id);
-                        
+
                         if (isUserOwnProfile && !existsLocally) {
-                          console.log(`[Diagnostic info] Moving profile ${profile.id} from updated to created as it might not exist locally`);
+                          console.log(
+                            `[Diagnostic info] Moving profile ${profile.id} from updated to created as it might not exist locally`
+                          );
                           movedToCreated.push(profile); // Add to created array
                         } else {
                           remainingUpdated.push(profile); // Keep as updated
                         }
                       }
-                      
+
                       // Final created array includes original valid creations + moved from updated
                       ensuredChanges[table] = {
                         created: [...finalCreated, ...movedToCreated],
@@ -300,7 +317,11 @@ export async function synchronizeWithServer(
                     } catch (error) {
                       console.error('[Sync] Error during profile handling:', error);
                       // Fallback to normal handling
-                      ensuredChanges[table] = await handleTableConflicts(table, receivedChanges, database);
+                      ensuredChanges[table] = await handleTableConflicts(
+                        table,
+                        receivedChanges,
+                        database
+                      );
                     }
                   } else {
                     // Apply record validation to other tables
@@ -308,12 +329,13 @@ export async function synchronizeWithServer(
                       const created = receivedChanges[table]?.created || [];
                       const updated = receivedChanges[table]?.updated || [];
                       const deleted = receivedChanges[table]?.deleted || [];
-                      
+
                       // Validate and clean each record
                       const validatedCreated = created.filter((record: unknown) => {
                         try {
-                          if (typeof record !== 'object' || !record || Array.isArray(record)) return false;
-                          const cleaned = { ...record as Record<string, unknown> };
+                          if (typeof record !== 'object' || !record || Array.isArray(record))
+                            return false;
+                          const cleaned = { ...(record as Record<string, unknown>) };
                           delete cleaned._status;
                           delete cleaned._changed;
                           return cleaned.id && typeof cleaned.id === 'string';
@@ -321,11 +343,12 @@ export async function synchronizeWithServer(
                           return false;
                         }
                       });
-                      
+
                       const validatedUpdated = updated.filter((record: unknown) => {
                         try {
-                          if (typeof record !== 'object' || !record || Array.isArray(record)) return false;
-                          const cleaned = { ...record as Record<string, unknown> };
+                          if (typeof record !== 'object' || !record || Array.isArray(record))
+                            return false;
+                          const cleaned = { ...(record as Record<string, unknown>) };
                           delete cleaned._status;
                           delete cleaned._changed;
                           return cleaned.id && typeof cleaned.id === 'string';
@@ -333,21 +356,25 @@ export async function synchronizeWithServer(
                           return false;
                         }
                       });
-                      
+
                       ensuredChanges[table] = {
                         created: validatedCreated,
                         updated: validatedUpdated,
-                        deleted
+                        deleted,
                       };
                     } catch (validationError) {
                       console.warn(`[Sync] Error validating ${table} records:`, validationError);
                       // Fallback to conflict handler which also does some validation
-                      ensuredChanges[table] = await handleTableConflicts(table, receivedChanges, database);
+                      ensuredChanges[table] = await handleTableConflicts(
+                        table,
+                        receivedChanges,
+                        database
+                      );
                     }
                   }
                 }
               }
-              
+
               return {
                 changes: ensuredChanges,
                 timestamp: data?.timestamp || Date.now(),
@@ -380,19 +407,19 @@ export async function synchronizeWithServer(
             // Process tables with batch processing for large datasets
             // Use batch size from network-aware sync config
             const BATCH_SIZE = syncConfig.batchSize;
-            
+
             // Group tables by their priority for sync
             const tablesToProcess = [...Object.keys(changes)]
-              .filter(table => syncConfig.tablesToSync.includes(table))
+              .filter((table) => syncConfig.tablesToSync.includes(table))
               .sort((a, b) => getPriorityForTable(b) - getPriorityForTable(a));
-            
+
             for (const tableName of tablesToProcess) {
               const tableChanges = changes[tableName] || { created: [], updated: [], deleted: [] };
-              
+
               // Apply strict validation before sanitizing records
               let validCreated = [];
               let validUpdated = [];
-              
+
               try {
                 // Validate created records
                 for (const record of tableChanges.created || []) {
@@ -401,22 +428,27 @@ export async function synchronizeWithServer(
                       console.warn(`[Push] Invalid created record in ${tableName}: Not an object`);
                       continue;
                     }
-                    
+
                     const cleaned = { ...record };
                     delete cleaned._status;
                     delete cleaned._changed;
-                    
+
                     if (!cleaned.id || typeof cleaned.id !== 'string') {
-                      console.warn(`[Push] Invalid created record in ${tableName}: Missing or invalid ID`);
+                      console.warn(
+                        `[Push] Invalid created record in ${tableName}: Missing or invalid ID`
+                      );
                       continue;
                     }
-                    
+
                     validCreated.push(cleaned);
                   } catch (recordError) {
-                    console.warn(`[Push] Error validating created record in ${tableName}:`, recordError);
+                    console.warn(
+                      `[Push] Error validating created record in ${tableName}:`,
+                      recordError
+                    );
                   }
                 }
-                
+
                 // Validate updated records
                 for (const record of tableChanges.updated || []) {
                   try {
@@ -424,19 +456,24 @@ export async function synchronizeWithServer(
                       console.warn(`[Push] Invalid updated record in ${tableName}: Not an object`);
                       continue;
                     }
-                    
+
                     const cleaned = { ...record };
                     delete cleaned._status;
                     delete cleaned._changed;
-                    
+
                     if (!cleaned.id || typeof cleaned.id !== 'string') {
-                      console.warn(`[Push] Invalid updated record in ${tableName}: Missing or invalid ID`);
+                      console.warn(
+                        `[Push] Invalid updated record in ${tableName}: Missing or invalid ID`
+                      );
                       continue;
                     }
-                    
+
                     validUpdated.push(cleaned);
                   } catch (recordError) {
-                    console.warn(`[Push] Error validating updated record in ${tableName}:`, recordError);
+                    console.warn(
+                      `[Push] Error validating updated record in ${tableName}:`,
+                      recordError
+                    );
                   }
                 }
               } catch (validationError) {
@@ -445,11 +482,15 @@ export async function synchronizeWithServer(
                 validCreated = tableChanges.created || [];
                 validUpdated = tableChanges.updated || [];
               }
-              
+
               // Sanitize records after validation
-              const sanitizedCreated = validCreated.map(record => sanitizeRecord(record, tableName));
-              const sanitizedUpdated = validUpdated.map(record => sanitizeRecord(record, tableName));
-              const sanitizedDeleted = (tableChanges.deleted || []).map(id => ({ id }));
+              const sanitizedCreated = validCreated.map((record) =>
+                sanitizeRecord(record, tableName)
+              );
+              const sanitizedUpdated = validUpdated.map((record) =>
+                sanitizeRecord(record, tableName)
+              );
+              const sanitizedDeleted = (tableChanges.deleted || []).map((id) => ({ id }));
 
               // Skip media-heavy content if configured
               if (!syncConfig.includeMedia) {
@@ -458,18 +499,28 @@ export async function synchronizeWithServer(
                   // Handle common media field patterns
                   if (record.images && Array.isArray(record.images) && record.images.length > 0) {
                     // Just keep references, not actual base64 data
-                    record.images = record.images.map((img: string) => 
-                      typeof img === 'string' && img.startsWith('data:') ? 'media-ref:' + record.id : img);
+                    record.images = record.images.map((img: string) =>
+                      typeof img === 'string' && img.startsWith('data:')
+                        ? 'media-ref:' + record.id
+                        : img
+                    );
                   }
-                  
+
                   if (record.media && Array.isArray(record.media) && record.media.length > 0) {
-                    record.media = record.media.map((item: string) => 
-                      typeof item === 'string' && item.startsWith('data:') ? 'media-ref:' + record.id : item);
+                    record.media = record.media.map((item: string) =>
+                      typeof item === 'string' && item.startsWith('data:')
+                        ? 'media-ref:' + record.id
+                        : item
+                    );
                   }
-                  
+
                   // Handle image specific fields
-                  ['image', 'image_url', 'avatar', 'avatar_url', 'thumbnail'].forEach(field => {
-                    if (record[field] && typeof record[field] === 'string' && record[field].startsWith('data:')) {
+                  ['image', 'image_url', 'avatar', 'avatar_url', 'thumbnail'].forEach((field) => {
+                    if (
+                      record[field] &&
+                      typeof record[field] === 'string' &&
+                      record[field].startsWith('data:')
+                    ) {
                       record[field] = 'media-ref:' + record.id;
                     }
                   });
@@ -482,9 +533,11 @@ export async function synchronizeWithServer(
                 for (let i = 0; i < sanitizedCreated.length; i += BATCH_SIZE) {
                   batches.push(sanitizedCreated.slice(i, i + BATCH_SIZE));
                 }
-                
-                console.log(`[Batch Processing] Processing ${sanitizedCreated.length} created records in ${batches.length} batches for table ${tableName}`);
-                
+
+                console.log(
+                  `[Batch Processing] Processing ${sanitizedCreated.length} created records in ${batches.length} batches for table ${tableName}`
+                );
+
                 for (let i = 0; i < batches.length; i++) {
                   const batch = batches[i];
                   const batchChanges = {
@@ -492,28 +545,32 @@ export async function synchronizeWithServer(
                       created: batch,
                       updated: i === 0 ? sanitizedUpdated : [], // Include updates only in first batch
                       deleted: i === 0 ? sanitizedDeleted : [], // Include deletes only in first batch
-                    }
+                    },
                   };
-                  
+
                   await executeRpcWithRetry('sync_push', {
                     changes: batchChanges,
                     last_pulled_at: formattedLastPulledAt,
                     user_id: userId,
-                    network_type: networkStatus.type
+                    network_type: networkStatus.type,
                   });
-                  
-                  console.log(`[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} created records`);
+
+                  console.log(
+                    `[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} created records`
+                  );
                 }
-              } 
+              }
               // Batch processing for updated records if created were small but updates are large
               else if (sanitizedUpdated.length > BATCH_SIZE) {
                 const batches = [];
                 for (let i = 0; i < sanitizedUpdated.length; i += BATCH_SIZE) {
                   batches.push(sanitizedUpdated.slice(i, i + BATCH_SIZE));
                 }
-                
-                console.log(`[Batch Processing] Processing ${sanitizedUpdated.length} updated records in ${batches.length} batches for table ${tableName}`);
-                
+
+                console.log(
+                  `[Batch Processing] Processing ${sanitizedUpdated.length} updated records in ${batches.length} batches for table ${tableName}`
+                );
+
                 for (let i = 0; i < batches.length; i++) {
                   const batch = batches[i];
                   const batchChanges = {
@@ -521,17 +578,19 @@ export async function synchronizeWithServer(
                       created: i === 0 ? sanitizedCreated : [], // Include created only in first batch
                       updated: batch,
                       deleted: i === 0 ? sanitizedDeleted : [], // Include deleted only in first batch
-                    }
+                    },
                   };
-                  
+
                   await executeRpcWithRetry('sync_push', {
                     changes: batchChanges,
                     last_pulled_at: formattedLastPulledAt,
                     user_id: userId,
-                    network_type: networkStatus.type
+                    network_type: networkStatus.type,
                   });
-                  
-                  console.log(`[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} updated records`);
+
+                  console.log(
+                    `[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} updated records`
+                  );
                 }
               }
               // No batching needed, process normally
@@ -541,18 +600,18 @@ export async function synchronizeWithServer(
                     created: sanitizedCreated,
                     updated: sanitizedUpdated,
                     deleted: sanitizedDeleted,
-                  }
+                  },
                 };
-                
+
                 await executeRpcWithRetry('sync_push', {
                   changes: tableSanitizedChanges,
                   last_pulled_at: formattedLastPulledAt,
                   user_id: userId,
-                  network_type: networkStatus.type
+                  network_type: networkStatus.type,
                 });
               }
             }
-            
+
             console.log('Push completed successfully');
           } catch (error) {
             console.error('Error during pushChanges:', error);
@@ -569,9 +628,9 @@ export async function synchronizeWithServer(
           }
         },
       });
-      
+
       success = true; // Mark success if synchronize completes without error
-      
+
       // If this was the first sync using turbo mode, clear the turbo mode flag
       if (useTurboMode) {
         await database.adapter.setLocal('sync_is_empty', 'false');
@@ -613,13 +672,13 @@ export async function synchronizeWithServer(
     if (syncResult) {
       // Calculate sync duration
       const syncDuration = performance.now() - syncStartTime;
-      
+
       // Update sync health metrics
       updateSyncMetrics(true, syncDuration);
-      
+
       console.log(`Sync completed successfully in ${syncDuration.toFixed(0)}ms`);
       lastSuccessfulSyncTime = Date.now();
-      
+
       // Persist sync metadata for fault tolerance
       const latestLog = getSyncLogger().logs[0];
       if (latestLog) {
@@ -627,10 +686,10 @@ export async function synchronizeWithServer(
       }
     } else {
       console.error('Sync failed after retry attempt');
-      
+
       // Update failure metrics
       updateSyncMetrics(false, performance.now() - syncStartTime);
-      
+
       // Store error information even on failure
       const latestLog = getSyncLogger().logs[0];
       if (latestLog) {

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
+
 import { getSyncHealth, SyncHealthMetrics } from '../services/sync-service';
 
 export interface SyncHealthStatus {
   /** Last successful sync timestamp (ms) */
   lastSuccessfulSync: number;
-  
+
   /** How many consecutive failures occurred */
   consecutiveFailures: number;
-  
+
   /** Average sync duration in ms */
   averageSyncDuration: number;
-  
+
   /** Slowest operation during sync */
   slowestOperation: string;
-  
+
   /** Success rate (0.0-1.0) */
   successRate: number;
 
@@ -22,23 +23,23 @@ export interface SyncHealthStatus {
 
   /** Total successful syncs */
   totalSuccessful: number;
-  
+
   /** Human readable status text */
   statusText: string;
-  
+
   /** Sync health status */
   status: 'healthy' | 'warning' | 'error';
-  
+
   /** Time elapsed since last successful sync in seconds */
   elapsedSinceLastSync: number;
-  
+
   /** Whether sync should be recommended to the user */
   shouldRecommendSync: boolean;
 }
 
 /**
  * Hook to provide sync health metrics and status for display in UI
- * 
+ *
  * @param refreshInterval Interval in ms to refresh status (default: 30 sec)
  * @returns Sync health status and refresh function
  */
@@ -49,7 +50,7 @@ export function useSyncHealth(refreshInterval = 30000): {
   const [health, setHealth] = useState<SyncHealthStatus>({
     lastSuccessfulSync: 0,
     consecutiveFailures: 0,
-    averageSyncDuration: 0, 
+    averageSyncDuration: 0,
     slowestOperation: '',
     successRate: 1.0,
     totalSyncs: 0,
@@ -57,9 +58,9 @@ export function useSyncHealth(refreshInterval = 30000): {
     statusText: 'Loading...',
     status: 'healthy',
     elapsedSinceLastSync: 0,
-    shouldRecommendSync: false
+    shouldRecommendSync: false,
   });
-  
+
   // Function to process raw metrics into a user-friendly status
   const processMetrics = useCallback((metrics: SyncHealthMetrics): SyncHealthStatus => {
     const now = Date.now();
@@ -67,12 +68,12 @@ export function useSyncHealth(refreshInterval = 30000): {
     const elapsedSec = Math.floor(elapsedMs / 1000);
     const elapsedMin = Math.floor(elapsedSec / 60);
     const elapsedHours = Math.floor(elapsedMin / 60);
-    
+
     // Determine sync health status
     let status: 'healthy' | 'warning' | 'error' = 'healthy';
     let statusText = '';
     let shouldRecommendSync = false;
-    
+
     if (metrics.consecutiveFailures > 3) {
       status = 'error';
       statusText = `Sync failed ${metrics.consecutiveFailures} times`;
@@ -97,22 +98,22 @@ export function useSyncHealth(refreshInterval = 30000): {
       statusText = 'Not synced yet';
       shouldRecommendSync = true;
     }
-    
+
     // If sync success rate is low, show a warning
     if (metrics.totalSyncs > 5 && metrics.successRate < 0.7) {
       status = 'warning';
       statusText += ` (${Math.round(metrics.successRate * 100)}% success rate)`;
     }
-    
+
     return {
       ...metrics,
       statusText,
       status,
       elapsedSinceLastSync: elapsedSec,
-      shouldRecommendSync
+      shouldRecommendSync,
     };
   }, []);
-  
+
   // Function to refresh the status
   const refresh = useCallback(() => {
     try {
@@ -122,21 +123,21 @@ export function useSyncHealth(refreshInterval = 30000): {
       console.error('Error getting sync health:', error);
     }
   }, [processMetrics]);
-  
+
   // Set up periodic refresh
   useEffect(() => {
     // Initial refresh
     refresh();
-    
+
     // Set up interval for periodic refresh
     const intervalId = setInterval(refresh, refreshInterval);
-    
+
     // Clean up on unmount
     return () => {
       clearInterval(intervalId);
     };
   }, [refresh, refreshInterval]);
-  
+
   return { health, refresh };
 }
 

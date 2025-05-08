@@ -1,6 +1,7 @@
+import { format, addDays, isToday } from 'date-fns';
 import React, { useMemo } from 'react';
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { format, addDays, isToday } from 'date-fns';
+
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 
@@ -34,26 +35,26 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
           const bgColor = isSelected
             ? theme.colors.primary[600]
             : isCurrentDateToday
-            ? isDarkMode
-              ? theme.colors.primary[900]
-              : theme.colors.primary[100]
-            : isDarkMode
-            ? theme.colors.neutral[800]
-            : theme.colors.neutral[100];
+              ? isDarkMode
+                ? theme.colors.primary[900]
+                : theme.colors.primary[100]
+              : isDarkMode
+                ? theme.colors.neutral[800]
+                : theme.colors.neutral[100];
           const dayTextColor = isSelected
             ? theme.colors.neutral[50]
             : isDarkMode
-            ? theme.colors.neutral[400]
-            : theme.colors.neutral[500];
+              ? theme.colors.neutral[400]
+              : theme.colors.neutral[500];
           const dateTextColor = isSelected
             ? theme.colors.neutral[50]
             : isCurrentDateToday
-            ? isDarkMode
-              ? theme.colors.primary[500]
-              : theme.colors.primary[700]
-            : isDarkMode
-            ? theme.colors.neutral[300]
-            : theme.colors.neutral[800];
+              ? isDarkMode
+                ? theme.colors.primary[500]
+                : theme.colors.primary[700]
+              : isDarkMode
+                ? theme.colors.neutral[300]
+                : theme.colors.neutral[800];
           return (
             <TouchableOpacity
               key={index}
@@ -69,8 +70,7 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
               }}
               accessibilityRole="button"
               accessibilityLabel={`Select date ${format(date, 'PPP')}`}
-              accessibilityState={{ selected: isSelected }}
-            >
+              accessibilityState={{ selected: isSelected }}>
               <ThemedText style={{ fontSize: 12, color: dayTextColor }}>
                 {`${format(date, 'E')}`}
               </ThemedText>

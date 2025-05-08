@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Modal, View, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import ThemedText from '../ui/ThemedText';
-import ThemedView from '../ui/ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { StrainSpecies, StrainEffectType, StrainFlavorType } from '../../lib/types/strain'; // Assuming these enums/types exist
+import ThemedText from '../ui/ThemedText';
+import ThemedView from '../ui/ThemedView';
 
 // Define the structure for active filters
 export interface ActiveFilters {
@@ -95,9 +95,11 @@ export default function StrainFilterModal({
     });
   };
 
-
   const renderFilterSection = (title: string, children: React.ReactNode) => (
-    <ThemedView className="mb-6 rounded-lg border p-4" lightClassName="border-neutral-200 bg-white" darkClassName="border-neutral-700 bg-neutral-800">
+    <ThemedView
+      className="mb-6 rounded-lg border p-4"
+      lightClassName="border-neutral-200 bg-white"
+      darkClassName="border-neutral-700 bg-neutral-800">
       <ThemedText className="mb-3 text-lg font-semibold">{title}</ThemedText>
       {children}
     </ThemedView>
@@ -115,15 +117,13 @@ export default function StrainFilterModal({
               : 'bg-neutral-200 dark:bg-neutral-700'
           }`}
           accessibilityState={{ selected: currentFilters.species === option.id }}
-          accessibilityRole="radio"
-        >
+          accessibilityRole="radio">
           <ThemedText
             className={`font-medium ${
               currentFilters.species === option.id
                 ? 'text-white dark:text-neutral-100'
                 : 'text-neutral-700 dark:text-neutral-300'
-            }`}
-          >
+            }`}>
             {option.name}
           </ThemedText>
         </TouchableOpacity>
@@ -146,15 +146,13 @@ export default function StrainFilterModal({
                 : 'bg-neutral-200 dark:bg-neutral-700'
             }`}
             accessibilityState={{ selected: isSelected }}
-            accessibilityRole="checkbox"
-          >
+            accessibilityRole="checkbox">
             <ThemedText
               className={`font-medium capitalize ${
                 isSelected
                   ? 'text-white dark:text-neutral-100'
                   : 'text-neutral-700 dark:text-neutral-300'
-              }`}
-            >
+              }`}>
               {effect}
             </ThemedText>
           </TouchableOpacity>
@@ -165,7 +163,7 @@ export default function StrainFilterModal({
 
   // Render function for Flavors (multi-select)
   const renderFlavorsSelector = () => (
-     <View className="flex-row flex-wrap gap-2">
+    <View className="flex-row flex-wrap gap-2">
       {FLAVOR_OPTIONS.map((flavor) => {
         const isSelected = currentFilters.flavors.includes(flavor);
         return (
@@ -178,15 +176,13 @@ export default function StrainFilterModal({
                 : 'bg-neutral-200 dark:bg-neutral-700'
             }`}
             accessibilityState={{ selected: isSelected }}
-            accessibilityRole="checkbox"
-          >
+            accessibilityRole="checkbox">
             <ThemedText
               className={`font-medium capitalize ${
                 isSelected
                   ? 'text-white dark:text-neutral-100'
                   : 'text-neutral-700 dark:text-neutral-300'
-              }`}
-            >
+              }`}>
               {flavor}
             </ThemedText>
           </TouchableOpacity>
@@ -202,17 +198,27 @@ export default function StrainFilterModal({
       animationType="slide"
       transparent={false} // Use false for a full-screen modal
       visible={isVisible}
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <SafeAreaView className="flex-1" style={{ backgroundColor: theme.colors.background }}>
         {/* Modal Header */}
-        <ThemedView className="flex-row items-center justify-between border-b px-4 py-3" lightClassName="border-neutral-200" darkClassName="border-neutral-700">
-          <Pressable onPress={onClose} accessibilityLabel="Close filters" accessibilityRole="button">
+        <ThemedView
+          className="flex-row items-center justify-between border-b px-4 py-3"
+          lightClassName="border-neutral-200"
+          darkClassName="border-neutral-700">
+          <Pressable
+            onPress={onClose}
+            accessibilityLabel="Close filters"
+            accessibilityRole="button">
             <Ionicons name="close" size={28} color={theme.colors.neutral[isDarkMode ? 100 : 900]} />
           </Pressable>
           <ThemedText className="text-xl font-bold">Filters</ThemedText>
-          <Pressable onPress={handleReset} accessibilityLabel="Reset filters" accessibilityRole="button">
-            <ThemedText className="text-base text-primary-600 dark:text-primary-400">Reset</ThemedText>
+          <Pressable
+            onPress={handleReset}
+            accessibilityLabel="Reset filters"
+            accessibilityRole="button">
+            <ThemedText className="text-base text-primary-600 dark:text-primary-400">
+              Reset
+            </ThemedText>
           </Pressable>
         </ThemedView>
 
@@ -226,13 +232,15 @@ export default function StrainFilterModal({
         </ScrollView>
 
         {/* Footer / Apply Button */}
-        <ThemedView className="border-t px-4 py-4" lightClassName="border-neutral-200" darkClassName="border-neutral-700">
+        <ThemedView
+          className="border-t px-4 py-4"
+          lightClassName="border-neutral-200"
+          darkClassName="border-neutral-700">
           <TouchableOpacity
             onPress={handleApply}
             className="items-center justify-center rounded-full bg-primary-600 py-4 dark:bg-primary-700"
             accessibilityLabel="Apply selected filters"
-            accessibilityRole="button"
-          >
+            accessibilityRole="button">
             <ThemedText className="text-lg font-bold text-white">Apply Filters</ThemedText>
           </TouchableOpacity>
         </ThemedView>

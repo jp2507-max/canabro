@@ -3,7 +3,7 @@
  *
  * Handles synchronization between local WatermelonDB and remote Supabase
  * This file re-exports functionality from the modular implementation
- * 
+ *
  * @deprecated Import directly from './sync' modules for better code organization
  */
 

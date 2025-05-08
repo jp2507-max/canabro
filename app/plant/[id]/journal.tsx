@@ -20,19 +20,36 @@ const formatDate = (date: Date): string => {
 
 // Helper function to group entries by date string 'YYYY-MM-DD'
 const groupEntriesByDate = (entries: DiaryEntry[]) => {
-  return entries.reduce(
+  return entries.reduce<Record<string, DiaryEntry[]>>(
     (acc, entry) => {
-      // Use created_at, assuming it's a string or Date parsable by new Date()
+      // Use created_at, ensuring it exists before processing
+      if (!entry.created_at) {
+        return acc; // Skip entries without a created_at date
+      }
+
+      // Create date key from the entry's creation date
       const entryDate = new Date(entry.created_at);
       const dateKey = entryDate.toISOString().split('T')[0]; // 'YYYY-MM-DD'
-      if (!acc[dateKey]) {
+
+      // Ensure dateKey is valid
+      if (!dateKey) {
+        return acc; // Skip this entry if we couldn't create a valid dateKey
+      }
+
+      // Initialize an empty array if this dateKey doesn't exist yet
+      if (!(dateKey in acc)) {
         acc[dateKey] = [];
       }
-      acc[dateKey].push(entry);
+
+      // Using non-null assertion since we've already checked that the key exists
+      acc[dateKey]!.push(entry);
+
       // Sort entries within the day by time (newest first) using created_at
-      acc[dateKey].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      acc[dateKey]!.sort(
+        (a: DiaryEntry, b: DiaryEntry) =>
+          new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
       );
+
       return acc;
     },
     {} as Record<string, DiaryEntry[]>

@@ -1,6 +1,7 @@
-import { FavoriteStrainsScreen } from '@/screens/strains/FavoriteStrainsScreen';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { Stack } from 'expo-router';
+
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { FavoriteStrainsScreen } from '@/screens/strains/FavoriteStrainsScreen';
 
 export default function FavoritesStrainsRoute() {
   return (

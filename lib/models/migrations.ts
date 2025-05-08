@@ -323,9 +323,7 @@ const migrations = schemaMigrations({
       steps: [
         addColumns({
           table: 'favorite_strains',
-          columns: [
-            { name: 'strain_object_id', type: 'string', isOptional: true },
-          ],
+          columns: [{ name: 'strain_object_id', type: 'string', isOptional: true }],
         }),
       ],
     },

@@ -36,9 +36,8 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
       <Text style={styles.detail}>
         Auth: {authConfig.forceDevBypass ? 'Auto Bypass' : 'Manual'}
       </Text>
-      <Text style={styles.detail}>
-        Mock DB: {authConfig.useMockAdapter ? 'Enabled' : 'Disabled'}
-      </Text>
+      {/* Remove reference to non-existent property useMockAdapter */}
+      <Text style={styles.detail}>Mock User: {authConfig.mockUserEmail || 'None'}</Text>
       <Text style={styles.detail}>User ID: {user?.id || 'Not logged in'}</Text>
 
       {!authConfig.forceDevBypass && (

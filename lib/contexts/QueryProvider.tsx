@@ -1,10 +1,15 @@
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient, QueryClientProvider, focusManager, onlineManager } from '@tanstack/react-query';
-import * as React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState, AppStateStatus, Platform } from 'react-native';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import NetInfo from '@react-native-community/netinfo';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import {
+  QueryClient,
+  QueryClientProvider,
+  focusManager,
+  onlineManager,
+} from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import * as React from 'react';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 
 // Create a persister for React Query state
 const asyncStoragePersister = createAsyncStoragePersister({
@@ -18,8 +23,9 @@ const asyncStoragePersister = createAsyncStoragePersister({
       clientState: {
         ...data.clientState,
         queries: data.clientState.queries.filter(
-          (query: any) => !query.state.error && 
-                    (Date.now() - (query.state.dataUpdatedAt || 0) < 1000 * 60 * 60 * 24)
+          (query: any) =>
+            !query.state.error &&
+            Date.now() - (query.state.dataUpdatedAt || 0) < 1000 * 60 * 60 * 24
         ),
       },
     };
@@ -44,7 +50,7 @@ function useAppState(onChange: (status: AppStateStatus) => void) {
  */
 function useOnlineManager() {
   React.useEffect(() => {
-    return NetInfo.addEventListener(state => {
+    return NetInfo.addEventListener((state) => {
       onlineManager.setOnline(!!state.isConnected);
     });
   }, []);
@@ -98,8 +104,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       onError={() => {
         console.log('[QueryProvider] Error restoring cache, purging');
         queryClient.clear();
-      }}
-    >
+      }}>
       {children}
     </PersistQueryClientProvider>
   );

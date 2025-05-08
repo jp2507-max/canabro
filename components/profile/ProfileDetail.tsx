@@ -1,9 +1,10 @@
-import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
 import { View } from 'react-native';
+
+import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 
 /**
  * Displays a labeled profile detail with optional icon and value(s).
@@ -15,7 +16,11 @@ export interface ProfileDetailProps {
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
-const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileDetail({ label, value, icon }) {
+const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileDetail({
+  label,
+  value,
+  icon,
+}) {
   const { isDarkMode, theme } = useTheme();
   const displayValue = value || 'Not specified';
   const hasValue = value && (Array.isArray(value) ? value.length > 0 : true);
@@ -24,8 +29,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
     <ThemedView
       className="mb-3 rounded-lg p-3"
       lightClassName="bg-neutral-100"
-      darkClassName="bg-neutral-800"
-    >
+      darkClassName="bg-neutral-800">
       <View className="mb-1.5 flex-row items-center">
         {icon && (
           <Ionicons
@@ -38,8 +42,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
         <ThemedText
           className="text-xs font-medium uppercase tracking-wide"
           lightClassName="text-neutral-500"
-          darkClassName="text-neutral-400"
-        >
+          darkClassName="text-neutral-400">
           {label}
         </ThemedText>
       </View>
@@ -51,13 +54,11 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
                 key={index}
                 className="mb-1 mr-1 rounded-full px-2.5 py-0.5"
                 lightClassName="bg-primary-100"
-                darkClassName="bg-primary-800"
-              >
+                darkClassName="bg-primary-800">
                 <ThemedText
                   className="text-xs"
                   lightClassName="text-primary-700"
-                  darkClassName="text-primary-200"
-                >
+                  darkClassName="text-primary-200">
                   {item || ''}
                 </ThemedText>
               </ThemedView>
@@ -66,8 +67,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
             <ThemedText
               className="text-sm italic"
               lightClassName="text-neutral-500"
-              darkClassName="text-neutral-500"
-            >
+              darkClassName="text-neutral-500">
               None specified
             </ThemedText>
           )}
@@ -76,8 +76,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
         <ThemedText
           className={`text-sm ${!hasValue ? 'italic' : ''}`}
           lightClassName={hasValue ? 'text-neutral-700' : 'text-neutral-500'}
-          darkClassName={hasValue ? 'text-neutral-200' : 'text-neutral-500'}
-        >
+          darkClassName={hasValue ? 'text-neutral-200' : 'text-neutral-500'}>
           {displayValue}
         </ThemedText>
       )}

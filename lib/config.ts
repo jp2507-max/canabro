@@ -1,8 +1,8 @@
 // Supabase Config
+import Constants from 'expo-constants';
+
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-import Constants from 'expo-constants';
 
 // Environment Config
 export const isDevelopment = process.env.NODE_ENV === 'development';

@@ -2,13 +2,13 @@
  * Utility functions and concurrency controls for sync service
  */
 
-import { v4 as uuid } from 'uuid';
-import { Mutex } from 'async-mutex';
+import { Q, Database } from '@nozbe/watermelondb';
 import { hasUnsyncedChanges } from '@nozbe/watermelondb/sync';
-import { Q } from '@nozbe/watermelondb';
-import { Database } from '@nozbe/watermelondb';
-import { Profile } from '../../models/Profile';
+import { Mutex } from 'async-mutex';
+import { v4 as uuid } from 'uuid';
+
 import { SYNC_CONSTANTS } from './types';
+import { Profile } from '../../models/Profile';
 import supabase from '../../supabase';
 
 // Create a Mutex instance for synchronization locking
@@ -19,7 +19,7 @@ export const syncMutex = new Mutex();
  */
 export class Semaphore {
   private counter: number;
-  private waiting: Array<() => void> = [];
+  private waiting: (() => void)[] = [];
 
   constructor(concurrentLimit: number) {
     this.counter = concurrentLimit;
@@ -65,48 +65,48 @@ export const requestSemaphore = new Semaphore(SYNC_CONSTANTS.MAX_CONCURRENT_REQU
 
 /**
  * Execute an RPC call with retry capability
- * 
+ *
  * @param rpcName The name of the RPC function to call
  * @param params Parameters to pass to the RPC function
  * @param maxRetries Maximum number of retries before giving up
  * @returns Promise resolving to the data returned by the RPC call
  */
 export async function executeRpcWithRetry(
-  rpcName: string, 
-  params: any, 
+  rpcName: string,
+  params: any,
   maxRetries: number = 3
 ): Promise<any> {
   let retries = 0;
   let lastError: any = null;
-  
+
   while (retries < maxRetries) {
     try {
       return await requestSemaphore.acquire(async () => {
         const startTime = Date.now();
         const { data, error } = await supabase.rpc(rpcName, params);
         const duration = Date.now() - startTime;
-        
+
         // Track slow operations for performance monitoring
         if (duration > 2000) {
           console.warn(`[Performance] Slow RPC call to ${rpcName}: ${duration}ms`);
         }
-        
+
         if (error) throw error;
         return data;
       });
     } catch (error) {
       lastError = error;
       retries++;
-      
+
       // Log retry attempts
       console.warn(`RPC call to ${rpcName} failed (attempt ${retries}/${maxRetries}):`, error);
-      
+
       // Exponential backoff with jitter to prevent request storms
       const delay = Math.min(1000 * Math.pow(2, retries) + Math.random() * 1000, 10000);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError;
 }
 
@@ -178,8 +178,8 @@ export async function initializeUserData(
  * @returns A function to cancel the scheduled sync
  */
 export function scheduleSync(
-  database: Database, 
-  userId: string, 
+  database: Database,
+  userId: string,
   syncFunction: (db: Database, id: string, isFirst: boolean, force: boolean) => Promise<boolean>,
   intervalMinutes = 15
 ): () => void {

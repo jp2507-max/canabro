@@ -1,11 +1,12 @@
+import { Feather } from '@expo/vector-icons';
 import React, { memo } from 'react';
 import { View, ScrollView, Button } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 import CameraCapture from '../../components/diagnosis/CameraCapture';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
-import { Feather } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import type { DiagnosisResult } from '../../lib/types/diagnosis';
 
 interface DiagnosisViewProps {
@@ -66,10 +67,7 @@ const DiagnosisView = memo(function DiagnosisView({
             Diagnosis Results
           </ThemedText>
           {diagnosisResult && (
-            <DiagnosisResultCard
-              diagnosisResult={diagnosisResult}
-              theme={theme}
-            />
+            <DiagnosisResultCard diagnosisResult={diagnosisResult} theme={theme} />
           )}
         </ThemedView>
       </ScrollView>
@@ -82,7 +80,10 @@ interface DiagnosisResultCardProps {
   theme: any;
 }
 
-const DiagnosisResultCard = memo(function DiagnosisResultCard({ diagnosisResult, theme }: DiagnosisResultCardProps) {
+const DiagnosisResultCard = memo(function DiagnosisResultCard({
+  diagnosisResult,
+  theme,
+}: DiagnosisResultCardProps) {
   return (
     <ThemedView
       className="mb-4 rounded-xl p-4"
@@ -145,9 +146,7 @@ const DiagnosisResultCard = memo(function DiagnosisResultCard({ diagnosisResult,
             color={theme.colors.primary[500]}
             style={{ marginTop: 2, marginRight: 8 }}
           />
-          <ThemedText
-            lightClassName="text-neutral-700"
-            darkClassName="text-neutral-300">
+          <ThemedText lightClassName="text-neutral-700" darkClassName="text-neutral-300">
             {rec}
           </ThemedText>
         </View>

@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
-import ThemedView from '../ui/ThemedView';
-import ThemedText from '../ui/ThemedText';
-import ThemeToggle from '../ui/ThemeToggle';
+
 import ProfileDetail from './ProfileDetail';
 import StatItem from './StatItem';
-import SyncStatus from '../ui/SyncStatus';
-import { Profile } from '../../lib/models/Profile';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import { useSyncContext } from '../../lib/contexts/SyncContext';
+import { useTheme } from '../../lib/contexts/ThemeContext';
+import { Profile } from '../../lib/models/Profile';
+import SyncStatus from '../ui/SyncStatus';
+import ThemeToggle from '../ui/ThemeToggle';
+import ThemedText from '../ui/ThemedText';
+import ThemedView from '../ui/ThemedView';
 
 /**
  * Props for the main profile screen content.
@@ -46,15 +47,15 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
       <ScrollView
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
-          onRefresh ? (
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-          ) : undefined
+          onRefresh ? <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} /> : undefined
         }
-        keyboardShouldPersistTaps="handled"
-      >
+        keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View className="mb-4 flex-row items-center justify-between">
-          <ThemedText className="text-2xl font-bold" lightClassName="text-primary-800" darkClassName="text-primary-100">
+          <ThemedText
+            className="text-2xl font-bold"
+            lightClassName="text-primary-800"
+            darkClassName="text-primary-100">
             Profile
           </ThemedText>
           <ThemeToggle />
@@ -71,10 +72,13 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
         <ProfileDetail label="User ID" value={profile?.userId} icon="mail" />
         <ProfileDetail label="Experience" value={profile?.experienceLevel} icon="medal" />
         <ProfileDetail label="Grow Method" value={profile?.preferredGrowMethod} icon="flower" />
-        
+
         {/* Sync Status Section */}
-        <View className="mt-8 mb-4">
-          <ThemedText className="mb-2 text-lg font-semibold" lightClassName="text-gray-800" darkClassName="text-gray-200">
+        <View className="mb-4 mt-8">
+          <ThemedText
+            className="mb-2 text-lg font-semibold"
+            lightClassName="text-gray-800"
+            darkClassName="text-gray-200">
             Data Synchronization
           </ThemedText>
           <SyncStatus onPress={handleSyncPress} />

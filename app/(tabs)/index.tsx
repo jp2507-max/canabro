@@ -1,19 +1,14 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Database } from '@nozbe/watermelondb';
-import { BlurView as ExpoBlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import * as React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AddPlantForm } from '../../components/AddPlantForm';
 import { EnhancedPlantList } from '../../components/PlantList';
-import HomeHeader from '../../components/ui/HomeHeader';
-import TagPill from '../../components/ui/TagPill';
 import AddPlantModal from '../../components/ui/AddPlantModal';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
-import ThemedText from '../../components/ui/ThemedText';
+import HomeHeader from '../../components/ui/HomeHeader';
 import ThemedView from '../../components/ui/ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
@@ -24,7 +19,7 @@ interface HomeScreenProps {
 }
 
 function HomeScreen({ database }: HomeScreenProps) {
-  const { theme, isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
   const router = useRouter();
   const { refreshing, handleRefresh } = usePullToRefresh({ showFeedback: true, forceSync: true });
   const [isAddPlantModalVisible, setIsAddPlantModalVisible] = useState(false);
@@ -75,7 +70,7 @@ function HomeScreen({ database }: HomeScreenProps) {
         />
         {/* Floating Action Button and Menu */}
         {isFabMenuOpen && (
-          <View className="absolute bottom-20 right-6 space-y-4 z-10 items-end">
+          <View className="absolute bottom-20 right-6 z-10 items-end space-y-4">
             <FloatingActionButton
               iconName="pencil-outline"
               onPress={handleAddTaskToPlant}

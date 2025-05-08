@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, View, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 
@@ -11,7 +12,12 @@ export interface TaskActionsProps {
   navigateToAddTaskAll: () => void;
 }
 
-function TaskActions({ visible, onClose, navigateToAddTaskPlant, navigateToAddTaskAll }: TaskActionsProps) {
+function TaskActions({
+  visible,
+  onClose,
+  navigateToAddTaskPlant,
+  navigateToAddTaskAll,
+}: TaskActionsProps) {
   const { theme, isDarkMode } = useTheme();
   return (
     <Modal
@@ -19,8 +25,7 @@ function TaskActions({ visible, onClose, navigateToAddTaskPlant, navigateToAddTa
       transparent
       animationType="slide"
       onRequestClose={onClose}
-      accessibilityViewIsModal
-    >
+      accessibilityViewIsModal>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' }}>
         <View
           style={{
@@ -29,8 +34,7 @@ function TaskActions({ visible, onClose, navigateToAddTaskPlant, navigateToAddTa
             borderTopRightRadius: 16,
             padding: 24,
             minHeight: 180,
-          }}
-        >
+          }}>
           <ThemedText style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>
             Task Actions
           </ThemedText>
@@ -38,26 +42,33 @@ function TaskActions({ visible, onClose, navigateToAddTaskPlant, navigateToAddTa
             style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
             onPress={navigateToAddTaskPlant}
             accessibilityRole="button"
-            accessibilityLabel="Add task to plant"
-          >
-            <Ionicons name="leaf" size={22} color={theme.colors.primary[500]} style={{ marginRight: 10 }} />
+            accessibilityLabel="Add task to plant">
+            <Ionicons
+              name="leaf"
+              size={22}
+              color={theme.colors.primary[500]}
+              style={{ marginRight: 10 }}
+            />
             <ThemedText>Add Task to Plant</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={{ flexDirection: 'row', alignItems: 'center' }}
             onPress={navigateToAddTaskAll}
             accessibilityRole="button"
-            accessibilityLabel="Add task to all plants"
-          >
-            <Ionicons name="layers-outline" size={22} color={theme.colors.primary[500]} style={{ marginRight: 10 }} />
+            accessibilityLabel="Add task to all plants">
+            <Ionicons
+              name="layers-outline"
+              size={22}
+              color={theme.colors.primary[500]}
+              style={{ marginRight: 10 }}
+            />
             <ThemedText>Add Task to All Plants</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             style={{ position: 'absolute', top: 12, right: 12 }}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Close task actions"
-          >
+            accessibilityLabel="Close task actions">
             <Ionicons name="close" size={24} color={theme.colors.neutral[400]} />
           </TouchableOpacity>
         </View>

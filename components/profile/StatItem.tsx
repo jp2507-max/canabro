@@ -1,8 +1,9 @@
-import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 
 /**
  * Displays a profile statistic with an icon, value, and label.
@@ -20,8 +21,7 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({ value, 
     <ThemedView
       className="mx-1.5 flex-1 items-center rounded-lg p-3"
       lightClassName="bg-neutral-100"
-      darkClassName="bg-neutral-800"
-    >
+      darkClassName="bg-neutral-800">
       <Ionicons
         name={icon}
         size={22}
@@ -32,16 +32,14 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({ value, 
         className="text-lg font-bold"
         lightClassName="text-primary-700"
         darkClassName="text-primary-200"
-        accessibilityRole="text"
-      >
+        accessibilityRole="text">
         {value}
       </ThemedText>
       <ThemedText
-        className="text-xs mt-1"
+        className="mt-1 text-xs"
         lightClassName="text-neutral-500"
         darkClassName="text-neutral-400"
-        accessibilityRole="text"
-      >
+        accessibilityRole="text">
         {label}
       </ThemedText>
     </ThemedView>

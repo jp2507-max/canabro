@@ -40,7 +40,7 @@ export function strainFlavorsQueryOptions(strainId: string | undefined | null) {
  */
 export function useStrainFlavors(
   strainId: string | undefined | null,
-  options?: StrainFlavorsOptions, // Accept optional options
+  options?: StrainFlavorsOptions // Accept optional options
 ) {
   // Merge the base options with any provided options
   return useQuery({

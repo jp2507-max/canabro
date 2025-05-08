@@ -35,17 +35,9 @@ export {
   scheduleSync,
   resetAndSync,
   executeRpcWithRetry,
-  Semaphore,
   syncMutex,
-  requestSemaphore
 } from './utils';
 
-// Re-export types
+// Export all types and constants from types.ts
 export type * from './types';
-export { 
-  TABLES_TO_SYNC, 
-  SYNC_CONSTANTS, 
-  SYNC_METADATA_KEYS,
-  // Explicitly re-export the SyncHealthMetrics interface to maintain compatibility
-  type SyncHealthMetrics 
-} from './types';
+export { TABLES_TO_SYNC, SYNC_CONSTANTS, SYNC_METADATA_KEYS } from './types';

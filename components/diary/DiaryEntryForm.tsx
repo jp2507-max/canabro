@@ -203,7 +203,7 @@ export default function DiaryEntryForm({
       quality: 0.8, // Optional: image quality (0 to 1)
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
+    if (!result.canceled && result.assets?.[0]?.uri) {
       setSelectedImageUri(result.assets[0].uri);
       console.log('Selected Image URI:', result.assets[0].uri);
     }

@@ -19,7 +19,7 @@ const imageAssetExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
 const assetExtsSet = new Set(config.resolver.assetExts);
 
 // Add the image extensions to the Set
-imageAssetExts.forEach(ext => assetExtsSet.add(ext));
+imageAssetExts.forEach((ext) => assetExtsSet.add(ext));
 
 // Assign the updated array back to the config
 config.resolver.assetExts = Array.from(assetExtsSet);

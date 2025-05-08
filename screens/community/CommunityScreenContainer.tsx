@@ -1,13 +1,14 @@
-import React, { useCallback, useState, useMemo } from 'react';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useCallback, useState, useMemo } from 'react';
 import { RefreshControl, View } from 'react-native';
-import { useTheme } from '../../lib/contexts/ThemeContext';
-import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
-import supabase from '../../lib/supabase';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import CommunityScreenView from './CommunityScreenView';
 import type { PostData } from '../../components/community/PostItem';
+import { useAuth } from '../../lib/contexts/AuthProvider';
+import { useTheme } from '../../lib/contexts/ThemeContext';
+import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
+import supabase from '../../lib/supabase';
 
 const PAGE_SIZE = 10;
 
@@ -31,36 +32,39 @@ function CommunityScreenContainer() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
 
-  const fetchPosts = useCallback(async (page: number, refreshing = false) => {
-    if (!session) return;
-    const limit = PAGE_SIZE;
-    const offset = page * limit;
-    setIsLoading(page === 0 && !refreshing);
-    setIsRefreshing(refreshing);
-    try {
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select(`*, profiles ( username, avatar_url )`)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-      if (postsError) throw postsError;
-      if (!postsData) {
-        setPosts(refreshing ? [] : posts);
-        setHasMore(false);
+  const fetchPosts = useCallback(
+    async (page: number, refreshing = false) => {
+      if (!session) return;
+      const limit = PAGE_SIZE;
+      const offset = page * limit;
+      setIsLoading(page === 0 && !refreshing);
+      setIsRefreshing(refreshing);
+      try {
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`*, profiles ( username, avatar_url )`)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+        if (postsError) throw postsError;
+        if (!postsData) {
+          setPosts(refreshing ? [] : posts);
+          setHasMore(false);
+          setFetchError(null);
+          return;
+        }
+        setPosts(refreshing ? postsData : [...posts, ...postsData]);
+        setHasMore(postsData.length === limit);
         setFetchError(null);
-        return;
+      } catch (err) {
+        setFetchError((err as Error).message);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setIsLoadingMore(false);
       }
-      setPosts(refreshing ? postsData : [...posts, ...postsData]);
-      setHasMore(postsData.length === limit);
-      setFetchError(null);
-    } catch (err) {
-      setFetchError((err as Error).message);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-      setIsLoadingMore(false);
-    }
-  }, [session, posts]);
+    },
+    [session, posts]
+  );
 
   React.useEffect(() => {
     fetchPosts(0, true);

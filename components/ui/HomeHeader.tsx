@@ -1,10 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View } from 'react-native';
-import ThemedText from './ThemedText';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../lib/contexts/ThemeContext';
-import TagPill from './TagPill';
+
 import SyncStatus from './SyncStatus';
+import TagPill from './TagPill';
+import ThemedText from './ThemedText';
+import { useTheme } from '../../lib/contexts/ThemeContext';
 
 interface HomeHeaderProps {
   onAddPlant: () => void;
@@ -18,7 +19,10 @@ export function HomeHeader({ onAddPlant, plantCount, isDarkMode }: HomeHeaderPro
   return (
     <View className="mb-4 flex-row items-center justify-between">
       <View>
-        <ThemedText className="text-2xl font-bold" lightClassName="text-green-800" darkClassName="text-primary-300">
+        <ThemedText
+          className="text-2xl font-bold"
+          lightClassName="text-green-800"
+          darkClassName="text-primary-300">
           My Plants
         </ThemedText>
         <View className="mt-2 flex-row">

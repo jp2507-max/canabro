@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { focusManager } from '@tanstack/react-query';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { AppState, Platform, StyleSheet } from 'react-native';
 import type { AppStateStatus } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '../lib/contexts/AuthProvider';
 import { DatabaseProvider } from '../lib/contexts/DatabaseProvider';
@@ -19,8 +20,6 @@ import '../lib/types/react-query';
 import '../global.css';
 
 import { QueryProvider } from '@/lib/contexts/QueryProvider';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,7 +32,7 @@ function onAppStateChange(status: AppStateStatus) {
 function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
-    
+
     const subscription = AppState.addEventListener('change', onAppStateChange);
 
     return () => subscription.remove();

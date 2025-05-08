@@ -20,12 +20,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import StorageImage from '../../components/ui/StorageImage';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
-import PlantImageSection from '../../screens/PlantImageSection';
 import { useDatabase } from '../../lib/contexts/DatabaseProvider';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { Plant } from '../../lib/models/Plant'; // GrowthStage enum is not exported/used in model
 import { colors as themeColors } from '../../lib/theme'; // Import theme colors directly if needed
+import PlantImageSection from '../../screens/PlantImageSection';
 import { formatDate, formatBoolean, formatNumber } from '../../screens/plantHelpers';
 
 // Helper to format dates

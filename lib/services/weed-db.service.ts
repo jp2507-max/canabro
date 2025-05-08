@@ -1,15 +1,16 @@
-import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import Constants from 'expo-constants';
-import { 
-  Strain, 
-  CachedResponse, 
-  StrainFilterParams, 
-  RawStrainApiResponse, 
-  ApiResponseArray, 
-  ApiResponseSingle 
-} from '../types/weed-db';
 import { z } from 'zod';
+
+import {
+  Strain,
+  CachedResponse,
+  StrainFilterParams,
+  RawStrainApiResponse,
+  ApiResponseArray,
+  ApiResponseSingle,
+} from '../types/weed-db';
 
 // --- Configuration ---
 const BASE_URL = 'https://the-weed-db.p.rapidapi.com/api';
@@ -19,22 +20,31 @@ const API_HOST = 'the-weed-db.p.rapidapi.com';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // Define a type to ensure our query keys are properly typed
-export type WeedDbQueryKeys = 
-  | ['weedDb'] 
-  | ['weedDb', 'list'] 
-  | ['weedDb', 'list', Partial<StrainFilterParams>] 
-  | ['weedDb', 'detail'] 
-  | ['weedDb', 'detail', string] 
-  | ['weedDb', 'search', string] 
-  | ['weedDb', 'effect', string] 
-  | ['weedDb', 'flavor', string] 
-  | ['weedDb', 'thc', number, number] 
-  | ['weedDb', 'type', 'sativa' | 'indica' | 'hybrid'] 
+export type WeedDbQueryKeys =
+  | ['weedDb']
+  | ['weedDb', 'list']
+  | ['weedDb', 'list', Partial<StrainFilterParams>]
+  | ['weedDb', 'detail']
+  | ['weedDb', 'detail', string]
+  | ['weedDb', 'search', string]
+  | ['weedDb', 'effect', string]
+  | ['weedDb', 'flavor', string]
+  | ['weedDb', 'thc', number, number]
+  | ['weedDb', 'type', 'sativa' | 'indica' | 'hybrid']
   | ['weedDb', 'parent', string]
-  | ['filtered-strains', string, string | null, string | null, string | null, number | null, number | null, string]
+  | [
+      'filtered-strains',
+      string,
+      string | null,
+      string | null,
+      string | null,
+      number | null,
+      number | null,
+      string,
+    ]
   | ['strain-detail-placeholder']
-  | ['strains-effect-placeholder'] 
-  | ['strains-flavor-placeholder'] 
+  | ['strains-effect-placeholder']
+  | ['strains-flavor-placeholder']
   | ['strains-thc-placeholder'];
 
 // --- Query Keys ---
@@ -55,7 +65,7 @@ export const weedDbKeys = {
 // Add a check in case the key is missing
 if (!API_KEY) {
   console.error(
-    'ERROR: RAPIDAPI_KEY is missing in app.config.js extra section! Please ensure it is configured correctly in app.config.js and potentially loaded from your .env file.',
+    'ERROR: RAPIDAPI_KEY is missing in app.config.js extra section! Please ensure it is configured correctly in app.config.js and potentially loaded from your .env file.'
   );
   // Optionally throw an error to prevent the app from running without a key
   // throw new Error("Missing RapidAPI Key configuration.");
@@ -73,16 +83,16 @@ const axiosInstance: AxiosInstance = axios.create({
 
 // --- Debug Logging ---
 // Log WeedDB requests and responses to help debug connection issues
-axiosInstance.interceptors.request.use(request => {
+axiosInstance.interceptors.request.use((request) => {
   console.log('WeedDB Request:', request.method, request.url, request.params);
   return request;
 });
 axiosInstance.interceptors.response.use(
-  response => {
+  (response) => {
     console.log('WeedDB Response Data:', response.data);
     return response;
   },
-  error => {
+  (error) => {
     console.error('WeedDB Response Error:', error);
     return Promise.reject(error);
   }
@@ -128,7 +138,7 @@ async function delay(ms: number): Promise<void> {
 async function requestWithRetry<T>(
   requestFn: () => Promise<T>,
   retries = 3,
-  delayMs = 1000,
+  delayMs = 1000
 ): Promise<T> {
   try {
     return await requestFn();
@@ -138,9 +148,7 @@ async function requestWithRetry<T>(
       axiosError.response?.status === 429 && // Too Many Requests
       retries > 0
     ) {
-      console.warn(
-        `Rate limit hit. Retrying in ${delayMs / 1000}s... (${retries} retries left)`,
-      );
+      console.warn(`Rate limit hit. Retrying in ${delayMs / 1000}s... (${retries} retries left)`);
       await delay(delayMs);
       // Exponential backoff: double the delay for the next retry
       return requestWithRetry(requestFn, retries - 1, delayMs * 2);
@@ -220,16 +228,10 @@ function mapWeedDbStrain(raw: any): Strain {
     growDifficulty: raw.growDifficulty || raw.grow_difficulty,
     floweringTime: raw.floweringTime || raw.flowering_time,
     floweringType: raw.floweringType || raw.flowering_type,
-    parents: raw.parents
-      ? Array.isArray(raw.parents)
-        ? raw.parents
-        : [raw.parents]
-      : undefined,
+    parents: raw.parents ? (Array.isArray(raw.parents) ? raw.parents : [raw.parents]) : undefined,
     image: raw.imageUrl || raw.image_url || raw.image,
     imageUrl: raw.imageUrl || raw.image_url || raw.image,
-    description: Array.isArray(raw.description)
-      ? raw.description.join(' ')
-      : raw.description,
+    description: Array.isArray(raw.description) ? raw.description.join(' ') : raw.description,
     effects: raw.effect || raw.effects,
     flavors: raw.smellAndFlavour || raw.smell_and_flavour || raw.flavors,
     origin: raw.origin,
@@ -252,26 +254,24 @@ function mapWeedDbStrain(raw: any): Strain {
 
 // --- API Service ---
 // Helper to handle caching and fetching for filter/list endpoints
-async function fetchStrains(
-  params: StrainFilterParams,
-): Promise<CachedResponse<Strain[]>> {
+async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<Strain[]>> {
   // Create a properly formatted parameters object
   const formattedParams: Record<string, any> = {};
-  
+
   // Handle search parameter differently - it needs special treatment
   if (params.search) {
     // The API expects name parameter for search, not search
     formattedParams.name = params.search;
     console.log(`[DEBUG] Search query formatted as name=${params.search}`);
   }
-  
+
   // Add all other parameters
   Object.entries(params).forEach(([key, value]) => {
     if (key !== 'search' && value !== undefined && value !== null) {
       formattedParams[key] = value;
     }
   });
-  
+
   const cacheKey = `strains-${JSON.stringify(formattedParams)}`;
   const cachedData = await getFromCache<Strain[]>(cacheKey);
 
@@ -282,8 +282,12 @@ async function fetchStrains(
 
   try {
     console.log(`[DEBUG] Fetching strains with params:`, formattedParams);
-    const response = await requestWithRetry<AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>>(() =>
-      axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', { params: formattedParams }),
+    const response = await requestWithRetry<
+      AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>
+    >(() =>
+      axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', {
+        params: formattedParams,
+      })
     );
 
     const rawStrains = Array.isArray(response.data)
@@ -291,7 +295,7 @@ async function fetchStrains(
       : Array.isArray(response.data.data)
         ? (response.data.data as RawStrainApiResponse[])
         : [];
-        
+
     console.log(`[DEBUG] API returned ${rawStrains.length} raw strains`);
 
     // Validate with Zod
@@ -308,15 +312,21 @@ async function fetchStrains(
     return { data: mappedStrains, isFromCache: false };
   } catch (error) {
     console.error('Error fetching strains:', error);
-    return { data: [], isFromCache: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    return {
+      data: [],
+      isFromCache: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
   }
 }
 
 // Helper to handle caching and fetching for single strain endpoint
 async function fetchStrainById(id: string): Promise<Strain | null> {
   try {
-    const response = await requestWithRetry<AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>>(() =>
-      axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', { params: { id } }),
+    const response = await requestWithRetry<
+      AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>
+    >(() =>
+      axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', { params: { id } })
     );
 
     const rawStrains = Array.isArray(response.data)
@@ -349,7 +359,9 @@ async function fetchStrainById(id: string): Promise<Strain | null> {
  * @returns The strain's ID if found or created
  * @throws Error if the strain cannot be created or found
  */
-export async function ensureStrainExists(strain: Pick<Strain, 'name' | 'type'> & Partial<Strain>): Promise<string> {
+export async function ensureStrainExists(
+  strain: Pick<Strain, 'name' | 'type'> & Partial<Strain>
+): Promise<string> {
   if (!strain.name) throw new Error('Strain name is required');
   try {
     // Try to create the strain (replace with your actual insert logic)
@@ -365,13 +377,16 @@ export async function ensureStrainExists(strain: Pick<Strain, 'name' | 'type'> &
     throw new Error('Failed to create strain');
   } catch (error: any) {
     // If duplicate key error, fetch by name
-    if (error.response && error.response.data &&
+    if (
+      error.response &&
+      error.response.data &&
       (error.response.data.code === '23505' ||
-        (typeof error.response.data.message === 'string' && error.response.data.message.includes('duplicate key')))
+        (typeof error.response.data.message === 'string' &&
+          error.response.data.message.includes('duplicate key')))
     ) {
       // Try to fetch the existing strain by name
       const found = await fetchStrains({ search: strain.name });
-      const match = found.data.find(s => s.name.toLowerCase() === strain.name.toLowerCase());
+      const match = found.data.find((s) => s.name.toLowerCase() === strain.name.toLowerCase());
       if (match && match.id) return String(match.id);
       throw new Error('Strain exists but could not be found by name');
     }
@@ -391,10 +406,7 @@ export const WeedDbService = {
    * @param limit Number of items per page (default: 50)
    * @returns A list of strains with caching information.
    */
-  async list(
-    page = 1,
-    limit = 50,
-  ): Promise<CachedResponse<Strain[]>> {
+  async list(page = 1, limit = 50): Promise<CachedResponse<Strain[]>> {
     return fetchStrains({ page, limit });
   },
 
@@ -414,7 +426,7 @@ export const WeedDbService = {
    */
   async searchByName(name: string): Promise<CachedResponse<Strain[]>> {
     console.log(`[DEBUG] WeedDbService.searchByName called with query: "${name}"`);
-    
+
     // Empty search shouldn't hit the API, return empty results
     if (!name || name.trim() === '') {
       return { data: [], isFromCache: false };
@@ -425,31 +437,32 @@ export const WeedDbService = {
       const searchTerm = name.trim().toLowerCase();
       console.log(`[DEBUG] Executing API search with term: "${searchTerm}"`);
       const result = await fetchStrains({ search: searchTerm });
-      
+
       console.log(`[DEBUG] API search returned ${result.data.length} results`);
-      
+
       // If API returned results, use them
       if (result.data.length > 0) {
         return result;
       }
-      
+
       // No results from API, use simple client-side name search
       console.log('[DEBUG] Using fallback client-side name search');
-      
+
       // Fetch a dataset to search within
       const allStrains = await fetchStrains({ limit: 100 });
-      
+
       // Simple client-side search that only checks strain names
-      const filteredStrains = allStrains.data.filter(strain => 
+      const filteredStrains = allStrains.data.filter((strain) =>
         (strain.name || '').toLowerCase().includes(searchTerm)
       );
-      
+
       console.log(`[DEBUG] Client-side name search found ${filteredStrains.length} results`);
-      
-      return { 
-        data: filteredStrains, 
+
+      return {
+        data: filteredStrains,
         isFromCache: allStrains.isFromCache,
-        error: filteredStrains.length === 0 ? 'No strain names found matching your search' : undefined 
+        error:
+          filteredStrains.length === 0 ? 'No strain names found matching your search' : undefined,
       };
     } catch (error) {
       console.error(`[ERROR] Search failed for query "${name}":`, error);
@@ -463,7 +476,7 @@ export const WeedDbService = {
    * @returns A list of matching strains with caching information.
    */
   async filterByGrowDifficulty(
-    level: 'easy' | 'medium' | 'difficult',
+    level: 'easy' | 'medium' | 'difficult'
   ): Promise<CachedResponse<Strain[]>> {
     return fetchStrains({ growDifficulty: level });
   },
@@ -492,10 +505,7 @@ export const WeedDbService = {
    * @param max Maximum THC percentage.
    * @returns A list of matching strains with caching information.
    */
-  async filterByThc(
-    min: number,
-    max: number,
-  ): Promise<CachedResponse<Strain[]>> {
+  async filterByThc(min: number, max: number): Promise<CachedResponse<Strain[]>> {
     return fetchStrains({ thcMin: min, thcMax: max });
   },
 
@@ -513,9 +523,7 @@ export const WeedDbService = {
    * @param type The strain type.
    * @returns A list of matching strains with caching information.
    */
-  async filterByType(
-    type: 'sativa' | 'indica' | 'hybrid',
-  ): Promise<CachedResponse<Strain[]>> {
+  async filterByType(type: 'sativa' | 'indica' | 'hybrid'): Promise<CachedResponse<Strain[]>> {
     return fetchStrains({ type });
   },
 };

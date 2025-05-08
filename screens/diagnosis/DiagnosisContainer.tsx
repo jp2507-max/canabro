@@ -1,12 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { useWindowDimensions, Alert } from 'react-native';
 import { useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+
+import DiagnosisView from './DiagnosisView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { resetDatabase } from '../../lib/database/database';
 import { analyzeImage } from '../../lib/services/diagnosis-service';
 import { DiagnosisResult } from '../../lib/types/diagnosis';
-import DiagnosisView from './DiagnosisView';
 
 const INITIAL_STATE = {
   image: null as string | null,
@@ -22,7 +23,9 @@ export default function DiagnosisContainer() {
   const [image, setImage] = useState<string | null>(INITIAL_STATE.image);
   const [cameraMode, setCameraMode] = useState(INITIAL_STATE.cameraMode);
   const [isAnalyzing, setIsAnalyzing] = useState(INITIAL_STATE.isAnalyzing);
-  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(INITIAL_STATE.diagnosisResult);
+  const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(
+    INITIAL_STATE.diagnosisResult
+  );
 
   // Animation shared values
   const companionScale = useSharedValue(1);
@@ -60,19 +63,22 @@ export default function DiagnosisContainer() {
     handleAnalyzeImage(imageUri);
   }, []);
 
-  const handleAnalyzeImage = useCallback(async (imageUri: string) => {
-    if (!user?.id) return;
-    setIsAnalyzing(true);
-    setDiagnosisResult(null);
-    try {
-      const result = await analyzeImage(imageUri, user.id);
-      setDiagnosisResult(result);
-    } catch (error) {
-      console.error('Error analyzing image:', error);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [user?.id]);
+  const handleAnalyzeImage = useCallback(
+    async (imageUri: string) => {
+      if (!user?.id) return;
+      setIsAnalyzing(true);
+      setDiagnosisResult(null);
+      try {
+        const result = await analyzeImage(imageUri, user.id);
+        setDiagnosisResult(result);
+      } catch (error) {
+        console.error('Error analyzing image:', error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [user?.id]
+  );
 
   const resetImage = useCallback(() => {
     setImage(null);

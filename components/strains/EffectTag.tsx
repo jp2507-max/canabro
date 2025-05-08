@@ -109,7 +109,8 @@ export default function EffectTag({ effect, size = 'small', emoji }: EffectTagPr
   return (
     <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
       <ThemedText className={`${style.text} text-xs ${size === 'large' ? 'font-medium' : ''}`}>
-        {emojiIcon ? `${emojiIcon} ` : ''}{displayEffect}
+        {emojiIcon ? `${emojiIcon} ` : ''}
+        {displayEffect}
       </ThemedText>
     </View>
   );

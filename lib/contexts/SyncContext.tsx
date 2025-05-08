@@ -1,15 +1,23 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { synchronizeWithServer, getSyncHealth } from '../services/sync-service';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useCallback,
+  useEffect,
+} from 'react';
+
 // Import from AuthProvider only
 import { useAuth } from './AuthProvider';
 // Import shared types from SyncTypes
-import { 
-  isValidUuid, 
-  LAST_SYNC_KEY, 
+import {
+  isValidUuid,
+  LAST_SYNC_KEY,
   FIRST_SYNC_COMPLETED_KEY,
-  SyncStateInterface 
+  SyncStateInterface,
 } from './SyncTypes';
+import { synchronizeWithServer, getSyncHealth } from '../services/sync-service';
 
 // Don't import from DatabaseProvider - we'll get the database instance as a prop
 
@@ -58,7 +66,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children, database }
         if (lastSyncTimestamp) {
           setLastSyncTimeState(new Date(parseInt(lastSyncTimestamp, 10)));
         }
-        
+
         // Check if first sync has been completed
         const firstSyncCompleted = await AsyncStorage.getItem(FIRST_SYNC_COMPLETED_KEY);
         setIsFirstSync(firstSyncCompleted !== 'true');
@@ -66,7 +74,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children, database }
         console.error('Error loading sync state:', error);
       }
     }
-    
+
     loadSyncState();
   }, []);
 
@@ -84,12 +92,13 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children, database }
 
   const setLastSyncTime = useCallback((time: Date | null) => {
     setLastSyncTimeState(time);
-    
+
     // Store the sync time in AsyncStorage
     if (time) {
-      AsyncStorage.setItem(LAST_SYNC_KEY, time.getTime().toString())
-        .catch(error => console.error('Failed to store last sync time:', error));
-        
+      AsyncStorage.setItem(LAST_SYNC_KEY, time.getTime().toString()).catch((error) =>
+        console.error('Failed to store last sync time:', error)
+      );
+
       // Clear error on successful sync completion
       setSyncErrorState(null);
     }
@@ -106,7 +115,7 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children, database }
   const clearSyncError = useCallback(() => {
     setSyncErrorState(null);
   }, []);
-  
+
   const markFirstSyncCompleted = useCallback(async () => {
     try {
       await AsyncStorage.setItem(FIRST_SYNC_COMPLETED_KEY, 'true');
@@ -118,45 +127,52 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children, database }
   }, []);
 
   // Function to trigger a sync with the server
-  const triggerSync = useCallback(async (force: boolean = false): Promise<boolean> => {
-    if (isSyncing) {
-      console.log('Sync already in progress, skipping...');
-      return false;
-    }
-
-    if (!database || !user?.id) {
-      console.warn('Cannot sync: database or user ID not available');
-      return false;
-    }
-
-    try {
-      setIsSyncing(true);
-      
-      const syncSuccess = await synchronizeWithServer(
-        database,
-        user.id,
-        isFirstSync,
-        force
-      );
-      
-      if (syncSuccess) {
-        const now = new Date();
-        setLastSyncTime(now);
-        
-        if (isFirstSync) {
-          await markFirstSyncCompleted();
-        }
+  const triggerSync = useCallback(
+    async (force: boolean = false): Promise<boolean> => {
+      if (isSyncing) {
+        console.log('Sync already in progress, skipping...');
+        return false;
       }
-      
-      return syncSuccess;
-    } catch (error) {
-      console.error('Sync error:', error);
-      setSyncError(error instanceof Error ? error : new Error(String(error)));
-      return false;
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [database, user, isSyncing, isFirstSync, setIsSyncing, setLastSyncTime, setSyncError, markFirstSyncCompleted]);
+
+      if (!database || !user?.id) {
+        console.warn('Cannot sync: database or user ID not available');
+        return false;
+      }
+
+      try {
+        setIsSyncing(true);
+
+        const syncSuccess = await synchronizeWithServer(database, user.id, isFirstSync, force);
+
+        if (syncSuccess) {
+          const now = new Date();
+          setLastSyncTime(now);
+
+          if (isFirstSync) {
+            await markFirstSyncCompleted();
+          }
+        }
+
+        return syncSuccess;
+      } catch (error) {
+        console.error('Sync error:', error);
+        setSyncError(error instanceof Error ? error : new Error(String(error)));
+        return false;
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [
+      database,
+      user,
+      isSyncing,
+      isFirstSync,
+      setIsSyncing,
+      setLastSyncTime,
+      setSyncError,
+      markFirstSyncCompleted,
+    ]
+  );
 
   // Retrieve current sync metrics
   const getSyncMetrics = useCallback(() => {
@@ -166,14 +182,17 @@ export const SyncProvider: React.FC<SyncProviderProps> = ({ children, database }
   // Set up periodic sync (optional)
   useEffect(() => {
     if (!database || !user?.id) return;
-    
+
     // Schedule sync every 10 minutes
-    const intervalId = setInterval(() => {
-      if (!isSyncing) {
-        triggerSync(false).catch(console.error);
-      }
-    }, 10 * 60 * 1000);
-    
+    const intervalId = setInterval(
+      () => {
+        if (!isSyncing) {
+          triggerSync(false).catch(console.error);
+        }
+      },
+      10 * 60 * 1000
+    );
+
     return () => clearInterval(intervalId);
   }, [database, user, isSyncing, triggerSync]);
 

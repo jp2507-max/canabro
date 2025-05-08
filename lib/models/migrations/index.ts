@@ -74,16 +74,18 @@ export default schemaMigrations({
     {
       toVersion: 17,
       steps: [
-        // Create the favorite_strains table if it doesn't exist
         {
           type: 'create_table',
-          name: 'favorite_strains',
-          columns: [
-            { name: 'user_id', type: 'string', isIndexed: true },
-            { name: 'strain_id', type: 'string', isIndexed: true },
-            { name: 'created_at', type: 'number' },
-            { name: 'updated_at', type: 'number' },
-          ],
+          schema: {
+            name: 'favorite_strains',
+            columns: {}, // Empty object to satisfy type requirements
+            columnArray: [
+              { name: 'user_id', type: 'string', isIndexed: true },
+              { name: 'strain_id', type: 'string', isIndexed: true },
+              { name: 'created_at', type: 'number' },
+              { name: 'updated_at', type: 'number' },
+            ],
+          },
         },
       ],
     },

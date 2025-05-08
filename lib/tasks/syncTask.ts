@@ -44,7 +44,7 @@ TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
       console.log(`[${BACKGROUND_SYNC_TASK}] No active user ID found. Skipping sync.`);
       return BackgroundFetch.BackgroundFetchResult.NoData;
     }
-    
+
     // 3. Check if we have any changes to sync
     const hasChanges = await checkUnsyncedChanges(database);
     if (!hasChanges) {

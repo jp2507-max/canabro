@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from 'react';
-import { PlantTask } from '../../lib/models/PlantTask';
-import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
-import CalendarScreenView from './CalendarScreenView';
 import { useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+
+import CalendarScreenView from './CalendarScreenView';
+import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
+import { PlantTask } from '../../lib/models/PlantTask';
 
 interface CalendarScreenContainerProps {
   selectedDate: Date;
@@ -11,7 +12,12 @@ interface CalendarScreenContainerProps {
   onDateSelect: (date: Date) => void;
 }
 
-function CalendarScreenContainer({ selectedDate, userId, setIsTaskActionsVisible, onDateSelect }: CalendarScreenContainerProps) {
+function CalendarScreenContainer({
+  selectedDate,
+  userId,
+  setIsTaskActionsVisible,
+  onDateSelect,
+}: CalendarScreenContainerProps) {
   const [tasks, setTasks] = useState<PlantTask[]>([]);
   const [loading, setLoading] = useState(true);
   const { refreshing, handleRefresh } = usePullToRefresh();
@@ -40,11 +46,14 @@ function CalendarScreenContainer({ selectedDate, userId, setIsTaskActionsVisible
   }
   function handleAddTaskPlant() {
     setTaskActionsVisible(false);
-    router.push('(tabs)/task/add'); // Expo Router expects relative route from /app
+    router.push('/task/add' as any); // Added type assertion to handle path format
   }
   function handleAddTaskAll() {
     setTaskActionsVisible(false);
-    router.push({ pathname: '(tabs)/task/add', params: { all: '1' } });
+    router.push({
+      pathname: '/task/add-all' as any, // Added type assertion to handle path format
+      params: { all: '1' },
+    });
   }
 
   return (

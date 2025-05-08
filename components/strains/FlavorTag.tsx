@@ -152,7 +152,8 @@ export default function FlavorTag({ flavor, emoji }: FlavorTagProps) {
   return (
     <View className={`${style.bg} mb-2 mr-2 rounded-full px-2 py-1`}>
       <ThemedText className={`${style.text} text-xs`}>
-        {emojiIcon ? `${emojiIcon} ` : ''}{displayFlavor}
+        {emojiIcon ? `${emojiIcon} ` : ''}
+        {displayFlavor}
       </ThemedText>
     </View>
   );

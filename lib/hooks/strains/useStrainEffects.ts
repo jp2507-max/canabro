@@ -40,7 +40,7 @@ export function strainEffectsQueryOptions(strainId: string | undefined | null) {
  */
 export function useStrainEffects(
   strainId: string | undefined | null,
-  options?: StrainEffectsOptions, // Accept optional options
+  options?: StrainEffectsOptions // Accept optional options
 ) {
   // Merge the base options with any provided options
   return useQuery({

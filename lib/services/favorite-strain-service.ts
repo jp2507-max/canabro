@@ -1,17 +1,17 @@
 /**
  * FavoriteStrainService
- * 
+ *
  * A service for managing user favorite strains in the local database
  * with robust error handling to prevent 'collections.has is not a function' errors
  */
 
-import { Q } from '@nozbe/watermelondb';
+import { Q, Model, Collection } from '@nozbe/watermelondb';
+
 import { database } from '../models';
 import { FavoriteStrain } from '../models/FavoriteStrain';
-import { Model, Collection } from '@nozbe/watermelondb';
 import supabase from '../supabase';
-import { ensureUuid } from '../utils/uuid';
 import { isObjectId, isUuid, storeIdMapping } from '../utils/strainIdMapping';
+import { ensureUuid } from '../utils/uuid';
 
 /**
  * Safely gets the favorite_strains collection with error handling
@@ -26,7 +26,7 @@ function getFavoritesCollection(): Collection<FavoriteStrain> | null {
         console.warn('[FavoriteStrainService] Could not get collection via database.get', error);
       }
     }
-    
+
     // Second attempt: try collections property if available
     if (database && database.collections) {
       // Try get method on collections
@@ -34,18 +34,24 @@ function getFavoritesCollection(): Collection<FavoriteStrain> | null {
         try {
           return database.collections.get<FavoriteStrain>('favorite_strains');
         } catch (error) {
-          console.warn('[FavoriteStrainService] Could not get collection via collections.get', error);
+          console.warn(
+            '[FavoriteStrainService] Could not get collection via collections.get',
+            error
+          );
         }
       }
-      
+
       // Try direct property access - with explicit type assertion for safety
       // Note: This approach should be avoided if possible as it bypasses type safety
-      const collections = database.collections as unknown as Record<string, Collection<FavoriteStrain>>;
+      const collections = database.collections as unknown as Record<
+        string,
+        Collection<FavoriteStrain>
+      >;
       if (collections && collections['favorite_strains']) {
         return collections['favorite_strains'];
       }
     }
-    
+
     throw new Error('Could not access favorite_strains collection by any method');
   } catch (error) {
     console.error('[FavoriteStrainService] Failed to access favorites collection:', error);
@@ -58,7 +64,10 @@ function getFavoritesCollection(): Collection<FavoriteStrain> | null {
 /**
  * Check if a strain is favorited by a user
  */
-export async function isStrainFavorite(userId: string | null | undefined, strainId: string | null | undefined): Promise<boolean> {
+export async function isStrainFavorite(
+  userId: string | null | undefined,
+  strainId: string | null | undefined
+): Promise<boolean> {
   if (!userId || !strainId) {
     return false;
   }
@@ -69,10 +78,9 @@ export async function isStrainFavorite(userId: string | null | undefined, strain
       return false;
     }
 
-    const favorites = await collection.query(
-      Q.where('user_id', userId),
-      Q.where('strain_id', strainId)
-    ).fetch();
+    const favorites = await collection
+      .query(Q.where('user_id', userId), Q.where('strain_id', strainId))
+      .fetch();
 
     return favorites.length > 0;
   } catch (error) {
@@ -87,15 +95,18 @@ export async function isStrainFavorite(userId: string | null | undefined, strain
  * Ensures a strain exists in Supabase before favoriting
  * This resolves foreign key constraint issues between API strains and Supabase favorites
  */
-async function ensureStrainExistsInSupabase(strainId: string, strainData: { 
-  name?: string; 
-  type?: string;
-  description?: string | string[];
-  effects?: string[];
-  flavors?: string[];
-  image?: string;
-  originalId?: string; // MongoDB ObjectId if available
-} = {}): Promise<string | null> {
+async function ensureStrainExistsInSupabase(
+  strainId: string,
+  strainData: {
+    name?: string;
+    type?: string;
+    description?: string | string[];
+    effects?: string[];
+    flavors?: string[];
+    image?: string;
+    originalId?: string; // MongoDB ObjectId if available
+  } = {}
+): Promise<string | null> {
   try {
     // Generate a UUID for the strain ID
     const uuidStrainId = ensureUuid(strainId);
@@ -103,19 +114,19 @@ async function ensureStrainExistsInSupabase(strainId: string, strainData: {
       console.error('[FavoriteStrainService] Could not generate UUID for strain:', strainId);
       return null;
     }
-    
+
     // Determine the MongoDB ObjectId, either directly or from strainData
     const mongoObjectId = isObjectId(strainId) ? strainId : strainData.originalId;
-    
+
     // Store mapping if we have both UUID and ObjectId
     if (mongoObjectId && uuidStrainId && isObjectId(mongoObjectId) && isUuid(uuidStrainId)) {
       storeIdMapping(uuidStrainId, mongoObjectId);
     }
-    
-    console.log('[DEBUG] Ensuring strain exists:', { 
+
+    console.log('[DEBUG] Ensuring strain exists:', {
       originalId: mongoObjectId || strainId,
       uuid: uuidStrainId,
-      name: strainData.name
+      name: strainData.name,
     });
 
     // Step 1: Check if strain already exists by ID
@@ -124,11 +135,11 @@ async function ensureStrainExistsInSupabase(strainId: string, strainData: {
       .select('id')
       .eq('id', uuidStrainId)
       .maybeSingle();
-      
-    if (checkError && checkError.code !== 'PGRST116') { 
+
+    if (checkError && checkError.code !== 'PGRST116') {
       console.error('[DEBUG] Error checking if strain exists by ID:', checkError);
     }
-    
+
     // If strain already exists by ID, return its UUID
     if (existingStrainById) {
       console.log('[DEBUG] Strain already exists in Supabase by ID:', existingStrainById);
@@ -150,56 +161,59 @@ async function ensureStrainExistsInSupabase(strainId: string, strainData: {
         return existingStrainByName.id;
       }
     }
-    
+
     // Step 3: If not found by ID or name, create it
     console.log('[DEBUG] Creating strain in Supabase with ID:', uuidStrainId);
-    
+
     const { data: insertData, error: insertError } = await supabase
       .from('strains')
-      .insert({ 
-        id: uuidStrainId, 
+      .insert({
+        id: uuidStrainId,
         name: strainData.name || 'Unknown Strain',
         type: strainData.type || null,
         effects: strainData.effects || null,
-        flavors: strainData.flavors || null
+        flavors: strainData.flavors || null,
       })
       .select()
       .single();
-      
+
     if (insertError) {
       console.error('[DEBUG] Error creating strain:', insertError);
-      
+
       // Step 4: If insert failed due to duplicate key, try to find by name again
       // This handles race conditions and edge cases
       if (insertError.code === '23505') {
         console.log('[DEBUG] Duplicate key error, searching for strain by name:', strainData.name);
-        
+
         const { data: dupNameCheck } = await supabase
           .from('strains')
           .select('id, name')
           .ilike('name', strainData.name || 'Unknown Strain')
           .maybeSingle();
-          
+
         if (dupNameCheck?.id) {
           console.log('[DEBUG] Found existing strain after duplicate key error:', dupNameCheck);
           return dupNameCheck.id;
         }
       }
-      
+
       // Step 5: If the issue is RLS policy, try using RPC function
       if (insertError.code === '42501' || insertError.message?.includes('row-level security')) {
         console.log('[DEBUG] RLS policy violation, trying RPC function instead');
-        
+
         try {
-          const { data: lastResort, error: lastError } = await supabase.rpc('ensure_strain_exists', {
-            p_id: uuidStrainId,
-            p_name: strainData.name || 'Unknown Strain',
-            p_type: strainData.type || null
-          });
-          
+          const { data: lastResort, error: lastError } = await supabase.rpc(
+            'ensure_strain_exists',
+            {
+              p_id: uuidStrainId,
+              p_name: strainData.name || 'Unknown Strain',
+              p_type: strainData.type || null,
+            }
+          );
+
           if (lastError) {
             console.error('[DEBUG] Final attempt to create strain failed:', lastError);
-            
+
             // Step 6: Last resort - try to find ANY strain with matching name
             const { data: finalNameCheck } = await supabase
               .from('strains')
@@ -207,15 +221,15 @@ async function ensureStrainExistsInSupabase(strainId: string, strainData: {
               .ilike('name', strainData.name || 'Unknown Strain')
               .limit(1)
               .maybeSingle();
-              
+
             if (finalNameCheck?.id) {
               console.log('[DEBUG] Found existing strain in final check:', finalNameCheck);
               return finalNameCheck.id;
             }
-            
+
             return null;
           }
-          
+
           console.log('[DEBUG] Created strain via RPC function:', lastResort);
           return uuidStrainId;
         } catch (finalError) {
@@ -223,11 +237,11 @@ async function ensureStrainExistsInSupabase(strainId: string, strainData: {
           return null;
         }
       }
-      
+
       // Non-recoverable error
       return null;
     }
-    
+
     console.log('[DEBUG] Successfully created strain:', insertData);
     return uuidStrainId;
   } catch (error) {
@@ -240,8 +254,8 @@ async function ensureStrainExistsInSupabase(strainId: string, strainData: {
  * Add a strain to user's favorites in both WatermelonDB and Supabase
  */
 export async function addFavoriteStrain(
-  userId: string, 
-  strainId: string, 
+  userId: string,
+  strainId: string,
   strainData: {
     name?: string;
     type?: string;
@@ -261,7 +275,7 @@ export async function addFavoriteStrain(
     // Determine the MongoDB ObjectId
     // Priority: 1. strainData.originalId, 2. strainId if it's an ObjectId
     let mongoObjectId: string | undefined = undefined;
-    
+
     if (strainData.originalId && isObjectId(strainData.originalId)) {
       // Case 1: originalId is provided and is a valid MongoDB ObjectId
       mongoObjectId = strainData.originalId;
@@ -273,12 +287,15 @@ export async function addFavoriteStrain(
     } else {
       console.log('[DEBUG] No valid MongoDB ObjectId available for strain:', strainId);
     }
-    
+
     // Store mapping if we have both UUID and ObjectId
     const uuidStrainId = ensureUuid(strainId);
     if (mongoObjectId && uuidStrainId && isObjectId(mongoObjectId) && isUuid(uuidStrainId)) {
       storeIdMapping(uuidStrainId, mongoObjectId);
-      console.log('[DEBUG] Stored mapping between UUID and ObjectId:', { uuid: uuidStrainId, objectId: mongoObjectId });
+      console.log('[DEBUG] Stored mapping between UUID and ObjectId:', {
+        uuid: uuidStrainId,
+        objectId: mongoObjectId,
+      });
     }
 
     // Local database operation
@@ -293,14 +310,14 @@ export async function addFavoriteStrain(
       console.error('[DEBUG] Failed to refresh auth session:', refreshError);
       throw new Error('Authentication refresh failed');
     }
-    
+
     // Use the refreshed session
     const authUserId = refreshData.session?.user.id;
     if (!authUserId) {
       console.error('[DEBUG] No authenticated user found after refresh');
       throw new Error('Authentication verification failed');
     }
-    
+
     // Ensure the userId matches the authenticated user's ID
     if (userId !== authUserId) {
       console.error('[DEBUG] User ID mismatch:', { providedId: userId, authUserId });
@@ -316,17 +333,19 @@ export async function addFavoriteStrain(
       flavors: strainData.flavors,
       originalId: mongoObjectId,
     });
-    
+
     if (!finalUuidStrainId) {
-      console.error('[DEBUG] Failed to ensure strain exists in Supabase, aborting favorite operation');
+      console.error(
+        '[DEBUG] Failed to ensure strain exists in Supabase, aborting favorite operation'
+      );
       return false;
     }
-    
-    console.log('[DEBUG] Adding favorite relation in Supabase:', { 
-      uuid: finalUuidStrainId, 
-      objectId: mongoObjectId || 'NONE' 
+
+    console.log('[DEBUG] Adding favorite relation in Supabase:', {
+      uuid: finalUuidStrainId,
+      objectId: mongoObjectId || 'NONE',
     });
-    
+
     // Then add the favorite relation in Supabase, explicitly including the strain_object_id field
     const upsertData: {
       user_id: string;
@@ -336,20 +355,20 @@ export async function addFavoriteStrain(
     } = {
       user_id: authUserId,
       strain_id: finalUuidStrainId,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
-    
+
     // Only add strain_object_id if we have a valid MongoDB ObjectId
     if (mongoObjectId && isObjectId(mongoObjectId)) {
       console.log('[DEBUG] Including ObjectId in Supabase record:', mongoObjectId);
       upsertData.strain_object_id = mongoObjectId;
     }
-    
+
     const { data: favoriteData, error: favoriteError } = await supabase
       .from('user_favorite_strains')
       .upsert(upsertData)
       .select();
-      
+
     if (favoriteError) {
       // If we still get an RLS error, try using the RPC approach as a fallback
       if (favoriteError.code === '42501') {
@@ -357,14 +376,14 @@ export async function addFavoriteStrain(
         try {
           const { data: rpcResult, error: rpcError } = await supabase.rpc('add_favorite_strain', {
             p_strain_id: finalUuidStrainId,
-            p_created_at: new Date().toISOString()
+            p_created_at: new Date().toISOString(),
           });
-          
+
           if (rpcError) {
             console.error('[DEBUG] RPC fallback also failed:', rpcError);
             return false;
           }
-          
+
           console.log('[DEBUG] Successfully added favorite using RPC function:', rpcResult);
         } catch (rpcFallbackError) {
           console.error('[DEBUG] RPC fallback exception:', rpcFallbackError);
@@ -377,7 +396,7 @@ export async function addFavoriteStrain(
     } else {
       console.log('[DEBUG] Successfully added favorite in Supabase:', favoriteData);
     }
-    
+
     // Check if already favorited locally to avoid duplicates
     const existing = await isStrainFavorite(userId, strainId);
     if (!existing) {
@@ -394,7 +413,7 @@ export async function addFavoriteStrain(
     } else {
       console.log('[DEBUG] Strain already favorited locally');
     }
-    
+
     return true;
   } catch (error) {
     console.error('[DEBUG] Error adding favorite strain:', error);
@@ -418,10 +437,9 @@ export async function removeFavoriteStrain(userId: string, strainId: string): Pr
       throw new Error('Failed to get favorites collection');
     }
 
-    const favorites = await collection.query(
-      Q.where('user_id', userId),
-      Q.where('strain_id', strainId)
-    ).fetch();
+    const favorites = await collection
+      .query(Q.where('user_id', userId), Q.where('strain_id', strainId))
+      .fetch();
 
     if (favorites.length === 0) {
       return true; // Nothing to remove, return success
@@ -432,7 +450,7 @@ export async function removeFavoriteStrain(userId: string, strainId: string): Pr
         await favorite.destroyPermanently();
       }
     });
-    
+
     // Sync with Supabase (with UUID conversion)
     try {
       const uuidStrainId = ensureUuid(strainId);
@@ -446,7 +464,7 @@ export async function removeFavoriteStrain(userId: string, strainId: string): Pr
       // Log Supabase error but don't fail the local operation
       console.error('[FavoriteStrainService] Supabase sync error:', supabaseError);
     }
-    
+
     return true;
   } catch (error) {
     console.error('[FavoriteStrainService] Error removing favorite strain:', error);
@@ -468,11 +486,9 @@ export async function getUserFavoriteStrains(userId: string): Promise<string[]> 
       return [];
     }
 
-    const favorites = await collection.query(
-      Q.where('user_id', userId)
-    ).fetch();
+    const favorites = await collection.query(Q.where('user_id', userId)).fetch();
 
-    return favorites.map(favorite => favorite.strainId);
+    return favorites.map((favorite) => favorite.strainId);
   } catch (error) {
     console.error('[FavoriteStrainService] Error getting user favorite strains:', error);
     // Replace Sentry with console.error for now

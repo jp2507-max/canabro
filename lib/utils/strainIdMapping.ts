@@ -26,7 +26,7 @@ export function getObjectIdFromUuid(uuid: string): string | null {
   if (isObjectId(uuid)) {
     return uuid;
   }
-  
+
   // Otherwise, look up in the mapping
   return idMappingCache.get(uuid) || null;
 }
@@ -40,7 +40,7 @@ export function getUuidFromObjectId(objectId: string): string | null {
   if (isUuid(objectId)) {
     return objectId;
   }
-  
+
   // Otherwise, look up in the mapping
   return idMappingCache.get(objectId) || null;
 }
@@ -49,12 +49,12 @@ export function getUuidFromObjectId(objectId: string): string | null {
  * Store a batch of ID mappings from strain data
  */
 export function storeBatchMappings(
-  strains: Array<{id?: string; uuid?: string; originalId?: string; objectId?: string}>
+  strains: { id?: string; uuid?: string; originalId?: string; objectId?: string }[]
 ): void {
   for (const strain of strains) {
     const uuid = strain.uuid || strain.id;
     const objectId = strain.objectId || strain.originalId;
-    
+
     if (uuid && objectId) {
       storeIdMapping(uuid, objectId);
     }

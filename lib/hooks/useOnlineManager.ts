@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import { onlineManager } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 /**
  * Hook that syncs the online state of your app with React Query's

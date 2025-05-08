@@ -61,7 +61,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       quality: 0.8,
     });
 
-    if (!result.canceled) {
+    if (!result.canceled && result.assets?.[0]?.uri) {
       setImage(result.assets[0].uri);
       console.log('Photo taken:', result.assets[0].uri);
     }
@@ -74,13 +74,13 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], // Use lowercase string literal 'images'
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
     });
 
-    if (!result.canceled) {
+    if (!result.canceled && result.assets?.[0]?.uri) {
       setImage(result.assets[0].uri);
       console.log('Image selected:', result.assets[0].uri);
     }
@@ -120,7 +120,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
         manipResult.uri,
         `(${manipResult.width}x${manipResult.height})`
       );
-      // --- ---
+      // ---
 
       // Determine the correct MIME type (manipulation forces JPEG)
       const mimeType = 'image/jpeg';
@@ -174,7 +174,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       return null;
     }
   };
-  // --- ---
+  // ---
 
   // Handle post submission
   const handleSubmit = async () => {
@@ -195,7 +195,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
         }
         imageUrl = uploadedUrl;
       }
-      // --- ---
+      // ---
 
       console.log('Calling createPost with:', { userId: user.id, content, imageUrl });
       const newPost = await createPost({

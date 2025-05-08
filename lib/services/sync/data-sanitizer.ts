@@ -59,7 +59,7 @@ export function formatDateForSupabase(date: Date | number | string | null): stri
 
 /**
  * Validates if a string is a proper UUID
- * 
+ *
  * @param uuid The UUID string to validate
  * @returns Boolean indicating if it's a valid UUID
  */

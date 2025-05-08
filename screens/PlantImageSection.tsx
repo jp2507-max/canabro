@@ -1,8 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, Image, View, Alert, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
+
 import ThemedText from '../components/ui/ThemedText';
 import ThemedView from '../components/ui/ThemedView';
 
@@ -50,7 +51,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
         aspect: [1, 1],
         quality: 0.8,
       });
-      if (result && !result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.[0]?.uri) {
         await processAndSetImage(result.assets[0].uri);
       }
     } catch (error) {
@@ -71,7 +72,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
         aspect: [1, 1],
         quality: 0.8,
       });
-      if (result && !result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.[0]?.uri) {
         await processAndSetImage(result.assets[0].uri);
       }
     } catch (error) {
@@ -81,7 +82,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
   }
 
   return (
-    <ThemedView className="items-center mb-6">
+    <ThemedView className="mb-6 items-center">
       {processing ? (
         <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-black/50">
           <ActivityIndicator size="large" color={theme.colors.primary[500]} />
@@ -102,20 +103,18 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
         />
       )}
       {isEditing && (
-        <View className="flex-row mt-4 space-x-4">
+        <View className="mt-4 flex-row space-x-4">
           <TouchableOpacity
             className="rounded-lg bg-primary-500 px-4 py-2"
             onPress={handleImagePick}
-            accessibilityLabel="Pick image from gallery"
-          >
-            <ThemedText className="text-white font-medium">Pick Image</ThemedText>
+            accessibilityLabel="Pick image from gallery">
+            <ThemedText className="font-medium text-white">Pick Image</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
             className="rounded-lg bg-primary-500 px-4 py-2"
             onPress={handleTakePicture}
-            accessibilityLabel="Take a new picture"
-          >
-            <ThemedText className="text-white font-medium">Take Picture</ThemedText>
+            accessibilityLabel="Take a new picture">
+            <ThemedText className="font-medium text-white">Take Picture</ThemedText>
           </TouchableOpacity>
         </View>
       )}

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { WeedDbService, weedDbKeys } from '@/lib/services/weed-db.service';
 import { Strain } from '@/lib/types/weed-db';
 
@@ -30,7 +31,7 @@ export function strainsByTypeQueryOptions(type?: StrainType) {
  * Hook for fetching strains by type using the queryOptions pattern
  */
 export function useStrainsByType(type: StrainType) {
-  // Use the custom hook pattern with explicit generic type 
+  // Use the custom hook pattern with explicit generic type
   // to avoid TypeScript errors with query key types
   return useQuery<Strain[]>(strainsByTypeQueryOptions(type));
 }

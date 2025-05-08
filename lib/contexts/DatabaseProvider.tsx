@@ -37,16 +37,16 @@ export const useDatabase = () => {
 // Modify the DatabaseProvider component to handle potential missing SyncContext
 export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session } = useAuth();
-  
-  // Use state hooks for sync-related state 
+
+  // Use state hooks for sync-related state
   const [isInitializing, setIsInitializing] = useState(true);
   const [databaseError, setDatabaseError] = useState<Error | null>(null);
-  
+
   // Create internal state for sync status
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [syncError, setSyncError] = useState<Error | null>(null);
-  
+
   // Use refs to manage interval and setup state reliably
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
   const syncSetupDoneRef = useRef<boolean>(false);
@@ -62,18 +62,24 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         // Only run the reset check here. The database instance is already created.
         await forceResetDatabaseIfNeeded();
-        
+
         // Load sync metadata from localStorage for fault tolerance
         const syncMetadata = await loadSyncMetadata(database);
         if (syncMetadata.lastSyncTime) {
           setLastSyncTime(new Date(syncMetadata.lastSyncTime));
-          console.log('[DatabaseProvider] Restored last sync time:', new Date(syncMetadata.lastSyncTime).toISOString());
+          console.log(
+            '[DatabaseProvider] Restored last sync time:',
+            new Date(syncMetadata.lastSyncTime).toISOString()
+          );
         }
-        
+
         if (syncMetadata.lastSyncError) {
-          console.log('[DatabaseProvider] Found previous sync error:', syncMetadata.lastSyncError.message);
+          console.log(
+            '[DatabaseProvider] Found previous sync error:',
+            syncMetadata.lastSyncError.message
+          );
         }
-        
+
         if (isMounted) {
           setDatabaseError(null);
         }
@@ -132,9 +138,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const sync = useCallback(async () => {
     const userId = session?.user?.id;
     if (syncInProgressRef.current || !isValidUuid(userId)) {
-      console.log(
-        `Sync skipped: syncInProgressRef=${syncInProgressRef.current}, userId=${userId}`
-      );
+      console.log(`Sync skipped: syncInProgressRef=${syncInProgressRef.current}, userId=${userId}`);
       return false;
     }
 
@@ -343,9 +347,7 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Provide the database context, and wrap children with the SyncProvider to break the dependency cycle
   return (
     <DatabaseContext.Provider value={databaseContextValue}>
-      <SyncProvider database={database}>
-        {children}
-      </SyncProvider>
+      <SyncProvider database={database}>{children}</SyncProvider>
     </DatabaseContext.Provider>
   );
 };

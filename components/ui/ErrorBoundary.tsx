@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text } from 'react-native';
+
 import ThemedText from '../ui/ThemedText';
 
 interface ErrorBoundaryProps {
@@ -11,7 +12,10 @@ export function ErrorBoundary({ children }: ErrorBoundaryProps) {
   const [error, setError] = useState<Error | null>(null);
 
   // Error boundary using componentDidCatch pattern
-  class Boundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  class Boundary extends React.Component<
+    { children: React.ReactNode },
+    { hasError: boolean; error: Error | null }
+  > {
     constructor(props: { children: React.ReactNode }) {
       super(props);
       this.state = { hasError: false, error: null };
@@ -27,8 +31,12 @@ export function ErrorBoundary({ children }: ErrorBoundaryProps) {
       if (this.state.hasError && this.state.error) {
         return (
           <View className="flex-1 items-center justify-center px-6">
-            <ThemedText className="text-xl font-bold mb-2 text-center">Something went wrong</ThemedText>
-            <ThemedText className="text-base mb-4 text-center">{this.state.error.message}</ThemedText>
+            <ThemedText className="mb-2 text-center text-xl font-bold">
+              Something went wrong
+            </ThemedText>
+            <ThemedText className="mb-4 text-center text-base">
+              {this.state.error.message}
+            </ThemedText>
           </View>
         );
       }

@@ -154,7 +154,7 @@ export default function CommentModal({
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.[0]?.uri) {
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
@@ -177,15 +177,15 @@ export default function CommentModal({
         return;
       }
 
-      // Launch image picker using lowercase string literal for media type
+      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // Use lowercase string literal 'images'
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.8,
         aspect: [4, 3],
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets?.[0]?.uri) {
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Ionicons } from '@expo/vector-icons'; // Removed unused icons
@@ -149,8 +148,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const currentStepObj = FORM_STEPS.find((step) => step.id === currentStepId) ?? FORM_STEPS[0];
   // Add an explicit check here for currentStepObj although ?? FORM_STEPS[0] should guarantee it
   if (!currentStepObj) {
-      // This should be unreachable, but satisfies TS stricter checks in some contexts
-      throw new Error("Current step object could not be determined.");
+    // This should be unreachable, but satisfies TS stricter checks in some contexts
+    throw new Error('Current step object could not be determined.');
   }
 
   // --- React Hook Form Setup ---
@@ -197,14 +196,14 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     // Get the current step object (add check for safety)
     const stepObj = FORM_STEPS[stepIndex];
     if (!stepObj) {
-      console.error("Could not find step object for index:", stepIndex);
+      console.error('Could not find step object for index:', stepIndex);
       return; // Should not happen, but prevents crash
     }
     // Get fields for the current step using optional chaining
     const fieldsToValidate = stepObj.fields; // Removed optional chaining (?.) since we've already checked stepObj exists
     if (!fieldsToValidate) {
-        console.error("Could not find fields for step object:", stepObj); // stepObj is guaranteed by the check above
-        return; // Prevent proceeding if fields are missing
+      console.error('Could not find fields for step object:', stepObj); // stepObj is guaranteed by the check above
+      return; // Prevent proceeding if fields are missing
     }
 
     // Trigger validation only for the current step's fields
@@ -216,7 +215,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       if (nextStepId) {
         setCurrentStepId(nextStepId);
       } else {
-        console.error("Could not find next step ID for index:", stepIndex + 1);
+        console.error('Could not find next step ID for index:', stepIndex + 1);
       }
     } else if (!isValidStep) {
       console.log('Validation errors on step:', currentStepId, errors);
@@ -239,10 +238,10 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       // Add check for safety, though stepIndex > 0 implies FORM_STEPS[stepIndex - 1] exists
       const previousStepId = FORM_STEPS[stepIndex - 1]?.id;
       if (previousStepId) {
-          setCurrentStepId(previousStepId);
+        setCurrentStepId(previousStepId);
       } else {
-          console.error("Could not find previous step ID for index:", stepIndex - 1);
-          router.back(); // Fallback
+        console.error('Could not find previous step ID for index:', stepIndex - 1);
+        router.back(); // Fallback
       }
     } else {
       router.back();
@@ -503,7 +502,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             );
             console.log('Plant notifications scheduled successfully');
           } else {
-             console.error('Error scheduling notifications: planted_date is invalid.');
+            console.error('Error scheduling notifications: planted_date is invalid.');
           }
         } catch (notifError) {
           console.error('Error scheduling plant notifications:', notifError);
@@ -763,17 +762,26 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               darkClassName="text-darkForeground">
               Cannabis Type
             </ThemedText>
-            <ThemedView className="-m-1 flex-row flex-wrap" collapsable={false}> {/* Add collapsable */}
+            <ThemedView className="-m-1 flex-row flex-wrap" collapsable={false}>
+              {' '}
+              {/* Add collapsable */}
               {Object.values(CannabisType).map((type) => {
                 const isSelected = value === type;
                 return (
                   <TouchableOpacity
                     key={type}
-                    className={`m-1 rounded-full border px-4 py-2.5`} // Keep base styles in className
-                    style={[ // Apply conditional styles via style prop
+                    className="m-1 rounded-full border px-4 py-2.5" // Keep base styles in className
+                    style={[
+                      // Apply conditional styles via style prop
                       isSelected
-                        ? { backgroundColor: theme.colors.primary[isDarkMode ? 700 : 500], borderColor: theme.colors.primary[isDarkMode ? 800 : 600] }
-                        : { backgroundColor: theme.colors.background, borderColor: theme.colors.neutral[isDarkMode ? 700 : 200] }
+                        ? {
+                            backgroundColor: theme.colors.primary[isDarkMode ? 700 : 500],
+                            borderColor: theme.colors.primary[isDarkMode ? 800 : 600],
+                          }
+                        : {
+                            backgroundColor: theme.colors.background,
+                            borderColor: theme.colors.neutral[isDarkMode ? 700 : 200],
+                          },
                     ]}
                     activeOpacity={0.7}
                     onPress={() => {
@@ -783,14 +791,13 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                     accessibilityState={{ checked: isSelected }}
                     accessibilityLabel={type}>
                     <ThemedText
-                       // Use theme colors for text based on selection
+                      // Use theme colors for text based on selection
                       style={{
                         fontWeight: '500',
                         color: isSelected
                           ? theme.colors.neutral[isDarkMode ? 50 : 900] // High contrast text for selected
-                          : theme.colors.neutral[isDarkMode ? 300 : 700] // Default text color
-                      }}
-                    >
+                          : theme.colors.neutral[isDarkMode ? 300 : 700], // Default text color
+                      }}>
                       {type}
                     </ThemedText>
                   </TouchableOpacity>
@@ -818,18 +825,27 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               darkClassName="text-darkForeground">
               Initial Growth Stage *
             </ThemedText>
-            <ThemedView className="-m-1 flex-row flex-wrap" collapsable={false}> {/* Add collapsable */}
+            <ThemedView className="-m-1 flex-row flex-wrap" collapsable={false}>
+              {' '}
+              {/* Add collapsable */}
               {Object.values(GrowthStage).map((stage) => {
                 const isSelected = value === stage;
                 const label = stage.charAt(0).toUpperCase() + stage.slice(1).replace(/_/g, ' ');
                 return (
                   <TouchableOpacity
                     key={stage}
-                    className={`m-1 rounded-full border px-4 py-2.5`} // Keep base styles in className
-                    style={[ // Apply conditional styles via style prop
+                    className="m-1 rounded-full border px-4 py-2.5" // Keep base styles in className
+                    style={[
+                      // Apply conditional styles via style prop
                       isSelected
-                        ? { backgroundColor: theme.colors.primary[isDarkMode ? 700 : 500], borderColor: theme.colors.primary[isDarkMode ? 800 : 600] }
-                        : { backgroundColor: theme.colors.background, borderColor: theme.colors.neutral[isDarkMode ? 700 : 200] }
+                        ? {
+                            backgroundColor: theme.colors.primary[isDarkMode ? 700 : 500],
+                            borderColor: theme.colors.primary[isDarkMode ? 800 : 600],
+                          }
+                        : {
+                            backgroundColor: theme.colors.background,
+                            borderColor: theme.colors.neutral[isDarkMode ? 700 : 200],
+                          },
                     ]}
                     activeOpacity={0.7}
                     onPress={() => {
@@ -840,13 +856,12 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                     accessibilityLabel={label}>
                     <ThemedText
                       // Use theme colors for text based on selection
-                       style={{
+                      style={{
                         fontWeight: '500',
                         color: isSelected
                           ? theme.colors.neutral[isDarkMode ? 50 : 900] // High contrast text for selected
-                          : theme.colors.neutral[isDarkMode ? 300 : 700] // Default text color
-                      }}
-                    >
+                          : theme.colors.neutral[isDarkMode ? 300 : 700], // Default text color
+                      }}>
                       {label}
                     </ThemedText>
                   </TouchableOpacity>

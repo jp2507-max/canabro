@@ -1,14 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { FlatList, TouchableOpacity, View, RefreshControl } from 'react-native';
-import ThemedView from '../../components/ui/ThemedView';
-import ThemedText from '../../components/ui/ThemedText';
-import { Ionicons } from '@expo/vector-icons';
-import PostItem from '../../components/community/PostItem';
+
 import CommentModal from '../../components/community/CommentModal';
 import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
-import { useTheme } from '../../lib/contexts/ThemeContext';
+import PostItem from '../../components/community/PostItem';
 import type { PostData } from '../../components/community/PostItem';
+import ThemedText from '../../components/ui/ThemedText';
+import ThemedView from '../../components/ui/ThemedView';
+import { useTheme } from '../../lib/contexts/ThemeContext';
 
 interface CommunityScreenViewProps {
   posts: PostData[];
@@ -92,15 +93,13 @@ function CommunityScreenView({
         <ThemedText
           className="mb-2 text-center text-lg font-bold"
           darkClassName="text-neutral-300"
-          lightClassName="text-neutral-700"
-        >
+          lightClassName="text-neutral-700">
           No Posts Yet
         </ThemedText>
         <ThemedText
           className="mb-8 text-center"
           darkClassName="text-neutral-400"
-          lightClassName="text-neutral-500"
-        >
+          lightClassName="text-neutral-500">
           Be the first to share your plants or ask a question!
         </ThemedText>
         <TouchableOpacity
@@ -108,8 +107,7 @@ function CommunityScreenView({
           className="rounded-full px-6 py-3"
           style={{ backgroundColor: theme.colors.primary[500] }}
           accessibilityLabel="Create Post"
-          accessibilityRole="button"
-        >
+          accessibilityRole="button">
           <ThemedText className="font-bold text-white">Create Post</ThemedText>
         </TouchableOpacity>
       </ThemedView>
@@ -146,8 +144,7 @@ function CommunityScreenView({
         style={{ backgroundColor: theme.colors.primary[500] }}
         onPress={() => setShowCreateModal(true)}
         accessibilityLabel="Create new post"
-        accessibilityRole="button"
-      >
+        accessibilityRole="button">
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
 

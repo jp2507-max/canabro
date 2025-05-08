@@ -43,7 +43,7 @@ export function strainByIdQueryOptions(strainId: string | undefined | null) {
  */
 export function useStrainById(
   strainId: string | undefined | null,
-  options?: StrainByIdOptions, // Accept optional options
+  options?: StrainByIdOptions // Accept optional options
 ) {
   // Merge the base options with any provided options
   return useQuery({
