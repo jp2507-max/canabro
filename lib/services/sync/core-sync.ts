@@ -8,6 +8,7 @@ import type { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
 
 import { handleTableConflicts, getPriorityForTable } from './conflict-resolver';
 import { sanitizeRecord, isValidUuid } from './data-sanitizer';
+import { ensureStrainExistsForSync } from './ensure-strain-exists';
 import { getSyncLogger, persistSyncMetadata, updateSyncMetrics } from './metrics';
 import { getNetworkStatus, getSyncConfig } from './network-manager';
 import {
@@ -15,6 +16,7 @@ import {
   validateRecordBatch,
   validateProfileChanges,
   sanitizeProfileRecords,
+  validatePlantRecord,
 } from './record-validator';
 import { SYNC_CONSTANTS } from './types';
 import { executeRpcWithRetry, syncMutex } from './utils';
@@ -324,43 +326,34 @@ export async function synchronizeWithServer(
                       );
                     }
                   } else {
-                    // Apply record validation to other tables
+                    // Apply record validation and cleaning to other tables
                     try {
-                      const created = receivedChanges[table]?.created || [];
-                      const updated = receivedChanges[table]?.updated || [];
-                      const deleted = receivedChanges[table]?.deleted || [];
+                      const createdFromServer = receivedChanges[table]?.created || [];
+                      const updatedFromServer = receivedChanges[table]?.updated || [];
+                      const deletedIds = receivedChanges[table]?.deleted || [];
 
-                      // Validate and clean each record
-                      const validatedCreated = created.filter((record: unknown) => {
-                        try {
-                          if (typeof record !== 'object' || !record || Array.isArray(record))
-                            return false;
-                          const cleaned = { ...(record as Record<string, unknown>) };
-                          delete cleaned._status;
-                          delete cleaned._changed;
-                          return cleaned.id && typeof cleaned.id === 'string';
-                        } catch (e) {
-                          return false;
+                      const mapAndCleanRecord = (record: unknown): Record<string, any> | null => {
+                        if (typeof record !== 'object' || !record || Array.isArray(record)) {
+                          // console.warn(`[Sync Clean] Skipping invalid record in ${table}: not an object`, record);
+                          return null;
                         }
-                      });
+                        const cleaned = { ...(record as Record<string, unknown>) };
+                        delete cleaned._status;
+                        delete cleaned._changed;
+                        if (!(cleaned.id && typeof cleaned.id === 'string' && cleaned.id.trim())) {
+                          // console.warn(`[Sync Clean] Skipping invalid record in ${table}: missing or invalid id`, cleaned);
+                          return null;
+                        }
+                        return cleaned;
+                      };
 
-                      const validatedUpdated = updated.filter((record: unknown) => {
-                        try {
-                          if (typeof record !== 'object' || !record || Array.isArray(record))
-                            return false;
-                          const cleaned = { ...(record as Record<string, unknown>) };
-                          delete cleaned._status;
-                          delete cleaned._changed;
-                          return cleaned.id && typeof cleaned.id === 'string';
-                        } catch (e) {
-                          return false;
-                        }
-                      });
+                      const cleanedCreated = createdFromServer.map(mapAndCleanRecord).filter(Boolean);
+                      const cleanedUpdated = updatedFromServer.map(mapAndCleanRecord).filter(Boolean);
 
                       ensuredChanges[table] = {
-                        created: validatedCreated,
-                        updated: validatedUpdated,
-                        deleted,
+                        created: cleanedCreated as any[],
+                        updated: cleanedUpdated as any[],
+                        deleted: deletedIds,
                       };
                     } catch (validationError) {
                       console.warn(`[Sync] Error validating ${table} records:`, validationError);
@@ -386,6 +379,55 @@ export async function synchronizeWithServer(
           }
         },
         pushChanges: async ({ changes, lastPulledAt }) => {
+
+          // Helper to ensure strain exists before syncing a plant
+          async function ensureStrainForPlantRecord(plant: any) {
+            console.log(`[Sync] ensureStrainForPlantRecord called for plant "${plant?.name}" (ID: ${plant?.id})`);
+            
+            // Check both strain_id and strainId (camelCase vs snake_case)
+            const strainId = plant?.strain_id || plant?.strainId;
+            
+            if (plant && strainId) {
+              console.log(`[Sync] Plant has strain_id/strainId: ${strainId}`);
+              
+              if (plant.strainObj) {
+                // Use the attached strain object
+                console.log(`[Sync] Using existing strainObj for plant ${plant.id} (${plant.name})`, plant.strainObj);
+                await ensureStrainExistsForSync(plant.strainObj);
+              } else {
+                // If strainObj is missing but we have strain_id, try to load the strain
+                try {
+                  const { getStrainById } = require('../../data/strains');
+                  console.log(`[Sync] Attempting to load strain with ID: ${strainId}`);
+                  const strain = getStrainById(strainId);
+                  if (strain) {
+                    console.log(`[Sync] Successfully loaded strain "${strain.name}" for ID ${strainId}`);
+                    // Store important strain data directly in the plant record for sync
+                    plant.strain = strain.name; // Ensure name is present
+                    
+                    // If we have snake_case in the DB but camelCase in the app
+                    if (!plant.strain_id && plant.strainId) {
+                      plant.strain_id = plant.strainId;
+                      console.log(`[Sync] Added strain_id (${plant.strain_id}) based on strainId`);
+                    }
+                    // If we have camelCase in the app but need snake_case for DB
+                    if (!plant.strainId && plant.strain_id) {
+                      plant.strainId = plant.strain_id;
+                      console.log(`[Sync] Added strainId (${plant.strainId}) based on strain_id`);
+                    }
+                    
+                    await ensureStrainExistsForSync(strain);
+                  } else {
+                    console.warn(`[Sync] No strain found for ID ${strainId}, plant sync may fail`);
+                  }
+                } catch (error) {
+                  console.error('[Sync] Error loading strain during sync:', error);
+                }
+              }
+            } else {
+              console.log(`[Sync] Plant has no strain ID, skipping strain relationship handling`);
+            }
+          }
           // Skip push for turbo mode initial sync
           if (useTurboMode && !lastPulledAt) {
             console.log('[Turbo Sync] Skipping initial push for turbo sync');
@@ -395,6 +437,35 @@ export async function synchronizeWithServer(
           if (!changes || Object.keys(changes).length === 0) {
             console.log('No changes to push');
             return;
+          }
+
+          // Enhanced plant record logging for debugging strain_id synchronization
+          if (changes.plants) {
+            // Log created plant records
+            if (changes.plants.created && changes.plants.created.length > 0) {
+              console.log(`[Sync Push] Processing ${changes.plants.created.length} new plant records`);
+              changes.plants.created.forEach(plant => {
+                console.log(`[Plant Create] ID: ${plant.id}, Name: ${plant.name}, ` + 
+                           `Strain: ${plant.strain || 'N/A'}, ` + 
+                           `StrainId: ${plant.strainId || 'N/A'}, ` +
+                           `strain_id: ${plant.strain_id || 'N/A'}`);
+              });
+            }
+            
+            // Log updated plant records
+            if (changes.plants.updated && changes.plants.updated.length > 0) {
+              console.log(`[Sync Push] Processing ${changes.plants.updated.length} updated plant records`);
+              changes.plants.updated.forEach(plant => {
+                console.log(`[Plant Update] ID: ${plant.id}, Name: ${plant.name}, ` + 
+                           `Strain: ${plant.strain || 'N/A'}, ` + 
+                           `StrainId: ${plant.strainId || 'N/A'}, ` +
+                           `strain_id: ${plant.strain_id || 'N/A'}`);
+              });
+            } else {
+              console.log('[Sync Push] No plant updates in the current push.');
+            }
+          } else {
+            console.log('[Sync Push] No plant records in the current push.');
           }
 
           try {
@@ -483,13 +554,32 @@ export async function synchronizeWithServer(
                 validUpdated = tableChanges.updated || [];
               }
 
-              // Sanitize records after validation
-              const sanitizedCreated = validCreated.map((record) =>
-                sanitizeRecord(record, tableName)
-              );
-              const sanitizedUpdated = validUpdated.map((record) =>
-                sanitizeRecord(record, tableName)
-              );
+              // Sanitize records after validation with special handling for plants
+              let sanitizedCreated;
+              let sanitizedUpdated;
+              if (tableName === 'plants') {
+                sanitizedCreated = [];
+                sanitizedUpdated = [];
+                for (const record of validCreated) {
+                  const validatedPlantRecord = validatePlantRecord(record);
+                  // Ensure strain exists before syncing plant
+                  await ensureStrainForPlantRecord(validatedPlantRecord);
+                  const sanitized = sanitizeRecord(validatedPlantRecord, tableName);
+                  // Log the outgoing plant payload for Supabase sync
+                  console.log('[Sync] Outgoing plant payload (created):', JSON.stringify(sanitized, null, 2));
+                  sanitizedCreated.push(sanitized);
+                }
+                for (const record of validUpdated) {
+                  const validatedPlantRecord = validatePlantRecord(record);
+                  await ensureStrainForPlantRecord(validatedPlantRecord);
+                  const sanitized = sanitizeRecord(validatedPlantRecord, tableName);
+                  console.log('[Sync] Outgoing plant payload (updated):', JSON.stringify(sanitized, null, 2));
+                  sanitizedUpdated.push(sanitized);
+                }
+              } else {
+                sanitizedCreated = validCreated.map((record) => sanitizeRecord(record, tableName));
+                sanitizedUpdated = validUpdated.map((record) => sanitizeRecord(record, tableName));
+              }
               const sanitizedDeleted = (tableChanges.deleted || []).map((id) => ({ id }));
 
               // Skip media-heavy content if configured

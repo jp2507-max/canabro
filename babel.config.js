@@ -4,6 +4,7 @@ module.exports = function (api) {
     presets: [['babel-preset-expo', { jsxImportSource: 'nativewind' }], 'nativewind/babel'],
     plugins: [
       ['@babel/plugin-proposal-decorators', { legacy: true }],
+      'react-native-reanimated/plugin', // Added Reanimated plugin as the last item
     ],
   };
 };

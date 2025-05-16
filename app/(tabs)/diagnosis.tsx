@@ -23,9 +23,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CameraCapture from '../../components/diagnosis/CameraCapture';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
+import DatabaseResetButton from '../../components/ui/DatabaseResetButton'; // Import the new button
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { useTheme } from '../../lib/contexts/ThemeContext';
-import { resetDatabase } from '../../lib/database/database'; // Added resetDatabase import
 import { analyzeImage } from '../../lib/services/diagnosis-service';
 import { DiagnosisResult } from '../../lib/types/diagnosis';
 
@@ -122,34 +122,11 @@ export default function DiagnosisScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       {/* --- TEMPORARY RESET BUTTON --- */}
-      <View style={{ padding: 10 }}>
-        <Button
-          title="!!! RESET DATABASE !!!"
-          color="red"
-          onPress={async () => {
-            Alert.alert(
-              'Confirm Reset',
-              'Are you sure you want to delete the local database? This cannot be undone.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Reset',
-                  style: 'destructive',
-                  onPress: async () => {
-                    console.log('Attempting DB reset...');
-                    const success = await resetDatabase();
-                    console.log('Reset success:', success);
-                    Alert.alert(
-                      'Reset Attempted',
-                      `Database reset ${success ? 'successful' : 'failed'}. Please fully restart the app now.`
-                    );
-                  },
-                },
-              ]
-            );
-          }}
-        />
-      </View>
+      {__DEV__ && ( // Ensure it's only available in development
+        <View style={{ padding: 10, alignItems: 'center' }}>
+          <DatabaseResetButton />
+        </View>
+      )}
       {/* --- END TEMPORARY BUTTON --- */}
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         {!image ? (

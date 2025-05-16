@@ -1,29 +1,27 @@
+import React, { useState, useRef } from 'react';
+import { View, TextInput, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as React from 'react';
-import { useState, useEffect } from 'react';
-import {
-  View,
-  // Text, // Prefer ThemedText
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  FlatList, // Use FlatList for suggestions
-  Modal, // Import Modal
-  StyleSheet, // Import StyleSheet for positioning
-  Dimensions, // Import Dimensions
-} from 'react-native';
+import { useQuery, UseQueryResult, QueryKey } from '@tanstack/react-query';
 
-import ThemedText from './ui/ThemedText'; // Import ThemedText
-import ThemedView from './ui/ThemedView'; // Import ThemedView
-import { useTheme } from '../lib/contexts/ThemeContext'; // Import useTheme
-import { searchStrainsByName, Strain } from '../lib/data/strains';
+import { useTheme } from '../lib/contexts/ThemeContext';
+import ThemedText from './ui/ThemedText';
+import ThemedView from './ui/ThemedView';
+import { WeedDbService } from '../lib/services/weed-db.service';
+import { Strain } from '../lib/types/weed-db';
+import { ensureUuid } from '../lib/utils/uuid';
+import { useDebounce } from '../lib/hooks/useDebounce';
+
+interface StrainSearchResponse { // Define the expected response structure
+  data: Strain[];
+}
 
 interface StrainAutocompleteProps {
   value: string;
-  onSelect: (strain: Strain) => void;
+  onSelect: (strain: Strain | null) => void;
   onInputChange: (text: string) => void;
   placeholder?: string;
   className?: string;
+  error?: string;
 }
 
 export function StrainAutocomplete({
@@ -32,78 +30,90 @@ export function StrainAutocomplete({
   onInputChange,
   placeholder = 'Search for a strain...',
   className = '',
+  error,
 }: StrainAutocompleteProps) {
-  const { theme, isDarkMode } = useTheme(); // Get theme context
+  const { theme, isDarkMode } = useTheme();
   const [query, setQuery] = useState(value);
-  const [suggestions, setSuggestions] = useState<Strain[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [inputLayout, setInputLayout] = useState({ x: 0, y: 0, width: 0, height: 0 }); // State to store input layout
+  const inputRef = useRef<TextInput>(null);
+  const debouncedSearchTerm = useDebounce(query, 300);
 
-  const inputRef = React.useRef<TextInput>(null); // Ref for the TextInput
+  const {
+    data: queryData, // Renamed from searchResults to queryData to hold the { data: Strain[] } object
+    isLoading,
+    isFetching,
+    isError,
+    error: queryError,
+  }: UseQueryResult<StrainSearchResponse, Error> = useQuery<StrainSearchResponse, Error, StrainSearchResponse, QueryKey>({
+    queryKey: ['strains', 'search', debouncedSearchTerm],
+    queryFn: () => WeedDbService.search(debouncedSearchTerm), // Assuming this returns Promise<StrainSearchResponse>
+    enabled: debouncedSearchTerm.length >= 2,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    retry: 2,
+  });
 
   // Update local state when external value changes
-  useEffect(() => {
+  React.useEffect(() => {
     setQuery(value);
   }, [value]);
-
-  // Search for strains when query changes
-  useEffect(() => {
-    const searchStrains = async () => {
-      if (query.length > 0) {
-        setIsLoading(true);
-        // Simulate network delay for a more realistic experience
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        const results = searchStrainsByName(query);
-        setSuggestions(results);
-        setIsLoading(false);
-        setShowSuggestions(true);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
-    };
-
-    searchStrains();
-  }, [query]);
 
   const handleInputChange = (text: string) => {
     setQuery(text);
     onInputChange(text);
+    
+    if (text.length > 0) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+      onSelect(null); // Ensure onSelect is called with null when input is cleared
+    }
   };
 
   const handleSelectStrain = (strain: Strain) => {
-    onSelect(strain);
-    setQuery(strain.name);
+    // Ensure the strain has a valid UUID for Supabase compatibility
+    const strainWithUuid = {
+      ...strain,
+      id: ensureUuid(strain.id || '') || strain.id
+    };
+
+    console.log('[StrainAutocomplete] Strain selected:', strainWithUuid);
+    
+    setQuery(strain.name || '');
     setShowSuggestions(false);
+    onSelect(strainWithUuid);
+    
+    // Remove focus from input
+    if (inputRef.current) inputRef.current.blur();
+  };
+
+  // Render strain type icon based on the strain's type
+  const renderStrainTypeIcon = (type: string = '') => {
+    const lowerType = type.toLowerCase();
+    
+    let iconName: keyof typeof Ionicons.glyphMap = 'leaf-outline'; 
+    let iconColor = isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600];
+
+    if (lowerType.includes('indica')) {
+      iconName = 'moon-outline';
+      iconColor = theme.colors.special.feeding;
+    } else if (lowerType.includes('sativa')) {
+      iconName = 'sunny-outline';
+      iconColor = theme.colors.status.warning;
+    } else if (lowerType.includes('hybrid')) {
+      iconName = 'leaf-outline';
+      iconColor = theme.colors.primary[500];
+    }
+
+    return <Ionicons name={iconName} size={20} color={iconColor} />;
   };
 
   const renderStrainItem = ({ item }: { item: Strain }) => {
-    // Determine the icon based on strain type
-    // Determine the icon based on strain type
-    let iconName: keyof typeof Ionicons.glyphMap = 'leaf-outline'; // Default icon
-    let iconColor = isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]; // Default color
-
-    switch (item.type) {
-      case 'indica':
-        iconName = 'moon-outline';
-        iconColor = theme.colors.special.feeding; // Use theme purple for indica
-        break;
-      case 'sativa':
-        iconName = 'sunny-outline';
-        iconColor = theme.colors.status.warning; // Use theme orange for sativa
-        break;
-      case 'hybrid':
-        iconName = 'leaf-outline';
-        iconColor = theme.colors.primary[500]; // Use theme green for hybrid
-        break;
-    }
-
     return (
       <TouchableOpacity
         key={item.id}
         className="flex-row items-center border-b p-3 active:opacity-70"
-        style={{ borderColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200] }} // Theme border
+        style={{ borderColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200] }}
         onPress={() => handleSelectStrain(item)}
         accessibilityLabel={`Select strain: ${item.name}, Type: ${item.type}`}
         accessibilityRole="button">
@@ -111,7 +121,7 @@ export function StrainAutocomplete({
           className="mr-3 rounded-full p-1"
           lightClassName="bg-neutral-100"
           darkClassName="bg-neutral-700">
-          <Ionicons name={iconName} size={20} color={iconColor} />
+          {renderStrainTypeIcon(item.type)}
         </ThemedView>
         <View className="flex-1">
           <ThemedText
@@ -125,14 +135,15 @@ export function StrainAutocomplete({
               className="text-xs capitalize"
               lightClassName="text-neutral-500"
               darkClassName="text-neutral-400">
-              {item.type}
+              {item.type || 'Unknown type'}
             </ThemedText>
-            {item.thcContent && (
+            {/* Ensure floweringTime is optional on Strain type or handle its absence */}
+            {item.floweringTime && (
               <ThemedText
                 className="ml-2 text-xs"
                 lightClassName="text-neutral-500"
                 darkClassName="text-neutral-400">
-                THC: {item.thcContent}%
+                Flower: ~{item.floweringTime} weeks
               </ThemedText>
             )}
           </View>
@@ -141,13 +152,19 @@ export function StrainAutocomplete({
     );
   };
 
+  const strainsArray: Strain[] = queryData?.data ?? []; // Extracted array, defaults to empty array
+
+  const isSearching = isLoading || isFetching;
+  const hasResults = strainsArray.length > 0;
+  const showNoResults = !isSearching && debouncedSearchTerm.length >= 2 && !hasResults;
+
   return (
-    <ThemedView className={`relative ${className}`}>
+    <ThemedView className={`relative ${className} ${error ? 'mb-6' : 'mb-0'}`}>
       {/* Input Container */}
       <ThemedView
-        className="flex-row items-center rounded-lg border px-3 py-2"
-        lightClassName="bg-white border-neutral-300"
-        darkClassName="bg-neutral-800 border-neutral-600">
+        className={`flex-row items-center rounded-lg border px-3 py-2 ${error ? 'border-red-500' : ''}`}
+        lightClassName={`bg-white ${error ? 'border-red-500' : 'border-neutral-300'}`}
+        darkClassName={`bg-neutral-800 ${error ? 'border-red-500' : 'border-neutral-600'}`}>
         {/* Wrap Icon in View for styling */}
         <ThemedView className="mr-2">
           <Ionicons
@@ -157,18 +174,14 @@ export function StrainAutocomplete({
           />
         </ThemedView>
         <TextInput
-          ref={inputRef} // Assign ref
+          ref={inputRef}
           className="h-10 flex-1 text-base"
-          style={{ color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800] }} // Theme text color
+          style={{ color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800] }}
           value={query}
           onChangeText={handleInputChange}
           placeholder={placeholder}
-          placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]} // Theme placeholder
+          placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
           onFocus={() => {
-            // Measure input position on focus
-            inputRef.current?.measureInWindow((x, y, width, height) => {
-              setInputLayout({ x, y, width, height });
-            });
             if (query.length > 0) {
               setShowSuggestions(true);
             }
@@ -178,13 +191,15 @@ export function StrainAutocomplete({
             setTimeout(() => setShowSuggestions(false), 200);
           }}
         />
-        {query.length > 0 && (
+        {isSearching ? (
+          <ActivityIndicator size="small" color={theme.colors.primary[500]} style={styles.icon} />
+        ) : query.length > 0 ? (
           <TouchableOpacity
             onPress={() => {
               setQuery('');
               onInputChange('');
-              setSuggestions([]);
               setShowSuggestions(false);
+              onSelect(null);
             }}
             accessibilityLabel="Clear search input">
             <Ionicons
@@ -193,75 +208,81 @@ export function StrainAutocomplete({
               color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
             />
           </TouchableOpacity>
-        )}
+        ) : null}
       </ThemedView>
 
-      {/* Suggestions Modal */}
-      <Modal
-        transparent
-        visible={showSuggestions}
-        animationType="fade" // Optional: add animation
-        onRequestClose={() => setShowSuggestions(false)} // Allow closing modal via back button etc.
-      >
-        {/* Touchable overlay to close modal when tapping outside */}
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          activeOpacity={1}
-          onPress={() => setShowSuggestions(false)}
-        />
-        {/* Suggestions Container */}
+      {/* Error message */}
+      {error && (
+        <ThemedText className="absolute -bottom-6 left-0 mt-1 text-xs text-red-500">
+          {error}
+        </ThemedText>
+      )}
+
+      {/* Suggestions Dropdown - Only show when the input is focused and has content */}
+      {showSuggestions && (
         <ThemedView
-          style={[
-            styles.suggestionsContainer,
-            {
-              top: inputLayout.y + inputLayout.height + 5, // Position below input + 5px margin
-              left: inputLayout.x,
-              width: inputLayout.width,
-            },
-          ]}
+          style={styles.suggestionsContainer}
           lightClassName="bg-white border-neutral-300"
           darkClassName="bg-neutral-800 border-neutral-600">
-          {isLoading ? (
+          {isSearching && !hasResults && debouncedSearchTerm.length >= 2 ? (
             <ThemedView className="items-center p-4">
               <ActivityIndicator size="small" color={theme.colors.primary[500]} />
             </ThemedView>
-          ) : suggestions.length > 0 ? (
+          ) : hasResults ? (
             <FlatList
-              data={suggestions}
+              data={strainsArray} // Use the correctly typed strainsArray
               renderItem={renderStrainItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
               keyboardShouldPersistTaps="handled"
-              style={styles.flatList} // Ensure FlatList takes up modal space
+              style={styles.flatList}
+              contentContainerStyle={styles.flatListContent}
+              maxToRenderPerBatch={10}
+              initialNumToRender={10}
+              removeClippedSubviews={true}
+              nestedScrollEnabled={true} // Added this line
             />
-          ) : (
+          ) : showNoResults ? (
             <ThemedView className="items-center p-4">
               <ThemedText lightClassName="text-neutral-500" darkClassName="text-neutral-400">
-                No strains found
+                No strains found matching "{debouncedSearchTerm}"
               </ThemedText>
             </ThemedView>
-          )}
+          ) : null}
         </ThemedView>
-      </Modal>
+      )}
     </ThemedView>
   );
 }
 
-// Add StyleSheet for modal positioning
+// Add StyleSheet for dropdown positioning
 const styles = StyleSheet.create({
   suggestionsContainer: {
     position: 'absolute',
-    maxHeight: Dimensions.get('window').height * 0.3, // Limit height (e.g., 30% of screen)
-    // Use classNames for styling below where possible
-    // className: "overflow-hidden rounded-lg border shadow-lg" // Apply these via className prop if ThemedView supports it directly on style
-    borderRadius: 8, // Example: Ensure these match your theme/design system
+    top: '100%',
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    maxHeight: 300,
     borderWidth: 1,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3, // for Android shadow
+    elevation: 3,
   },
   flatList: {
-    flexGrow: 0, // Prevent FlatList from trying to grow indefinitely inside the modal container
+    flexGrow: 0,
+    maxHeight: 300,
+  },
+  flatListContent: {
+    flexGrow: 0,
+  },
+  icon: {
+    marginRight: 8,
   },
 });
+
+export default StrainAutocomplete;

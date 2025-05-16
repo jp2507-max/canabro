@@ -101,6 +101,35 @@ export function sanitizeRecord(record: any, table: string): any {
       console.log(`Converting plant ID from ${originalId} to UUID format: ${newId}`);
       cleanedRecord.id = newId;
     }
+
+    // Handle strainId to strain_id conversion for plants table
+    if (cleanedRecord.strainId !== undefined) {
+      console.log(`[Plant Sync Fix] Converting strainId to strain_id: ${cleanedRecord.strainId}`);
+      cleanedRecord.strain_id = cleanedRecord.strainId;
+      delete cleanedRecord.strainId;
+    } else if (record.strainId !== undefined) {
+      // Also check the original record (before copy)
+      console.log(`[Plant Sync Fix] Converting original record strainId to strain_id: ${record.strainId}`);
+      cleanedRecord.strain_id = record.strainId;
+    } else if (record._raw && record._raw.strainId) {
+      // Try to get from _raw property if available (direct WatermelonDB record)
+      console.log(`[Plant Sync Fix] Converting _raw.strainId to strain_id: ${record._raw.strainId}`);
+      cleanedRecord.strain_id = record._raw.strainId;
+    } else {
+      console.log(`[Plant Sync Debug] Plant record has no strainId field: ${cleanedRecord.id}`);
+    }
+
+    // Check if plant has strain information and ensure strain_id is properly preserved
+    if (cleanedRecord.strain && typeof cleanedRecord.strain === 'string' && !cleanedRecord.strain_id) {
+      // Log that we're seeing a plant with strain name but no strain_id
+      console.log(`[Plant Sync] Plant ${cleanedRecord.id} has strain name "${cleanedRecord.strain}" but no strain_id`);
+    }
+
+    // Remove any strain relation objects that shouldn't be sent to Supabase
+    if (cleanedRecord.strainObj) {
+      console.log(`[Plant Sync] Removing strainObj relation from plant ${cleanedRecord.id}`);
+      delete cleanedRecord.strainObj;
+    }
   }
 
   // Check all potential foreign key fields (ending in _id)

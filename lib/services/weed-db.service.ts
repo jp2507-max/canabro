@@ -471,6 +471,16 @@ export const WeedDbService = {
   },
 
   /**
+   * Searches for strains by name.
+   * @param query The search query string.
+   * @returns A list of matching strains with caching information.
+   */
+  async search(query: string): Promise<CachedResponse<Strain[]>> {
+    console.log(`[DEBUG] WeedDbService.search called with query: "${query}"`);
+    return this.searchByName(query);
+  },
+
+  /**
    * Filters strains by grow difficulty.
    * @param level The difficulty level.
    * @returns A list of matching strains with caching information.

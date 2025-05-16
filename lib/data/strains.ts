@@ -29,7 +29,7 @@ interface Flavor {
 // Mock database for strain search
 const mockStrains: Strain[] = [
   {
-    id: '1',
+    id: '123e4567-e89b-12d3-a456-426614174000', // Fixed UUID for testing
     name: 'OG Kush',
     type: 'hybrid',
     thcContent: 20,
@@ -39,7 +39,7 @@ const mockStrains: Strain[] = [
     growDifficulty: 'moderate',
   },
   {
-    id: '2',
+    id: '123e4567-e89b-12d3-a456-426614174001', // Fixed UUID for testing
     name: 'Blue Dream',
     type: 'sativa',
     thcContent: 18,
@@ -49,7 +49,7 @@ const mockStrains: Strain[] = [
     growDifficulty: 'easy',
   },
   {
-    id: '3',
+    id: '123e4567-e89b-12d3-a456-426614174002', // Fixed UUID for testing
     name: 'Northern Lights',
     type: 'indica',
     thcContent: 16,
@@ -60,6 +60,12 @@ const mockStrains: Strain[] = [
   },
   // Add more mock strains as needed
 ];
+
+// Log the strain UUIDs for testing purposes
+console.log('[strains.ts] Fixed strain UUIDs:');
+mockStrains.forEach((strain) => {
+  console.log(`- ${strain.name}: ${strain.id}`);
+});
 
 /**
  * Search strains by name

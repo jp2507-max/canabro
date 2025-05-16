@@ -7,21 +7,20 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
   View,
-  Text,
   FlatList,
-  TouchableOpacity,
-  Image, // Keep one Image import for the fallback/placeholder logic
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 
 import ThemedText from './ui/ThemedText';
-import ThemedView from './ui/ThemedView';
-import { useTheme } from '../lib/contexts/ThemeContext'; // Corrected path
-import { Plant } from '../lib/models/Plant'; // Ensure Plant is imported
+import { useTheme } from '../lib/contexts/ThemeContext';
+import { Plant as WDBPlant } from '../lib/models/Plant'; // Renamed to WDBPlant to avoid conflict
+
+// Import the new PlantCard and its data interface
+import { PlantCard, Plant as PlantCardData } from './my-plants/PlantCard';
 
 interface PlantListComponentProps {
-  plants: Plant[];
+  plants: WDBPlant[];
   isLoading: boolean;
   onCountChange?: (count: number) => void;
   ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
@@ -29,13 +28,18 @@ interface PlantListComponentProps {
   onRefresh?: () => void;
 }
 
-// Mock data function for status icons - replace with real data later
-const getMockStatus = (plantId: string) => {
-  const idNum = parseInt(plantId.slice(-2), 16);
+// This function will now use real data from WDBPlant for status fields
+const getPlantCardData = (plant: WDBPlant, isDarkMode: boolean): PlantCardData => {
+  // const idNum = parseInt(plant.id.slice(-2), 16); // No longer needed for mock data generation
   return {
-    infoPercent: (idNum % 50) + 50,
-    waterDays: (idNum % 7) + 1,
-    feedDays: (idNum % 14) + 7,
+    id: plant.id,
+    name: plant.name,
+    strainName: plant.strain || 'Unknown Strain', 
+    imageUrl: plant.imageUrl || '', 
+    // Use real data, providing defaults if optional fields are undefined
+    healthPercentage: plant.healthPercentage ?? 75, // Default to 75% if undefined
+    nextWateringDays: plant.nextWateringDays ?? 3,  // Default to 3 days if undefined
+    nextNutrientDays: plant.nextNutrientDays ?? 7, // Default to 7 days if undefined
   };
 };
 
@@ -61,112 +65,9 @@ const EmptyPlantList = () => {
         darkClassName="text-neutral-400">
         Füge deine erste Pflanze zu diesem Standort hinzu.
       </ThemedText>
-      {/* Add Plant Button is handled by FAB on the main screen */}
     </View>
   );
 };
-
-// Updated PlantItem Component
-const PlantItem = React.memo(({ plant }: { plant: Plant }) => {
-  const { theme, isDarkMode } = useTheme();
-  const mockStatus = getMockStatus(plant.id);
-
-  // Status Icon Component
-  const StatusIcon = ({
-    iconName,
-    text,
-    iconColor,
-  }: {
-    iconName: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-    text: string;
-    iconColor: string;
-  }) => (
-    <View className="mr-2 flex-row items-center rounded-full bg-neutral-200 px-2 py-1 dark:bg-neutral-700">
-      <MaterialCommunityIcons name={iconName} size={14} color={iconColor} />
-      <Text className="ml-1 text-xs text-neutral-700 dark:text-neutral-300">{text}</Text>
-    </View>
-  );
-
-  const router = useRouter();
-
-  return (
-    <TouchableOpacity
-      className="mb-4 active:opacity-80"
-      key={plant.id}
-      onPress={() => router.push(`/plant/diary/${plant.id}`)} // Reverted path
-      accessibilityLabel={`View journal for plant: ${plant.name}, Strain: ${plant.strain}`} // Keep updated accessibility label
-      accessibilityRole="button">
-      <ThemedView
-        className="flex-row items-center rounded-xl p-3"
-        lightClassName="bg-transparent"
-        darkClassName="bg-transparent">
-        {/* Circular Image */}
-        <View className="mr-4 h-16 w-16 overflow-hidden rounded-full">
-          {plant.imageUrl ? (
-            <Image // Using react-native Image here
-              source={{ uri: plant.imageUrl }}
-              className="h-full w-full"
-              resizeMode="cover"
-              accessibilityLabel={`Image of ${plant.name}`}
-            />
-          ) : (
-            <View className="h-full w-full items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700">
-              <MaterialCommunityIcons
-                name="flower-tulip-outline"
-                size={32}
-                color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
-                accessibilityLabel="Placeholder image for plant"
-              />
-            </View>
-          )}
-        </View>
-        {/* Text Info & Status Icons */}
-        <View className="flex-1">
-          <ThemedText
-            className="text-lg font-semibold"
-            lightClassName="text-neutral-800"
-            darkClassName="text-white"
-            numberOfLines={1}>
-            {plant.name}
-          </ThemedText>
-          <ThemedText
-            className="text-sm"
-            lightClassName="text-neutral-600"
-            darkClassName="text-neutral-400"
-            numberOfLines={1}>
-            {plant.strain || 'Unknown Strain'}
-          </ThemedText>
-          {/* Status Icons Row */}
-          <View className="mt-2 flex-row">
-            <StatusIcon
-              iconName="information-outline"
-              text={`${mockStatus.infoPercent}%`}
-              iconColor={theme.colors.primary[500]}
-            />
-            <StatusIcon
-              iconName="water-outline"
-              text={`in ${mockStatus.waterDays} Tg.`}
-              iconColor={theme.colors.special.watering}
-            />
-            <StatusIcon
-              iconName="leaf"
-              text={`in ${mockStatus.feedDays} Tg.`}
-              iconColor={theme.colors.primary[600]}
-            />
-          </View>
-        </View>
-        {/* Right Arrow Icon */}
-        <View className="ml-2 p-1">
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={28}
-            color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
-          />
-        </View>
-      </ThemedView>
-    </TouchableOpacity>
-  );
-});
 
 // Base component that receives plants as an array
 const PlantListComponent = ({
@@ -178,6 +79,7 @@ const PlantListComponent = ({
   onRefresh,
 }: PlantListComponentProps) => {
   const { theme, isDarkMode } = useTheme();
+  const router = useRouter();
 
   useEffect(() => {
     if (onCountChange) {
@@ -199,11 +101,22 @@ const PlantListComponent = ({
     );
   }
 
+  const renderPlantCard = ({ item: wdbPlantItem }: { item: WDBPlant }) => {
+    const plantCardData = getPlantCardData(wdbPlantItem, isDarkMode);
+    
+    return (
+      <PlantCard
+        plant={plantCardData}
+        onPress={(plantId) => router.push(`/plant/${plantId}`)} // Corrected navigation path
+      />
+    );
+  };
+
   return (
     <FlatList
       data={plants}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <PlantItem plant={item} />}
+      renderItem={renderPlantCard}
       ListEmptyComponent={<EmptyPlantList />}
       ListHeaderComponent={ListHeaderComponent}
       refreshControl={
@@ -219,20 +132,28 @@ const PlantListComponent = ({
           />
         ) : undefined
       }
-      scrollEnabled
-      contentContainerStyle={{ flexGrow: 1, paddingVertical: 5, paddingBottom: 80 }}
+      contentContainerStyle={{ 
+        flexGrow: 1, 
+        paddingTop: ListHeaderComponent ? 0 : 8,
+        paddingBottom: 80,
+      }} 
     />
   );
 };
 
-// Enhanced component with observables
+// Enhanced component with observables (ensure observed columns match WDBPlant fields used)
 const enhance = withObservables([], ({ database }: { database: Database }) => ({
   plants: database
-    .get<Plant>('plants')
-    .query(Q.where('is_deleted', Q.notEq(true)))
-    .observeWithColumns(['name', 'strain', 'imageUrl', 'created_at']), // Added growthStage
+    .get<WDBPlant>('plants') 
+    .query(Q.where('is_deleted', Q.notEq(true))) 
+    .observeWithColumns([
+      'name', 
+      'strain', 
+      'imageUrl', 
+      'health_percentage', // NEWLY ADDED
+      'next_watering_days', // NEWLY ADDED
+      'next_nutrient_days'  // NEWLY ADDED
+    ]), 
 }));
 
 export const EnhancedPlantList = enhance(PlantListComponent);
-
-export default EnhancedPlantList;

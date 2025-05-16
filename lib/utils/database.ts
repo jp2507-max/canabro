@@ -3,9 +3,15 @@
  */
 
 import { Alert } from 'react-native';
-
+import * as FileSystem from 'expo-file-system';
 import database from '../database/database'; // Corrected import path
 import { Plant } from '../models/Plant'; // Import Plant model for proper typing
+
+// Database file path
+const DB_NAME = 'canabro.db';
+const getDatabasePath = async () => {
+  return `${FileSystem.documentDirectory}${DB_NAME}`;
+};
 
 /**
  * Reset the database to fix schema issues
@@ -14,52 +20,34 @@ import { Plant } from '../models/Plant'; // Import Plant model for proper typing
  */
 export async function resetDatabase(): Promise<void> {
   try {
-    console.log('[Database] Starting reset process...');
+    // Get the database file path
+    const dbPath = await getDatabasePath();
 
-    // Step 1: First try the standard database reset
-    try {
-      await database.write(async () => {
-        await database.unsafeResetDatabase();
-      });
-      console.log('[Database] Standard reset completed');
-    } catch (err) {
-      console.warn('[Database] Standard reset failed, continuing with other steps:', err);
+    // Check if the database file exists
+    const fileInfo = await FileSystem.getInfoAsync(dbPath);
+
+    if (fileInfo.exists) {
+      console.log('Database file found, deleting to reset...');
+      // Delete the database file
+      await FileSystem.deleteAsync(dbPath);
+      console.log('Database file deleted successfully. The app will restart.');
+      
+      // Force reload/restart the app to reinitialize the database
+      // This is a hack, but it works for development
+      setTimeout(() => {
+        Alert.alert(
+          'Database Reset',
+          'The database has been reset. The app will now close. Please reopen it manually.',
+          [{ text: 'OK' }]
+        );
+      }, 500);
+    } else {
+      console.log('No database file found, nothing to delete.');
+      Alert.alert('Database Reset', 'No database file found. No action needed.');
     }
-
-    // Step 2: Add a specific fix for plants-strains relationship
-    // This corrects any existing plants with invalid strain relationships
-    try {
-      const plantsCollection = database.get<Plant>('plants');
-      const plants = await plantsCollection.query().fetch();
-
-      await database.write(async () => {
-        for (const plant of plants) {
-          if (plant.strainId) {
-            // Update the plant to refresh its relationships
-            await plant.update(() => {
-              // No need to change anything, just trigger an update
-              // This forces WatermelonDB to reevaluate relationships
-            });
-          }
-        }
-      });
-      console.log(`[Database] Updated ${plants.length} plant records`);
-    } catch (relationErr) {
-      console.warn('[Database] Error updating plant relationships:', relationErr);
-    }
-
-    console.log('[Database] Reset completed successfully');
-    Alert.alert(
-      'Database Reset',
-      'Database has been reset. The app will work better after a restart.'
-    );
-
-    return Promise.resolve();
   } catch (error) {
-    console.error('[Database] Error during reset:', error);
-    Alert.alert('Reset Error', 'Failed to reset database. Please try again or restart the app.');
-
-    return Promise.reject(error);
+    console.error('Error while trying to reset database:', error);
+    Alert.alert('Reset Failed', 'Failed to reset the database. Check console for details.');
   }
 }
 
@@ -70,9 +58,8 @@ export async function resetDatabase(): Promise<void> {
 export function checkDatabaseSchema(): void {
   // You can add logic here to check if the database schema version
   // matches the expected version and prompt for reset if needed
+  console.log('Database schema version:', database.adapter.schema.version);
 }
-
-// Removed cleanupInvalidStrainIds function as it was a one-time utility
 
 /**
  * Checks if a specific record exists in the local WatermelonDB.
@@ -81,26 +68,12 @@ export async function checkRecordExistsLocally(
   tableName: string,
   recordId: string
 ): Promise<boolean> {
-  console.log(`Checking for record ${recordId} in table ${tableName}...`);
   try {
     const collection = database.get(tableName);
     const record = await collection.find(recordId);
-    const exists = !!record;
-    console.log(`Record ${recordId} in ${tableName} ${exists ? 'found' : 'NOT found'} locally.`);
-    Alert.alert(
-      'Record Check',
-      `Record ${recordId} in ${tableName} ${exists ? 'found' : 'NOT found'} locally.`
-    );
-    return exists;
-  } catch (error: any) {
-    // find() throws an error if not found
-    if (error.message?.includes('not found')) {
-      console.log(`Record ${recordId} in ${tableName} NOT found locally (error catch).`);
-      Alert.alert('Record Check', `Record ${recordId} in ${tableName} NOT found locally.`);
-      return false;
-    }
+    return !!record;
+  } catch (error) {
     console.error(`Error checking for record ${recordId} in ${tableName}:`, error);
-    Alert.alert('Record Check Error', `Error checking for record ${recordId}: ${error.message}`);
-    return false; // Assume not found on other errors
+    return false;
   }
 }

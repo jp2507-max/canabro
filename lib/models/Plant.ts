@@ -46,6 +46,12 @@ export class Plant extends Model {
   @field('thc_content') thcContent?: number; // Added
   @field('cbd_content') cbdContent?: number; // Added
   @text('expected_harvest_date') expectedHarvestDate?: string; // Added (using text for date string)
+
+  // NEW PLANT STATUS FIELDS
+  @field('health_percentage') healthPercentage?: number;
+  @field('next_watering_days') nextWateringDays?: number;
+  @field('next_nutrient_days') nextNutrientDays?: number;
+
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;
@@ -92,6 +98,131 @@ export class Plant extends Model {
     await this.update((plant) => {
       plant.notes = notes;
     });
+  }
+
+  @writer async setStrainRelation() {
+    // If we have a strainId but no linked strain object, try to load and associate it
+    if (this.strainId) {
+      try {
+        // Import dynamically to avoid circular dependencies
+        const { getStrainById } = require('../data/strains');
+        const strain = getStrainById(this.strainId);
+        if (strain) {
+          console.log(`[Plant.setStrainRelation] Found strain for ID ${this.strainId}:`, strain.name);
+          
+          // ENHANCEMENT: Store the strain object directly in a property that will be included in sync
+          // This ensures the strain data is available during the sync process
+          this.update(plant => {
+            // Store these fields explicitly to ensure they're available during sync
+            plant.strain = strain.name; // Ensure strain name is always set
+            plant.strainId = strain.id; // Reinforce the ID connection
+            
+            // Set additional strain properties that might be useful
+            if (strain.type) plant.cannabisType = strain.type;
+            
+            // Log detailed info for debugging
+            console.log('[Plant.setStrainRelation] Updated plant with strain data. Plant will now have:');
+            console.log('- strain:', plant.strain);
+            console.log('- strainId:', plant.strainId);
+            console.log('- cannabisType:', plant.cannabisType);
+          });
+          
+          // Log for debugging
+          console.log('[Plant.setStrainRelation] Strain data available for sync:', JSON.stringify(strain, null, 2));
+        } else {
+          console.warn(`[Plant.setStrainRelation] No strain found for ID ${this.strainId}`);
+        }
+      } catch (error) {
+        console.error('[Plant.setStrainRelation] Error setting strain relation:', error);
+      }
+    }
+  }
+
+  // Helper function for testing UUID connections
+  async logPlantAndStrainDebugInfo() {
+    console.log('========= PLANT DEBUG INFO =========');
+    console.log(`Plant ID: ${this.id}`);
+    console.log(`Plant Name: ${this.name}`);
+    console.log(`Strain Name: ${this.strain}`);
+    console.log(`Strain ID: ${this.strainId || 'null'}`);
+
+    // Check if the strain ID matches any current strains in the mock data
+    if (this.strainId) {
+      try {
+        // Import is done here to avoid circular dependencies
+        const { getStrainById } = require('../data/strains');
+        const matchingStrain = getStrainById(this.strainId);
+        console.log(`Matching Strain Found: ${matchingStrain ? 'Yes' : 'No'}`);
+        if (matchingStrain) {
+          console.log(`Matching Strain Name: ${matchingStrain.name}`);
+          console.log(`Matching Strain Type: ${matchingStrain.type}`);
+        }
+      } catch (error) {
+        console.error('Error checking for matching strain:', error);
+      }
+    }
+
+    console.log('==================================');
+
+    return {
+      plantId: this.id,
+      plantName: this.name,
+      strainName: this.strain,
+      strainId: this.strainId,
+    };
+  }
+
+  // Additional helper specifically for debugging strain relation issues
+  async debugStrainRelationProperties() {
+    console.log('========= PLANT-STRAIN RELATION DEBUG =========');
+    console.log(`Plant ID: ${this.id}`);
+    console.log(`Plant Name: ${this.name}`);
+    
+    // Check how the properties are stored/accessed in different ways
+    console.log(`Direct properties:`);
+    console.log(`- this.strain: ${this.strain}`)
+    console.log(`- this.strainId: ${this.strainId}`)
+    
+    // Raw access
+    console.log(`\nRaw property access:`)
+    try {
+      // @ts-ignore - Access raw properties for debugging
+      console.log(`- _raw.strain: ${this._raw?.strain}`)
+      // @ts-ignore
+      console.log(`- _raw.strain_id: ${this._raw?.strain_id}`)
+      // @ts-ignore
+      console.log(`- _raw.strainId: ${this._raw?.strainId}`)
+    } catch (e) {
+      console.log('Error accessing _raw properties:', e);
+    }
+    
+    // Check relation
+    console.log(`\nRelation access:`)
+    try {
+      if (this.strainObj) {
+        console.log(`- strainObj exists: Yes`);
+        console.log(`- strainObj.id: ${this.strainObj.id}`);
+        console.log(`- strainObj.name: ${this.strainObj.name}`);
+      } else {
+        console.log(`- strainObj exists: No`);
+        
+        // Try fetching with the relation API
+        const { getStrainById } = require('../data/strains');
+        const strain = this.strainId ? getStrainById(this.strainId) : null;
+        
+        if (strain) {
+          console.log(`- Strain found via getStrainById: Yes`);
+          console.log(`- Found strain.id: ${strain.id}`);
+          console.log(`- Found strain.name: ${strain.name}`);
+        } else {
+          console.log(`- No strain found via getStrainById`);
+        }
+      }
+    } catch (e) {
+      console.log('Error checking relation:', e);
+    }
+    
+    console.log('===========================================');
   }
 
   @writer async markAsDeleted() {

@@ -90,7 +90,7 @@ BEGIN
           query := REPLACE(
             query, 
             'content,', 
-            'CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || ''...'' ELSE content END as content,'
+            $replacement_str$CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || '... ' ELSE content END as content,$replacement_str$
           );
         END IF;
         
@@ -164,7 +164,7 @@ BEGIN
             query := REPLACE(
               query, 
               'content,', 
-              'CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || ''...'' ELSE content END as content,'
+              $replacement_str$CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || '... ' ELSE content END as content,$replacement_str$
             );
           END IF;
           
@@ -197,7 +197,7 @@ BEGIN
             query := REPLACE(
               query, 
               'content,', 
-              'CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || ''...'' ELSE content END as content,'
+              $replacement_str$CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || '... ' ELSE content END as content,$replacement_str$
             );
           END IF;
           
@@ -231,7 +231,7 @@ BEGIN
             query := REPLACE(
               query, 
               'content,', 
-              'CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || ''...'' ELSE content END as content,'
+              $replacement_str$CASE WHEN length(content) > 500 THEN substring(content, 1, 500) || '... ' ELSE content END as content,$replacement_str$
             );
           END IF;
           
@@ -318,6 +318,7 @@ DECLARE
   record_id TEXT;
   query TEXT;
   i INTEGER;
+  cols_data RECORD;
 BEGIN
   -- Get the names of all tables with changes
   SELECT array_agg(key) INTO table_names FROM jsonb_object_keys(changes) AS key;
@@ -334,32 +335,31 @@ BEGIN
         FOR i IN 0..jsonb_array_length(created_records)-1 LOOP
           record_data := created_records->i;
           
-          -- Always use "ON CONFLICT (id) DO UPDATE" to handle potential race conditions
-          -- or when records were deleted and re-created
-          
           -- Build column list for insert
           WITH cols AS (
             SELECT 
               string_agg(key, ', ') AS cols,
-              string_agg(format('$1->''%s''', key), ', ') AS vals,
-              string_agg(format('%s = EXCLUDED.%s', key, key), ', ') AS updates
+              string_agg(
+                CASE 
+                  WHEN key = 'user_id' THEN format('($1->>''%s'')::uuid', key)
+                  WHEN key = ANY(ARRAY['created_at', 'updated_at', 'deleted_at', 'started_at', 'finished_at', 'date', 'timestamp']) THEN format('($1->>''%s'')::timestamp with time zone', key)
+                  WHEN key = ANY(ARRAY['height', 'width', 'weight', 'length', 'temperature', 'humidity', 'ph', 'ec', 'tds', 'lux', 'ppfd', 'vpd', 'water_intake', 'rating', 'yield_amount', 'pot_size', 'distance_from_light', 'training_hours_spent']) THEN format('(NULLIF($1->>''%s'', ''''))::numeric', key)
+                  ELSE format('$1->>''%s''', key)
+                END, ', ') AS vals,
+              string_agg(format('%s = EXCLUDED.%s', key, key), ', ') AS updates -- For ON CONFLICT, EXCLUDED already has the correct type
             FROM jsonb_object_keys(record_data) AS key
-            WHERE key != 'id'
           )
+          SELECT cols, vals, updates INTO cols_data FROM cols;
+
+          query := format(
+            'INSERT INTO %I (id, %s) VALUES (($1->>''id'')::uuid, %s) ON CONFLICT (id) DO UPDATE SET %s',
+            table_name,
+            cols_data.cols,
+            cols_data.vals,
+            cols_data.updates
+          );
           
-          SELECT 
-            format(
-              'INSERT INTO %I (id, %s) VALUES ($2, %s) ON CONFLICT (id) DO UPDATE SET %s',
-              table_name,
-              cols,
-              vals,
-              updates
-            ) 
-          INTO query 
-          FROM cols;
-          
-          -- Execute with parameters for better security
-          EXECUTE query USING record_data, (record_data->>'id')::text;
+          EXECUTE query USING record_data;
         END LOOP;
       END IF;
       
@@ -373,27 +373,28 @@ BEGIN
           -- Build column list for update
           WITH cols AS (
             SELECT 
-              string_agg(format('%s = $1->''%s''', key, key), ', ') AS updates
+              string_agg(
+                CASE 
+                  WHEN key = 'user_id' THEN format('%s = ($1->>''%s'')::uuid', key, key)
+                  WHEN key = ANY(ARRAY['created_at', 'updated_at', 'deleted_at', 'started_at', 'finished_at', 'date', 'timestamp']) THEN format('%s = ($1->>''%s'')::timestamp with time zone', key, key)
+                  WHEN key = ANY(ARRAY['height', 'width', 'weight', 'length', 'temperature', 'humidity', 'ph', 'ec', 'tds', 'lux', 'ppfd', 'vpd', 'water_intake', 'rating', 'yield_amount', 'pot_size', 'distance_from_light', 'training_hours_spent']) THEN format('%s = (NULLIF($1->>''%s'', ''''))::numeric', key, key)
+                  ELSE format('%s = ($1->>''%s'')', key, key)
+                END, ', ') AS updates
             FROM jsonb_object_keys(record_data) AS key
-            WHERE key != 'id'
           )
+          SELECT updates INTO cols_data FROM cols;
+
+          query := format(
+            'UPDATE %I SET %s WHERE id = ($2)::uuid AND user_id = $3',
+            table_name,
+            cols_data.updates
+          );
           
-          SELECT 
-            format(
-              'UPDATE %I SET %s WHERE id = $2 AND user_id = $3',
-              table_name,
-              updates
-            ) 
-          INTO query 
-          FROM cols;
-          
-          -- Check for conflict with last_pulled_at timestamp
           IF last_pulled_at IS NOT NULL THEN
             query := query || format(' AND (updated_at IS NULL OR updated_at <= %L)', last_pulled_at);
           END IF;
           
-          -- Execute with parameters for better security
-          EXECUTE query USING record_data, record_id, user_id;
+          EXECUTE query USING record_data, record_id::uuid, user_id;
         END LOOP;
       END IF;
       
@@ -410,21 +411,17 @@ BEGIN
           BEGIN
             IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = table_name || '_deleted') THEN
               query := format(
-                'INSERT INTO %I_deleted (id, user_id, deleted_at) VALUES (%L, %L, NOW()) ON CONFLICT (id) DO NOTHING',
-                table_name,
-                record_id,
-                user_id
+                'INSERT INTO %I_deleted (id, user_id, deleted_at) VALUES ($1, $2, NOW()) ON CONFLICT (id) DO NOTHING', -- Use $1, $2 for parameters
+                table_name
               );
               
-              EXECUTE query;
+              EXECUTE query USING record_id::uuid, user_id; -- Cast record_id to UUID
             END IF;
           
             -- Then delete from the main table
             query := format(
-              'DELETE FROM %I WHERE id = %L AND user_id = %L',
-              table_name,
-              record_id,
-              user_id
+              'DELETE FROM %I WHERE id = $1 AND user_id = $2', -- Use $1, $2 for parameters
+              table_name
             );
             
             -- Check for conflict with last_pulled_at timestamp
@@ -432,7 +429,7 @@ BEGIN
               query := query || format(' AND (updated_at IS NULL OR updated_at <= %L)', last_pulled_at);
             END IF;
             
-            EXECUTE query;
+            EXECUTE query USING record_id::uuid, user_id; -- Cast record_id to UUID
           EXCEPTION
             WHEN others THEN
               -- Log errors but continue processing other records
@@ -497,55 +494,55 @@ SET search_path = public
 AS $$
 DECLARE
   tables TEXT[] := ARRAY['profiles', 'plants', 'grow_journals', 'journal_entries', 'grow_locations', 'diary_entries', 'plant_tasks', 'posts'];
-  table_name TEXT;
+  current_table_name_var TEXT;
 BEGIN
   FOR i IN 1..array_length(tables, 1) LOOP
-    table_name := tables[i];
+    current_table_name_var := tables[i];
     
     -- Check if main table exists
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = table_name) THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = current_table_name_var) THEN
       -- Check if _deleted table exists, create if not
-      IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = table_name || '_deleted') THEN
+      IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = current_table_name_var || '_deleted') THEN
         EXECUTE format(
           'CREATE TABLE %I_deleted (
             id TEXT PRIMARY KEY,
             user_id UUID NOT NULL,
             deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
           )',
-          table_name
+          current_table_name_var
         );
         
         -- Add index on user_id for better performance
         EXECUTE format(
           'CREATE INDEX %I_deleted_user_id_idx ON %I_deleted(user_id)',
-          table_name,
-          table_name
+          current_table_name_var,
+          current_table_name_var
         );
         
         -- Add index on deleted_at for cleanup function
         EXECUTE format(
           'CREATE INDEX %I_deleted_deleted_at_idx ON %I_deleted(deleted_at)',
-          table_name,
-          table_name
+          current_table_name_var,
+          current_table_name_var
         );
         
         -- Add RLS policies
         EXECUTE format(
           'ALTER TABLE %I_deleted ENABLE ROW LEVEL SECURITY',
-          table_name
+          current_table_name_var
         );
         
         EXECUTE format(
           'CREATE POLICY "%1$I_deleted_select_policy" ON %1$I_deleted FOR SELECT TO authenticated USING (user_id::text = auth.uid()::text)',
-          table_name
+          current_table_name_var
         );
         
         EXECUTE format(
           'CREATE POLICY "%1$I_deleted_insert_policy" ON %1$I_deleted FOR INSERT TO authenticated WITH CHECK (user_id::text = auth.uid()::text)',
-          table_name
+          current_table_name_var
         );
         
-        RAISE NOTICE 'Created deleted records table for %', table_name;
+        RAISE NOTICE 'Created deleted records table for %', current_table_name_var;
       END IF;
     END IF;
   END LOOP;
@@ -566,7 +563,7 @@ BEGIN
     PERFORM cron.schedule(
       'cleanup_old_sync_data',
       '0 3 * * *',
-      $$SELECT cleanup_sync_data(30)$$
+      'SELECT cleanup_sync_data(30)' -- Corrected SQL command
     );
     
     RAISE NOTICE 'Scheduled daily sync cleanup job with pg_cron';

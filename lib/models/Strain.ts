@@ -13,7 +13,7 @@ export class Strain extends Model {
     return this.collections.get('plants').query(Q.where('strain_id', this.id));
   }
 
-  // @text('strain_id') strainId!: string; // REMOVED: Corresponds to incorrect schema column
+  @text('api_id') apiId?: string; // New field to store the external API's UUID
   @text('name') name!: string;
   @text('type') type!: string;
   @text('description') description?: string;

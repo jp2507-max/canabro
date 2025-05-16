@@ -29,7 +29,12 @@ setGenerator(() => uuidv4());
 // Database file paths for reset functionality
 const DB_NAME = 'canabro.db'; // Keep DB Name consistent
 const getDatabasePath = async () => {
-  return `${FileSystem.documentDirectory}${DB_NAME}`;
+  // Expo SQLite often stores DBs in a subdirectory named SQLite
+  const dbDir = `${FileSystem.documentDirectory}SQLite/`;
+  // Ensure the SQLite directory exists, as FileSystem.deleteAsync might require the parent dir to exist for files
+  // although for deleting a file itself, it's not strictly necessary but good practice for consistency.
+  // For deleting a file, we just need the correct path to the file.
+  return `${dbDir}${DB_NAME}`;
 };
 
 // Function to reset the local database

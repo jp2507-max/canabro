@@ -136,3 +136,70 @@ export function sanitizeProfileRecords(
     return sanitized;
   });
 }
+
+/**
+ * Special validation for plant records to enforce strain_id presence when possible
+ *
+ * @param plantRecord The plant record to validate
+ * @returns The validated and corrected plant record
+ */
+export function validatePlantRecord(plantRecord: any): any {
+  if (!plantRecord || typeof plantRecord !== 'object') {
+    throw new Error('Invalid plant record: not an object');
+  }
+
+  const validatedRecord = { ...plantRecord };
+
+  console.log(`[Plant Validation] Validating plant "${validatedRecord.name}" (ID: ${validatedRecord.id})`);
+  console.log(`[Plant Validation] Initial strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`);
+
+  // Handle camelCase vs snake_case field names (bidirectional)
+  if (validatedRecord.strainId && !validatedRecord.strain_id) {
+    console.log(`[Plant Validation] Converting strainId ${validatedRecord.strainId} to strain_id`);
+    validatedRecord.strain_id = validatedRecord.strainId;
+  } else if (validatedRecord.strain_id && !validatedRecord.strainId) {
+    console.log(`[Plant Validation] Converting strain_id ${validatedRecord.strain_id} to strainId`);
+    validatedRecord.strainId = validatedRecord.strain_id;
+  }
+
+  // Handle empty string as null for strain_id
+  if (validatedRecord.strain_id === '') {
+    console.log(`[Plant Validation] Converting empty string strain_id to null`);
+    validatedRecord.strain_id = null;
+  }
+  if (validatedRecord.strainId === '') {
+    console.log(`[Plant Validation] Converting empty string strainId to null`);
+    validatedRecord.strainId = null;
+  }
+
+  // Get the most reliable strain ID (prioritize snake_case for DB interactions)
+  const effectiveStrainId = validatedRecord.strain_id || validatedRecord.strainId;
+
+  // If we have a strain ID but no strainObj, try to load the strain data
+  if (effectiveStrainId && !validatedRecord.strainObj) {
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { getStrainById } = require('../../data/strains');
+      console.log(`[Plant Validation] Attempting to load strain with ID: ${effectiveStrainId}`);
+      const strain = getStrainById(effectiveStrainId);
+      
+      if (strain) {
+        console.log(`[Plant Validation] Found strain "${strain.name}" for ID ${effectiveStrainId}`);
+        validatedRecord.strainObj = strain;
+        
+        // Ensure consistency with the strain name
+        if (validatedRecord.strain !== strain.name) {
+          console.log(`[Plant Validation] Updating strain name from "${validatedRecord.strain}" to "${strain.name}"`);
+          validatedRecord.strain = strain.name;
+        }
+      } else {
+        console.warn(`[Plant Validation] No strain found for ID ${effectiveStrainId}`);
+      }
+    } catch (error) {
+      console.error('[Plant Validation] Error loading strain:', error);
+    }
+  }
+
+  console.log(`[Plant Validation] Final strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`);
+  return validatedRecord;
+}

@@ -9,7 +9,7 @@ import { EnhancedPlantList } from '../../components/PlantList';
 import AddPlantModal from '../../components/ui/AddPlantModal';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import HomeHeader from '../../components/ui/HomeHeader';
-import ThemedView from '../../components/ui/ThemedView';
+import ThemedText from '../../components/ui/ThemedText';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../lib/hooks/useWatermelon';
@@ -34,70 +34,98 @@ function HomeScreen({ database }: HomeScreenProps) {
 
   const handleAddPlant = () => {
     setIsAddPlantModalVisible(true);
-    setIsFabMenuOpen(false);
+    setIsFabMenuOpen(false); // Close FAB menu when opening modal
   };
 
   const handleAddPlantSuccess = () => {
     setIsAddPlantModalVisible(false);
-    handleRefresh();
+    handleRefresh(); // Refresh list after adding a plant
   };
 
-  const handleAddTaskToAll = () => {
+  const handleNavigateToTask = (route: string) => {
     setIsFabMenuOpen(false);
-    router.push('/add-task-all' as any);
+    router.push(route as any); // Type assertion for expo-router push
   };
-  const handleAddTaskToPlant = () => {
-    setIsFabMenuOpen(false);
-    router.push('/add-task-plant' as any);
-  };
+
+  const fabActions = [
+    {
+      iconName: 'leaf-outline',
+      onPress: handleAddPlant,
+      accessibilityLabel: 'Add new plant',
+      size: 48,
+      label: 'New Plant'
+    },
+    {
+      iconName: 'pencil-outline',
+      onPress: () => handleNavigateToTask('/tasks/add-task-plant'),
+      accessibilityLabel: 'Add task to a plant',
+      size: 48,
+      label: 'Task for Plant'
+    },
+    {
+      iconName: 'layers-outline',
+      onPress: () => handleNavigateToTask('/tasks/add-task-all'),
+      accessibilityLabel: 'Add task to all plants',
+      size: 48,
+      label: 'Task for All'
+    },
+  ];
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
-      <ThemedView className="flex-1" lightClassName="bg-neutral-50" darkClassName="bg-black">
-        <EnhancedPlantList
-          database={database}
-          isLoading={isLoading}
-          onCountChange={handleCountChange}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          ListHeaderComponent={
-            <HomeHeader
-              onAddPlant={handleAddPlant}
-              plantCount={plantCount}
-              isDarkMode={isDarkMode}
-            />
-          }
-        />
-        {/* Floating Action Button and Menu */}
+    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-neutral-900' : 'bg-neutral-100'}`}>
+      <EnhancedPlantList
+        database={database}
+        isLoading={isLoading}
+        onCountChange={handleCountChange}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListHeaderComponent={<HomeHeader plantCount={plantCount} />}
+        contentContainerStyle={{ paddingBottom: isFabMenuOpen ? 180 : 80 }}
+      />
+
+      {/* Floating Action Button and Menu */}
+      {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
+      {/* Note: Padding changed from p-4 to p-6 */}
+      <View className="absolute bottom-0 right-0 p-6 z-20 items-end">
         {isFabMenuOpen && (
-          <View className="absolute bottom-20 right-6 z-10 items-end space-y-4">
-            <FloatingActionButton
-              iconName="pencil-outline"
-              onPress={handleAddTaskToPlant}
-              accessibilityLabel="Add task to a plant"
-              size={48}
-            />
-            <FloatingActionButton
-              iconName="layers-outline"
-              onPress={handleAddTaskToAll}
-              accessibilityLabel="Add task to all plants"
-              size={48}
-            />
+          <View className="mb-4 space-y-3 items-end">
+            {fabActions.map((action) => (
+              <View key={action.accessibilityLabel} className="flex-row items-center">
+                {action.label && (
+                  <View className="bg-black/70 dark:bg-neutral-700/90 mr-3 px-3 py-1.5 rounded-lg shadow-md">
+                    <ThemedText className="text-white text-xs font-medium">
+                      {action.label}
+                    </ThemedText>
+                  </View>
+                )}
+                {/* Individual FABs no longer need absolute positioning as they are in a View container */}
+                <FloatingActionButton
+                  iconName={action.iconName as any}
+                  onPress={action.onPress}
+                  accessibilityLabel={action.accessibilityLabel}
+                  size={40} // Smaller size for action buttons - remains 40
+                  className="relative shadow-xl"
+                />
+              </View>
+            ))}
           </View>
         )}
+        {/* Main FAB - also no longer needs absolute positioning if its parent View handles it */}
         <FloatingActionButton
-          iconName={isFabMenuOpen ? 'close' : 'add'}
+          iconName={isFabMenuOpen ? 'close-outline' : 'add-outline'}
           onPress={() => setIsFabMenuOpen(!isFabMenuOpen)}
           accessibilityLabel={isFabMenuOpen ? 'Close actions menu' : 'Open actions menu'}
-          size={56}
+          size={56} // Adjusted to match calendar screen FAB size
+          className="relative shadow-2xl" // Simplified className, removed redundant rounded-full and background colors
         />
-        {/* Add Plant Modal */}
-        <AddPlantModal
-          visible={isAddPlantModalVisible}
-          onClose={() => setIsAddPlantModalVisible(false)}
-          onSuccess={handleAddPlantSuccess}
-        />
-      </ThemedView>
+      </View>
+
+      {/* Add Plant Modal */}
+      <AddPlantModal
+        visible={isAddPlantModalVisible}
+        onClose={() => setIsAddPlantModalVisible(false)}
+        onSuccess={handleAddPlantSuccess}
+      />
     </SafeAreaView>
   );
 }

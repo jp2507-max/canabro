@@ -3,31 +3,25 @@ import React from 'react';
 import { View } from 'react-native';
 
 import SyncStatus from './SyncStatus';
-import TagPill from './TagPill';
 import ThemedText from './ThemedText';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 
 interface HomeHeaderProps {
-  onAddPlant: () => void;
   plantCount: number;
-  isDarkMode?: boolean;
 }
 
-export function HomeHeader({ onAddPlant, plantCount, isDarkMode }: HomeHeaderProps) {
-  const { theme, isDarkMode: themeDarkMode } = useTheme();
-  const dark = isDarkMode ?? themeDarkMode;
+export function HomeHeader({ plantCount }: HomeHeaderProps) {
   return (
-    <View className="mb-4 flex-row items-center justify-between">
+    <View className="px-4 pt-6 pb-4 flex-row items-center justify-between">
       <View>
-        <ThemedText
-          className="text-2xl font-bold"
-          lightClassName="text-green-800"
-          darkClassName="text-primary-300">
+        <ThemedText className="text-3xl font-bold text-gray-900 dark:text-white">
           My Plants
         </ThemedText>
-        <View className="mt-2 flex-row">
-          <TagPill text={`Total: ${plantCount}`} isDarkMode={dark} />
-        </View>
+        <ThemedText className="text-base text-gray-600 dark:text-gray-400 mt-1">
+          {plantCount > 0
+            ? `You have ${plantCount} plant${plantCount > 1 ? 's' : ''}.`
+            : "Let's add your first plant!"}
+        </ThemedText>
       </View>
       <SyncStatus compact />
     </View>

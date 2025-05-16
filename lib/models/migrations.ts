@@ -327,6 +327,42 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 19: Add new plant status fields
+    {
+      toVersion: 19,
+      steps: [
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'health_percentage', type: 'number', isOptional: true },
+            { name: 'next_watering_days', type: 'number', isOptional: true },
+            { name: 'next_nutrient_days', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 20: Add api_id to strains table
+    {
+      toVersion: 20,
+      steps: [
+        addColumns({
+          table: 'strains',
+          columns: [
+            {
+              name: 'api_id',
+              type: 'string',
+              isOptional: true,
+              isIndexed: true,
+            },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 21: This is a dummy migration to ensure WatermelonDB properly processes all migrations
+    {
+      toVersion: 21,
+      steps: [],
+    },
   ],
 });
 

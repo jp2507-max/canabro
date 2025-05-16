@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
+const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
 
 // Get the default configuration
 // eslint-disable-next-line no-undef
@@ -25,8 +26,8 @@ imageAssetExts.forEach((ext) => assetExtsSet.add(ext));
 config.resolver.assetExts = Array.from(assetExtsSet);
 
 // Apply the NativeWind wrapper to the modified configuration
-module.exports = withNativeWind(config, {
+module.exports = wrapWithReanimatedMetroConfig(withNativeWind(config, {
   input: './global.css',
   // Ensure we're using the right configuration for NativeWind 4.x
   configPath: './tailwind.config.js',
-});
+}));

@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 18, // Incremented version for adding strain_object_id to favorite_strains table
+  version: 21, // Incremented from 20
   tables: [
     tableSchema({
       name: 'profiles',
@@ -54,6 +54,9 @@ export default appSchema({
         { name: 'thc_content', type: 'number', isOptional: true }, // Added
         { name: 'cbd_content', type: 'number', isOptional: true }, // Added
         { name: 'expected_harvest_date', type: 'string', isOptional: true }, // Added (using string for date)
+        { name: 'health_percentage', type: 'number', isOptional: true }, // NEW
+        { name: 'next_watering_days', type: 'number', isOptional: true }, // NEW
+        { name: 'next_nutrient_days', type: 'number', isOptional: true }, // NEW
         { name: 'is_deleted', type: 'boolean', isOptional: true },
         { name: 'last_synced_at', type: 'number', isOptional: true },
         { name: 'created_at', type: 'number' },
@@ -111,7 +114,7 @@ export default appSchema({
     tableSchema({
       name: 'notifications',
       columns: [
-        { name: 'notification_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's `id`
+        { name: 'notification_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's \`id\`
         { name: 'user_id', type: 'string', isIndexed: true },
         { name: 'sender_id', type: 'string', isOptional: true },
         { name: 'type', type: 'string' },
@@ -138,6 +141,7 @@ export default appSchema({
         { name: 'difficulty', type: 'number', isOptional: true },
         { name: 'effects', type: 'string', isOptional: true }, // Stored as JSON string
         { name: 'flavors', type: 'string', isOptional: true }, // Stored as JSON string
+        { name: 'api_id', type: 'string', isOptional: true, isIndexed: true }, // <<< ADDED
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],
@@ -146,7 +150,7 @@ export default appSchema({
     tableSchema({
       name: 'plant_tasks',
       columns: [
-        { name: 'task_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's `id`
+        { name: 'task_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's \`id\`
         { name: 'plant_id', type: 'string', isIndexed: true },
         { name: 'title', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
@@ -163,7 +167,7 @@ export default appSchema({
     tableSchema({
       name: 'posts',
       columns: [
-        { name: 'post_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's `id`
+        { name: 'post_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's \`id\`
         { name: 'user_id', type: 'string', isIndexed: true },
         { name: 'content', type: 'string' },
         { name: 'image_url', type: 'string', isOptional: true },
