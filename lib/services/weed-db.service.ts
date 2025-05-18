@@ -218,11 +218,46 @@ const StrainArraySchema = z.array(StrainSchema);
 
 // --- Helper: Map WeedDB API snake_case to camelCase for Strain ---
 function mapWeedDbStrain(raw: any): Strain {
+  // Helper for determining strain type from genetics info
+  const determineStrainType = (genetic?: string): string | undefined => {
+    if (!genetic) return undefined;
+    const lowerGenetic = genetic.toLowerCase();
+    
+    if (lowerGenetic.includes('sativa') && lowerGenetic.includes('indica')) {
+      // If it mentions percentages, more precise determination
+      if (lowerGenetic.includes('%')) {
+        const sativaMatch = lowerGenetic.match(/sativa.*?(\d+)%/i);
+        const indicaMatch = lowerGenetic.match(/indica.*?(\d+)%/i);
+        
+        const sativaPercent = sativaMatch ? parseInt(sativaMatch[1], 10) : 0;
+        const indicaPercent = indicaMatch ? parseInt(indicaMatch[1], 10) : 0;
+        
+        if (sativaPercent > indicaPercent) return 'sativa';
+        if (indicaPercent > sativaPercent) return 'indica';
+        return 'hybrid';
+      }
+      return 'hybrid';
+    }
+    
+    if (lowerGenetic.includes('sativa')) return 'sativa';
+    if (lowerGenetic.includes('indica')) return 'indica';
+    
+    return 'hybrid'; // Default fallback
+  };
+  
+  // Extract type from multiple sources
+  const strainType = raw.type || determineStrainType(raw.genetics) || 'hybrid';
+  
+  // Format description from array or string
+  const formattedDescription = Array.isArray(raw.description) 
+    ? raw.description.join('\n\n') 
+    : raw.description;
+  
   return {
     id: String(raw._id || raw.id),
     name: raw.name,
     genetics: raw.genetics,
-    type: raw.type,
+    type: strainType,
     thc: raw.THC ?? raw.thc,
     cbd: raw.CBD ?? raw.cbd,
     growDifficulty: raw.growDifficulty || raw.grow_difficulty,
@@ -231,9 +266,9 @@ function mapWeedDbStrain(raw: any): Strain {
     parents: raw.parents ? (Array.isArray(raw.parents) ? raw.parents : [raw.parents]) : undefined,
     image: raw.imageUrl || raw.image_url || raw.image,
     imageUrl: raw.imageUrl || raw.image_url || raw.image,
-    description: Array.isArray(raw.description) ? raw.description.join(' ') : raw.description,
+    description: formattedDescription,
     effects: raw.effect || raw.effects,
-    flavors: raw.smellAndFlavour || raw.smell_and_flavour || raw.flavors,
+    flavors: raw.smellAndFlavour || raw.smell_and_flavour || raw.flavors || raw.smellAndFlavour,
     origin: raw.origin,
     breeder: raw.breeder,
     isAutoFlower: raw.isAutoFlower ?? raw.is_auto_flower,
@@ -249,6 +284,9 @@ function mapWeedDbStrain(raw: any): Strain {
     link: raw.link,
     createdAt: raw.createdAt || raw.created_at,
     updatedAt: raw.updatedAt || raw.updated_at,
+    // Ensure the API ID is always available
+    api_id: String(raw._id || raw.id),
+    originalId: String(raw._id || raw.id),
   };
 }
 

@@ -134,14 +134,22 @@ export default appSchema({
         { name: 'name', type: 'string', isIndexed: true },
         { name: 'type', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
-        { name: 'image_url', type: 'string', isOptional: true },
-        { name: 'thc_content', type: 'number', isOptional: true },
-        { name: 'cbd_content', type: 'number', isOptional: true },
+        // { name: 'image_url', type: 'string', isOptional: true }, // Removed as per user request
+        { name: 'thc_percentage', type: 'number', isOptional: true },
+        { name: 'cbd_percentage', type: 'number', isOptional: true },
         { name: 'flowering_time', type: 'number', isOptional: true },
-        { name: 'difficulty', type: 'number', isOptional: true },
+        // { name: 'difficulty', type: 'number', isOptional: true }, // Changed to grow_difficulty
+        { name: 'grow_difficulty', type: 'string', isOptional: true }, // Changed from difficulty (number) to grow_difficulty (string)
         { name: 'effects', type: 'string', isOptional: true }, // Stored as JSON string
         { name: 'flavors', type: 'string', isOptional: true }, // Stored as JSON string
-        { name: 'api_id', type: 'string', isOptional: true, isIndexed: true }, // <<< ADDED
+        { name: 'api_id', type: 'string', isOptional: true, isIndexed: true },
+        // New fields from API
+        { name: 'genetics', type: 'string', isOptional: true },
+        { name: 'flowering_type', type: 'string', isOptional: true },
+        { name: 'height_indoor', type: 'string', isOptional: true },
+        { name: 'height_outdoor', type: 'string', isOptional: true },
+        { name: 'average_yield', type: 'string', isOptional: true },
+        { name: 'harvest_time_outdoor', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

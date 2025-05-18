@@ -45,9 +45,9 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
             />
           </TouchableOpacity>
         </View>
-        <ScrollView className="flex-1 p-4">
+        <View className="flex-1 p-4">
           <AddPlantForm onSuccess={onSuccess} />
-        </ScrollView>
+        </View>
       </ThemedView>
     </Modal>
   );

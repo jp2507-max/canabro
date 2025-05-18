@@ -27,15 +27,17 @@ import { StrainAutocomplete } from './StrainAutocomplete';
 import ThemedText from './ui/ThemedText';
 import ThemedView from './ui/ThemedView';
 import { useTheme } from '../lib/contexts/ThemeContext';
-import { searchStrainsByName, getStrainById } from '../lib/data/strains'; // For fallback local search
-import { Strain as LocalStrain } from '../lib/data/strains'; // Import local strain type
-import { useDatabase } from '../lib/hooks/useDatabase';
-import useWatermelon from '../lib/hooks/useWatermelon';
-import { Plant } from '../lib/models/Plant';
-import { scheduleInitialPlantNotifications } from '../lib/services/NotificationService';
-import { Strain } from '../lib/types/weed-db'; // Import the correct Strain type from weed-db
+import { searchStrainsByName, getStrainById } from '../lib/data/strains';
+import { Strain as LocalStrain } from '../lib/data/strains';
+import { Strain } from '../lib/types/weed-db';
+import { GrowthStage } from '../lib/types/plant';
+import { findOrCreateLocalStrain } from '../lib/services/strain-sync-service';
 import supabase from '../lib/supabase';
-import { GrowthStage } from '../lib/types/plant'; // Removed unused CreatePlantData - Reverted import type
+import { useAuth } from '../lib/contexts/AuthProvider';
+import { useDatabase } from '../lib/contexts/DatabaseProvider';
+import useWatermelon from '../lib/hooks/useWatermelon';
+import { StrainSpecies } from '../lib/types/strain';
+// import { router } from 'expo-router'; // Already in scope, avoid duplicate import
 
 // Enums for the form (Consider moving to types/plant.ts or a dedicated enums file)
 enum GrowLocation {
@@ -140,6 +142,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const { theme, isDarkMode } = useTheme();
   const { database } = useDatabase();
   const { sync } = useWatermelon();
+  const { user } = useAuth(); // Added
 
   // Track the current step by ID instead of index for more reliable navigation
   const [currentStepId, setCurrentStepId] = useState<string>(FORM_STEPS[0]?.id ?? 'photo');
@@ -359,159 +362,99 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
   // Form submission - Updated for react-hook-form
   const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to add a plant.');
+      setIsSubmitting(false);
+      return;
+    }
+    // Ensure selectedStrain and its API ID (external API ID) are present
+    // The selectedStrain.id from the API response is the one we need (e.g., "66a3c8368b008ce2fbbaf40b")
+    if (!selectedStrain || !selectedStrain.api_id) { // <--- MODIFIED: Check for selectedStrain.api_id
+      Alert.alert('Error', 'Please select a valid strain. The external API ID is missing.');
+      setIsSubmitting(false);
+      return;
+    }
+
     console.log('[AddPlantForm] onSubmit triggered. Form data:', JSON.stringify(data, null, 2));
-    console.log('[AddPlantForm] Current selectedStrain state:', JSON.stringify(selectedStrain, null, 2));
+    console.log('[AddPlantForm] Current selectedStrain (from API):', JSON.stringify(selectedStrain, null, 2));
     setIsSubmitting(true);
+
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        Alert.alert('Authentication Error', 'You must be logged in.');
+      let imageUrlToSave: string | null = data.image_url ?? null;
+      if (imagePreviewUri && imagePreviewUri !== data.image_url) {
+        const uploadedUrl = await uploadImage(user.id);
+        if (uploadedUrl) {
+          imageUrlToSave = uploadedUrl;
+        } else if (imagePreviewUri) {
+          console.warn('[AddPlantForm] Image upload may have failed, but a preview URI was present.');
+        }
+      }
+
+      // 1. Find or create the local strain entry using the true external API ID
+      const externalApiId = selectedStrain.api_id; // <--- MODIFIED: Use selectedStrain.api_id
+
+      // Prepare the full selectedStrain object to be passed to findOrCreateLocalStrain
+      // This ensures all details from the API are available for syncing.
+      // The RawApiStrainData interface in strain-sync-service.ts should match this structure.
+      const strainDataForSync: any = {
+        ...selectedStrain, // Spread all properties from the selectedStrain (API response)
+        api_id: externalApiId, // Ensure api_id is explicitly the external one
+        // id: selectedStrain.id, // If selectedStrain.id is the internal one, ensure it's not overriding api_id
+                               // The spread (...) might bring `id` if it's different from `api_id` in selectedStrain.
+                               // If selectedStrain.id IS the external api_id, then this is fine.
+                               // Based on your logs, selectedStrain.api_id is the true external ID.
+      };
+      // Remove the internal 'id' if it exists and is different from api_id, to avoid confusion
+      // if (strainDataForSync.id && strainDataForSync.id !== externalApiId) {
+      //   delete strainDataForSync.id;
+      // }
+
+      console.log('[AddPlantForm] Calling findOrCreateLocalStrain with externalApiId:', externalApiId);
+      console.log('[AddPlantForm] Passing strainDataForSync to findOrCreateLocalStrain:', JSON.stringify(strainDataForSync, null, 2));
+
+      const localStrain = await findOrCreateLocalStrain(externalApiId, strainDataForSync);
+
+      if (!localStrain || !localStrain.id) {
+        Alert.alert('Error', 'Could not synchronize strain information. Please try again.');
         setIsSubmitting(false);
         return;
       }
 
-      let finalImageUrl = data.image_url;
-      if (imagePreviewUri && !finalImageUrl) {
-        finalImageUrl = await uploadImage(user.id);
-        if (!finalImageUrl && imagePreviewUri) {
-          Alert.alert(
-            'Image Upload Failed',
-            'Could not upload image. Please try again or remove the photo.'
-          );
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      let strainToUse: Strain | null = selectedStrain; // Prioritize the selectedStrain state
-
-      // Fallback: if no strain was explicitly selected via autocomplete,
-      // but a strain name was typed, try to find it.
-      // This is a weaker association and should ideally be confirmed by the user or improved.
-      if (!strainToUse && data.strain) {
-        console.log(`[AddPlantForm] No selectedStrain, attempting to find by name: ${data.strain}`);
-        const matchingStrains = searchStrainsByName(data.strain); // Local search function
-        if (matchingStrains && matchingStrains.length > 0 && matchingStrains[0]) {
-          // Convert LocalStrain to Strain format for consistency
-          const localStrain = matchingStrains[0];
-          strainToUse = {
-            id: localStrain.id,
-            name: localStrain.name,
-            type: localStrain.type,
-            thc: localStrain.thcContent || null,
-            cbd: null,
-            effects: localStrain.effects,
-            flavors: localStrain.flavors,
-            description: localStrain.description || '',
-            image: localStrain.imageUrl,
-            floweringTime: localStrain.floweringTime?.toString() || undefined
-          };
-          console.log('[AddPlantForm] Found strain by name search:', JSON.stringify(strainToUse, null, 2));
-        } else {
-          console.log(`[AddPlantForm] No strain found by name: ${data.strain}`);
-        }
-      }
-
-      const finalStrainId = strainToUse?.id && strainToUse.id !== 'unknown' ? strainToUse.id : null;
-      const strainName = data.strain || strainToUse?.name || 'Unknown Strain';
-
-      console.log(`[AddPlantForm] Determined finalStrainId: ${finalStrainId}`);
-      console.log(`[AddPlantForm] Determined strainName: ${strainName}`);
-
-      const plantDataToSave = {
-        name: data.name || 'Unnamed Plant',
-        strain: strainName, // Store the name
-        planted_date: data.planted_date.toISOString().split('T')[0],
-        growth_stage: data.growth_stage || GrowthStage.SEEDLING,
-        notes: data.notes || '',
-        image_url: finalImageUrl || undefined,
-        cannabisType: data.cannabis_type || CannabisType.Unknown,
-        growMedium: data.grow_medium || GrowMedium.Soil,
-        lightCondition: data.light_condition || LightCondition.Artificial,
-        locationDescription: data.location_description || GrowLocation.Indoor,
-        strainId: finalStrainId, // <<<< THIS IS THE UUID or null
-        userId: user.id,
+      const newPlantData = {
+        user_id: user.id,
+        name: data.name,
+        strain_id: localStrain.id, // This is the local Supabase UUID for the strain
+        strain: data.strain, // This is the strain NAME from the form input
+        planted_date: data.planted_date.toISOString(),
+        growth_stage: data.growth_stage,
+        cannabis_type: data.cannabis_type,
+        grow_medium: data.grow_medium,
+        light_condition: data.light_condition,
+        location_description: data.location_description,
+        image_url: imageUrlToSave,
+        notes: data.notes,
+        // Ensure all other necessary fields for the 'plants' table are included
       };
 
-      console.log('[AddPlantForm] Plant data being saved to WatermelonDB:', JSON.stringify(plantDataToSave, null, 2));
+      console.log('[AddPlantForm] Attempting to insert plant with local strain_id:', JSON.stringify(newPlantData, null, 2));
 
-      let newPlantId: string = '';
-      await database.write(async () => {
-        try {
-          const plantsCollection = database.get<Plant>('plants');
-          const newPlant = await plantsCollection.create((plant: Plant) => {
-            plant.name = plantDataToSave.name;
-            plant.strain = plantDataToSave.strain; // Plant name
-            plant.plantedDate = plantDataToSave.planted_date;
-            plant.growthStage = plantDataToSave.growth_stage;
-            plant.notes = plantDataToSave.notes;
-            plant.userId = plantDataToSave.userId;
-            plant.strainId = plantDataToSave.strainId; // <<<< UUID stored here
-            console.log(`[AddPlantForm] WatermelonDB: Setting plant.strainId to: ${plant.strainId}`);
-            plant.cannabisType = plantDataToSave.cannabisType;
-            plant.growMedium = plantDataToSave.growMedium;
-            plant.lightCondition = plantDataToSave.lightCondition;
-            plant.locationDescription = plantDataToSave.locationDescription;
-            if (plantDataToSave.image_url) {
-              plant.imageUrl = plantDataToSave.image_url;
-            }
-          });
-          newPlantId = newPlant.id;
-          console.log('[AddPlantForm] Plant created successfully in WatermelonDB with ID:', newPlantId);
-          
-          // Run the debug logging
-          await newPlant.logPlantAndStrainDebugInfo();
-          // Additional detailed relationship debugging
-          await newPlant.debugStrainRelationProperties();
-          
-          // Verify that the strain can be found based on the saved ID
-          if (finalStrainId) {
-            const verifiedStrain = getStrainById(finalStrainId);
-            console.log('[AddPlantForm] Verification - Can find strain by saved ID?', !!verifiedStrain);
-            if (verifiedStrain) {
-              console.log('[AddPlantForm] Verified strain name:', verifiedStrain.name);
-            }
-          }
-        } catch (error) {
-          console.error('[AddPlantForm] Error creating plant in WatermelonDB:', error);
-          throw error;
-        }
-      });
+      const { error: insertError } = await supabase.from('plants').insert(newPlantData);
 
-      if (newPlantId) {
-        try {
-          if (data.planted_date instanceof Date) {
-            await scheduleInitialPlantNotifications(newPlantId, data.name, data.planted_date);
-          }
-          
-          // Get the plant instance to set strain relation before sync
-          if (finalStrainId) {
-            const plantsCollection = database.get<Plant>('plants');
-            const plantToSync = await plantsCollection.find(newPlantId);
-            if (plantToSync) {
-              // Set the strain relation to ensure proper sync
-              await plantToSync.setStrainRelation();
-            }
-          }
-          
-          // Trigger sync after setting up the relationship
-          await sync();
-          Alert.alert('Success', 'Plant added successfully!');
-          reset();
-          setImagePreviewUri(null);
-          setSelectedStrain(null);
-          setCurrentStepId(FORM_STEPS[0]?.id ?? 'photo');
-          if (onSuccess) onSuccess();
-        } catch (syncError) {
-          console.error('[AddPlantForm] Error during sync or post-creation:', syncError);
-          Alert.alert('Sync Error', 'Plant was saved locally, but failed to sync. Please try syncing manually later.');
-        }
+      if (insertError) {
+        console.error('[AddPlantForm] Error inserting plant:', insertError);
+        Alert.alert('Error', `Failed to add plant: ${insertError.message}`);
+      } else {
+        Alert.alert('Success', 'Plant added successfully!');
+        reset();
+        setImagePreviewUri(null);
+        setSelectedStrain(null);
+        setValue('strain', ''); // Clear strain name input from react-hook-form
+        if (onSuccess) onSuccess();
+        router.replace('/(tabs)'); // Navigates to the main My Plants tab index
       }
-    } catch (error) {
-      console.error('[AddPlantForm] Error submitting form:', error);
-      Alert.alert('Error', `Failed to add plant: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: any) {
+      console.error('[AddPlantForm] Submission error:', error);
+      Alert.alert('Error', `An unexpected error occurred: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -1195,7 +1138,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               darkClassName="text-darkMutedForeground">
               • Seedling: 2-3 weeks{'\n'}• Vegetative: 3-16 weeks{'\n'}• Flowering: 8-11 weeks{'\n'}
               • Total grow time: 3-6 months
-            </ThemedText>
+            401c486a-942f-4e96-9fe5-dd5792d5cf6b</ThemedText>
           </ThemedView>
         </ThemedView>
       )}
@@ -1231,116 +1174,114 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <KeyboardAvoidingView
-      behavior="padding" // Changed behavior to 'padding' for consistency
+      behavior="padding"
       className="bg-background dark:bg-darkBackground flex-1">
-      {/* Use ScrollView for the form content */}
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
-        <ThemedView className="px-4 pb-20 pt-4">
-          {/* Header */}
-          <ThemedView className="mb-2 flex-row items-center justify-between">
-            <TouchableOpacity
-              onPress={goToPreviousStep}
-              style={{ marginLeft: -8, padding: 8 }}
-              accessibilityLabel={
-                FORM_STEPS.findIndex((step) => step.id === currentStepId) === 0
-                  ? 'Cancel'
-                  : 'Previous Step'
-              }
-              accessibilityRole="button">
-              <Ionicons
-                name="arrow-back"
-                size={26}
-                color={isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]}
-              />
-            </TouchableOpacity>
-            <ThemedText
-              style={{ fontSize: 20, fontWeight: 'bold', letterSpacing: -0.5 }}
-              lightClassName="text-foreground"
-              darkClassName="text-darkForeground">
-              {currentStepObj?.title || ''}
-            </ThemedText>
-            <ThemedView className="w-10" />
-          </ThemedView>
-          {/* Description (remains the same) - Ensured optional chaining on access */}
-          {currentStepObj?.description && (
-            <ThemedText
-              className="mb-4 text-center"
-              lightClassName="text-muted-foreground"
-              darkClassName="text-darkMutedForeground">
-              {currentStepObj?.description}
-            </ThemedText>
-          )}
-          {/* Progress indicator (remains the same) */}
-          {renderProgressIndicator()}
+      <ThemedView className="flex-1 px-4 pb-20 pt-4">
+        {/* Header */}
+        <ThemedView className="mb-2 flex-row items-center justify-between">
+          <TouchableOpacity
+            onPress={goToPreviousStep}
+            style={{ marginLeft: -8, padding: 8 }}
+            accessibilityLabel={
+              FORM_STEPS.findIndex((step) => step.id === currentStepId) === 0
+                ? 'Cancel'
+                : 'Previous Step'
+            }
+            accessibilityRole="button">
+            <Ionicons
+              name="arrow-back"
+              size={26}
+              color={isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]}
+            />
+          </TouchableOpacity>
+          <ThemedText
+            style={{ fontSize: 20, fontWeight: 'bold', letterSpacing: -0.5 }}
+            lightClassName="text-foreground"
+            darkClassName="text-darkForeground">
+            {currentStepObj?.title || ''}
+          </ThemedText>
+          <ThemedView className="w-10" />
+        </ThemedView>
+        {/* Description */}
+        {currentStepObj?.description && (
+          <ThemedText
+            className="mb-4 text-center"
+            lightClassName="text-muted-foreground"
+            darkClassName="text-darkMutedForeground">
+            {currentStepObj?.description}
+          </ThemedText>
+        )}
+        {/* Progress indicator */}
+        {renderProgressIndicator()}
 
-          {/* Step content */}
+        {/* Step content - Wrap in a flex-1 View to prevent scroll issues */}
+        <ThemedView className="flex-1">
           {renderStepContent()}
+        </ThemedView>
 
-          {/* Navigation buttons - Updated */}
-          <ThemedView className="mt-8 space-y-3">
-            {currentStepId === (FORM_STEPS[FORM_STEPS.length - 1]?.id ?? 'dates') ? (
-              <TouchableOpacity
-                onPress={handleSubmit(onSubmit)}
-                activeOpacity={0.7}
-                disabled={isSubmitting}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 8,
-                  padding: 16,
-                  backgroundColor: isSubmitting
-                    ? isDarkMode
-                      ? theme.colors.neutral[700]
-                      : theme.colors.neutral[300]
-                    : isDarkMode
-                      ? theme.colors.primary[700]
-                      : theme.colors.primary[500],
-                  opacity: isSubmitting ? 0.5 : 1,
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Add plant">
-                {isSubmitting && (
-                  <ActivityIndicator
-                    size="small"
-                    color={isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50]}
-                    className="mr-2"
-                  />
-                )}
-                <ThemedText
-                  className="text-center font-semibold"
-                  lightClassName={`${isSubmitting ? 'text-neutral-500' : 'text-primary-foreground'}`}
-                  darkClassName={`${isSubmitting ? 'text-neutral-400' : 'text-darkPrimaryForeground'}`}>
-                  {isSubmitting ? 'Adding Plant...' : 'Finish & Add Plant'}
-                </ThemedText>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={goToNextStep}
-                activeOpacity={0.7}
-                style={{
-                  backgroundColor: isDarkMode
+        {/* Navigation buttons */}
+        <ThemedView className="mt-8 space-y-3">
+          {currentStepId === (FORM_STEPS[FORM_STEPS.length - 1]?.id ?? 'dates') ? (
+            <TouchableOpacity
+              onPress={handleSubmit(onSubmit)}
+              activeOpacity={0.7}
+              disabled={isSubmitting}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 8,
+                padding: 16,
+                backgroundColor: isSubmitting
+                  ? isDarkMode
+                    ? theme.colors.neutral[700]
+                    : theme.colors.neutral[300]
+                  : isDarkMode
                     ? theme.colors.primary[700]
                     : theme.colors.primary[500],
-                  borderRadius: 8,
-                  padding: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Continue to next step">
-                <ThemedText
-                  className="text-center font-semibold"
-                  lightClassName="text-primary-foreground"
-                  darkClassName="text-darkPrimaryForeground">
-                  Continue
-                </ThemedText>
-              </TouchableOpacity>
-            )}
-          </ThemedView>
-          {/* End of main content view */}
+                opacity: isSubmitting ? 0.5 : 1,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Add plant">
+              {isSubmitting && (
+                <ActivityIndicator
+                  size="small"
+                  color={isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50]}
+                  className="mr-2"
+                />
+              )}
+              <ThemedText
+                className="text-center font-semibold"
+                lightClassName={`${isSubmitting ? 'text-neutral-500' : 'text-primary-foreground'}`}
+                darkClassName={`${isSubmitting ? 'text-neutral-400' : 'text-darkPrimaryForeground'}`}>
+                {isSubmitting ? 'Adding Plant...' : 'Finish & Add Plant'}
+              </ThemedText>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={goToNextStep}
+              activeOpacity={0.7}
+              style={{
+                backgroundColor: isDarkMode
+                  ? theme.colors.primary[700]
+                  : theme.colors.primary[500],
+                borderRadius: 8,
+                padding: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Continue to next step">
+              <ThemedText
+                className="text-center font-semibold"
+                lightClassName="text-primary-foreground"
+                darkClassName="text-darkPrimaryForeground">
+                Continue
+              </ThemedText>
+            </TouchableOpacity>
+          )}
         </ThemedView>
-      </ScrollView>
+      </ThemedView>
     </KeyboardAvoidingView>
   );
 }

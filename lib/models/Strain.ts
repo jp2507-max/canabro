@@ -17,13 +17,23 @@ export class Strain extends Model {
   @text('name') name!: string;
   @text('type') type!: string;
   @text('description') description?: string;
-  @text('image_url') imageUrl?: string;
-  @field('thc_content') thcContent?: number;
-  @field('cbd_content') cbdContent?: number;
-  @field('flowering_time') floweringTime?: number;
-  @field('difficulty') difficulty?: number;
+  // @text('image_url') imageUrl?: string; // Removed as per user request
+  @field('thc_percentage') thcPercentage?: number;
+  @field('cbd_percentage') cbdPercentage?: number;
+  @field('flowering_time') floweringTime?: number; // This seems to be a duration in days/weeks
+  // @field('difficulty') difficulty?: number; // Changed to growDifficulty
+  @text('grow_difficulty') growDifficulty?: string; // Changed from difficulty (number) to growDifficulty (string)
   @text('effects') effects?: string;
   @text('flavors') flavors?: string;
+
+  // New fields from API
+  @text('genetics') genetics?: string;
+  @text('flowering_type') floweringType?: string; // e.g., "Autoflowering"
+  @text('height_indoor') heightIndoor?: string;
+  @text('height_outdoor') heightOutdoor?: string;
+  @text('average_yield') averageYield?: string; // To store values like "Medium" or "250g/plant"
+  @text('harvest_time_outdoor') harvestTimeOutdoor?: string; // e.g. "End of September"
+
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
 

@@ -105,6 +105,18 @@ async function ensureStrainExistsInSupabase(
     flavors?: string[];
     image?: string;
     originalId?: string; // MongoDB ObjectId if available
+    // Add additional strain data fields
+    thc?: string | number;
+    cbd?: string | number;
+    growDifficulty?: string;
+    floweringTime?: string;
+    yieldIndoor?: string;
+    yieldOutdoor?: string;
+    heightIndoor?: string;
+    heightOutdoor?: string;
+    harvestTimeOutdoor?: string;
+    genetics?: string;
+    floweringType?: string;
   } = {}
 ): Promise<string | null> {
   try {
@@ -165,6 +177,44 @@ async function ensureStrainExistsInSupabase(
     // Step 3: If not found by ID or name, create it
     console.log('[DEBUG] Creating strain in Supabase with ID:', uuidStrainId);
 
+    // Helper function to format description from string or array
+    const formatDescription = (desc?: string | string[]): string | null => {
+      if (!desc) return null;
+      if (Array.isArray(desc)) return desc.join('\n\n');
+      return desc;
+    };
+
+    // Helper function to parse percentage values
+    const parsePercentage = (value?: string | number): number | null => {
+      if (value === null || value === undefined || value === 'Unknown') return null;
+      
+      if (typeof value === 'number') return value;
+      
+      // Extract numbers from strings like "22%" or "15-20%"
+      const match = String(value).match(/(\d+(?:\.\d+)?)/);
+      if (match && match[1]) {
+        return parseFloat(match[1]);
+      }
+      
+      return null;
+    };
+
+    // Helper function to extract flowering time in weeks
+    const extractFloweringTimeInWeeks = (value?: string): number | null => {
+      if (!value) return null;
+      
+      // Handle ranges like "7-8 weeks"
+      const match = value.match(/(\d+)(?:-(\d+))?\s*weeks?/i);
+      if (match) {
+        // For ranges, use the upper bound if available
+        if (match[2]) return parseInt(match[2], 10);
+        if (match[1]) return parseInt(match[1], 10);
+        return null;
+      }
+      
+      return null;
+    };
+
     const { data: insertData, error: insertError } = await supabase
       .from('strains')
       .insert({
@@ -173,6 +223,18 @@ async function ensureStrainExistsInSupabase(
         type: strainData.type || null,
         effects: strainData.effects || null,
         flavors: strainData.flavors || null,
+        description: formatDescription(strainData.description),
+        api_id: mongoObjectId || null,
+        // Process additional strain data
+        thc_percentage: parsePercentage(strainData.thc),
+        cbd_percentage: parsePercentage(strainData.cbd),
+        grow_difficulty: strainData.growDifficulty || null,
+        average_yield: strainData.yieldIndoor && strainData.yieldOutdoor 
+          ? `Indoor: ${strainData.yieldIndoor}, Outdoor: ${strainData.yieldOutdoor}`
+          : (strainData.yieldIndoor || strainData.yieldOutdoor || null),
+        flowering_time: extractFloweringTimeInWeeks(strainData.floweringTime),
+        image_url: strainData.image || null,
+        genetics: strainData.genetics || null,
       })
       .select()
       .single();
@@ -264,6 +326,18 @@ export async function addFavoriteStrain(
     flavors?: string[];
     image?: string;
     originalId?: string; // MongoDB ObjectId if different from strainId
+    // Add additional strain data fields
+    thc?: string | number;
+    cbd?: string | number;
+    growDifficulty?: string;
+    floweringTime?: string;
+    yieldIndoor?: string;
+    yieldOutdoor?: string;
+    heightIndoor?: string;
+    heightOutdoor?: string;
+    harvestTimeOutdoor?: string;
+    genetics?: string;
+    floweringType?: string;
   } = {}
 ): Promise<boolean> {
   if (!userId || !strainId) {
@@ -331,7 +405,20 @@ export async function addFavoriteStrain(
       description: strainData.description,
       effects: strainData.effects,
       flavors: strainData.flavors,
+      image: strainData.image,
       originalId: mongoObjectId,
+      // Pass additional data
+      thc: strainData.thc,
+      cbd: strainData.cbd,
+      growDifficulty: strainData.growDifficulty,
+      floweringTime: strainData.floweringTime,
+      yieldIndoor: strainData.yieldIndoor,
+      yieldOutdoor: strainData.yieldOutdoor,
+      heightIndoor: strainData.heightIndoor,
+      heightOutdoor: strainData.heightOutdoor,
+      harvestTimeOutdoor: strainData.harvestTimeOutdoor,
+      genetics: strainData.genetics,
+      floweringType: strainData.floweringType,
     });
 
     if (!finalUuidStrainId) {

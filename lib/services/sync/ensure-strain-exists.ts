@@ -52,7 +52,14 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
     'updated_at',
     'created_by',
     'average_yield',
-    'flowering_time'
+    'flowering_time',
+    'api_id',
+    'image_url',
+    'genetics',
+    'height_indoor',
+    'height_outdoor',
+    'harvest_time_outdoor',
+    'flowering_type'
   ];
 
   /**
@@ -64,15 +71,25 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
     const safePayload: Record<string, any> = {
       id: strain.id,
       name: strain.name,
-    };    // Map of common field name variations to their standardized DB column names
+    };    
+    
+    // Map of common field name variations to their standardized DB column names
     const fieldMappings: Record<string, string[]> = {
-      'type': ['type', 'species'], // Map both 'type' and 'species' to 'type'
-      'thc_percentage': ['thc_content', 'thc', 'thcContent', 'thcPercentage'],
-      'cbd_percentage': ['cbd_content', 'cbd', 'cbdContent', 'cbdPercentage'],
-      'grow_difficulty': ['grow_difficulty', 'growDifficulty', 'difficulty'],
+      'type': ['type', 'species', 'strainType'], 
+      'thc_percentage': ['thc_content', 'thc', 'thcContent', 'thcPercentage', 'THC'],
+      'cbd_percentage': ['cbd_content', 'cbd', 'cbdContent', 'cbdPercentage', 'CBD'],
+      'grow_difficulty': ['grow_difficulty', 'growDifficulty', 'difficulty', 'growDifficulty'],
       'created_at': ['created_at', 'createdAt'],
       'updated_at': ['updated_at', 'updatedAt'],
-      'flowering_time': ['flowering_time', 'floweringTime']
+      'flowering_time': ['flowering_time', 'floweringTime'],
+      'average_yield': ['average_yield', 'yield', 'averageYield'],
+      'image_url': ['image_url', 'imageUrl', 'image'],
+      'api_id': ['api_id', 'apiId', '_id', 'originalId'],
+      'genetics': ['genetics'],
+      'height_indoor': ['height_indoor', 'heightIndoor'],
+      'height_outdoor': ['height_outdoor', 'heightOutdoor'],
+      'harvest_time_outdoor': ['harvest_time_outdoor', 'harvestTimeOutdoor'],
+      'flowering_type': ['flowering_type', 'floweringType']
     };
     
     // Strictly only add fields that are in our known list

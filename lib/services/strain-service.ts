@@ -7,6 +7,7 @@ import { Strain, StrainReview } from '../types/strain';
 export function adaptStrainFromDB(dbStrain: any): Strain {
   return {
     id: dbStrain.id,
+    api_id: dbStrain.api_id, // Add this line
     name: dbStrain.name,
     species: dbStrain.species,
     thc_content: dbStrain.thc_content,

@@ -159,7 +159,7 @@ export function StrainAutocomplete({
   const showNoResults = !isSearching && debouncedSearchTerm.length >= 2 && !hasResults;
 
   return (
-    <ThemedView className={`relative ${className} ${error ? 'mb-6' : 'mb-0'}`}>
+    <View className={`relative ${className} ${error ? 'mb-6' : 'mb-0'}`}>
       {/* Input Container */}
       <ThemedView
         className={`flex-row items-center rounded-lg border px-3 py-2 ${error ? 'border-red-500' : ''}`}
@@ -230,7 +230,7 @@ export function StrainAutocomplete({
             </ThemedView>
           ) : hasResults ? (
             <FlatList
-              data={strainsArray} // Use the correctly typed strainsArray
+              data={strainsArray}
               renderItem={renderStrainItem}
               keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
               keyboardShouldPersistTaps="handled"
@@ -239,7 +239,11 @@ export function StrainAutocomplete({
               maxToRenderPerBatch={10}
               initialNumToRender={10}
               removeClippedSubviews={true}
-              nestedScrollEnabled={true} // Added this line
+              nestedScrollEnabled={true}
+              scrollEnabled={true}
+              // Add these to better handle the parent scrolling and reduce conflicts
+              disableScrollViewPanResponder={true}
+              persistentScrollbar={true}
             />
           ) : showNoResults ? (
             <ThemedView className="items-center p-4">
@@ -250,7 +254,7 @@ export function StrainAutocomplete({
           ) : null}
         </ThemedView>
       )}
-    </ThemedView>
+    </View>
   );
 }
 

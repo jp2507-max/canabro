@@ -1,179 +1,245 @@
 /**
  * StrainSyncService
- * 
+ *
  * A service for synchronizing strains between the external API and the local WatermelonDB database.
- * This handles functionality like ensuring strains exist locally before they're referenced.
  */
 
+// WatermelonDB Imports
 import { Q } from '@nozbe/watermelondb';
-import { database } from '../models';
+import database from '../database/database'; // Corrected: default import and path
 import { Strain } from '../models/Strain';
-import { WeedDbService } from './weed-db.service';
-import { ensureUuid } from '../utils/uuid';
-import { isObjectId, storeIdMapping } from '../utils/strainIdMapping';
-import { Strain as ApiStrain } from '../types/weed-db';
+import { RawStrainApiResponse } from '../types/weed-db';
+import { log } from '../utils/logger';
+import {
+  sanitizeString,
+  parseOptionalNumber,
+  parseOptionalStringArray,
+} from '../utils/data-parsing';
+
+const STRAIN_API_URL = 'https://www.weed.db/api/strains'; // Replace with your actual API endpoint
 
 /**
- * Finds or creates a strain in the local WatermelonDB database based on API data
- * 
- * @param apiId The external API ID (can be MongoDB ObjectId or UUID)
- * @param strainData The strain data from the API
- * @returns The local Strain model instance or null if failed
+ * Prepares raw API data for insertion into the WatermelonDB 'strains' table.
  */
-export async function findOrCreateLocalStrain(
-  apiId: string,
-  strainData?: Partial<ApiStrain>
-): Promise<Strain | null> {
+function prepareDataForWatermelonDB(apiStrain: RawStrainApiResponse): any {
+  const effectsArray = parseOptionalStringArray(apiStrain.effects);
+  const flavorsArray = parseOptionalStringArray(apiStrain.flavors);
+  const terpenesArray = parseOptionalStringArray(apiStrain.terpenes);
+  const parentsArray = parseOptionalStringArray(apiStrain.parents);
+  const originArray = parseOptionalStringArray(apiStrain.origin);
+
+  let descriptionString = null;
+  if (Array.isArray(apiStrain.description)) {
+    descriptionString = sanitizeString(apiStrain.description.join('\n'));
+  } else if (apiStrain.description) {
+    descriptionString = sanitizeString(apiStrain.description);
+  }
+
+  let imageUrl = null;
+  if (apiStrain.image_url) {
+    imageUrl = sanitizeString(apiStrain.image_url);
+  } else if (apiStrain.imageUrl) {
+    imageUrl = sanitizeString(apiStrain.imageUrl);
+  } else if (apiStrain.image) {
+    imageUrl = sanitizeString(apiStrain.image);
+  }
+
+  return {
+    api_id: sanitizeString(apiStrain.api_id),
+    name: sanitizeString(apiStrain.name),
+    type: apiStrain.type ? sanitizeString(apiStrain.type) : null,
+    genetics: apiStrain.genetics ? sanitizeString(apiStrain.genetics) : null,
+    description: descriptionString,
+    thc_percentage: parseOptionalNumber(apiStrain.thc),
+    cbd_percentage: parseOptionalNumber(apiStrain.cbd),
+    flowering_time_min_weeks: null, // Placeholder: Requires specific parsing logic
+    flowering_time_max_weeks: null, // Placeholder: Requires specific parsing logic
+    flowering_type: apiStrain.floweringType ? sanitizeString(apiStrain.floweringType) : null,
+    image_url: imageUrl,
+    breeder: apiStrain.breeder ? sanitizeString(apiStrain.breeder) : null,
+    origin: JSON.stringify(originArray),
+    yield_indoor_grams_m2: parseOptionalNumber(apiStrain.yieldIndoor),
+    yield_outdoor_grams_plant: parseOptionalNumber(apiStrain.yieldOutdoor),
+    height_indoor_cm: parseOptionalNumber(apiStrain.heightIndoor),
+    height_outdoor_cm: parseOptionalNumber(apiStrain.heightOutdoor),
+    grow_difficulty: apiStrain.growDifficulty ? sanitizeString(apiStrain.growDifficulty) : null,
+    harvest_time_outdoor: apiStrain.harvestTimeOutdoor ? sanitizeString(apiStrain.harvestTimeOutdoor) : null,
+    effects: JSON.stringify(effectsArray),
+    flavors: JSON.stringify(flavorsArray),
+    terpenes: JSON.stringify(terpenesArray),
+    parents: JSON.stringify(parentsArray),
+  };
+}
+
+/**
+ * Fetches strains from the external API.
+ */
+export async function fetchStrainsFromApi(limit: number = 20, offset: number = 0): Promise<RawStrainApiResponse[]> {
   try {
-    // Normalize the UUID format
-    const uuidStrainId = ensureUuid(apiId);
-    
-    if (!uuidStrainId) {
-      console.error('[StrainSyncService] Could not generate UUID for strain ID:', apiId);
-      return null;
+    log.info(`Fetching strains from API: limit=${limit}, offset=${offset}`);
+    // const apiUrl = new URL(STRAIN_API_URL);
+    // apiUrl.searchParams.append('limit', String(limit));
+    // apiUrl.searchParams.append('offset', String(offset));
+    // const response = await fetch(apiUrl.toString());
+    const response = await fetch(STRAIN_API_URL);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.error('Failed to fetch strains from API', { status: response.status, error: errorText });
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
-    
-    // Store MongoDB ObjectId mapping if appropriate
-    const isMongoId = isObjectId(apiId);
-    const strainCollection = database.get<Strain>('strains');
-    
-    // Step 1: Try to find by api_id first (most accurate match)
-    let strain = await strainCollection.query(Q.where('api_id', apiId)).fetch();
-    
-    // Step 2: If not found by api_id, try by local ID (could be a UUID match)
-    if (!strain.length && uuidStrainId) {
-      strain = await strainCollection.query(Q.where('id', uuidStrainId)).fetch();
+    const data = await response.json();
+    log.info(`Successfully fetched ${Array.isArray(data) ? data.length : 'a non-array response'} from API`);
+    return Array.isArray(data) ? data as RawStrainApiResponse[] : []; // Ensure array return
+  } catch (error) {
+    log.error('Error fetching strains from API:', error);
+    throw error;
+  }
+}
+
+/**
+ * Synchronizes strains from the API with the local WatermelonDB.
+ */
+export async function syncStrainsWithWatermelonDB(): Promise<void> {
+  log.info('Starting strain synchronization with WatermelonDB...');
+  try {
+    const rawStrainsFromApi = await fetchStrainsFromApi();
+    if (!rawStrainsFromApi || rawStrainsFromApi.length === 0) {
+      log.info('No strains fetched from API to sync.');
+      return;
     }
-    
-    // If strain exists locally, return it
-    if (strain.length > 0) {
-      console.log('[StrainSyncService] Found existing strain in local database:', strain[0].id);
-      return strain[0];
-    }
-    
-    // If no strain data was provided and the strain wasn't found locally, fetch it
-    if (!strainData) {
-      console.log('[StrainSyncService] Fetching strain data from API for ID:', apiId);
-      const apiStrainData = await WeedDbService.getById(apiId);
-      
-      if (!apiStrainData) {
-        console.error('[StrainSyncService] Failed to fetch strain data for ID:', apiId);
-        return null;
+
+    const strainsCollection = database.collections.get<Strain>('strains');
+
+    await database.write(async () => {
+      for (const rawStrain of rawStrainsFromApi) {
+        if (!rawStrain.api_id || !rawStrain.name) {
+          log.warn('Skipping strain with missing api_id or name from API:', rawStrain);
+          continue;
+        }
+
+        const preparedData = prepareDataForWatermelonDB(rawStrain);
+        
+        try {
+          const existingStrains = await strainsCollection
+            .query(Q.where('api_id', rawStrain.api_id))
+            .fetch();
+
+          if (existingStrains.length > 0) {
+            const strainToUpdate = existingStrains[0];
+            // Ensure strainToUpdate is not undefined before proceeding
+            if (strainToUpdate) {
+              log.info(`Updating existing strain in WatermelonDB: ${strainToUpdate.name} (API ID: ${rawStrain.api_id})`);
+              await strainToUpdate.update(record => {
+                // Assign properties from preparedData to the record
+                // The 'record' parameter in the update callback is the model instance
+                Object.keys(preparedData).forEach(key => {
+                  // @ts-ignore // Allow dynamic assignment, assuming keys match model fields
+                  record[key] = preparedData[key];
+                });
+              });
+            } else {
+              log.warn(`Strain with API ID: ${rawStrain.api_id} found in query but was undefined unexpectedly.`);
+            }
+          } else {
+            log.info(`Creating new strain in WatermelonDB: ${preparedData.name} (API ID: ${rawStrain.api_id})`);
+            await strainsCollection.create(record => {
+              // Assign properties from preparedData to the new record
+              Object.keys(preparedData).forEach(key => {
+                // @ts-ignore // Allow dynamic assignment
+                record[key] = preparedData[key];
+              });
+            });
+          }
+        } catch (dbError) {
+          log.error(`Error processing strain (API ID: ${rawStrain.api_id}, Name: ${rawStrain.name}) for WatermelonDB:`, dbError);
+        }
       }
-      
-      strainData = apiStrainData;
-    }
-    
-    // Create the strain in WatermelonDB
-    console.log('[StrainSyncService] Creating new strain in local database:', {
-      apiId,
-      name: strainData.name,
-      type: strainData.type,
     });
-    
-    // Ensure we have the minimum required data
-    if (!strainData.name) {
-      console.error('[StrainSyncService] Strain data missing required fields:', strainData);
-      return null;
-    }
-
-    // Store the relationship between UUID and MongoDB ObjectID if both exist
-    if (isMongoId && uuidStrainId && uuidStrainId !== apiId) {
-      storeIdMapping(uuidStrainId, apiId);
-      console.log('[StrainSyncService] Stored ID mapping between UUID and ObjectId');
-    }
-    
-    // Create the local strain record
-    const newStrain = await database.write(async () => {
-      return await strainCollection.create((strain: Strain) => {
-        strain.apiId = apiId;
-        strain.name = strainData!.name || 'Unknown Strain';
-        strain.type = strainData!.type || 'hybrid';
-        strain.description = Array.isArray(strainData!.description) 
-          ? strainData!.description.join(' ') 
-          : strainData!.description;
-        strain.imageUrl = strainData!.imageUrl || strainData!.image || '';
-        strain.thcContent = typeof strainData!.thc === 'number' ? strainData!.thc : undefined;
-        strain.cbdContent = typeof strainData!.cbd === 'number' ? strainData!.cbd : undefined;
-        
-        // Convert effects and flavors to JSON strings using the helper methods
-        if (Array.isArray(strainData!.effects)) {
-          strain.setEffects(strainData!.effects);
-        }
-        
-        if (Array.isArray(strainData!.flavors)) {
-          strain.setFlavors(strainData!.flavors);
-        }
-      });
-    });
-    
-    return newStrain;
+    log.info('Strain synchronization with WatermelonDB completed.');
   } catch (error) {
-    console.error('[StrainSyncService] Error finding or creating strain:', error);
+    log.error('Error during strain synchronization with WatermelonDB:', error);
+  }
+}
+
+/**
+ * Retrieves all strains from WatermelonDB.
+ */
+export async function getAllStrainsFromWatermelonDB(): Promise<Strain[]> {
+  try {
+    log.info('Fetching all strains from WatermelonDB...');
+    const strainsCollection = database.collections.get<Strain>('strains');
+    const strains = await strainsCollection.query().fetch();
+    log.info(`Retrieved ${strains.length} strains from WatermelonDB.`);
+    return strains;
+  } catch (error) {
+    log.error('Error fetching all strains from WatermelonDB:', error);
+    return [];
+  }
+}
+
+/**
+ * Searches for strains in WatermelonDB by name (case-insensitive).
+ */
+export async function searchStrainsInWatermelonDB(query: string): Promise<Strain[]> {
+  if (!query || query.trim() === '') {
+    return getAllStrainsFromWatermelonDB();
+  }
+  try {
+    const lowerCaseQuery = query.toLowerCase();
+    log.info(`Searching for strains in WatermelonDB with query: "${lowerCaseQuery}"`);
+    const strainsCollection = database.collections.get<Strain>('strains');
+    const allStrains = await strainsCollection.query().fetch();
+    const filteredStrains = allStrains.filter(strain =>
+      strain.name.toLowerCase().includes(lowerCaseQuery)
+    );
+    log.info(`Found ${filteredStrains.length} strains matching "${query}".`);
+    return filteredStrains;
+  } catch (error) {
+    log.error(`Error searching strains in WatermelonDB with query "${query}":`, error);
+    return [];
+  }
+}
+
+/**
+ * Retrieves a specific strain by its WatermelonDB ID.
+ */
+export async function getStrainByIdFromWatermelonDB(id: string): Promise<Strain | null> {
+  try {
+    log.info(`Fetching strain by WatermelonDB ID: ${id}`);
+    const strainsCollection = database.collections.get<Strain>('strains');
+    const strain = await strainsCollection.find(id);
+    log.info(strain ? `Found strain: ${strain.name}` : 'Strain not found.');
+    return strain;
+  } catch (error) {
+    log.warn(`Strain with WatermelonDB ID ${id} not found or error fetching:`, error);
     return null;
   }
 }
 
 /**
- * Finds a strain in the local database by API ID
- * 
- * @param apiId The external API ID
- * @returns The local strain or null if not found
+ * Retrieves strains by type (e.g., 'indica', 'sativa', 'hybrid') (case-insensitive).
  */
-export async function findLocalStrainByApiId(apiId: string): Promise<Strain | null> {
+export async function getStrainsByTypeFromWatermelonDB(type: string): Promise<Strain[]> {
+  if (!type || type.trim() === '') {
+    log.warn('Attempted to fetch strains by empty type.');
+    return [];
+  }
   try {
-    const strainCollection = database.get<Strain>('strains');
-    const strains = await strainCollection.query(Q.where('api_id', apiId)).fetch();
-    
-    return strains.length > 0 ? strains[0] : null;
+    const lowerCaseType = type.toLowerCase();
+    log.info(`Fetching strains by type: "${lowerCaseType}" from WatermelonDB.`);
+    const strainsCollection = database.collections.get<Strain>('strains');
+    const allStrains = await strainsCollection.query().fetch();
+    const filteredStrains = allStrains.filter(strain =>
+      strain.type && strain.type.toLowerCase() === lowerCaseType
+    );
+    log.info(`Found ${filteredStrains.length} strains of type "${type}".`);
+    return filteredStrains;
   } catch (error) {
-    console.error('[StrainSyncService] Error finding strain by API ID:', error);
-    return null;
+    log.error(`Error fetching strains by type "${type}" from WatermelonDB:`, error);
+    return [];
   }
 }
 
-/**
- * Updates a local strain with data from the API
- * 
- * @param strain The local strain to update
- * @param apiData The API strain data
- * @returns The updated strain or null if failed
- */
-export async function updateLocalStrainFromApi(
-  strain: Strain, 
-  apiData: Partial<ApiStrain>
-): Promise<Strain | null> {
-  try {
-    return await database.write(async () => {
-      await strain.update((s) => {
-        // Only update fields that are present in the API data
-        if (apiData.name) s.name = apiData.name;
-        if (apiData.type) s.type = apiData.type;
-        if (apiData.description) {
-          s.description = Array.isArray(apiData.description) 
-            ? apiData.description.join(' ') 
-            : apiData.description;
-        }
-        if (apiData.imageUrl || apiData.image) {
-          s.imageUrl = apiData.imageUrl || apiData.image || '';
-        }
-        if (typeof apiData.thc === 'number') s.thcContent = apiData.thc;
-        if (typeof apiData.cbd === 'number') s.cbdContent = apiData.cbd;
-        
-        // Update effects and flavors if provided
-        if (Array.isArray(apiData.effects)) {
-          s.setEffects(apiData.effects);
-        }
-        
-        if (Array.isArray(apiData.flavors)) {
-          s.setFlavors(apiData.flavors);
-        }
-      });
-      
-      return strain;
-    });
-  } catch (error) {
-    console.error('[StrainSyncService] Error updating strain:', error);
-    return null;
-  }
-}
+// Additional WatermelonDB specific utility functions can be added here as needed.
+// For example, functions to count strains, get strains with specific criteria, etc.

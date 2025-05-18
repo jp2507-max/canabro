@@ -75,11 +75,14 @@ export enum StrainFlavorType {
  */
 export interface Strain {
   id: string;
+  api_id?: string; // Add this line
   name: string;
   species?: StrainSpecies;
   description?: string | string[];
-  thc?: string | number;
-  cbd?: string | number;
+  thc?: string | number; // Raw value from API
+  cbd?: string | number; // Raw value from API
+  thc_percentage?: number; // Parsed numeric value for DB
+  cbd_percentage?: number; // Parsed numeric value for DB
   origin?: string;
   genetics?: string;
   type?: string;
@@ -108,8 +111,6 @@ export interface Strain {
   // legacy fields for compatibility
   species_legacy?: StrainSpecies;
   description_legacy?: string;
-  thc_content?: number;
-  cbd_content?: number;
   flowering_time?: number;
   difficulty?: StrainDifficulty;
   yield_indoor?: string;

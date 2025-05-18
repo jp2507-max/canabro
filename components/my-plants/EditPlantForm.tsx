@@ -32,7 +32,9 @@ import { useTheme } from '@/lib/contexts/ThemeContext';
 import { searchStrainsByName } from '@/lib/data/strains';
 import { useDatabase } from '@/lib/hooks/useDatabase';
 import { Plant } from '@/lib/models/Plant'; // Ensure this path is correct
-import supabase from '@/lib/supabase'; // Ensure this path is correct
+import supabase from '@/lib/supabase';
+import { findOrCreateLocalStrain } from '@/lib/services/strain-sync-service';
+import { StrainSpecies } from '@/lib/types/strain';
 import { WeedDbService } from '@/lib/services/weed-db.service'; // Import WeedDbService for API calls
 import { Strain } from '@/lib/types/weed-db'; // Import the proper Strain type from weed-db
 import { useQuery } from '@tanstack/react-query';
@@ -426,77 +428,94 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       console.log('[EditPlantForm] Data from form (data object):', JSON.stringify(data, null, 2));
       console.log('[EditPlantForm] selectedStrain object (state):', JSON.stringify(selectedStrain, null, 2));
 
-      // Determine which strain data to use, with enhanced fallback mechanisms
-      let strainToUse: Strain | null | undefined = selectedStrain;
+      // --- Strain Synchronization Logic ---
       let finalStrainId: string | null = null;
-
-      // If we have a selectedStrain from the autocomplete, use it directly
-      if (strainToUse) {
-        console.log('[EditPlantForm] Using selected strain from autocomplete:', strainToUse.name);
-        finalStrainId = strainToUse.id;
-      } 
-      // Otherwise, if a strain name was typed in, try to find it via API
-      else if (data.strain && data.strain.trim().length > 0) {
-        console.log('[EditPlantForm] No strain selected, searching for strain by name:', data.strain);
+      if (selectedStrain && selectedStrain.id) {
+        // Use findOrCreateLocalStrain to ensure local mapping
+        const strainDataForSync = {
+          api_id: selectedStrain.id,
+          name: selectedStrain.name,
+          species: selectedStrain.type as StrainSpecies,
+          description: selectedStrain.description,
+          thc: selectedStrain.thc?.toString(),
+          cbd: selectedStrain.cbd?.toString(),
+          effects: selectedStrain.effects || [],
+          flavors: selectedStrain.flavors || [],
+        };
+        const localStrain = await findOrCreateLocalStrain(selectedStrain.id, strainDataForSync);
+        if (localStrain && localStrain.id) {
+          finalStrainId = localStrain.id;
+        }
+      } else if (data.strain && data.strain.trim().length > 0) {
+        // Try to find or create a local strain by searching API/local DB
         try {
-          // First try API search
           const apiResults = await WeedDbService.search(data.strain);
           const bestMatch = apiResults.data.find(
             (strain) => strain.name.toLowerCase() === data.strain.toLowerCase()
           );
-
           if (bestMatch) {
-            console.log('[EditPlantForm] Found matching strain in API:', bestMatch.name);
-            strainToUse = bestMatch;
-            finalStrainId = bestMatch.id;
+            const strainDataForSync = {
+              api_id: bestMatch.id,
+              name: bestMatch.name,
+              species: bestMatch.type as StrainSpecies,
+              description: bestMatch.description,
+              thc: bestMatch.thc?.toString(),
+              cbd: bestMatch.cbd?.toString(),
+              effects: bestMatch.effects || [],
+              flavors: bestMatch.flavors || [],
+            };
+            const localStrain = await findOrCreateLocalStrain(bestMatch.id, strainDataForSync);
+            if (localStrain && localStrain.id) {
+              finalStrainId = localStrain.id;
+            }
           } else {
-            // If no exact match, try local database as fallback
+            // Fallback to local DB
             const localMatches = searchStrainsByName(data.strain);
-            
             if (localMatches.length > 0 && localMatches[0]) {
-              // Convert local strain to API-compatible format
-              const apiCompatibleStrain: Strain = {
-                id: localMatches[0].id,
+              const apiCompatibleStrain = {
+                api_id: localMatches[0].id,
                 name: localMatches[0].name,
-                type: mapLocalTypeToApiType(localMatches[0].type),
-                thc: localMatches[0].thcContent || null,
-                cbd: localMatches[0].cbdContent || null
+                species: mapLocalTypeToApiType(localMatches[0].type) as StrainSpecies,
+                description: localMatches[0].description,
+                thc: localMatches[0].thcContent?.toString(),
+                cbd: localMatches[0].cbdContent?.toString(),
+                effects: localMatches[0].effects || [],
+                flavors: localMatches[0].flavors || [],
               };
-              
-              strainToUse = apiCompatibleStrain;
-              finalStrainId = apiCompatibleStrain.id;
-              console.log('[EditPlantForm] Found strain in local database:', apiCompatibleStrain.name);
-            } else {
-              // No match in API or local, just use the name as-is
-              console.log('[EditPlantForm] No match found for strain. Using name as entered:', data.strain);
-              finalStrainId = null; // No strain ID to set
+              const localStrain = await findOrCreateLocalStrain(localMatches[0].id, apiCompatibleStrain);
+              if (localStrain && localStrain.id) {
+                finalStrainId = localStrain.id;
+              }
             }
           }
         } catch (apiError) {
           console.error('[EditPlantForm] API search failed:', apiError);
-          
-          // API failed, fall back to local database
+          // Fallback to local DB
           const localMatches = searchStrainsByName(data.strain);
           if (localMatches.length > 0 && localMatches[0]) {
-            // Convert local strain to API-compatible format
-            const apiCompatibleStrain: Strain = {
-              id: localMatches[0].id,
+            const apiCompatibleStrain = {
+              api_id: localMatches[0].id,
               name: localMatches[0].name,
-              type: mapLocalTypeToApiType(localMatches[0].type),
-              thc: localMatches[0].thcContent || null,
-              cbd: localMatches[0].cbdContent || null
+              species: mapLocalTypeToApiType(localMatches[0].type) as StrainSpecies,
+              description: localMatches[0].description,
+              thc: localMatches[0].thcContent?.toString(),
+              cbd: localMatches[0].cbdContent?.toString(),
+              effects: localMatches[0].effects || [],
+              flavors: localMatches[0].flavors || [],
             };
-            
-            strainToUse = apiCompatibleStrain;
-            finalStrainId = apiCompatibleStrain.id;
-            console.log('[EditPlantForm] API failed, using strain from local database:', apiCompatibleStrain.name);
+            const localStrain = await findOrCreateLocalStrain(localMatches[0].id, apiCompatibleStrain);
+            if (localStrain && localStrain.id) {
+              finalStrainId = localStrain.id;
+            }
           }
         }
-      }      // Prepare the update payload
+      }
+      // --- End Strain Synchronization Logic ---
+
       const plantedDateStr = data.planted_date instanceof Date 
         ? data.planted_date.toISOString().split('T')[0] 
         : new Date().toISOString().split('T')[0];
-        
+
       const updatePayload: PlantUpdatePayload = {
         name: data.name,
         strainNameDisplay: data.strain,
@@ -707,8 +726,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1, backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.background }}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <ThemedView style={[styles.container, { backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.background }]}>
+      <ThemedView style={[styles.container, { backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.background }]}>
 
           <ThemedText style={[styles.title, {color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800]}]}>Edit Plant Details</ThemedText>
 
@@ -910,11 +928,9 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             {isSubmitting ? (
               <ActivityIndicator color={theme.colors.neutral[50]} />
             ) : (
-              <ThemedText style={[styles.buttonText, { color: theme.colors.neutral[50] }]}>Update Plant</ThemedText>
-            )}
+              <ThemedText style={[styles.buttonText, { color: theme.colors.neutral[50] }]}>Update Plant</ThemedText>            )}
           </TouchableOpacity>
         </ThemedView>
-      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
