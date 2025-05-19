@@ -14,9 +14,12 @@ import {
   sanitizeString,
   parseOptionalNumber,
   parseOptionalStringArray,
-} from '../utils/data-parsing';
+  parsePercentageString,
+  extractFloweringTime,
+  FloweringTimeInWeeks,
+} from '../utils/data-parsing'; // Path should be correct relative to services directory
 
-const STRAIN_API_URL = 'https://www.weed.db/api/strains'; // Replace with your actual API endpoint
+const STRAIN_API_URL = 'https://www.weed.db/api/strains';
 
 /**
  * Prepares raw API data for insertion into the WatermelonDB 'strains' table.
@@ -44,31 +47,61 @@ function prepareDataForWatermelonDB(apiStrain: RawStrainApiResponse): any {
     imageUrl = sanitizeString(apiStrain.image);
   }
 
-  return {
+  // Use the new parsing functions for THC, CBD, and flowering time
+  const thcPercentage = parsePercentageString(apiStrain.thc || apiStrain.THC);
+  const cbdPercentage = parsePercentageString(apiStrain.cbd || apiStrain.CBD);
+  
+  // Use fromSeedToHarvest as a fallback for floweringTime, similar to Supabase version
+  const floweringTimeData: FloweringTimeInWeeks = extractFloweringTime(
+    apiStrain.floweringTime || apiStrain.fromSeedToHarvest
+  );
+
+  // Prepare data for WatermelonDB, ensuring field names match the WDB Strain model
+  const wdbData: Partial<Strain> & { api_id: string; average_yield?: string | null; link?: string | null} = {
     api_id: sanitizeString(apiStrain.api_id),
     name: sanitizeString(apiStrain.name),
     type: apiStrain.type ? sanitizeString(apiStrain.type) : null,
     genetics: apiStrain.genetics ? sanitizeString(apiStrain.genetics) : null,
     description: descriptionString,
-    thc_percentage: parseOptionalNumber(apiStrain.thc),
-    cbd_percentage: parseOptionalNumber(apiStrain.cbd),
-    flowering_time_min_weeks: null, // Placeholder: Requires specific parsing logic
-    flowering_time_max_weeks: null, // Placeholder: Requires specific parsing logic
+    thc_percentage: thcPercentage,
+    cbd_percentage: cbdPercentage,
+    flowering_time_min_weeks: floweringTimeData.minWeeks,
+    flowering_time_max_weeks: floweringTimeData.maxWeeks,
     flowering_type: apiStrain.floweringType ? sanitizeString(apiStrain.floweringType) : null,
     image_url: imageUrl,
     breeder: apiStrain.breeder ? sanitizeString(apiStrain.breeder) : null,
-    origin: JSON.stringify(originArray),
-    yield_indoor_grams_m2: parseOptionalNumber(apiStrain.yieldIndoor),
-    yield_outdoor_grams_plant: parseOptionalNumber(apiStrain.yieldOutdoor),
-    height_indoor_cm: parseOptionalNumber(apiStrain.heightIndoor),
-    height_outdoor_cm: parseOptionalNumber(apiStrain.heightOutdoor),
+    origin: JSON.stringify(originArray), // Assuming WDB 'origin' is a string field for JSON
+    // Combine yieldIndoor and yieldOutdoor into a single string if both exist, or use whichever is available
+    // This matches the logic in the Supabase version's prepareStrainDataForSupabase for 'average_yield'
+    // Assuming your WatermelonDB 'Strain' model has a field like 'average_yield' or similar to store this combined info.
+    // If not, you might need to adjust the model or store them separately.
+    // For now, let's assume a field named 'average_yield' exists in the WDB model for this combined string.
+    average_yield: apiStrain.yieldIndoor && apiStrain.yieldOutdoor
+      ? `Indoor: ${sanitizeString(apiStrain.yieldIndoor)}, Outdoor: ${sanitizeString(apiStrain.yieldOutdoor)}`
+      : (sanitizeString(apiStrain.yieldIndoor) || sanitizeString(apiStrain.yieldOutdoor) || null),
+    // Storing yields separately as per the schema if average_yield is not the target
+    yield_indoor_grams_m2: parseOptionalNumber(apiStrain.yieldIndoor), // Or a more specific parsing if needed
+    yield_outdoor_grams_plant: parseOptionalNumber(apiStrain.yieldOutdoor), // Or a more specific parsing if needed
+    height_indoor_cm: parseOptionalNumber(apiStrain.heightIndoor), // Or a more specific parsing if needed
+    height_outdoor_cm: parseOptionalNumber(apiStrain.heightOutdoor), // Or a more specific parsing if needed
     grow_difficulty: apiStrain.growDifficulty ? sanitizeString(apiStrain.growDifficulty) : null,
     harvest_time_outdoor: apiStrain.harvestTimeOutdoor ? sanitizeString(apiStrain.harvestTimeOutdoor) : null,
-    effects: JSON.stringify(effectsArray),
-    flavors: JSON.stringify(flavorsArray),
-    terpenes: JSON.stringify(terpenesArray),
-    parents: JSON.stringify(parentsArray),
+    effects: JSON.stringify(effectsArray), // Assuming WDB 'effects' is a string field for JSON
+    flavors: JSON.stringify(flavorsArray), // Assuming WDB 'flavors' is a string field for JSON
+    terpenes: JSON.stringify(terpenesArray), // Assuming WDB 'terpenes' is a string field for JSON
+    parents: JSON.stringify(parentsArray),   // Assuming WDB 'parents' is a string field for JSON
+    link: apiStrain.link ? sanitizeString(apiStrain.link) : null,
   };
+   // Clean up undefined properties to null, which WatermelonDB handles better.
+   Object.keys(wdbData).forEach(key => {
+    const k = key as keyof typeof wdbData;
+    if (wdbData[k] === undefined) {
+      // @ts-ignore - Explicitly setting to null if undefined
+      wdbData[k] = null;
+    }
+  });
+
+  return wdbData;
 }
 
 /**
