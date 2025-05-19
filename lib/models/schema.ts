@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 21, // Incremented from 20
+  version: 22, // Incremented from 21
   tables: [
     tableSchema({
       name: 'profiles',
@@ -130,26 +130,29 @@ export default appSchema({
     tableSchema({
       name: 'strains',
       columns: [
-        // { name: 'strain_id', type: 'string' }, // REMOVED: Incorrect column definition. WatermelonDB uses implicit 'id'.
         { name: 'name', type: 'string', isIndexed: true },
         { name: 'type', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
-        // { name: 'image_url', type: 'string', isOptional: true }, // Removed as per user request
         { name: 'thc_percentage', type: 'number', isOptional: true },
         { name: 'cbd_percentage', type: 'number', isOptional: true },
-        { name: 'flowering_time', type: 'number', isOptional: true },
-        // { name: 'difficulty', type: 'number', isOptional: true }, // Changed to grow_difficulty
-        { name: 'grow_difficulty', type: 'string', isOptional: true }, // Changed from difficulty (number) to grow_difficulty (string)
-        { name: 'effects', type: 'string', isOptional: true }, // Stored as JSON string
-        { name: 'flavors', type: 'string', isOptional: true }, // Stored as JSON string
+        { name: 'flowering_time', type: 'number', isOptional: true }, // Matches model
+        { name: 'grow_difficulty', type: 'string', isOptional: true },
+        { name: 'effects', type: 'string', isOptional: true }, 
+        { name: 'flavors', type: 'string', isOptional: true }, 
+        { name: 'terpenes', type: 'string', isOptional: true }, // Added to match model
+        { name: 'parents', type: 'string', isOptional: true }, // Added to match model
+        { name: 'origin', type: 'string', isOptional: true }, // Added to match model
         { name: 'api_id', type: 'string', isOptional: true, isIndexed: true },
-        // New fields from API
         { name: 'genetics', type: 'string', isOptional: true },
         { name: 'flowering_type', type: 'string', isOptional: true },
-        { name: 'height_indoor', type: 'string', isOptional: true },
-        { name: 'height_outdoor', type: 'string', isOptional: true },
-        { name: 'average_yield', type: 'string', isOptional: true },
+        { name: 'height_indoor', type: 'string', isOptional: true }, // Matches model (text)
+        { name: 'height_outdoor', type: 'string', isOptional: true }, // Matches model (text)
+        { name: 'average_yield', type: 'string', isOptional: true }, // Matches model (text)
+        { name: 'yield_indoor', type: 'string', isOptional: true }, // Added to match model (text)
+        { name: 'yield_outdoor', type: 'string', isOptional: true }, // Added to match model (text)
         { name: 'harvest_time_outdoor', type: 'string', isOptional: true },
+        { name: 'breeder', type: 'string', isOptional: true }, // Added to match model
+        { name: 'link', type: 'string', isOptional: true }, // Added to match model
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],
