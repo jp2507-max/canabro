@@ -363,6 +363,11 @@ const migrations = schemaMigrations({
       toVersion: 21,
       steps: [],
     },
+    // Migration to version 22: Schema version sync to match schema.ts
+    {
+      toVersion: 22,
+      steps: [],
+    },
   ],
 });
 

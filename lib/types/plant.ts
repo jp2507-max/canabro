@@ -16,6 +16,41 @@ export enum GrowthStage {
   CURING = 'curing',
 }
 
+// Added Enums (moved from AddPlantForm.tsx)
+export enum GrowLocation {
+  GrowTent = 'Grow Tent',
+  GrowRoom = 'Grow Room',
+  Indoor = 'Indoor',
+  Outdoor = 'Outdoor',
+  Greenhouse = 'Greenhouse',
+  Garden = 'Garden',
+  Balcony = 'Balcony',
+  // Add other custom locations if needed, or handle custom input separately
+}
+
+export enum LightCondition {
+  FullSun = 'Full Sun',
+  PartialSun = 'Partial Sun',
+  Shade = 'Shade',
+  Artificial = 'Artificial Light',
+}
+
+export enum GrowMedium {
+  Soil = 'Soil',
+  Coco = 'Coco Coir',
+  Hydro = 'Hydroponic',
+  Aqua = 'Aquaponic',
+  SemiHydro = 'Semi-Hydro',
+}
+
+export enum CannabisType {
+  Indica = 'Indica',
+  Sativa = 'Sativa',
+  Hybrid = 'Hybrid',
+  Ruderalis = 'Ruderalis',
+  Unknown = 'Unknown',
+}
+
 /**
  * Plant interface for plant data
  */
@@ -31,7 +66,7 @@ export interface Plant {
   growth_stage: GrowthStage;
   height?: number; // in cm
   notes?: string;
-  image_url?: string;
+  image_url?: string | null; // Adjusted to allow null
   location_id?: string; // Reference to grow location
   is_auto_flower?: boolean;
   is_feminized?: boolean;
@@ -41,6 +76,13 @@ export interface Plant {
   cbd_content?: number;
   created_at: string;
   updated_at?: string;
+
+  // Added fields from AddPlantForm
+  cannabis_type?: CannabisType;
+  grow_medium?: GrowMedium;
+  light_condition?: LightCondition;
+  location_description?: string; // Kept as string to allow custom descriptions, or use GrowLocation enum
+                                 // If using GrowLocation enum strictly: location_description?: GrowLocation;
 }
 
 /**
