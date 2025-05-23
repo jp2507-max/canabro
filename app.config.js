@@ -16,6 +16,8 @@ export default {
       'expo-router',
       'expo-font',
       'expo-secure-store',
+      'expo-task-manager', // Required for background tasks
+      'expo-background-task', // Add this back for the new background task library
       [
         'expo-notifications',
         {
@@ -57,6 +59,7 @@ export default {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera',
         NSMicrophoneUsageDescription: 'Allow $(PRODUCT_NAME) to access your microphone',
+        UIBackgroundModes: ['fetch', 'processing'],
       },
       associatedDomains: ['applinks:YOUR_APP_LINK_DOMAIN'],
     },

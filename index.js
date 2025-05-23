@@ -1,4 +1,13 @@
-// Import gesture handler first before all other imports
+/**
+ * Main entry point for the app
+ * 
+ * Load polyfills first, then initialize React Native
+ */
+
+// Import polyfills first - MUST be before any other imports
+import './lib/polyfills/index.js';
+
+// Import gesture handler before other React Native components
 import 'react-native-gesture-handler';
 import { enableScreens } from 'react-native-screens';
 
