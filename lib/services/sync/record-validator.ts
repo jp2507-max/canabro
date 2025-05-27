@@ -4,7 +4,53 @@
  * These functions ensure records meet the requirements for synchronization
  */
 
+import { Database } from '@nozbe/watermelondb';
 import { isValidUuid } from './data-sanitizer';
+import { loadStrainFromDatabase } from './strain-loader';
+
+// Import types from the strain-loader
+import type { StrainObject } from './strain-loader';
+
+// WatermelonDB model interface - keeping for reference
+// This can be removed later as we now import StrainObject from strain-loader
+interface StrainModel {
+  id: string;
+  name: string;
+  type?: string;
+  genetics?: string;
+  description?: string;
+  thc_content?: number;
+  cbd_content?: number;
+  flowering_time?: number;
+  yield_indoor?: string;
+  yield_outdoor?: string;
+  difficulty?: string;
+  effects?: string[] | string;
+  flavors?: string[] | string;
+  medical_uses?: string[] | string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface PlantRecord {
+  id: string;
+  name: string;
+  strain?: string;
+  strainId?: string | null; // App uses camelCase
+  strain_id?: string | null; // Database uses snake_case - kept for compatibility
+  strainObj?: StrainObject;
+  user_id?: string;
+  stage?: string;
+  planted_date?: string;
+  harvest_date?: string;
+  notes?: string;
+  image_url?: string;
+  location?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Allow for additional properties that might exist
+  [key: string]: unknown;
+}
 
 /**
  * Validates a record before sync to ensure it meets WatermelonDB requirements
@@ -143,22 +189,34 @@ export function sanitizeProfileRecords(
  * @param plantRecord The plant record to validate
  * @returns The validated and corrected plant record
  */
-export function validatePlantRecord(plantRecord: any): any {
+export async function validatePlantRecord(
+  plantRecord: PlantRecord,
+  database: Database,
+  strainCache?: Map<string, any>
+): Promise<PlantRecord> {
   if (!plantRecord || typeof plantRecord !== 'object') {
     throw new Error('Invalid plant record: not an object');
   }
 
   const validatedRecord = { ...plantRecord };
 
-  console.log(`[Plant Validation] Validating plant "${validatedRecord.name}" (ID: ${validatedRecord.id})`);
-  console.log(`[Plant Validation] Initial strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`);
+  console.log(
+    `[Plant Validation] Validating plant "${validatedRecord.name}" (ID: ${validatedRecord.id})`
+  );
+  console.log(
+    `[Plant Validation] Initial strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`
+  );
 
   // Handle camelCase vs snake_case field names (bidirectional)
   if (validatedRecord.strainId && !validatedRecord.strain_id) {
-    console.log(`[Plant Validation] Converting strainId ${validatedRecord.strainId} to strain_id`);
+    console.log(
+      `[Plant Validation] Converting strainId ${validatedRecord.strainId} to strain_id`
+    );
     validatedRecord.strain_id = validatedRecord.strainId;
   } else if (validatedRecord.strain_id && !validatedRecord.strainId) {
-    console.log(`[Plant Validation] Converting strain_id ${validatedRecord.strain_id} to strainId`);
+    console.log(
+      `[Plant Validation] Converting strain_id ${validatedRecord.strain_id} to strainId`
+    );
     validatedRecord.strainId = validatedRecord.strain_id;
   }
 
@@ -174,32 +232,85 @@ export function validatePlantRecord(plantRecord: any): any {
 
   // Get the most reliable strain ID (prioritize snake_case for DB interactions)
   const effectiveStrainId = validatedRecord.strain_id || validatedRecord.strainId;
+  
+  // Validate strain UUID format before attempting database queries
+  if (effectiveStrainId && !isValidUuid(effectiveStrainId)) {
+    throw new Error(`[Plant Validation] Invalid strain UUID: ${effectiveStrainId}`);
+  }
 
-  // If we have a strain ID but no strainObj, try to load the strain data
+  // If we have a strain ID but no strainObj, try to load the strain data from WatermelonDB
   if (effectiveStrainId && !validatedRecord.strainObj) {
     try {
-      // Import dynamically to avoid circular dependencies
-      const { getStrainById } = require('../../data/strains');
-      console.log(`[Plant Validation] Attempting to load strain with ID: ${effectiveStrainId}`);
-      const strain = getStrainById(effectiveStrainId);
-      
-      if (strain) {
-        console.log(`[Plant Validation] Found strain "${strain.name}" for ID ${effectiveStrainId}`);
-        validatedRecord.strainObj = strain;
+      // Verify database is properly initialized
+      if (!database) {
+        throw new Error('[Plant Validation] Database not initialized');
+      }
+
+      console.log(
+        `[Plant Validation] Attempting to load strain from WatermelonDB with ID: ${effectiveStrainId}`
+      );
+
+      // Use cached loader if available, otherwise direct database call
+      let strainObj;
+      if (strainCache) {
+        if (!strainCache.has(effectiveStrainId)) {
+          console.log(`[Plant Validation] Loading strain ${effectiveStrainId} from database (cache miss)`);
+          const strain = await loadStrainFromDatabase(database, effectiveStrainId);
+          strainCache.set(effectiveStrainId, strain);
+        } else {
+          console.log(`[Plant Validation] Using cached strain ${effectiveStrainId} (cache hit)`);
+        }
+        strainObj = strainCache.get(effectiveStrainId);
+      } else {
+        // Fallback to direct database call if no cache provided
+        strainObj = await loadStrainFromDatabase(database, effectiveStrainId);
+      }
+
+      if (strainObj) {
+        console.log(
+          `[Plant Validation] Found strain "${strainObj.name}" for ID ${effectiveStrainId}`
+        );
         
+        // Assign the loaded strain object
+        validatedRecord.strainObj = strainObj;
+
         // Ensure consistency with the strain name
-        if (validatedRecord.strain !== strain.name) {
-          console.log(`[Plant Validation] Updating strain name from "${validatedRecord.strain}" to "${strain.name}"`);
-          validatedRecord.strain = strain.name;
+        if (validatedRecord.strain !== strainObj.name) {
+          console.log(
+            `[Plant Validation] Updating strain name from "${validatedRecord.strain}" to "${strainObj.name}"`
+          );
+          validatedRecord.strain = strainObj.name;
         }
       } else {
-        console.warn(`[Plant Validation] No strain found for ID ${effectiveStrainId}`);
+        console.warn(
+          `[Plant Validation] No strain found in WatermelonDB for ID ${effectiveStrainId}`
+        );
       }
     } catch (error) {
-      console.error('[Plant Validation] Error loading strain:', error);
+      console.error('[Plant Validation] Error loading strain from WatermelonDB:', error);
+
+      // If we have a strain_id but couldn't load the data, we have a few options:
+      // 1. For transient errors (network/timeout), we might want to retry
+      // 2. For missing strains, we could add to a queue for follow-up
+      // 3. For critical cases, we might want to abort the sync
+
+      // Check if this is a critical case where strain data is absolutely required
+      if (validatedRecord.strain === undefined || validatedRecord.strain === null) {
+        // We have a strain ID but no strain name - this is critical as we need at least a name
+        throw new Error(
+          `Failed to load required strain data for plant "${validatedRecord.name}" (ID: ${validatedRecord.id})`
+        );
+      } else {
+        // We have at least a strain name, so we can continue with a warning
+        console.warn(
+          '[Plant Validation] Continuing with plant validation using only strain name. Sync may be incomplete.'
+        );
+      }
     }
   }
 
-  console.log(`[Plant Validation] Final strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`);
+  console.log(
+    `[Plant Validation] Final strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`
+  );
   return validatedRecord;
 }

@@ -45,18 +45,39 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
 
   async function handleImagePick() {
     try {
+      console.log('[PlantImageSection] Requesting media library permissions...');
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('[PlantImageSection] Permission result:', permissionResult);
+      
+      if (!permissionResult.granted) {
+        const message = permissionResult.canAskAgain 
+          ? 'Photo library access is needed to upload images. Please grant permission in your device settings.'
+          : 'Photo library access was denied. Please enable it in your device settings to select images.';
+        Alert.alert('Permission Required', message);
+        return;
+      }
+
+      console.log('[PlantImageSection] Launching image library...');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        selectionLimit: 1,
       });
+      
+      console.log('[PlantImageSection] Image picker result:', result);
+      
       if (!result.canceled && result.assets?.[0]?.uri) {
+        console.log('[PlantImageSection] Image selected, processing...');
         await processAndSetImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      console.error('[PlantImageSection] Error picking image:', error);
+      Alert.alert(
+        'Gallery Error', 
+        'Failed to access photo gallery. Please try again or restart the app if the problem persists.'
+      );
     }
   }
 

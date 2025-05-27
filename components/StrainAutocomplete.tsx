@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard, useColorScheme } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard, useColorScheme, ScrollView } from 'react-native';
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { debounce } from 'lodash';
 import { Ionicons } from '@expo/vector-icons';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
-import { getStrains } from '../lib/services/strain-service';
-import { Strain } from '../lib/types/strain';
-import darkTheme from '../lib/theme/dark'; // Default import for dark theme
-import { theme as lightTheme } from '../lib/theme'; // Named import for light theme from index
+import { searchStrainsIntelligent } from '../lib/services/strain-search.service';
+import darkTheme from '../lib/theme/dark';
+import { theme as lightTheme } from '../lib/theme';
 
 interface StrainAutocompleteProps {
   onStrainSelect: (strain: RawStrainApiResponse | null) => void;
@@ -17,6 +16,7 @@ interface StrainAutocompleteProps {
   inputStyle?: any;
   containerStyle?: any;
   disabled?: boolean;
+  limit?: number;
 }
 
 export function StrainAutocomplete({
@@ -27,15 +27,13 @@ export function StrainAutocomplete({
   inputStyle = {},
   containerStyle = {},
   disabled = false,
+  limit = 10,
 }: StrainAutocompleteProps): React.JSX.Element {
   const [searchTerm, setSearchTerm] = useState<string>(initialStrainName);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(searchTerm);
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const currentColorScheme = useColorScheme();
   const isDarkMode = currentColorScheme === 'dark';
-  // Define styles outside of the component or memoize it if it depends on props/state not used here (like theme)
-  // For now, assuming theme is relatively stable or this is a simplified example.
-  // If theme changes frequently and styles depend on it, memoization (useMemo) for styles would be better.
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   const componentStyles = StyleSheet.create({
@@ -67,18 +65,39 @@ export function StrainAutocomplete({
       borderColor: theme.colors.neutral[300],
       borderRadius: 5,
       marginTop: 2,
+      zIndex: 1000,
     },
     suggestionItem: {
       padding: 10,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.neutral[200],
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
     },
     suggestionText: {
       fontSize: 16,
       color: theme.colors.neutral[900],
+      flex: 1,
+    },
+    sourceIndicator: {
+      fontSize: 12,
+      color: theme.colors.neutral[500],
+      fontStyle: 'italic',
+    },
+    sourceLabel: {
+      fontSize: 10,
+      color: theme.colors.neutral[600],
+      backgroundColor: theme.colors.neutral[100],
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 8,
+      overflow: 'hidden',
+      textAlign: 'center',
+      fontWeight: '500',
     },
     errorText: {
-      color: theme.colors.status.danger,
+      color: theme.colors.status?.danger || '#ff0000',
       marginTop: 5,
     },
     label: {
@@ -87,12 +106,22 @@ export function StrainAutocomplete({
       color: theme.colors.neutral[900],
       fontWeight: 'bold',
     },
+    sourceHeader: {
+      padding: 8,
+      backgroundColor: theme.colors.neutral[50],
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.neutral[200],
+    },
+    sourceHeaderText: {
+      fontSize: 12,
+      color: theme.colors.neutral[600],
+    },
   });
 
   const debouncedSetSearch = useCallback(
     debounce((text: string) => {
       setDebouncedSearchTerm(text);
-    }, 500),
+    }, 300),
     [],
   );
 
@@ -109,47 +138,46 @@ export function StrainAutocomplete({
   }, [debouncedSetSearch]);
 
   const {
-    data: strainData,
+    data: searchResult,
     isLoading,
     error,
-  }: UseQueryResult<RawStrainApiResponse[], Error> = useQuery<
-    { strains: Strain[]; total: number; hasMore: boolean; }, // Type from queryFn
-    Error, // Error type
-    RawStrainApiResponse[], // Type after select
-    [string, string] // QueryKey type
-  >({
-    queryKey: ['strains', debouncedSearchTerm],
-    queryFn: async (): Promise<{ strains: Strain[]; total: number; hasMore: boolean; }> => {
+  } = useQuery({
+    queryKey: ['strains-intelligent', debouncedSearchTerm, limit],
+    queryFn: async () => {
       if (!debouncedSearchTerm.trim()) {
-        return { strains: [], total: 0, hasMore: false };
+        return { strains: [], sources: { local: 0, supabase: 0, external: 0 }, hasMore: false };
       }
-      return await getStrains({ search: debouncedSearchTerm });
-    },    select: (data): RawStrainApiResponse[] => {
-      return data.strains.map((strain): RawStrainApiResponse => ({
-        api_id: strain.api_id ?? String(strain.id),
-        name: strain.name,
-        type: strain.species ?? strain.type ?? null,
-        genetics: strain.genetics,
-        description: Array.isArray(strain.description) ? strain.description.join(', ') : strain.description,
-        thc: String(strain.thc),
-        cbd: String(strain.cbd),
-        floweringTime: strain.floweringTime,
-        seed_company: typeof strain.breeder === 'string' ? { name: strain.breeder } : undefined,
-        flavors: strain.flavors || [],
-        effects: strain.effects || [],
-        terpenes: [], // Strain type does not have terpenes, RawStrainApiResponse does not require it.
-        image: strain.image || strain.imageUrl || undefined,
-        // Ensure all other required fields for RawStrainApiResponse are mapped or have defaults
-        // For example, if RawStrainApiResponse requires 'rating', and 'Strain' doesn't have it:
-        // rating: 0, // Default value
-      }));
+      
+      console.log(`[StrainAutocomplete] Searching for "${debouncedSearchTerm}" using intelligent search`);
+      
+      const results = await searchStrainsIntelligent(debouncedSearchTerm, limit);
+      
+      console.log(`[StrainAutocomplete] Found ${results.strains.length} results for "${debouncedSearchTerm}"`, {
+        sources: results.sources,
+        hasMore: results.hasMore
+      });
+      
+      return results;
     },
     enabled: !!debouncedSearchTerm.trim() && isFocused,
-    gcTime: 1000 * 60 * 5, // 5 minutes
-    staleTime: 1000 * 60 * 1, // 1 minute
-  });
+    gcTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 2,
+  });  const strainData = searchResult?.strains || [];
+  const sources = searchResult?.sources || { local: 0, supabase: 0, external: 0 };
+  const hasMore = searchResult?.hasMore || false;
+
+  const getSourceLabel = (source?: string): string => {
+    switch (source) {
+      case 'local': return 'Local';
+      case 'supabase': return 'Supabase';
+      case 'cloud': return 'Cloud';
+      case 'external': return 'External';
+      default: return 'Unknown';
+    }
+  };
 
   const handleSelectStrain = (strain: RawStrainApiResponse): void => {
+    console.log(`[StrainAutocomplete] Strain selected: ${strain.name} (API ID: ${strain.api_id})`);
     setSearchTerm(strain.name);
     onStrainSelect(strain);
     setIsFocused(false);
@@ -166,33 +194,77 @@ export function StrainAutocomplete({
         onChangeText={setSearchTerm}
         onFocus={() => setIsFocused(true)}
         onBlur={() => {
-          // Allow touch event on suggestion items to complete first
           setTimeout(() => setIsFocused(false), 100);
         }}
         editable={!disabled}
         placeholderTextColor={theme.colors.neutral[400]}
+        accessibilityLabel={label || "Search for cannabis strains"}
+        accessibilityHint="Type to search for strains from your saved collection, cloud database, or external sources"
+        accessibilityRole="search"
       />
-      {isLoading && isFocused && <ActivityIndicator style={{ marginTop: 10 }} />}
-      {error && isFocused && error.message ? (
-        <Text style={componentStyles.errorText}>Error: {error.message}</Text>
-      ) : null}
-      {isFocused && !isLoading && !error && strainData && strainData.length > 0 && (
-        <View style={componentStyles.suggestionsContainer}>
-          <FlatList
-            data={strainData}
-            keyExtractor={(item) => item.api_id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={componentStyles.suggestionItem}
-                onPress={() => handleSelectStrain(item)}
-              >
-                <Text style={componentStyles.suggestionText}>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-            keyboardShouldPersistTaps="handled"
-          />
+      
+      {isLoading && isFocused && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+          <ActivityIndicator size="small" color={theme.colors.primary[500]} />
+          <Text style={{ marginLeft: 8, color: theme.colors.neutral[600] }}>
+            {debouncedSearchTerm.length <= 3 
+              ? "Searching comprehensive strain database..." 
+              : "Searching your saved strains..."}
+          </Text>
         </View>
       )}
+      
+      {error && isFocused && error.message && (
+        <Text style={componentStyles.errorText}>Error: {error.message}</Text>
+      )}
+      
+      {isFocused && !isLoading && !error && strainData && strainData.length > 0 && (
+        <View style={componentStyles.suggestionsContainer}>
+          {(sources.local > 0 || sources.supabase > 0 || sources.external > 0) && (
+            <View 
+              style={componentStyles.sourceHeader}              accessibilityRole="text"
+              accessibilityLabel={`Search results: ${sources.local} saved locally, ${sources.supabase} from supabase, ${sources.external} from external sources`}
+            >
+              <Text style={componentStyles.sourceHeaderText}>
+                {sources.local > 0 && `${sources.local} saved`}
+                {sources.local > 0 && (sources.supabase > 0 || sources.external > 0) && ' • '}
+                {sources.supabase > 0 && `${sources.supabase} supabase`}
+                {sources.supabase > 0 && sources.external > 0 && ' • '}
+                {sources.external > 0 && `${sources.external} external`}
+                {hasMore && ' • Type more for refined results'}
+              </Text>
+            </View>
+          )}
+          
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            style={{ maxHeight: 200 }}
+          >
+            {strainData.map((item, index) => (
+              <TouchableOpacity
+                key={item.api_id || `strain-${index}`}
+                style={componentStyles.suggestionItem}
+                onPress={() => handleSelectStrain(item)}                accessibilityLabel={`Select strain ${item.name}${item.type ? `, ${item.type} type` : ''}`}
+                accessibilityHint={`From ${getSourceLabel(item._source).toLowerCase()} source`}
+                accessibilityRole="button"
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={componentStyles.suggestionText}>{item.name}</Text>
+                  {item.type && (
+                    <Text style={[componentStyles.sourceIndicator, { marginTop: 2 }]}>
+                      {item.type}
+                    </Text>
+                  )}
+                </View>                <Text style={componentStyles.sourceLabel}>
+                  {getSourceLabel(item._source)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+      
       {isFocused &&
         !isLoading &&
         !error &&
@@ -201,7 +273,7 @@ export function StrainAutocomplete({
         debouncedSearchTerm.trim() && (
           <View style={componentStyles.suggestionsContainer}>
             <Text style={[componentStyles.suggestionItem, componentStyles.suggestionText]}>
-              No strains found.
+              No strains found. Try a different spelling or fewer characters.
             </Text>
           </View>
         )}

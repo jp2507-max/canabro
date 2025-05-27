@@ -113,6 +113,9 @@ export interface RawStrainApiResponse {
   breeder?: string | null;
   origin?: string[] | string | null; // Geographical origins, can be array or string
 
+  // Source information for search results
+  _source?: 'local' | 'supabase' | 'external';
+
   // Allow for any other properties that might come from the API
   // This helps in case the API adds new fields or has inconsistent ones
   [key: string]: any; 

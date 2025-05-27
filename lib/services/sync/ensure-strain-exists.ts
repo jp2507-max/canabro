@@ -1,5 +1,6 @@
 import { Strain } from '../../types/strain';
 import supabase from '../../supabase';
+import { parseStringArray } from '../../utils/string-utils';
 
 /**
  * Ensures a strain exists in Supabase before syncing a plant.
@@ -48,18 +49,19 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
     'grow_difficulty',
     'effects', 
     'flavors', 
+    'parents',
     'created_at',
     'updated_at',
     'created_by',
     'average_yield',
     'flowering_time',
     'api_id',
-    'image_url',
     'genetics',
     'height_indoor',
     'height_outdoor',
     'harvest_time_outdoor',
-    'flowering_type'
+    'flowering_type',
+    'link'
   ];
 
   /**
@@ -83,7 +85,6 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
       'updated_at': ['updated_at', 'updatedAt'],
       'flowering_time': ['flowering_time', 'floweringTime'],
       'average_yield': ['average_yield', 'yield', 'averageYield'],
-      'image_url': ['image_url', 'imageUrl', 'image'],
       'api_id': ['api_id', 'apiId', '_id', 'originalId'],
       'genetics': ['genetics'],
       'height_indoor': ['height_indoor', 'heightIndoor'],
@@ -92,10 +93,22 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
       'flowering_type': ['flowering_type', 'floweringType']
     };
     
-    // Strictly only add fields that are in our known list
+    // Array fields that need special JSON parsing
+    const arrayFields = ['effects', 'flavors', 'parents'];
+      // Strictly only add fields that are in our known list
     for (const dbField of KNOWN_STRAIN_FIELDS) {
       // Skip id and name as they're already handled
       if (dbField === 'id' || dbField === 'name') continue;
+      
+      // Special handling for array fields
+      if (arrayFields.includes(dbField)) {
+        const rawValue = (strain as any)[dbField];
+        const parsedArray = parseStringArray(rawValue);
+        if (parsedArray !== undefined) {
+          safePayload[dbField] = parsedArray;
+        }
+        continue;
+      }
       
       // For fields with known variations, check all possible source properties
       if (fieldMappings[dbField]) {
@@ -106,7 +119,7 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
           }
         }
       }
-      // For direct matches and arrays (effects, flavors)
+      // For direct matches
       else if ((strain as any)[dbField] !== undefined) {
         safePayload[dbField] = (strain as any)[dbField];
       }

@@ -35,9 +35,17 @@ import { Plant } from '@/lib/models/Plant'; // Ensure this path is correct
 import supabase from '@/lib/supabase';
 import { findOrCreateLocalStrain } from '@/lib/services/strain-sync-service';
 import { StrainSpecies } from '@/lib/types/strain';
+import {
+  GrowthStage as PlantGrowthStage,
+  GrowLocation,
+  LightCondition,
+  GrowMedium,
+  CannabisType
+} from '@/lib/types/plant'; // Import all enums from plant types
 import { WeedDbService } from '@/lib/services/weed-db.service'; // Import WeedDbService for API calls
 import { Strain } from '@/lib/types/weed-db'; // Import the proper Strain type from weed-db
 import { useQuery } from '@tanstack/react-query';
+import { RawStrainApiResponse } from '@/lib/types/weed-db'; // Add missing import for strain type
 
 // Define an interface for the update payload to ensure type safety
 interface PlantUpdatePayload {
@@ -45,7 +53,7 @@ interface PlantUpdatePayload {
   strainNameDisplay: string; // The display name of the strain from the form
   strainIdToSet: string | null; // The UUID of the strain
   plantedDate: string; // Format YYYY-MM-DD
-  growthStage: GrowthStage;
+  growthStage: PlantGrowthStage; // Use the imported GrowthStage alias
   notes: string;
   imageUrl: string;
   cannabisType: CannabisType;
@@ -54,47 +62,16 @@ interface PlantUpdatePayload {
   locationDescription: string;
 }
 
-// Enums (Consider moving to a shared types file if not already)
-// These should match the ones in AddPlantForm or a central types definition
-enum GrowLocation {
-  GrowTent = 'Grow Tent',
-  GrowRoom = 'Grow Room',
-  Indoor = 'Indoor',
-  Outdoor = 'Outdoor',
-  Greenhouse = 'Greenhouse',
-  Garden = 'Garden',
-  Balcony = 'Balcony',
-}
-
-enum LightCondition {
-  FullSun = 'Full Sun',
-  PartialSun = 'Partial Sun',
-  Shade = 'Shade',
-  Artificial = 'Artificial Light',
-}
-
-enum GrowMedium {
-  Soil = 'Soil',
-  Coco = 'Coco Coir',
-  Hydro = 'Hydroponic',
-  Aqua = 'Aquaponic',
-  SemiHydro = 'Semi-Hydro',
-}
-
-enum CannabisType {
-  Indica = 'Indica',
-  Sativa = 'Sativa',
-  Hybrid = 'Hybrid',
-  Ruderalis = 'Ruderalis',
-  Unknown = 'Unknown',
-}
+// Import all enums from centralized type definitions
+// Using the already imported enums from @/lib/types/plant
+// GrowthStage is already imported as PlantGrowthStage
 
 // Zod Validation Schema (similar to AddPlantForm, adjust if needed)
 const plantFormSchema = z.object({
   name: z.string().min(1, 'Plant name is required.'),
   strain: z.string().min(1, 'Strain is required.'), // This will be the string name
   planted_date: z.date({ required_error: 'Planted date is required.' }),
-  growth_stage: z.nativeEnum(GrowthStage, { required_error: 'Growth stage is required.' }),
+  growth_stage: z.nativeEnum(PlantGrowthStage, { required_error: 'Growth stage is required.' }),
   cannabis_type: z.nativeEnum(CannabisType).optional(),
   grow_medium: z.nativeEnum(GrowMedium).optional(),
   light_condition: z.nativeEnum(LightCondition).optional(),
@@ -124,12 +101,11 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     trigger,
   } = useForm<PlantFormData>({
     resolver: zodResolver(plantFormSchema),
-    mode: 'onChange',
-    defaultValues: {
+    mode: 'onChange',    defaultValues: {
       name: plant.name || '',
       strain: plant.strain || '', // This is the strain NAME
       planted_date: plant.plantedDate ? parseISO(plant.plantedDate) : new Date(),
-      growth_stage: (plant.growthStage as GrowthStage) || GrowthStage.SEEDLING,
+      growth_stage: (plant.growthStage as PlantGrowthStage) || PlantGrowthStage.SEEDLING,
       cannabis_type: (plant.cannabisType as CannabisType) || CannabisType.Unknown,
       grow_medium: (plant.growMedium as GrowMedium) || GrowMedium.Soil,
       light_condition: (plant.lightCondition as LightCondition) || LightCondition.Artificial,
@@ -139,11 +115,12 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     },
   });
 
-  const [selectedStrain, setSelectedStrain] = useState<Strain | null>(null); // Will hold the full Strain object
+  const [selectedStrain, setSelectedStrain] = useState<RawStrainApiResponse | null>(null); // Will hold the full strain object
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviewUri, setImagePreviewUri] = useState<string | null>(plant.imageUrl ?? null); // Use ??
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   // Initialize with plant's current location or a default from the enum if custom is not set
   const [tempCustomLocation, setTempCustomLocation] = useState(
@@ -151,14 +128,13 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       ? ''
       : plant.locationDescription || ''
   );
-
   // Populate form with plant data on mount and when plant prop changes
   useEffect(() => {
     reset({
       name: plant.name || '',
       strain: plant.strain || '', // strain name
       planted_date: plant.plantedDate ? parseISO(plant.plantedDate) : new Date(),
-      growth_stage: (plant.growthStage as GrowthStage) || GrowthStage.SEEDLING,
+      growth_stage: (plant.growthStage as PlantGrowthStage) || PlantGrowthStage.SEEDLING,
       cannabis_type: (plant.cannabisType as CannabisType) || CannabisType.Unknown,
       grow_medium: (plant.growMedium as GrowMedium) || GrowMedium.Soil,
       light_condition: (plant.lightCondition as LightCondition) || LightCondition.Artificial,
@@ -180,16 +156,46 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     const loadInitialStrain = async () => {
       try {
         // First try to use the strainId if it exists
-        if (plant.strainId) {
-          console.log(`[EditPlantForm] Initial plant strain ID: ${plant.strainId}`);
+        if (plant.strainId) {          console.log(`[EditPlantForm] Initial plant strain ID: ${plant.strainId}`);
           // Attempt to fetch strain by ID from API
           const strainFromApi = await WeedDbService.getById(plant.strainId);
           if (strainFromApi) {
             console.log('[EditPlantForm] Found strain by ID from API:', JSON.stringify(strainFromApi, null, 2));
-            setSelectedStrain(strainFromApi);
+              // Convert Strain to RawStrainApiResponse - only include fields defined in the interface
+            const strainForState: RawStrainApiResponse = {
+              api_id: strainFromApi.api_id ?? String(strainFromApi.id),
+              name: strainFromApi.name,
+              id: String(strainFromApi.id),
+              type: strainFromApi.type,
+              genetics: strainFromApi.genetics,
+              description: strainFromApi.description,
+              thc: strainFromApi.thc,
+              cbd: strainFromApi.cbd,
+              floweringTime: strainFromApi.floweringTime,
+              fromSeedToHarvest: undefined,
+              floweringType: strainFromApi.floweringType,
+              growDifficulty: strainFromApi.growDifficulty,
+              yieldIndoor: strainFromApi.yieldIndoor ?? strainFromApi.yield_indoor,
+              yieldOutdoor: strainFromApi.yieldOutdoor ?? strainFromApi.yield_outdoor,
+              heightIndoor: strainFromApi.heightIndoor ?? strainFromApi.height_indoor,
+              heightOutdoor: strainFromApi.heightOutdoor ?? strainFromApi.height_outdoor,
+              harvestTimeOutdoor: strainFromApi.harvestTimeOutdoor ?? strainFromApi.harvest_time_outdoor,
+              effects: Array.isArray(strainFromApi.effects) ? strainFromApi.effects : (strainFromApi.effects ? [strainFromApi.effects] : []),
+              flavors: Array.isArray(strainFromApi.flavors) ? strainFromApi.flavors : (strainFromApi.flavors ? [strainFromApi.flavors] : []),
+              terpenes: (strainFromApi as any).terpenes,
+              image_url: strainFromApi.imageUrl ?? strainFromApi.image,
+              imageUrl: strainFromApi.imageUrl,
+              image: strainFromApi.image,
+              link: strainFromApi.url ?? strainFromApi.link,
+              parents: strainFromApi.parents,
+              breeder: strainFromApi.breeder,
+              origin: (strainFromApi as any).origin,
+            };
+            
+            setSelectedStrain(strainForState);
             // Update the cannabis type based on the strain data
-            if (strainFromApi.type) {
-              setValue('cannabis_type', capitalizeFirstLetter(strainFromApi.type) as CannabisType, { shouldDirty: true });
+            if (strainForState.type) {
+              setValue('cannabis_type', capitalizeFirstLetter(strainForState.type) as CannabisType, { shouldDirty: true });
             }
             return;
           }
@@ -201,21 +207,36 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           // First try local search
           const localMatches = searchStrainsByName(plant.strain);
           if (localMatches.length > 0 && localMatches[0]) {
-            // Convert local strain format to API strain format
-            const apiCompatibleStrain: Strain = {
-              id: localMatches[0].id,
-              name: localMatches[0].name,
-              // Map local 'type' to API 'type' format, ensuring it's lowercase
-              type: mapLocalTypeToApiType(localMatches[0].type),
-              // Convert numbers to numbers for the API format
-              thc: localMatches[0].thcContent || null,
-              cbd: localMatches[0].cbdContent || null
+            const localStrain = localMatches[0];
+            // Construct an object that matches RawStrainApiResponse
+            const strainForState: RawStrainApiResponse = {
+                id: (localStrain as any).external_db_id ?? 0, // Use a numeric ID if available, else placeholder
+                api_id: localStrain.id, // Use local string UUID as api_id
+                name: localStrain.name,
+                type: mapLocalTypeToApiType(localStrain.type as string),
+                thc: localStrain.thcContent || null,
+                cbd: localStrain.cbdContent || null,
+                description: localStrain.description ?? undefined,
+                effects: localStrain.effects || [],
+                flavors: localStrain.flavors || [],
+                // Add other fields from RawStrainApiResponse with default values if not in localStrain
+                lineage: (localStrain as any).lineage ?? undefined,
+                terpenes: (localStrain as any).terpenes ?? undefined,
+                images: (localStrain as any).images ?? undefined,
+                seed_company: (localStrain as any).seed_company ?? undefined,
+                genetics: (localStrain as any).genetics ?? undefined,
+                flowering_time_min: (localStrain as any).flowering_time_min ?? undefined,
+                flowering_time_max: (localStrain as any).flowering_time_max ?? undefined,
+                yield_min: (localStrain as any).yield_min ?? undefined,
+                yield_max: (localStrain as any).yield_max ?? undefined,
+                difficulty: (localStrain as any).difficulty ?? undefined,
+                rating: (localStrain as any).rating ?? 0,
+                reviews_count: (localStrain as any).reviews_count ?? 0,
             };
-            
-            setSelectedStrain(apiCompatibleStrain);
-            console.log('[EditPlantForm] Found strain from local data:', JSON.stringify(apiCompatibleStrain, null, 2));
-            if (apiCompatibleStrain.type) {
-              setValue('cannabis_type', capitalizeFirstLetter(apiCompatibleStrain.type) as CannabisType, { shouldDirty: true });
+            setSelectedStrain(strainForState);
+            console.log('[EditPlantForm] Found strain from local data (adapted to RawStrainApiResponse):', JSON.stringify(strainForState, null, 2));
+            if (strainForState.type) {
+              setValue('cannabis_type', capitalizeFirstLetter(strainForState.type) as CannabisType, { shouldDirty: true });
             }
             return;
           }
@@ -223,15 +244,57 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           // If local search fails, try API search
           console.log('[EditPlantForm] Local search failed, trying API search');
           const apiResults = await WeedDbService.search(plant.strain);
-          const bestMatch = apiResults.data.find(strain => 
+          const bestMatchFromApiSearch = apiResults.data.find(strain => 
             strain.name.toLowerCase() === plant.strain?.toLowerCase()
           ) || apiResults.data[0];
           
-          if (bestMatch) {
-            console.log('[EditPlantForm] Found strain from API search:', JSON.stringify(bestMatch, null, 2));
-            setSelectedStrain(bestMatch);
-            if (bestMatch.type) {
-              setValue('cannabis_type', capitalizeFirstLetter(bestMatch.type) as CannabisType, { shouldDirty: true });
+          if (bestMatchFromApiSearch) {
+            // Convert Strain (from weed-db) to RawStrainApiResponse
+            if (typeof bestMatchFromApiSearch.api_id === 'string') {
+              const strainForState: RawStrainApiResponse = {
+                id: String(bestMatchFromApiSearch.id), // Ensure id is string for RawStrainApiResponse if it uses string
+                api_id: bestMatchFromApiSearch.api_id, // Now we know it's a string
+                name: bestMatchFromApiSearch.name,
+                type: bestMatchFromApiSearch.type,
+                thc: bestMatchFromApiSearch.thc,
+                cbd: bestMatchFromApiSearch.cbd,
+                description: bestMatchFromApiSearch.description ?? undefined,
+                effects: Array.isArray(bestMatchFromApiSearch.effects) ? bestMatchFromApiSearch.effects : (bestMatchFromApiSearch.effects ? [bestMatchFromApiSearch.effects] : []),
+                flavors: Array.isArray(bestMatchFromApiSearch.flavors) ? bestMatchFromApiSearch.flavors : (bestMatchFromApiSearch.flavors ? [bestMatchFromApiSearch.flavors] : []),
+                lineage: (bestMatchFromApiSearch.parents && bestMatchFromApiSearch.parents.length > 0) ? bestMatchFromApiSearch.parents : undefined,
+                terpenes: (bestMatchFromApiSearch as any).terpenes ?? undefined, // Strain doesn't explicitly have terpenes
+                images: bestMatchFromApiSearch.image ? [bestMatchFromApiSearch.image] : (bestMatchFromApiSearch.imageUrl ? [bestMatchFromApiSearch.imageUrl] : undefined),
+                image_url: bestMatchFromApiSearch.imageUrl ?? bestMatchFromApiSearch.image ?? undefined,
+                seed_company: bestMatchFromApiSearch.breeder ?? undefined,
+                genetics: bestMatchFromApiSearch.genetics ?? undefined,
+                floweringTime: bestMatchFromApiSearch.floweringTime ?? undefined, // Direct assignment
+                // Remove flowering_time_min and flowering_time_max as Strain doesn't directly provide them for parsing here
+                yield_min: (bestMatchFromApiSearch.yieldIndoor || (bestMatchFromApiSearch as any).yield_min) ?? undefined,
+                yield_max: (bestMatchFromApiSearch.yieldOutdoor || (bestMatchFromApiSearch as any).yield_max) ?? undefined,
+                difficulty: bestMatchFromApiSearch.growDifficulty ?? undefined,
+                rating: bestMatchFromApiSearch.rating ?? 0,
+                reviews_count: (bestMatchFromApiSearch as any).reviews_count ?? 0, // Strain doesn't explicitly have reviews_count
+                link: bestMatchFromApiSearch.url ?? bestMatchFromApiSearch.link ?? undefined,
+                parents: bestMatchFromApiSearch.parents ?? undefined,
+                breeder: bestMatchFromApiSearch.breeder ?? undefined,
+                origin: (bestMatchFromApiSearch as any).origin ?? undefined,
+                floweringType: bestMatchFromApiSearch.floweringType ?? undefined,
+                fromSeedToHarvest: (bestMatchFromApiSearch as any).fromSeedToHarvest ?? undefined, // Strain doesn't explicitly have this
+                growDifficulty: bestMatchFromApiSearch.growDifficulty ?? undefined,
+                yieldIndoor: bestMatchFromApiSearch.yieldIndoor ?? bestMatchFromApiSearch.yield_indoor ?? undefined,
+                yieldOutdoor: bestMatchFromApiSearch.yieldOutdoor ?? bestMatchFromApiSearch.yield_outdoor ?? undefined,
+                heightIndoor: bestMatchFromApiSearch.heightIndoor ?? bestMatchFromApiSearch.height_indoor ?? undefined,
+                heightOutdoor: bestMatchFromApiSearch.heightOutdoor ?? bestMatchFromApiSearch.height_outdoor ?? undefined,
+                harvestTimeOutdoor: bestMatchFromApiSearch.harvestTimeOutdoor ?? bestMatchFromApiSearch.harvest_time_outdoor ?? undefined,
+              };
+              console.log('[EditPlantForm] Found strain from API search (adapted to RawStrainApiResponse):', JSON.stringify(strainForState, null, 2));
+              setSelectedStrain(strainForState);
+              if (strainForState.type) {
+                setValue('cannabis_type', capitalizeFirstLetter(strainForState.type) as CannabisType, { shouldDirty: true });
+              }
+            } else {
+              console.warn('[EditPlantForm] Strain from API search is missing a string api_id:', bestMatchFromApiSearch);
+              setSelectedStrain(null); // Or handle as appropriate
             }
             return;
           }
@@ -249,21 +312,64 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     loadInitialStrain();
   }, [plant, reset, setValue]);
 
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Photo library access is needed to upload images.');
-      return;
+  // Process image immediately after selection to avoid memory issues with large gallery images
+  const processImage = async (uri: string): Promise<string | null> => {
+    try {
+      setProcessingImage(true);
+      const manipResult = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1024 } }], // Resize immediately to manage memory
+        { compress: 0.7, format: SaveFormat.JPEG }
+      );
+      return manipResult.uri;
+    } catch (error) {
+      console.error('Error processing image:', error);
+      Alert.alert('Error', 'Failed to process image. Please try a different image.');
+      return null;
+    } finally {
+      setProcessingImage(false);
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Corrected from MediaType.Images
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets && result.assets[0]) {
-      setImagePreviewUri(result.assets[0].uri);
-      setValue('image_url', null, { shouldDirty: true }); // New image selected, mark as dirty
+  };
+
+  const pickImage = async () => {
+    try {
+      console.log('[EditPlantForm] Requesting media library permissions...');
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('[EditPlantForm] Permission result:', permissionResult);
+      
+      if (!permissionResult.granted) {
+        const message = permissionResult.canAskAgain 
+          ? 'Photo library access is needed to upload images. Please grant permission in your device settings.'
+          : 'Photo library access was denied. Please enable it in your device settings to select images.';
+        Alert.alert('Permission Required', message);
+        return;
+      }
+
+      console.log('[EditPlantForm] Launching image library...');      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+      
+      console.log('[EditPlantForm] Image picker result:', result);
+      
+      if (!result.canceled && result.assets && result.assets[0]) {
+        console.log('[EditPlantForm] Image selected, processing...');
+        // Process image immediately to prevent memory issues with large gallery images
+        const processedUri = await processImage(result.assets[0].uri);
+        if (processedUri) {
+          setImagePreviewUri(processedUri);
+          setValue('image_url', null, { shouldDirty: true });
+        }
+      }
+    } catch (error) {
+      console.error('[EditPlantForm] Error picking image:', error);
+      Alert.alert(
+        'Gallery Error', 
+        'Failed to access photo gallery. Please try again or restart the app if the problem persists.'
+      );
     }
   };
 
@@ -279,8 +385,12 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       quality: 0.8,
     });
     if (!result.canceled && result.assets && result.assets[0]) {
-      setImagePreviewUri(result.assets[0].uri);
-      setValue('image_url', null, { shouldDirty: true }); // New image selected, mark as dirty
+      // Process image immediately for consistency
+      const processedUri = await processImage(result.assets[0].uri);
+      if (processedUri) {
+        setImagePreviewUri(processedUri);
+        setValue('image_url', null, { shouldDirty: true });
+      }
     }
   };
 
@@ -288,14 +398,10 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     if (!imagePreviewUri || imagePreviewUri === (plant.imageUrl ?? null)) return plant.imageUrl ?? null; // No new image or same image
     setUploadingImage(true);
     try {
-      const manipResult = await manipulateAsync(
-        imagePreviewUri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.7, format: SaveFormat.JPEG }
-      );
+      // Image is already processed, so we can upload it directly
       const mimeType = 'image/jpeg';
       const extension = 'jpg';
-      const fileBase64 = await FileSystem.readAsStringAsync(manipResult.uri, {
+      const fileBase64 = await FileSystem.readAsStringAsync(imagePreviewUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       const arrayBuffer = decode(fileBase64);
@@ -393,7 +499,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         return;
       }
 
-      let finalImageUrl: string | null | undefined = data.image_url; // Initialize with current form value
+      let finalImageUrl: string | null | undefined = data.image_url as string | null; // Initialize with current form value
 
       if (imagePreviewUri && imagePreviewUri !== (plant.imageUrl ?? null)) {
         finalImageUrl = await uploadImage(user.id);
@@ -430,19 +536,19 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
       // --- Strain Synchronization Logic ---
       let finalStrainId: string | null = null;
-      if (selectedStrain && selectedStrain.id) {
+      if (selectedStrain && selectedStrain.api_id) { // Ensure api_id is present
         // Use findOrCreateLocalStrain to ensure local mapping
         const strainDataForSync = {
-          api_id: selectedStrain.id,
+          api_id: selectedStrain.api_id, // Use api_id from selectedStrain (it's RawStrainApiResponse)
           name: selectedStrain.name,
           species: selectedStrain.type as StrainSpecies,
-          description: selectedStrain.description,
+          description: selectedStrain.description ?? undefined, // Ensure undefined instead of null
           thc: selectedStrain.thc?.toString(),
           cbd: selectedStrain.cbd?.toString(),
-          effects: selectedStrain.effects || [],
-          flavors: selectedStrain.flavors || [],
+          effects: Array.isArray(selectedStrain.effects) ? selectedStrain.effects : [], // Ensure effects is string[]
+          flavors: Array.isArray(selectedStrain.flavors) ? selectedStrain.flavors : [], // Ensure flavors is string[]
         };
-        const localStrain = await findOrCreateLocalStrain(selectedStrain.id, strainDataForSync);
+        const localStrain = await findOrCreateLocalStrain(selectedStrain.api_id, strainDataForSync);
         if (localStrain && localStrain.id) {
           finalStrainId = localStrain.id;
         }
@@ -453,18 +559,18 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           const bestMatch = apiResults.data.find(
             (strain) => strain.name.toLowerCase() === data.strain.toLowerCase()
           );
-          if (bestMatch) {
+          if (bestMatch && typeof bestMatch.api_id === 'string') { // Ensure api_id is a string
             const strainDataForSync = {
-              api_id: bestMatch.id,
+              api_id: bestMatch.api_id, // Use api_id from bestMatch
               name: bestMatch.name,
               species: bestMatch.type as StrainSpecies,
-              description: bestMatch.description,
+              description: bestMatch.description ?? undefined, // Ensure undefined instead of null
               thc: bestMatch.thc?.toString(),
               cbd: bestMatch.cbd?.toString(),
-              effects: bestMatch.effects || [],
-              flavors: bestMatch.flavors || [],
+              effects: Array.isArray(bestMatch.effects) ? bestMatch.effects : (bestMatch.effects ? [bestMatch.effects] : []), // Ensure effects is string[] or undefined
+              flavors: Array.isArray(bestMatch.flavors) ? bestMatch.flavors : (bestMatch.flavors ? [bestMatch.flavors] : []), // Ensure flavors is string[] or undefined
             };
-            const localStrain = await findOrCreateLocalStrain(bestMatch.id, strainDataForSync);
+            const localStrain = await findOrCreateLocalStrain(bestMatch.api_id, strainDataForSync);
             if (localStrain && localStrain.id) {
               finalStrainId = localStrain.id;
             }
@@ -472,17 +578,19 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             // Fallback to local DB
             const localMatches = searchStrainsByName(data.strain);
             if (localMatches.length > 0 && localMatches[0]) {
+              const matchedLocalStrain = localMatches[0];
               const apiCompatibleStrain = {
-                api_id: localMatches[0].id,
-                name: localMatches[0].name,
-                species: mapLocalTypeToApiType(localMatches[0].type) as StrainSpecies,
-                description: localMatches[0].description,
-                thc: localMatches[0].thcContent?.toString(),
-                cbd: localMatches[0].cbdContent?.toString(),
-                effects: localMatches[0].effects || [],
-                flavors: localMatches[0].flavors || [],
+                api_id: matchedLocalStrain.id, // Use local ID as api_id
+                name: matchedLocalStrain.name,
+                species: mapLocalTypeToApiType(matchedLocalStrain.type as string) as StrainSpecies,
+                description: matchedLocalStrain.description ?? undefined, // Ensure undefined instead of null
+                thc: matchedLocalStrain.thcContent?.toString(),
+                cbd: matchedLocalStrain.cbdContent?.toString(),
+                effects: matchedLocalStrain.effects || [],
+                flavors: matchedLocalStrain.flavors || [],
               };
-              const localStrain = await findOrCreateLocalStrain(localMatches[0].id, apiCompatibleStrain);
+              // Assuming localMatches[0].id is a string (UUID)
+              const localStrain = await findOrCreateLocalStrain(matchedLocalStrain.id, apiCompatibleStrain);
               if (localStrain && localStrain.id) {
                 finalStrainId = localStrain.id;
               }
@@ -493,17 +601,19 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           // Fallback to local DB
           const localMatches = searchStrainsByName(data.strain);
           if (localMatches.length > 0 && localMatches[0]) {
+            const matchedLocalStrain = localMatches[0];
             const apiCompatibleStrain = {
-              api_id: localMatches[0].id,
-              name: localMatches[0].name,
-              species: mapLocalTypeToApiType(localMatches[0].type) as StrainSpecies,
-              description: localMatches[0].description,
-              thc: localMatches[0].thcContent?.toString(),
-              cbd: localMatches[0].cbdContent?.toString(),
-              effects: localMatches[0].effects || [],
-              flavors: localMatches[0].flavors || [],
+              api_id: matchedLocalStrain.id, // Use local ID as api_id
+              name: matchedLocalStrain.name,
+              species: mapLocalTypeToApiType(matchedLocalStrain.type as string) as StrainSpecies,
+              description: matchedLocalStrain.description ?? undefined, // Ensure undefined instead of null
+              thc: matchedLocalStrain.thcContent?.toString(),
+              cbd: matchedLocalStrain.cbdContent?.toString(),
+              effects: matchedLocalStrain.effects || [],
+              flavors: matchedLocalStrain.flavors || [],
             };
-            const localStrain = await findOrCreateLocalStrain(localMatches[0].id, apiCompatibleStrain);
+            // Assuming localMatches[0].id is a string (UUID)
+            const localStrain = await findOrCreateLocalStrain(matchedLocalStrain.id, apiCompatibleStrain);
             if (localStrain && localStrain.id) {
               finalStrainId = localStrain.id;
             }
@@ -514,40 +624,38 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
       const plantedDateStr = data.planted_date instanceof Date 
         ? data.planted_date.toISOString().split('T')[0] 
-        : new Date().toISOString().split('T')[0];
-
-      const updatePayload: PlantUpdatePayload = {
-        name: data.name,
-        strainNameDisplay: data.strain,
+        : new Date().toISOString().split('T')[0];      const updatePayload: PlantUpdatePayload = {
+        name: data.name as string,
+        strainNameDisplay: data.strain as string,
         strainIdToSet: finalStrainId,
-        plantedDate: plantedDateStr,
-        growthStage: data.growth_stage,
-        notes: data.notes || '',
+        plantedDate: plantedDateStr || format(new Date(), 'yyyy-MM-dd'), // Ensure we have a default date if undefined
+        growthStage: data.growth_stage as PlantGrowthStage,
+        notes: (data.notes as string) || '',
         imageUrl: finalImageUrl || '',
-        cannabisType: data.cannabis_type || CannabisType.Unknown,
-        growMedium: data.grow_medium || GrowMedium.Soil,
-        lightCondition: data.light_condition || LightCondition.Artificial,
-        locationDescription: data.location_description || '',
+        cannabisType: (data.cannabis_type as CannabisType) || CannabisType.Unknown,
+        growMedium: (data.grow_medium as GrowMedium) || GrowMedium.Soil,
+        lightCondition: (data.light_condition as LightCondition) || LightCondition.Artificial,
+        locationDescription: (data.location_description as string) || '',
       };
 
       console.log('[EditPlantForm] Final update payload:', JSON.stringify(updatePayload, null, 2));      // Execute the plant update in the database
       const plantRecord = await database?.get('plants').find(plant.id);
-      let result = false;
-      
-      if (plantRecord) {
+      let result = false;      if (plantRecord) {
         await database?.action(async () => {
           await plantRecord.update((p) => {
-            p.name = updatePayload.name;
-            p.strain = updatePayload.strainNameDisplay;
-            p.strainId = updatePayload.strainIdToSet;
-            p.plantedDate = updatePayload.plantedDate;
-            p.growthStage = updatePayload.growthStage;
-            p.notes = updatePayload.notes || '';
-            p.imageUrl = updatePayload.imageUrl;
-            p.cannabisType = updatePayload.cannabisType;
-            p.growMedium = updatePayload.growMedium;
-            p.lightCondition = updatePayload.lightCondition;
-            p.locationDescription = updatePayload.locationDescription;
+            // Cast p to Plant to access fields
+            const plantRecord = p as unknown as Plant;
+            plantRecord.name = updatePayload.name;
+            plantRecord.strain = updatePayload.strainNameDisplay;
+            plantRecord.strainId = updatePayload.strainIdToSet;
+            plantRecord.plantedDate = updatePayload.plantedDate;
+            plantRecord.growthStage = updatePayload.growthStage;
+            plantRecord.notes = updatePayload.notes || '';
+            plantRecord.imageUrl = updatePayload.imageUrl;
+            plantRecord.cannabisType = updatePayload.cannabisType;
+            plantRecord.growMedium = updatePayload.growMedium;
+            plantRecord.lightCondition = updatePayload.lightCondition;
+            plantRecord.locationDescription = updatePayload.locationDescription;
           });
         });
         result = true;
@@ -565,9 +673,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       Alert.alert('Error', 'An error occurred while updating the plant.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
+    }  };
+  
   const renderTextInput = (
     fieldName: keyof PlantFormData,
     placeholder: string,
@@ -576,27 +683,35 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     <Controller
       control={control}
       name={fieldName}
-      render={({ field: { onChange, onBlur, value } }: { field: { onChange: (text: string) => void; onBlur: () => void; value: string | undefined }; // fieldState: { error?: { message?: string } }; // Not using fieldState.error directly here
-      }) => (
-        <>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300],
-                color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800],
-              },
-            ]}
-            placeholder={placeholder}
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value || ''} // Handle undefined value for display
-            keyboardType={keyboardType}
-            placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
-          />
-          {errors[fieldName] && <ThemedText style={styles.errorText}>{errors[fieldName]?.message}</ThemedText>}
-        </>
-      )}
+      render={({ field, fieldState }) => {
+        // Safely handle values that might be null/undefined or non-string types
+        const safeValue = field.value !== null && field.value !== undefined 
+          ? (typeof field.value === 'string' ? field.value : String(field.value)) 
+          : '';
+          
+        return (
+          <>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300],
+                  color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800],
+                },
+              ]}
+              placeholder={placeholder}
+              onBlur={field.onBlur}
+              onChangeText={field.onChange}
+              value={safeValue}
+              keyboardType={keyboardType}
+              placeholderTextColor={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
+            />
+            {fieldState.error && (
+              <ThemedText style={styles.errorText}>{fieldState.error.message}</ThemedText>
+            )}
+          </>
+        );
+      }}
     />
   );
 
@@ -742,11 +857,19 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
               </ThemedView>
             )}
             <ThemedView style={styles.imageButtonsContainer}>
-              <TouchableOpacity style={[styles.button, styles.imageButton, { backgroundColor: theme.colors.primary[500] }]} onPress={pickImage}>
+              <TouchableOpacity 
+                style={[styles.button, styles.imageButton, { backgroundColor: theme.colors.primary[500] }]} 
+                onPress={pickImage}
+                disabled={processingImage}
+              >
                 <Ionicons name="images-outline" size={20} color={theme.colors.neutral[50]} />
                 <ThemedText style={[styles.buttonText, { color: theme.colors.neutral[50] }]}>Gallery</ThemedText>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.imageButton, { backgroundColor: theme.colors.primary[500] }]} onPress={takePhoto}>
+              <TouchableOpacity 
+                style={[styles.button, styles.imageButton, { backgroundColor: theme.colors.primary[500] }]} 
+                onPress={takePhoto}
+                disabled={processingImage}
+              >
                 <Ionicons name="camera-outline" size={20} color={theme.colors.neutral[50]} />
                 <ThemedText style={[styles.buttonText, { color: theme.colors.neutral[50] }]}>Camera</ThemedText>
               </TouchableOpacity>
@@ -762,7 +885,14 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                     <Ionicons name="close-circle" size={24} color={theme.colors.status.danger} />
                 </TouchableOpacity>
             )}
-            {uploadingImage && <ActivityIndicator size="small" color={theme.colors.primary[500]} style={{ marginTop: 10 }} />}
+            {(uploadingImage || processingImage) && (
+              <ThemedView style={{ alignItems: 'center', marginTop: 10 }}>
+                <ActivityIndicator size="small" color={theme.colors.primary[500]} />
+                <ThemedText style={{ marginTop: 4, fontSize: 12, color: theme.colors.neutral[600] }}>
+                  {processingImage ? 'Processing image...' : 'Uploading...'}
+                </ThemedText>
+              </ThemedView>
+            )}
           </ThemedView>
           {errors.image_url && <ThemedText style={styles.errorText}>{errors.image_url.message}</ThemedText>}
 
@@ -774,10 +904,9 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             control={control}
             name="strain" // This RHF field will hold the strain NAME for display/input
             render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <ThemedView>
-                <StrainAutocomplete
-                  value={value} // Current strain name from RHF
-                  onSelect={(strainObj) => { 
+              <ThemedView>                <StrainAutocomplete
+                  initialStrainName={value || ''} // Use initialStrainName instead of value prop
+                  onStrainSelect={(strainObj: RawStrainApiResponse | null) => { 
                     if (strainObj) {
                       console.log('[EditPlantForm StrainAutocomplete onSelect] Selected strainObj:', JSON.stringify(strainObj, null, 2));
                       onChange(strainObj.name); 
@@ -785,7 +914,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                       
                       // Auto-fill cannabis type from strain data if available
                       if (strainObj.type) {
-                        setValue('cannabis_type', strainObj.type as CannabisType, { shouldValidate: true, shouldDirty: true });
+                        setValue('cannabis_type', capitalizeFirstLetter(strainObj.type) as CannabisType, { shouldValidate: true, shouldDirty: true });
                         console.log(`[EditPlantForm] Auto-filled cannabis_type to ${strainObj.type} from strain data`);
                       }
                       
@@ -797,19 +926,10 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                       console.log('[EditPlantForm StrainAutocomplete onSelect] Strain selection cleared');
                     }
                   }}
-                  onInputChange={(inputValue) => { 
-                    console.log('[EditPlantForm StrainAutocomplete onInputChange] Input changed to:', inputValue);
-                    onChange(inputValue); 
-                    
-                    // If input is cleared or changed from the selected strain, reset selectedStrain
-                    if (!inputValue || (selectedStrain && inputValue !== selectedStrain.name)) {
-                      setSelectedStrain(null);
-                      console.log('[EditPlantForm StrainAutocomplete onInputChange] selectedStrain state cleared due to input change/clear.');
-                    }
-                  }}
                   placeholder="Search for a strain (e.g., OG Kush)"
-                  error={error?.message}
+                  // Removed error prop: error={error?.message} 
                 />
+                {error && <ThemedText style={styles.errorText}>{error.message}</ThemedText>}
                 
                 {/* Display selected strain details if available */}
                 {selectedStrain && (
@@ -818,7 +938,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                       marginTop: 8,
                       padding: 8,
                       borderRadius: 8,
-                      backgroundColor: isDarkMode ? 'rgba(79, 70, 229, 0.1)' : 'rgba(79, 70, 229, 0.05)',
+                      backgroundColor: isDarkMode ? 'rgba(79, 70, 229, 0.1)' : 'rgba(79, 70,229, 0.05)',
                     }}
                   >
                     <ThemedView style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
@@ -855,7 +975,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
           {/* Growth Stage */}
           <ThemedText style={[styles.label, {color: isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]}]}>Growth Stage*</ThemedText>
-          {renderEnumPicker('growth_stage', GrowthStage, 'Growth Stage')}
+          {renderEnumPicker('growth_stage', PlantGrowthStage, 'Growth Stage')}
 
           {/* Planted Date */}
           <ThemedText style={[styles.label, {color: isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[700]}]}>Planted Date*</ThemedText>
@@ -1086,11 +1206,4 @@ const styles = StyleSheet.create({
 });
 
 // After the existing enum definitions but before the plantFormSchema
-
-enum GrowthStage {
-  SEEDLING = 'Seedling',
-  VEGETATIVE = 'Vegetative',
-  PREFLOWER = 'Pre-flower',
-  FLOWERING = 'Flowering',
-  HARVEST = 'Harvest',
-}
+// GrowthStage enum has been moved to the top of the file

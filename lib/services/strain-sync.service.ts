@@ -12,6 +12,8 @@ import { RawStrainApiResponse } from '../types/weed-db';
 import { SupabaseStrain } from '../types/supabase'; // Added import
 import { log } from '../utils/logger';
 import supabase from '../supabase'; // Import the supabase client
+import { WeedDbService } from './weed-db.service'; // Import the existing service
+import { RAPIDAPI_KEY, RAPIDAPI_HOST } from '../config'; // Import API configuration
 import {
   sanitizeString,
   parseOptionalNumber,
@@ -19,7 +21,8 @@ import {
   parsePercentageString,
 } from '../utils/data-parsing'; // Corrected path
 
-const STRAIN_API_URL = 'https://www.weed.db/api/strains';
+// Use The Weed DB API on RapidAPI
+const STRAIN_API_URL = 'https://the-weed-db.p.rapidapi.com';
 
 /**
  * Prepares raw API data for insertion into the WatermelonDB 'strains' table.
@@ -86,14 +89,28 @@ export function prepareDataForWatermelonDB(apiStrain: RawStrainApiResponse): Par
 /**
  * Fetches strains from the external API.
  */
-export async function fetchStrainsFromApi(limit: number = 20, offset: number = 0): Promise<RawStrainApiResponse[]> {
-  try {
+export async function fetchStrainsFromApi(limit: number = 20, offset: number = 0): Promise<RawStrainApiResponse[]> {  try {
     log.info(`Fetching strains from API: limit=${limit}, offset=${offset}`);
-    // const apiUrl = new URL(STRAIN_API_URL);
-    // apiUrl.searchParams.append('limit', String(limit));
-    // apiUrl.searchParams.append('offset', String(offset));
-    // const response = await fetch(apiUrl.toString());
-    const response = await fetch(STRAIN_API_URL);
+    
+    // Validate API credentials are available
+    if (!RAPIDAPI_KEY) {
+      throw new Error(
+        'RapidAPI key is missing. Please set RAPIDAPI_KEY in your environment variables.'
+      );
+    }
+    if (!RAPIDAPI_HOST) {
+      throw new Error(
+        'RapidAPI host is missing. Please set RAPIDAPI_HOST in your environment variables.'
+      );
+    }
+
+    const apiUrl = `${STRAIN_API_URL}?limit=${limit}&offset=${offset}`;
+    const response = await fetch(apiUrl, {
+      headers: {
+        'X-RapidAPI-Key': RAPIDAPI_KEY,
+        'X-RapidAPI-Host': RAPIDAPI_HOST,
+      },
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -347,9 +364,6 @@ export function convertSupabaseStrainToRawApi(supabaseStrain: SupabaseStrain): R
     growDifficulty: ensureStringOrNull(supabaseStrain.grow_difficulty),
     effects: Array.isArray(supabaseStrain.effects) ? supabaseStrain.effects.map(String) : [],
     flavors: Array.isArray(supabaseStrain.flavors) ? supabaseStrain.flavors.map(String) : [],
-    terpenes: Array.isArray(supabaseStrain.terpenes) ? supabaseStrain.terpenes.map(String) : [],
-    parents: Array.isArray(supabaseStrain.parents) ? supabaseStrain.parents.map(String) : [],
-    origin: Array.isArray(supabaseStrain.origin) ? supabaseStrain.origin.map(String) : [],
     genetics: ensureStringOrNull(supabaseStrain.genetics),
     floweringType: ensureStringOrNull(supabaseStrain.flowering_type),
     heightIndoor: ensureStringOrNull(supabaseStrain.height_indoor),
@@ -418,34 +432,110 @@ export async function searchStrainsInSupabase(query: string, limit: number = 10)
   }
 }
 
+// Helper function to ensure strain has a valid api_id
+function ensureStrainApiId(strain: any): string {
+  // Use existing api_id if available
+  if (strain.api_id && typeof strain.api_id === 'string' && strain.api_id.trim() !== '') {
+    return strain.api_id.trim();
+  }
+  
+  // Use _id as fallback (MongoDB style)
+  if (strain._id && typeof strain._id === 'string' && strain._id.trim() !== '') {
+    return strain._id.trim();
+  }
+  
+  // Use id as fallback
+  if (strain.id && typeof strain.id === 'string' && strain.id.trim() !== '') {
+    return strain.id.trim();
+  }
+  
+  // Generate one based on name and timestamp as last resort
+  const timestamp = Date.now();
+  const nameSlug = strain.name ? strain.name.toLowerCase().replace(/[^a-z0-9]/g, '_') : 'unknown';
+  return `external_${nameSlug}_${timestamp}`;
+}
+
 /**
  * Fetches strains from the external API by query.
- * Note: This assumes the external API supports a query parameter for searching.
- * The actual API endpoint and query parameter might need adjustment.
+ * Uses the existing WeedDbService which is properly configured for RapidAPI.
  */
 export async function fetchStrainsFromApiByQuery(query: string, limit: number = 10): Promise<RawStrainApiResponse[]> {
   if (!query || query.trim() === '') {
     log.info('External API search query is empty, returning no results.');
     return [];
   }
-  try {
+    try {
     log.info(`Fetching strains from external API by query: "${query}", limit: ${limit}`);
-    // Adjust the API URL and query parameter as needed.
-    // This is a placeholder URL structure.
-    const apiUrl = new URL(STRAIN_API_URL); // Assuming STRAIN_API_URL is the base
-    apiUrl.searchParams.append('search', query); // Example: /api/strains?search=query
-    apiUrl.searchParams.append('limit', String(limit));
-
-    const response = await fetch(apiUrl.toString());
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      log.error('Failed to fetch strains from external API by query', { status: response.status, error: errorText, query });
-      throw new Error(`External API request failed with status ${response.status}: ${errorText}`);
+    
+    // Use the existing WeedDbService which is already configured for RapidAPI
+    const { data: apiData, error } = await WeedDbService.searchByName(query.trim());
+    
+    if (error) {
+      log.error('External API search error', error);
+      return [];
     }
-    const data = await response.json();
-    log.info(`Successfully fetched ${Array.isArray(data) ? data.length : 0} strains from external API for query "${query}"`);
-    return Array.isArray(data) ? data as RawStrainApiResponse[] : [];
+    
+    if (!apiData || apiData.length === 0) {
+      log.info(`No strains found in external API for query "${query}"`);
+      return [];
+    }
+    
+    // Convert WeedDbService results to our expected RawStrainApiResponse format
+    const convertedStrains = apiData.slice(0, limit).map((strain: any) => {
+      const apiId = ensureStrainApiId(strain);
+      
+      // Parse type from genetics field (e.g., "Indica/sativa (50/50)" -> "hybrid")
+      let type = null;
+      if (strain.genetics) {
+        const genetics = strain.genetics.toLowerCase();
+        if (genetics.includes('indica') && genetics.includes('sativa')) {
+          type = 'hybrid';
+        } else if (genetics.includes('indica')) {
+          type = 'indica';
+        } else if (genetics.includes('sativa')) {
+          type = 'sativa';
+        }
+      }
+      
+      // Join description array if it's an array
+      let description = null;
+      if (Array.isArray(strain.description)) {
+        description = strain.description.join('\n\n');
+      } else if (strain.description) {
+        description = strain.description;
+      }
+      
+      return {
+        api_id: apiId,
+        name: strain.name || 'Unknown',
+        type: type,
+        description: description,        effects: strain.effect
+          ? String(strain.effect).split(',').map(s => s.trim())
+          : null, // API uses 'effect' not 'effects'
+        flavors: strain.smellAndFlavour
+          ? String(strain.smellAndFlavour).split(',').map(s => s.trim())
+          : null, // API uses 'smellAndFlavour'
+        thc: strain.THC || null, // API uses 'THC'
+        cbd: strain.CBD || null, // API uses 'CBD'
+        genetics: strain.genetics || null,
+        parents: null, // Not provided by this API
+        terpenes: null, // Not provided by this API
+        origin: null, // Not provided by this API
+        floweringTime: strain.floweringTime || null,
+        growDifficulty: strain.growDifficulty || null,
+        link: strain.link || strain.imageUrl || null,
+        // Additional fields from the API
+        floweringType: strain.floweringType || null,
+        harvestTimeOutdoor: strain.harvestTimeOutdoor || null,
+        yieldIndoor: strain.yieldIndoor || null,
+        yieldOutdoor: strain.yieldOutdoor || null,
+        heightIndoor: strain.heightIndoor || null,
+        heightOutdoor: strain.heightOutdoor || null,
+      };
+    });
+    
+    log.info(`Successfully fetched ${convertedStrains.length} strains from external API for query "${query}"`);
+    return convertedStrains;
   } catch (error) {
     log.error(`Error fetching strains from external API by query "${query}":`, error);
     // Do not re-throw, return empty array to allow other search layers to function
@@ -527,25 +617,37 @@ export async function searchStrainsMultiLayered(query: string, limit: number = 1
  * Prepares raw API data for insertion or update into the Supabase 'strains' table.
  */
 export function prepareDataForSupabase(apiStrain: RawStrainApiResponse): Partial<SupabaseStrain> & { api_id: string } {
+  // Validate required fields
+  if (!apiStrain.api_id) {
+    throw new Error('api_id is required for Supabase strain preparation');
+  }
+  
+  if (!apiStrain.name) {
+    throw new Error('name is required for Supabase strain preparation');
+  }
+
+  log.info(`[prepareDataForSupabase] Preparing strain data for Supabase: ${apiStrain.name} (API ID: ${apiStrain.api_id})`);
+
   const effectsArray = parseOptionalStringArray(apiStrain.effects);
   const flavorsArray = parseOptionalStringArray(apiStrain.flavors);
   const terpenesArray = parseOptionalStringArray(apiStrain.terpenes);
   const parentsArray = parseOptionalStringArray(apiStrain.parents);
   const originArray = parseOptionalStringArray(apiStrain.origin);
+  
   let descriptionString: string | null = null;
   if (Array.isArray(apiStrain.description)) {
-    descriptionString = sanitizeString(apiStrain.description.join('\n'));
+    descriptionString = sanitizeString(apiStrain.description.join('\n\n'));
   } else if (apiStrain.description) {
     descriptionString = sanitizeString(apiStrain.description);
   }
 
+  // Better parsing for THC/CBD - handle formats like "14-19%" and "Unknown"
   const thcPercentage = parsePercentageString(apiStrain.thc || apiStrain.THC);
   const cbdPercentage = parsePercentageString(apiStrain.cbd || apiStrain.CBD);
   const floweringTime = parseOptionalNumber(apiStrain.floweringTime || apiStrain.fromSeedToHarvest);
-
   const supabaseData: Partial<SupabaseStrain> & { api_id: string } = {
-    api_id: sanitizeString(apiStrain.api_id),
-    name: sanitizeString(apiStrain.name),
+    api_id: sanitizeString(apiStrain.api_id) || apiStrain.api_id.trim(),
+    name: sanitizeString(apiStrain.name) || apiStrain.name.trim(),
     type: apiStrain.type ? sanitizeString(apiStrain.type) : null,
     description: descriptionString,
     thc_percentage: thcPercentage,
@@ -554,9 +656,6 @@ export function prepareDataForSupabase(apiStrain: RawStrainApiResponse): Partial
     grow_difficulty: apiStrain.growDifficulty ? sanitizeString(apiStrain.growDifficulty) : null,
     effects: effectsArray,
     flavors: flavorsArray,
-    terpenes: terpenesArray,
-    parents: parentsArray,
-    origin: originArray,
     genetics: apiStrain.genetics ? sanitizeString(apiStrain.genetics) : null,
     flowering_type: apiStrain.floweringType ? sanitizeString(apiStrain.floweringType) : null,
     height_indoor: apiStrain.heightIndoor != null ? sanitizeString(String(apiStrain.heightIndoor)) : null,
@@ -578,6 +677,14 @@ export function prepareDataForSupabase(apiStrain: RawStrainApiResponse): Partial
     }
   });
 
+  log.info(`[prepareDataForSupabase] Prepared Supabase data:`, {
+    api_id: supabaseData.api_id,
+    name: supabaseData.name,
+    type: supabaseData.type,
+    effects_count: supabaseData.effects?.length || 0,
+    flavors_count: supabaseData.flavors?.length || 0
+  });
+
   return supabaseData;
 }
 
@@ -590,36 +697,92 @@ export async function ensureStrainInSupabase(preparedSupabaseData: Partial<Supab
     log.error('[ensureStrainInSupabase] api_id is required to ensure strain in Supabase.');
     return null;
   }
-  log.info(`[ensureStrainInSupabase] Ensuring strain with api_id: ${preparedSupabaseData.api_id} using upsert.`);
+
+  if (!preparedSupabaseData.name) {
+    log.error('[ensureStrainInSupabase] name is required to ensure strain in Supabase.');
+    return null;
+  }
+
+  log.info(`[ensureStrainInSupabase] Ensuring strain with api_id: ${preparedSupabaseData.api_id}, name: ${preparedSupabaseData.name}`);
 
   try {
-    // Use upsert to either insert or update the strain based on api_id conflict
-    const { data, error } = await supabase
+    // First, check if strain already exists by api_id
+    const { data: existingStrain, error: checkError } = await supabase
       .from('strains')
-      .upsert(preparedSupabaseData as Omit<SupabaseStrain, 'id' | 'created_at' | 'updated_at'>, { onConflict: 'api_id' })
-      .select('id') // Select the id of the upserted row
-      .single(); // Expect a single row to be returned
+      .select('id')
+      .eq('api_id', preparedSupabaseData.api_id)
+      .maybeSingle();
 
-    if (error) {
-      log.error(`[ensureStrainInSupabase] Upsert error for api_id ${preparedSupabaseData.api_id}:`, error);
-      // Check for specific error types if needed, e.g., unique constraint violation if onConflict wasn't correctly configured
-      // or if another unique constraint (not on api_id) was violated.
-      if (error.message.includes('unique constraint') && !error.message.includes('strains_api_id_key')) {
-        log.warn(`[ensureStrainInSupabase] A different unique constraint might have been violated for api_id: ${preparedSupabaseData.api_id}. This could indicate a data integrity issue or a need to review other unique fields.`);
-      }
-      return null; // Return null if upsert fails
+    if (checkError) {
+      log.error(`[ensureStrainInSupabase] Error checking existing strain:`, checkError);
+      return null;
+    }    if (existingStrain) {
+      log.info(`[ensureStrainInSupabase] Strain with api_id ${preparedSupabaseData.api_id} already exists (ID: ${existingStrain.id})`);
+      return existingStrain.id;
     }
 
-    if (!data || !data.id) {
-      log.error(`[ensureStrainInSupabase] Upsert operation for api_id ${preparedSupabaseData.api_id} did not return an ID.`);
+    log.info(`[ensureStrainInSupabase] Attempting to upsert strain:`, {
+      api_id: preparedSupabaseData.api_id,
+      name: preparedSupabaseData.name,
+      type: preparedSupabaseData.type
+    });
+
+    // Use upsert with onConflict strategy to safely send the full payload
+    // This lets the database ignore unknown columns and prevent overwriting existing data with nulls
+    const { data: insertedStrain, error: insertError } = await supabase
+      .from('strains')
+      .upsert([preparedSupabaseData], {
+        onConflict: 'api_id',
+        ignoreDuplicates: false,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      log.error(`[ensureStrainInSupabase] Insert error for api_id ${preparedSupabaseData.api_id}:`, {
+        error: insertError,
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint
+      });
+
+      // Handle specific error cases
+      if (insertError.code === '23505') {
+        // Duplicate key error - try to find the existing strain
+        log.info(`[ensureStrainInSupabase] Duplicate key error, attempting to find existing strain`);
+        const { data: duplicateStrain, error: findError } = await supabase
+          .from('strains')
+          .select('id')
+          .eq('api_id', preparedSupabaseData.api_id)
+          .maybeSingle();
+
+        if (!findError && duplicateStrain) {
+          log.info(`[ensureStrainInSupabase] Found existing strain after duplicate error (ID: ${duplicateStrain.id})`);
+          return duplicateStrain.id;
+        }
+      } else if (insertError.code === 'PGRST204') {
+        // Schema error - column doesn't exist
+        log.error(`[ensureStrainInSupabase] Schema error - column doesn't exist in database:`, {
+          error: insertError.message,
+          hint: 'The data being sent contains fields that do not exist in the Supabase table schema'
+        });
+        throw new Error(`Database schema error: ${insertError.message}. Please check that all fields exist in the Supabase strains table.`);
+      }
+      
       return null;
     }
 
-    log.info(`[ensureStrainInSupabase] Strain with api_id ${preparedSupabaseData.api_id} ensured successfully (Supabase ID: ${data.id}).`);
-    return data.id;
+    if (!insertedStrain || !insertedStrain.id) {
+      log.error(`[ensureStrainInSupabase] Insert operation for api_id ${preparedSupabaseData.api_id} did not return an ID.`);
+      return null;
+    }
 
-  } catch (error) { // Catch any unexpected errors during the operation
-    log.error(`[ensureStrainInSupabase] Unexpected error during upsert for api_id ${preparedSupabaseData.api_id}:`, error);
+    log.info(`[ensureStrainInSupabase] Strain with api_id ${preparedSupabaseData.api_id} created successfully (Supabase ID: ${insertedStrain.id}).`);
+    return insertedStrain.id;
+
+  } catch (error) {
+    log.error(`[ensureStrainInSupabase] Unexpected error during strain ensure for api_id ${preparedSupabaseData.api_id}:`, error);
     return null;
   }
 }

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { decode } from 'base64-arraybuffer';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
@@ -48,6 +48,7 @@ import useWatermelon from '../lib/hooks/useWatermelon';
 import { Plant as PlantType, GrowLocation, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant'; // Import Plant as PlantType
 import { Plant as PlantModel } from '../lib/models/Plant'; // Import the actual Model class
 import { Model } from '@nozbe/watermelondb';
+import { takePhoto as takePhotoSimple, selectFromGallery } from '../lib/utils/ultra-simple-image-picker';
 
 // Define type aliases to match the property naming in the WatermelonDB model
 // This allows us to have type-safety without modifying the actual WatermelonDB model class
@@ -101,6 +102,115 @@ const FORM_STEPS: FormStep[] = [
   { id: 'dates', title: 'Important Dates', description: 'Key dates for your plant', fields: ['planted_date'] },
 ];
 
+// Add error classification types and helper function before the component
+interface ErrorClassification {
+  shouldShowToUser: boolean;
+  userMessage?: string;
+  logLevel: 'info' | 'warn' | 'error';
+}
+
+// Helper function to classify errors more robustly
+function classifyStrainSyncError(error: Error): ErrorClassification {
+  const errorMessage = String(error.message || '').toLowerCase();
+  const errorCode = (error as any).code;
+  const errorName = String((error as any).name || '');
+
+  // Handle cancellation/abort errors - these are expected and shouldn't show to user
+  if (errorName === 'AbortError' || errorMessage.includes('cancelled') || errorMessage.includes('aborted')) {
+    return {
+      shouldShowToUser: false,
+      logLevel: 'info'
+    };
+  }
+
+  // Handle duplicate entries - these are expected when strain already exists
+  if (errorCode === '23505' || errorMessage.includes('23505') || errorMessage.includes('duplicate')) {
+    return {
+      shouldShowToUser: false,
+      logLevel: 'info'
+    };
+  }
+
+  // Handle missing required fields
+  if (errorCode === 'MISSING_REQUIRED_FIELD' || 
+      errorMessage.includes('api_id is required') || 
+      errorMessage.includes('name is required')) {
+    return {
+      shouldShowToUser: true,
+      userMessage: 'Strain data is incomplete. Please try selecting a different strain.',
+      logLevel: 'warn'
+    };
+  }
+
+  // Handle network-related errors
+  if (errorName === 'NetworkError' || 
+      errorMessage.includes('network') || 
+      errorMessage.includes('fetch') ||
+      errorMessage.includes('connection')) {
+    return {
+      shouldShowToUser: true,
+      userMessage: 'Network error while syncing strain. Please check your connection and try again.',
+      logLevel: 'warn'
+    };
+  }
+
+  // Handle timeout errors
+  if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+    return {
+      shouldShowToUser: true,
+      userMessage: 'Request timed out. Please try again.',
+      logLevel: 'warn'
+    };
+  }
+
+  // Handle database constraint violations (other than duplicates)
+  if (errorCode && errorCode.startsWith('23')) {
+    return {
+      shouldShowToUser: true,
+      userMessage: 'Database constraint error. Please try selecting a different strain.',
+      logLevel: 'error'
+    };
+  }
+
+  // Handle authentication/authorization errors
+  if (errorMessage.includes('unauthorized') || errorMessage.includes('forbidden') || errorCode === '401' || errorCode === '403') {
+    return {
+      shouldShowToUser: true,
+      userMessage: 'Authentication error. Please log in again and try.',
+      logLevel: 'error'
+    };
+  }
+
+  // Default case for unknown errors
+  return {
+    shouldShowToUser: true,
+    userMessage: `Failed to sync strain: ${error.message}`,
+    logLevel: 'error'
+  };
+}
+
+// Add helper function for safe date formatting
+const safeFormatDate = (date: any, formatString: string = 'PPP'): string => {
+  try {
+    // Check if date is valid
+    if (!date) {
+      return format(new Date(), formatString);
+    }
+    
+    // If it's already a Date object, check if it's valid
+    if (date instanceof Date) {
+      return isValid(date) ? format(date, formatString) : format(new Date(), formatString);
+    }
+    
+    // Try to create a Date from the value
+    const parsedDate = new Date(date);
+    return isValid(parsedDate) ? format(parsedDate, formatString) : format(new Date(), formatString);
+  } catch (error) {
+    console.warn('[AddPlantForm] Error formatting date:', error);
+    return format(new Date(), formatString);
+  }
+};
+
 export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const { theme, isDarkMode } = useTheme();
   const { database } = useDatabase();
@@ -146,6 +256,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviewUri, setImagePreviewUri] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [tempCustomLocation, setTempCustomLocation] = useState('');
   // Store the current AbortController to manage cancellation
@@ -234,11 +345,33 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     onError: (error: Error, variables: RawStrainApiResponse) => {
       // Check if this error callback corresponds to the currently selected strain
       if (selectedStrainApiData?.api_id === variables.api_id) {
-        console.error(`[AddPlantForm] Error syncing strain "${variables.name}":`, error);
-        Alert.alert('Sync Error', `Failed to sync strain ${variables.name}: ${error.message}`);
-        setSelectedStrainApiData(null); // Clear if the failed one was the latest
-        setSyncedLocalStrainId(null);
-        setValue('strain', '', { shouldValidate: true });
+        const classification = classifyStrainSyncError(error);
+        
+        // Log the error with appropriate level
+        const logMessage = `Error syncing strain "${variables.name}" (API ID: ${variables.api_id}): ${error.message}`;
+        switch (classification.logLevel) {
+          case 'info':
+            console.log(`[AddPlantForm] ${logMessage}`);
+            break;
+          case 'warn':
+            console.warn(`[AddPlantForm] ${logMessage}`);
+            break;
+          case 'error':
+            console.error(`[AddPlantForm] ${logMessage}`, error);
+            break;
+        }
+        
+        // Only show alert to user if classification indicates we should
+        if (classification.shouldShowToUser && classification.userMessage) {
+          Alert.alert('Sync Error', classification.userMessage);
+          // Clear the strain selection for user-facing errors
+          setSelectedStrainApiData(null);
+          setSyncedLocalStrainId(null);
+          setValue('strain', '', { shouldValidate: true });
+        } else if (!classification.shouldShowToUser) {
+          // For non-user-facing errors (like duplicates), log but don't clear selection
+          console.log('[AddPlantForm] Strain sync completed with expected condition, not clearing selection');
+        }
       } else {
         console.warn(`[AddPlantForm] Error for strain "${variables.name}" (API ID: ${variables.api_id}) ignored, as current selection is different (API ID: ${selectedStrainApiData?.api_id}). Error: ${error.message}`);
       }
@@ -310,13 +443,35 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     } else if (!isValidStep) {
       console.log('Validation errors on step:', currentStepId, errors);
       const firstErrorField = fieldsToValidate.find((field: keyof PlantFormData) => errors[field]);
+      
+      // Create a more user-friendly error message based on the current step
+      let userFriendlyMessage = 'Please correct the errors before proceeding.';
+      
+      if (currentStepId === 'basicInfo') {
+        const hasNameError = errors.name;
+        const hasStrainError = errors.strain;
+        
+        if (hasNameError && hasStrainError) {
+          userFriendlyMessage = 'Please enter a plant name and select a strain before continuing.';
+        } else if (hasNameError) {
+          userFriendlyMessage = 'Please enter a name for your plant before continuing.';
+        } else if (hasStrainError) {
+          userFriendlyMessage = 'Please select a strain before continuing.';
+        }
+      } else if (currentStepId === 'dates') {
+        userFriendlyMessage = 'Please select a valid planted date before continuing.';
+      } else if (currentStepId === 'location') {
+        userFriendlyMessage = 'Please select a location for your plant before continuing.';
+      }
+      
       // Refined check for errorMessage - ensure errorObject is checked
       const errorObject = firstErrorField ? errors[firstErrorField] : undefined;
       const errorMessage = errorObject?.message
         ? String(errorObject.message) // Ensure it's a string
-        : 'Please correct the errors before proceeding.';
-      // Simplified Alert.alert call
-      Alert.alert('Validation Error', errorMessage);
+        : userFriendlyMessage;
+      
+      // Show the alert with the appropriate message
+      Alert.alert('Required Information Missing', errorMessage);
     }
   };
 
@@ -338,49 +493,70 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     }
   };
 
+  // Process image immediately after selection to avoid memory issues with large gallery images
+  const processImage = async (uri: string): Promise<string | null> => {
+    try {
+      const manipResult = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1024 } }], // Resize immediately to manage memory
+        { compress: 0.7, format: SaveFormat.JPEG }
+      );
+      return manipResult.uri;
+    } catch (error) {
+      console.error('Error processing image:', error);
+      Alert.alert('Error', 'Failed to process image. Please try a different image.');
+      return null;
+    }
+  };
+
   // Camera and image handling
   const pickImage = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Photo library access is needed to upload images.');
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Corrected enum usage
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setImagePreviewUri(result.assets[0].uri);
-        setValue('image_url', null);
+      console.log('[AddPlantForm] Starting image picking process...');
+      setProcessingImage(true);
+      
+      const result = await selectFromGallery();
+      
+      if (result) {
+        console.log('[AddPlantForm] Image selected, processing...');
+        const processedUri = await processImage(result.uri);
+        if (processedUri) {
+          setImagePreviewUri(processedUri);
+          setValue('image_url', null);
+        }
+      } else {
+        console.log('[AddPlantForm] No image selected or picker was canceled');
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image.');
+      console.error('[AddPlantForm] Error picking image:', error);
+      Alert.alert('Error', 'Failed to access photo gallery. Please try again.');
+    } finally {
+      setProcessingImage(false);
     }
   };
 
   const takePhoto = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Camera access is needed to take photos.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setImagePreviewUri(result.assets[0].uri);
-        setValue('image_url', null);
+      console.log('[AddPlantForm] Starting photo taking process...');
+      setProcessingImage(true);
+      
+      const result = await takePhotoSimple();
+      
+      if (result) {
+        console.log('[AddPlantForm] Photo taken, processing...');
+        const processedUri = await processImage(result.uri);
+        if (processedUri) {
+          setImagePreviewUri(processedUri);
+          setValue('image_url', null);
+        }
+      } else {
+        console.log('[AddPlantForm] No photo taken or camera was canceled');
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo.');
+      console.error('[AddPlantForm] Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    } finally {
+      setProcessingImage(false);
     }
   };
 
@@ -388,12 +564,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     if (!imagePreviewUri) return null;
     setUploadingImage(true);
     try {
-      const manipResult = await manipulateAsync(
-        imagePreviewUri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.7, format: SaveFormat.JPEG }
-      );
-      const fileBase64 = await FileSystem.readAsStringAsync(manipResult.uri, {
+      // Image is already processed, so we can upload it directly
+      const fileBase64 = await FileSystem.readAsStringAsync(imagePreviewUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       const arrayBuffer = decode(fileBase64);
@@ -417,7 +589,6 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       setUploadingImage(false);
     }
   };
-
 
   // Form submission - Updated for react-hook-form
   const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
@@ -462,7 +633,13 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           plant.name = data.name;
           plant.strainId = localStrainIdToLink; // Link to the local WatermelonDB strain ID
           plant.strain = selectedStrainApiData!.name; // Store the strain name directly as well for easier display
-          plant.plantedDate = data.planted_date.toISOString();
+          
+          // Safely handle the planted date
+          const plantedDate = data.planted_date && isValid(new Date(data.planted_date)) 
+            ? new Date(data.planted_date) 
+            : new Date();
+          plant.plantedDate = plantedDate.toISOString();
+          
           plant.growthStage = data.growth_stage;
           plant.cannabisType = data.cannabis_type;
           plant.growMedium = data.grow_medium;
@@ -504,14 +681,29 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         <Image source={{ uri: imagePreviewUri }} style={{ width: '100%', height: 200, borderRadius: 8, marginBottom: 12 }} />
       )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 }}>
-        <TouchableOpacity onPress={pickImage} style={{ padding: 12, backgroundColor: theme.colors.primary[500], borderRadius: 8 }}>
+        <TouchableOpacity 
+          onPress={pickImage} 
+          style={{ padding: 12, backgroundColor: theme.colors.primary[500], borderRadius: 8 }}
+          disabled={processingImage || uploadingImage}
+        >
           <ThemedText style={{ color: theme.colors.neutral[50] }}>Pick from Gallery</ThemedText>
         </TouchableOpacity>
-        <TouchableOpacity onPress={takePhoto} style={{ padding: 12, backgroundColor: theme.colors.primary[500], borderRadius: 8 }}>
+        <TouchableOpacity 
+          onPress={takePhoto} 
+          style={{ padding: 12, backgroundColor: theme.colors.primary[500], borderRadius: 8 }}
+          disabled={processingImage || uploadingImage}
+        >
           <ThemedText style={{ color: theme.colors.neutral[50] }}>Take Photo</ThemedText>
         </TouchableOpacity>
       </View>
-      {uploadingImage && <ActivityIndicator size="large" color={theme.colors.primary[500]} />}
+      {(uploadingImage || processingImage) && (
+        <View style={{ alignItems: 'center', marginVertical: 12 }}>
+          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+          <ThemedText style={{ marginTop: 8, color: theme.colors.neutral[600] }}>
+            {processingImage ? 'Processing image...' : 'Uploading...'}
+          </ThemedText>
+        </View>
+      )}
       {errors.image_url && <ThemedText style={{ color: 'red' }}>{errors.image_url.message}</ThemedText>}
     </ThemedView>
   );
@@ -831,16 +1023,16 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               borderRadius: 5,
               backgroundColor: isDarkMode ? '#333' : '#fff',
             }}>
-              <ThemedText style={{color: isDarkMode ? '#fff' : '#000'}}>{format(value || new Date(), 'PPP')}</ThemedText>
+              <ThemedText style={{color: isDarkMode ? '#fff' : '#000'}}>{safeFormatDate(value)}</ThemedText>
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
-                value={value || new Date()} // Ensure value is a Date object
+                value={value && isValid(new Date(value)) ? new Date(value) : new Date()}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={(_event: any, selectedDate?: Date) => {
                   setShowDatePicker(false);
-                  if (selectedDate) {
+                  if (selectedDate && isValid(selectedDate)) {
                     onChange(selectedDate);
                   }
                 }}

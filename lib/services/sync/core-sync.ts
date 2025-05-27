@@ -5,10 +5,45 @@
 import { Database } from '@nozbe/watermelondb';
 import { synchronize } from '@nozbe/watermelondb/sync';
 import type { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
+import { Strain } from '../../types/strain';
+
+// Import DirtyRaw type from WatermelonDB
+import type { DirtyRaw } from '@nozbe/watermelondb';
+
+/**
+ * Accepts a partial strain-like object and normalises `effects`/`flavors`
+ * so they are always `string[] | undefined`.
+ */
+function normaliseStrainArrays<T extends { effects?: any; flavors?: any }>(
+  strain: T
+): T & { effects?: string[]; flavors?: string[] } {
+  const normalise = (value: any): string[] | undefined => {
+    if (Array.isArray(value)) return value.filter(v => typeof v === 'string');
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed.filter(v => typeof v === 'string');
+      } catch (_) { /* fall through */ }
+      return [value];
+    }
+    return undefined;
+  };
+  return {
+    ...strain,
+    effects: normalise(strain.effects),
+    flavors: normalise(strain.flavors),
+  };
+}
+
+// Extended type definitions for sync changes
+interface SyncDatabaseChangeSet {
+  [tableName: string]: SyncTableChangeSet;
+}
 
 import { handleTableConflicts, getPriorityForTable } from './conflict-resolver';
 import { sanitizeRecord, isValidUuid } from './data-sanitizer';
 import { ensureStrainExistsForSync } from './ensure-strain-exists';
+import { loadStrainFromDatabase } from './strain-loader';
 import { getSyncLogger, persistSyncMetadata, updateSyncMetrics } from './metrics';
 import { getNetworkStatus, getSyncConfig } from './network-manager';
 import {
@@ -172,8 +207,9 @@ export async function synchronizeWithServer(
                   // Special handling for profiles table
                   if (table === 'profiles') {
                     // Get profile data
-                    const createdProfiles = receivedChanges[table]?.created || [];
-                    const updatedProfiles = receivedChanges[table]?.updated || [];
+                    const tableChanges = receivedChanges[table] as SyncTableChangeSet;
+                    const createdProfiles = tableChanges?.created || [];
+                    const updatedProfiles = tableChanges?.updated || [];
 
                     try {
                       // Validate and sanitize all profile records upfront to catch any issues
@@ -328,9 +364,10 @@ export async function synchronizeWithServer(
                   } else {
                     // Apply record validation and cleaning to other tables
                     try {
-                      const createdFromServer = receivedChanges[table]?.created || [];
-                      const updatedFromServer = receivedChanges[table]?.updated || [];
-                      const deletedIds = receivedChanges[table]?.deleted || [];
+                      const tableChanges = receivedChanges[table] as SyncTableChangeSet;
+                      const createdFromServer = tableChanges?.created || [];
+                      const updatedFromServer = tableChanges?.updated || [];
+                      const deletedIds = tableChanges?.deleted || [];
 
                       const mapAndCleanRecord = (record: unknown): Record<string, any> | null => {
                         if (typeof record !== 'object' || !record || Array.isArray(record)) {
@@ -380,8 +417,27 @@ export async function synchronizeWithServer(
         },
         pushChanges: async ({ changes, lastPulledAt }) => {
 
+          // Cache to prevent N+1 queries when multiple plants reference the same strain
+          const strainCache = new Map<string, any>();
+          let cacheHits = 0;
+          let cacheMisses = 0;
+          
+          // Cached strain loader to avoid hitting the database multiple times for the same strain
+          async function getStrainFromCache(strainId: string) {
+            if (!strainCache.has(strainId)) {
+              console.log(`[Sync] Loading strain ${strainId} from database (cache miss)`);
+              const strain = await loadStrainFromDatabase(database, strainId);
+              strainCache.set(strainId, strain);
+              cacheMisses++;
+            } else {
+              console.log(`[Sync] Using cached strain ${strainId} (cache hit)`);
+              cacheHits++;
+            }
+            return strainCache.get(strainId);
+          }
+
           // Helper to ensure strain exists before syncing a plant
-          async function ensureStrainForPlantRecord(plant: any) {
+          async function ensureStrainForPlantRecord(plant: Record<string, any>) {
             console.log(`[Sync] ensureStrainForPlantRecord called for plant "${plant?.name}" (ID: ${plant?.id})`);
             
             // Check both strain_id and strainId (camelCase vs snake_case)
@@ -393,17 +449,22 @@ export async function synchronizeWithServer(
               if (plant.strainObj) {
                 // Use the attached strain object
                 console.log(`[Sync] Using existing strainObj for plant ${plant.id} (${plant.name})`, plant.strainObj);
-                await ensureStrainExistsForSync(plant.strainObj);
+                
+                // Normalize effects and flavors arrays and ensure proper typing
+                const strainDataForSync = normaliseStrainArrays({ ...plant.strainObj });
+                await ensureStrainExistsForSync(strainDataForSync);
               } else {
-                // If strainObj is missing but we have strain_id, try to load the strain
+                // If strainObj is missing but we have strain_id, try to load the strain from WatermelonDB
                 try {
-                  const { getStrainById } = require('../../data/strains');
-                  console.log(`[Sync] Attempting to load strain with ID: ${strainId}`);
-                  const strain = getStrainById(strainId);
-                  if (strain) {
-                    console.log(`[Sync] Successfully loaded strain "${strain.name}" for ID ${strainId}`);
+                  console.log(`[Sync] Attempting to load strain from WatermelonDB with ID: ${strainId}`);
+                  
+                  // Use the cached strain loader to prevent N+1 queries
+                  const strainObj = await getStrainFromCache(strainId);
+                  
+                  if (strainObj) {
+                    console.log(`[Sync] Successfully loaded strain "${strainObj.name}" for ID ${strainId}`);
                     // Store important strain data directly in the plant record for sync
-                    plant.strain = strain.name; // Ensure name is present
+                    plant.strain = strainObj.name; // Ensure name is present
                     
                     // If we have snake_case in the DB but camelCase in the app
                     if (!plant.strain_id && plant.strainId) {
@@ -416,12 +477,35 @@ export async function synchronizeWithServer(
                       console.log(`[Sync] Added strainId (${plant.strainId}) based on strain_id`);
                     }
                     
-                    await ensureStrainExistsForSync(strain);
+                    // Convert StrainObject to Strain format with proper field mapping
+                    const strainData = {
+                      id: strainObj.id,
+                      name: strainObj.name,
+                      description: strainObj.description,
+                      genetics: strainObj.genetics,
+                      type: strainObj.type,
+                      thc: strainObj.thc_content,
+                      cbd: strainObj.cbd_content,
+                      thc_percentage: strainObj.thc_content,
+                      cbd_percentage: strainObj.cbd_content,
+                      floweringTime: String(strainObj.flowering_time || ''),
+                      growDifficulty: strainObj.difficulty,
+                      yieldIndoor: strainObj.yield_indoor,
+                      yieldOutdoor: strainObj.yield_outdoor,
+                      effects: strainObj.effects,
+                      flavors: strainObj.flavors
+                    };
+                    
+                    // Normalize effects and flavors arrays and ensure proper typing
+                    const formattedStrain = normaliseStrainArrays(strainData);
+                    await ensureStrainExistsForSync(formattedStrain);
                   } else {
-                    console.warn(`[Sync] No strain found for ID ${strainId}, plant sync may fail`);
+                    console.warn(`[Sync] No strain found in WatermelonDB for ID ${strainId}, plant sync may fail`);
                   }
                 } catch (error) {
-                  console.error('[Sync] Error loading strain during sync:', error);
+                  console.error('[Sync] Error loading strain from WatermelonDB during sync:', error);
+                  // Don't treat this as a fatal error - continue with sync
+                  console.log('[Sync] Continuing with plant sync despite strain lookup error');
                 }
               }
             } else {
@@ -440,11 +524,14 @@ export async function synchronizeWithServer(
           }
 
           // Enhanced plant record logging for debugging strain_id synchronization
-          if (changes.plants) {
+          if ('plants' in changes && changes.plants) {
+            // Use type assertion to help TypeScript understand the structure
+            const plantChanges = changes.plants as SyncTableChangeSet;
+            
             // Log created plant records
-            if (changes.plants.created && changes.plants.created.length > 0) {
-              console.log(`[Sync Push] Processing ${changes.plants.created.length} new plant records`);
-              changes.plants.created.forEach(plant => {
+            if (plantChanges.created && plantChanges.created.length > 0) {
+              console.log(`[Sync Push] Processing ${plantChanges.created.length} new plant records`);
+              plantChanges.created.forEach((plant: Record<string, any>) => {
                 console.log(`[Plant Create] ID: ${plant.id}, Name: ${plant.name}, ` + 
                            `Strain: ${plant.strain || 'N/A'}, ` + 
                            `StrainId: ${plant.strainId || 'N/A'}, ` +
@@ -453,9 +540,9 @@ export async function synchronizeWithServer(
             }
             
             // Log updated plant records
-            if (changes.plants.updated && changes.plants.updated.length > 0) {
-              console.log(`[Sync Push] Processing ${changes.plants.updated.length} updated plant records`);
-              changes.plants.updated.forEach(plant => {
+            if (plantChanges.updated && plantChanges.updated.length > 0) {
+              console.log(`[Sync Push] Processing ${plantChanges.updated.length} updated plant records`);
+              plantChanges.updated.forEach((plant: Record<string, any>) => {
                 console.log(`[Plant Update] ID: ${plant.id}, Name: ${plant.name}, ` + 
                            `Strain: ${plant.strain || 'N/A'}, ` + 
                            `StrainId: ${plant.strainId || 'N/A'}, ` +
@@ -479,13 +566,29 @@ export async function synchronizeWithServer(
             // Use batch size from network-aware sync config
             const BATCH_SIZE = syncConfig.batchSize;
 
-            // Group tables by their priority for sync
+            // Group tables by their priority for sync and ensure they are valid table names
             const tablesToProcess = [...Object.keys(changes)]
               .filter((table) => syncConfig.tablesToSync.includes(table))
               .sort((a, b) => getPriorityForTable(b) - getPriorityForTable(a));
 
             for (const tableName of tablesToProcess) {
-              const tableChanges = changes[tableName] || { created: [], updated: [], deleted: [] };
+              // Create a safe typed reference to the table changes
+              const tableChanges: SyncTableChangeSet = { 
+                created: [], 
+                updated: [], 
+                deleted: [] 
+              };
+              
+              // Only access properties if they exist in the changes object
+              // Ensure type safety by type assertion and property checks
+              if (tableName in changes) {
+                const currentTable = (changes as Record<string, SyncTableChangeSet>)[tableName];
+                if (currentTable) {
+                  if (currentTable.created) tableChanges.created = currentTable.created;
+                  if (currentTable.updated) tableChanges.updated = currentTable.updated;
+                  if (currentTable.deleted) tableChanges.deleted = currentTable.deleted;
+                }
+              }
 
               // Apply strict validation before sanitizing records
               let validCreated = [];
@@ -493,7 +596,7 @@ export async function synchronizeWithServer(
 
               try {
                 // Validate created records
-                for (const record of tableChanges.created || []) {
+                for (const record of tableChanges.created || [] as Record<string, any>[]) {
                   try {
                     if (typeof record !== 'object' || !record || Array.isArray(record)) {
                       console.warn(`[Push] Invalid created record in ${tableName}: Not an object`);
@@ -521,7 +624,7 @@ export async function synchronizeWithServer(
                 }
 
                 // Validate updated records
-                for (const record of tableChanges.updated || []) {
+                for (const record of tableChanges.updated || [] as Record<string, any>[]) {
                   try {
                     if (typeof record !== 'object' || !record || Array.isArray(record)) {
                       console.warn(`[Push] Invalid updated record in ${tableName}: Not an object`);
@@ -561,7 +664,8 @@ export async function synchronizeWithServer(
                 sanitizedCreated = [];
                 sanitizedUpdated = [];
                 for (const record of validCreated) {
-                  const validatedPlantRecord = validatePlantRecord(record);
+                  // Type assertion: DirtyRaw should contain the plant data with id and name
+                  const validatedPlantRecord = await validatePlantRecord(record as any, database, strainCache);
                   // Ensure strain exists before syncing plant
                   await ensureStrainForPlantRecord(validatedPlantRecord);
                   const sanitized = sanitizeRecord(validatedPlantRecord, tableName);
@@ -570,22 +674,23 @@ export async function synchronizeWithServer(
                   sanitizedCreated.push(sanitized);
                 }
                 for (const record of validUpdated) {
-                  const validatedPlantRecord = validatePlantRecord(record);
+                  // Type assertion: DirtyRaw should contain the plant data with id and name
+                  const validatedPlantRecord = await validatePlantRecord(record as any, database, strainCache);
                   await ensureStrainForPlantRecord(validatedPlantRecord);
                   const sanitized = sanitizeRecord(validatedPlantRecord, tableName);
                   console.log('[Sync] Outgoing plant payload (updated):', JSON.stringify(sanitized, null, 2));
                   sanitizedUpdated.push(sanitized);
                 }
               } else {
-                sanitizedCreated = validCreated.map((record) => sanitizeRecord(record, tableName));
-                sanitizedUpdated = validUpdated.map((record) => sanitizeRecord(record, tableName));
+                sanitizedCreated = validCreated.map((record: Record<string, any>) => sanitizeRecord(record, tableName));
+                sanitizedUpdated = validUpdated.map((record: Record<string, any>) => sanitizeRecord(record, tableName));
               }
-              const sanitizedDeleted = (tableChanges.deleted || []).map((id) => ({ id }));
+              const sanitizedDeleted = (tableChanges.deleted || []).map((id: string) => ({ id }));
 
               // Skip media-heavy content if configured
               if (!syncConfig.includeMedia) {
                 // Simplify media fields to reduce payload size
-                for (const record of [...sanitizedCreated, ...sanitizedUpdated]) {
+                for (const record of [...sanitizedCreated, ...sanitizedUpdated] as Record<string, any>[]) {
                   // Handle common media field patterns
                   if (record.images && Array.isArray(record.images) && record.images.length > 0) {
                     // Just keep references, not actual base64 data
@@ -703,6 +808,13 @@ export async function synchronizeWithServer(
             }
 
             console.log('Push completed successfully');
+            
+            // Log strain cache statistics for performance monitoring
+            const totalQueries = cacheHits + cacheMisses;
+            if (totalQueries > 0) {
+              console.log(`[Sync] Strain cache stats: ${cacheHits} hits, ${cacheMisses} misses (${((cacheHits / totalQueries) * 100).toFixed(1)}% hit rate)`);
+              console.log(`[Sync] Cached ${strainCache.size} unique strains, saved ${cacheHits} database queries`);
+            }
           } catch (error) {
             console.error('Error during pushChanges:', error);
             throw error;

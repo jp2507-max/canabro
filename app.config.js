@@ -57,8 +57,10 @@ export default {
       },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera',
-        NSMicrophoneUsageDescription: 'Allow $(PRODUCT_NAME) to access your microphone',
+        NSCameraUsageDescription: 'This app needs camera access to take photos of your plants for tracking and identification purposes.',
+        NSMicrophoneUsageDescription: 'This app may need microphone access for video recording features.',
+        NSPhotoLibraryUsageDescription: 'This app needs access to your photo library to select existing photos of your plants for tracking and identification purposes.',
+        NSPhotoLibraryAddUsageDescription: 'This app needs permission to save photos of your plants to your photo library.',
         UIBackgroundModes: ['fetch', 'processing'],
       },
       associatedDomains: ['applinks:YOUR_APP_LINK_DOMAIN'],
@@ -69,6 +71,11 @@ export default {
         backgroundColor: '#ffffff',
       },
       package: 'com.canabro.app',
+      permissions: [
+        'android.permission.CAMERA',
+        'android.permission.READ_MEDIA_IMAGES', // Android 13+
+        'android.permission.READ_EXTERNAL_STORAGE', // Android 12 and below
+      ],
     },
     extra: {
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,

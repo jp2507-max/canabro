@@ -33,6 +33,7 @@ export default function DiagnosisContainer() {
   const loadingRotation = useSharedValue(0);
 
   React.useEffect(() => {
+    // Start companion animations only once
     companionY.value = withRepeat(
       withTiming(-10, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
       -1,
@@ -43,12 +44,24 @@ export default function DiagnosisContainer() {
       -1,
       true
     );
+
+    // Cleanup function to stop animations
+    return () => {
+      companionY.value = withTiming(0);
+      companionScale.value = withTiming(1);
+      loadingRotation.value = withTiming(0);
+    };
+  }, []);
+
+  React.useEffect(() => {
     if (isAnalyzing) {
       loadingRotation.value = withRepeat(
         withTiming(360, { duration: 1500, easing: Easing.linear }),
         -1,
         false
       );
+    } else {
+      loadingRotation.value = withTiming(0);
     }
   }, [isAnalyzing]);
 

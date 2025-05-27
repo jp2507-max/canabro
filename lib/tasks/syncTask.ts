@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
+import { Platform } from 'react-native';
 
 // Import the singleton database instance and the sync function
 import database from '../database/database';
@@ -25,73 +26,95 @@ export async function setLastActiveUserId(userId: string | null): Promise<void> 
   }
 }
 
-// Define the background task
-TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
-  const now = new Date();
-  console.log(`[${BACKGROUND_SYNC_TASK}] Task executing at: ${now.toISOString()}`);
-
+// Check if background task functionality is available
+function isBackgroundTaskAvailable(): boolean {
   try {
-    // 1. Check network connectivity
-    const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected || !netInfo.isInternetReachable) {
-      console.log(`[${BACKGROUND_SYNC_TASK}] No internet connection. Skipping sync.`);
-      return BackgroundTask.BackgroundTaskResult.NoData; 
-    }
-
-    // 2. Get the last active user ID
-    const userId = await AsyncStorage.getItem(LAST_USER_ID_KEY);
-    if (!userId) {
-      console.log(`[${BACKGROUND_SYNC_TASK}] No active user ID found. Skipping sync.`);
-      return BackgroundTask.BackgroundTaskResult.NoData;
-    }
-
-    // 3. Check if we have any changes to sync
-    const hasChanges = await checkUnsyncedChanges(database);
-    if (!hasChanges) {
-      console.log(`[${BACKGROUND_SYNC_TASK}] No unsynced changes. Skipping sync.`);
-      return BackgroundTask.BackgroundTaskResult.NoData;
-    }
-
-    console.log(
-      `[${BACKGROUND_SYNC_TASK}] Network online, User ID found: ${userId}. Attempting sync...`
+    // Check if the native module is available
+    return (
+      !!BackgroundTask && 
+      typeof BackgroundTask?.registerTaskAsync === 'function' &&
+      Platform.OS !== 'web'
     );
-
-    // 4. Perform the synchronization
-    // Note: synchronizeWithServer already includes mutex locking
-    const syncSuccess = await synchronizeWithServer(database, userId);
-
-    if (syncSuccess) {
-      console.log(`[${BACKGROUND_SYNC_TASK}] Sync successful.`);
-      return BackgroundTask.BackgroundTaskResult.NewData;
-    } else {
-      console.warn(`[${BACKGROUND_SYNC_TASK}] Sync failed.`);
-      // Depending on the reason for failure, you might return Failed or NoData
-      // If it failed due to temporary issues (like server down), Failed might be better
-      // If it failed because sync wasn't needed or due to concurrency lock, NoData is fine
-      return BackgroundTask.BackgroundTaskResult.Failed; // Indicate failure
-    }
   } catch (error) {
-    console.error(`[${BACKGROUND_SYNC_TASK}] Error during background sync:`, error);
-    return BackgroundTask.BackgroundTaskResult.Failed;
+    console.warn('[SyncTask] Background task not available:', error);
+    return false;
   }
-});
+}
+
+// Define the background task with error handling
+if (isBackgroundTaskAvailable()) {
+  try {
+    TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
+      const now = new Date();
+      console.log(`[${BACKGROUND_SYNC_TASK}] Task executing at: ${now.toISOString()}`);
+
+      try {
+        // 1. Check network connectivity
+        const netInfo = await NetInfo.fetch();
+        if (!netInfo.isConnected || netInfo.isInternetReachable === false) {
+          console.log(`[${BACKGROUND_SYNC_TASK}] No internet connection. Skipping sync.`);
+          return BackgroundTask.BackgroundTaskResult.Success;
+        }
+
+        // 2. Get the last active user ID
+        const userId = await AsyncStorage.getItem(LAST_USER_ID_KEY);
+        if (!userId) {
+          console.log(`[${BACKGROUND_SYNC_TASK}] No active user ID found. Skipping sync.`);
+          return BackgroundTask.BackgroundTaskResult.Success;
+        }
+
+        // 3. Check if we have any changes to sync
+        const hasChanges = await checkUnsyncedChanges(database);
+        if (!hasChanges) {
+          console.log(`[${BACKGROUND_SYNC_TASK}] No unsynced changes. Skipping sync.`);
+          return BackgroundTask.BackgroundTaskResult.Success;
+        }
+
+        console.log(
+          `[${BACKGROUND_SYNC_TASK}] Network online, User ID found: ${userId}. Attempting sync...`
+        );
+
+        // 4. Perform the synchronization
+        // Note: synchronizeWithServer already includes mutex locking
+        const syncSuccess = await synchronizeWithServer(database, userId);
+
+        if (syncSuccess) {
+          console.log(`[${BACKGROUND_SYNC_TASK}] Sync successful.`);
+          return BackgroundTask.BackgroundTaskResult.Success;
+        } else {
+          console.warn(`[${BACKGROUND_SYNC_TASK}] Sync failed.`);
+          return BackgroundTask.BackgroundTaskResult.Failed;
+        }
+      } catch (error) {
+        console.error(`[${BACKGROUND_SYNC_TASK}] Error during background sync:`, error);
+        return BackgroundTask.BackgroundTaskResult.Failed;
+      }
+    });
+  } catch (error) {
+    console.error('[SyncTask] Failed to define background task:', error);
+  }
+} else {
+  console.warn('[SyncTask] Background tasks not available - task definition skipped');
+}
 
 // Helper function to register the background task
 export async function registerBackgroundSyncAsync(): Promise<void> {
   try {
+    // Check if background task is available before proceeding
+    if (!isBackgroundTaskAvailable()) {
+      console.warn('[SyncTask] Background task not available on this platform or configuration');
+      return;
+    }
+
     // Check if the task is already registered
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
     if (isRegistered) {
       console.log(`[${BACKGROUND_SYNC_TASK}] Task already registered.`);
-      // Optionally unregister first if you need to update settings
-      // await BackgroundTask.unregisterTaskAsync(BACKGROUND_SYNC_TASK);
-      // console.log(`[${BACKGROUND_SYNC_TASK}] Unregistered existing task.`);
+      return;
     }
 
     await BackgroundTask.registerTaskAsync(BACKGROUND_SYNC_TASK, {
       minimumInterval: 15 * 60, // 15 minutes
-      // stopOnTerminate: false, // Removed: Not a valid option for expo-background-task
-      // startOnBoot: true, // Removed: Not a valid option for expo-background-task
     });
     console.log(`[${BACKGROUND_SYNC_TASK}] Task registered successfully.`);
 
@@ -106,12 +129,18 @@ export async function registerBackgroundSyncAsync(): Promise<void> {
     }
   } catch (error) {
     console.error(`[${BACKGROUND_SYNC_TASK}] Failed to register task:`, error);
+    // Don't throw the error, just log it to prevent app crashes
   }
 }
 
 // Helper function to unregister the background task
 export async function unregisterBackgroundSyncAsync(): Promise<void> {
   try {
+    if (!isBackgroundTaskAvailable()) {
+      console.warn('[SyncTask] Background task not available for unregistration');
+      return;
+    }
+
     await BackgroundTask.unregisterTaskAsync(BACKGROUND_SYNC_TASK);
     console.log(`[${BACKGROUND_SYNC_TASK}] Task unregistered successfully.`);
   } catch (error) {

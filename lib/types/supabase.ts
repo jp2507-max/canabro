@@ -8,9 +8,6 @@ export interface SupabaseStrain {
   description: string | null;
   effects: string[] | null; // Assuming jsonb will be parsed as string[] in the app
   flavors: string[] | null; // Assuming jsonb will be parsed as string[] in the app
-  terpenes: string[] | null; // Assuming jsonb will be parsed as string[] in the app
-  parents: string[] | null; // Assuming jsonb will be parsed as string[] in the app
-  origin: string[] | null; // Assuming jsonb will be parsed as string[] in the app
   flowering_time: number | null;
   grow_difficulty: string | null;
   genetics: string | null;
