@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image } from 'react-native';
 
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 /**
  * UserAvatar component for displaying user avatar with optional verification badge
@@ -32,7 +32,7 @@ export default function UserAvatar({
             borderWidth: 1.5,
             borderColor: theme.colors.neutral[50],
           }}>
-          <Ionicons name="checkmark" size={size / 5} color="white" />
+          <OptimizedIcon name="checkmark" size={size / 5} color="white" />
         </ThemedView>
       )}
     </ThemedView>

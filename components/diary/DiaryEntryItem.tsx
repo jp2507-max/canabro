@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import dayjs from 'dayjs'; // For date formatting
 import React from 'react';
 import { View } from 'react-native';
@@ -110,11 +110,11 @@ export default function DiaryEntryItem({ entry }: DiaryEntryItemProps) {
         <View className="mb-2 flex-row items-center justify-between">
           {/* Type Icon and Label */}
           <View className="flex-row items-center">
-            <MaterialCommunityIcons
+            <OptimizedIcon
               name={icon as any}
               size={18}
               color={iconColor}
-              className="mr-2"
+              style={{ marginRight: 8 }}
             />
             <ThemedText className="font-semibold">{label}</ThemedText>
           </View>

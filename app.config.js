@@ -34,6 +34,20 @@ export default {
             extraPodspecDependencies: {
               simdjson: '../node_modules/@nozbe/simdjson',
             },
+            // iOS Performance Optimizations
+            bundler: 'metro',
+            newArchEnabled: true,
+            // Optimize for App Store submission
+            privacyManifestPath: './ios-privacy-manifest.json',
+          },
+          android: {
+            minSdkVersion: 23,
+            compileSdkVersion: 34,
+            targetSdkVersion: 34,
+            buildToolsVersion: '34.0.0',
+            packagingOptions: {
+              pickFirst: ['**/libc++_shared.so', '**/libjsc.so'],
+            },
           },
         },
       ],

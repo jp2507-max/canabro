@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
 'use client';
 
-import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { decode } from 'base64-arraybuffer';
@@ -28,6 +27,7 @@ import { z } from 'zod';
 import { StrainAutocomplete } from '../StrainAutocomplete'; // Component is in the parent directory
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { searchStrainsByName } from '@/lib/data/strains';
 import { useDatabase } from '@/lib/hooks/useDatabase';
@@ -721,10 +721,9 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     const currentValue = watch(fieldName);
 
     return (
-      <>
-        <TouchableOpacity onPress={() => setModalVisible(true)} style={[styles.pickerButton, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>
+      <>        <TouchableOpacity onPress={() => setModalVisible(true)} style={[styles.pickerButton, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>
           <ThemedText style={{color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800]}}>{currentValue ? String(currentValue) : `Select ${title}`}</ThemedText>
-          <Ionicons name="chevron-down" size={20} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
+          <OptimizedIcon name="chevron-down" size={20} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
         </TouchableOpacity>
         {errors[fieldName] && <ThemedText style={styles.errorText}>{errors[fieldName]?.message}</ThemedText>}
         <Modal
@@ -759,9 +758,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     const currentValue = watch('location_description');
     return (
       <>
-        <TouchableOpacity onPress={() => setShowLocationModal(true)} style={[styles.pickerButton, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>
-          <ThemedText style={{color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800]}}>{currentValue || 'Select Location'}</ThemedText>
-          <Ionicons name="chevron-down" size={20} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
+        <TouchableOpacity onPress={() => setShowLocationModal(true)} style={[styles.pickerButton, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>          <ThemedText style={{color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800]}}>{currentValue || 'Select Location'}</ThemedText>
+          <OptimizedIcon name="chevron-down" size={20} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
         </TouchableOpacity>
         {errors.location_description && <ThemedText style={styles.errorText}>{errors.location_description.message}</ThemedText>}
         <Modal
@@ -850,27 +848,24 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           <ThemedView style={styles.imagePickerContainer}>
             {imagePreviewUri ? (
               <Image source={{ uri: imagePreviewUri }} style={[styles.imagePreview, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300]}]} />
-            ) : (
-              <ThemedView style={[styles.imagePlaceholder, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>
+            ) : (              <ThemedView style={[styles.imagePlaceholder, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>
 
-                <Ionicons name="image-outline" size={50} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
+                <OptimizedIcon name="image-outline" size={50} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
               </ThemedView>
             )}
             <ThemedView style={styles.imageButtonsContainer}>
               <TouchableOpacity 
                 style={[styles.button, styles.imageButton, { backgroundColor: theme.colors.primary[500] }]} 
-                onPress={pickImage}
-                disabled={processingImage}
+                onPress={pickImage}                disabled={processingImage}
               >
-                <Ionicons name="images-outline" size={20} color={theme.colors.neutral[50]} />
+                <OptimizedIcon name="images-outline" size={20} color={theme.colors.neutral[50]} />
                 <ThemedText style={[styles.buttonText, { color: theme.colors.neutral[50] }]}>Gallery</ThemedText>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.button, styles.imageButton, { backgroundColor: theme.colors.primary[500] }]} 
-                onPress={takePhoto}
-                disabled={processingImage}
+                onPress={takePhoto}                disabled={processingImage}
               >
-                <Ionicons name="camera-outline" size={20} color={theme.colors.neutral[50]} />
+                <OptimizedIcon name="camera-outline" size={20} color={theme.colors.neutral[50]} />
                 <ThemedText style={[styles.buttonText, { color: theme.colors.neutral[50] }]}>Camera</ThemedText>
               </TouchableOpacity>
             </ThemedView>
@@ -879,10 +874,9 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                     style={styles.removeImageButton}
                     onPress={() => {
                         setImagePreviewUri(null);
-                        setValue('image_url', null, { shouldDirty: true });
-                    }}
+                        setValue('image_url', null, { shouldDirty: true });                    }}
                 >
-                    <Ionicons name="close-circle" size={24} color={theme.colors.status.danger} />
+                    <OptimizedIcon name="close-circle" size={24} color={theme.colors.status.danger} />
                 </TouchableOpacity>
             )}
             {(uploadingImage || processingImage) && (
@@ -940,9 +934,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                       borderRadius: 8,
                       backgroundColor: isDarkMode ? 'rgba(79, 70, 229, 0.1)' : 'rgba(79, 70,229, 0.05)',
                     }}
-                  >
-                    <ThemedView style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                      <Ionicons 
+                  >                    <ThemedView style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                      <OptimizedIcon 
                         name={selectedStrain.type?.toLowerCase().includes('indica') ? 'moon-outline' : 
                               selectedStrain.type?.toLowerCase().includes('sativa') ? 'sunny-outline' : 'leaf-outline'} 
                         size={16} 
@@ -983,10 +976,9 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             control={control}
             name="planted_date"
             render={({ field: { value, onChange: onDateChange } }) => ( // Renamed onChange to onDateChange to avoid conflict
-              <>
-                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.datePickerButton, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>
+              <>                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.datePickerButton, { borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300] }]}>
                   <ThemedText style={{color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[800]}}>{format(value || new Date(), 'PPP')}</ThemedText>
-                  <Ionicons name="calendar-outline" size={24} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
+                  <OptimizedIcon name="calendar-outline" size={24} color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]} />
                 </TouchableOpacity>
                 {showDatePicker && (
                   <DateTimePicker

@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 /**
  * TopicTag component for displaying topic/hashtag badges
@@ -32,7 +32,7 @@ export default function TopicTag({
             : 'rgba(220, 252, 231, 0.7)', // Light mint green background for better contrast
       }}
       onTouchEnd={onPress}>
-      <Ionicons
+      <OptimizedIcon
         name="pricetag-outline"
         size={14}
         color={isActive ? 'white' : theme.colors.primary[isDarkMode ? 300 : 600]}

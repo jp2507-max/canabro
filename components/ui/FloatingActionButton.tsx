@@ -1,13 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { TouchableOpacity, GestureResponderEvent } from 'react-native';
 
 import { useTheme } from '../../lib/contexts/ThemeContext';
+import { OptimizedIcon, type IconName } from './OptimizedIcon';
 
 interface FloatingActionButtonProps {
   onPress: () => void;
   onLongPress?: (event: GestureResponderEvent) => void;
-  iconName?: string;
+  iconName?: IconName;
   accessibilityLabel?: string;
   testID?: string;
   size?: number;
@@ -40,7 +40,7 @@ export function FloatingActionButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       testID={testID}>
-      <Ionicons name={iconName as any} size={size * 0.54} color="white" />
+      <OptimizedIcon name={iconName} size={size * 0.54} color="white" />
     </TouchableOpacity>
   );
 }

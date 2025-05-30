@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { BlurView as ExpoBlurView } from 'expo-blur';
 import React from 'react';
 import { Modal, ScrollView, View, TouchableOpacity } from 'react-native';
 
+import { OptimizedIcon } from './OptimizedIcon';
 import ThemedText from './ThemedText';
 import ThemedView from './ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
@@ -38,7 +38,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
             Add New Plant
           </ThemedText>
           <TouchableOpacity onPress={onClose}>
-            <Ionicons
+            <OptimizedIcon
               name="close"
               size={24}
               color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]}

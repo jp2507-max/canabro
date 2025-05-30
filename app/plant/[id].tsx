@@ -1,4 +1,3 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Database } from '@nozbe/watermelondb';
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
 import dayjs from 'dayjs'; // For date formatting
@@ -17,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // NEW IMPORTS for sub-components
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import { PlantHeroImage } from '../../components/plant-detail/PlantHeroImage';
 import { PlantHeader } from '../../components/plant-detail/PlantHeader';
 import { PlantInfoCard } from '../../components/plant-detail/PlantInfoCard';
@@ -125,13 +125,13 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
           className="rounded-full bg-black/40 p-2.5 shadow-md"
           onPress={() => router.back()}
           accessibilityLabel="Go back">
-          <Ionicons name="arrow-back" size={26} color="white" />
+          <OptimizedIcon name="arrow-back" size={26} color="white" />
         </TouchableOpacity>
         <TouchableOpacity
           className="rounded-full bg-black/40 p-2.5 shadow-md"
           onPress={() => router.push(`/plant/${plant.id}/edit`)}
           accessibilityLabel="Edit plant details">
-          <Ionicons name="pencil" size={24} color="white" />
+          <OptimizedIcon name="pencil" size={24} color="white" />
         </TouchableOpacity>
       </ThemedView>
 
@@ -231,8 +231,8 @@ export default function PlantDetailsWrapper() {
         className="flex-1 items-center justify-center p-4"
         lightClassName="bg-neutral-50"
         darkClassName="bg-neutral-900">
-        <Ionicons
-          name="alert-circle-outline"
+        <OptimizedIcon
+          name="help-circle-outline"
           size={48}
           color={isDarkMode ? themeColors.status.warning : themeColors.status.warning}
         />

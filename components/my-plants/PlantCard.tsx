@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import React from 'react';
 import { View, Pressable } from 'react-native';
@@ -13,6 +12,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'; // Impo
 import * as Haptics from 'expo-haptics'; // Import Haptics
 import ThemedText from '../ui/ThemedText'; // Adjusted path
 import { useTheme } from '../../lib/contexts/ThemeContext'; // Adjusted path
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 const placeholderImageSource = require('../../assets/images/placeholder.png');
 
@@ -166,27 +166,27 @@ export function PlantCard({ plant, onPress }: PlantCardProps) {
               </ThemedText>
             </View>
             <View className="pt-1">
-              <Ionicons name="chevron-forward-outline" size={22} color={isDarkMode ? '#A3A3A3' : '#737373'} />
+              <OptimizedIcon name="chevron-forward-outline" size={22} color={isDarkMode ? '#A3A3A3' : '#737373'} />
             </View>
           </View>
 
           <View className="flex-row justify-between items-center space-x-2">
             <View className="flex-row items-center bg-neutral-100 dark:bg-neutral-700/60 py-1.5 px-2.5 rounded-lg flex-1 justify-start space-x-1.5">
-              <Ionicons name="heart-outline" size={16} color={iconColor} />
+              <OptimizedIcon name="heart-outline" size={16} color={iconColor} />
               <ThemedText className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
                 {plant.healthPercentage}%
               </ThemedText>
             </View>
 
             <View className="flex-row items-center bg-neutral-100 dark:bg-neutral-700/60 py-1.5 px-2.5 rounded-lg flex-1 justify-start space-x-1.5">
-              <Ionicons name="water-outline" size={16} color={iconColor} />
+              <OptimizedIcon name="water-outline" size={16} color={iconColor} />
               <ThemedText className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
                 {plant.nextWateringDays}d
               </ThemedText>
             </View>
 
             <View className="flex-row items-center bg-neutral-100 dark:bg-neutral-700/60 py-1.5 px-2.5 rounded-lg flex-1 justify-start space-x-1.5">
-              <Ionicons name="leaf-outline" size={16} color={iconColor} />
+              <OptimizedIcon name="leaf-outline" size={16} color={iconColor} />
               <ThemedText className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
                 {plant.nextNutrientDays}d
               </ThemedText>

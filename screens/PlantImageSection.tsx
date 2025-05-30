@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
@@ -6,6 +5,7 @@ import { ActivityIndicator, TouchableOpacity, Image, View, Alert, StyleSheet } f
 
 import ThemedText from '../components/ui/ThemedText';
 import ThemedView from '../components/ui/ThemedView';
+import { OptimizedIcon } from '../components/ui/OptimizedIcon';
 
 interface PlantImageSectionProps {
   initialImageUri?: string | null;
@@ -117,7 +117,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
           accessibilityLabel="Plant image preview"
         />
       ) : (
-        <Ionicons
+        <OptimizedIcon
           name="leaf-outline"
           size={96}
           color={isDarkMode ? theme.colors.primary[300] : theme.colors.primary[500]}

@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View } from 'react-native';
 
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 
 /**
  * Displays a labeled profile detail with optional icon and value(s).
@@ -13,7 +13,7 @@ import ThemedView from '../ui/ThemedView';
 export interface ProfileDetailProps {
   label: string;
   value?: string | string[] | null;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: IconName;
 }
 
 const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileDetail({
@@ -32,7 +32,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
       darkClassName="bg-neutral-800">
       <View className="mb-1.5 flex-row items-center">
         {icon && (
-          <Ionicons
+          <OptimizedIcon
             name={icon}
             size={18}
             color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[600]}

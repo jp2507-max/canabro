@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 
+import { OptimizedIcon, IconName } from './OptimizedIcon';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 
 interface StorageImageProps {
@@ -11,7 +11,7 @@ interface StorageImageProps {
   height?: number | string;
   borderRadius?: number;
   contentFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
-  fallbackIconName?: string;
+  fallbackIconName?: IconName;
   fallbackIconSize?: number;
   onPress?: () => void;
   accessibilityLabel?: string;
@@ -75,8 +75,8 @@ export default function StorageImage({
       return (
         <View
           style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-          <Ionicons
-            name={fallbackIconName as any} // Type assertion to fix TypeScript error
+          <OptimizedIcon
+            name={fallbackIconName}
             size={fallbackIconSize}
             color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
           />
@@ -100,12 +100,11 @@ export default function StorageImage({
           overflow: 'hidden',
           justifyContent: 'center', // Center fallback icon
           alignItems: 'center', // Center fallback icon
-        }}>
-        <Ionicons
-          name={fallbackIconName as any} // Type assertion to fix TypeScript error
-          size={fallbackIconSize}
-          color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
-        />
+        }}>          <OptimizedIcon
+            name={fallbackIconName}
+            size={fallbackIconSize}
+            color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
+          />
       </View>
     );
   }
@@ -122,7 +121,7 @@ export default function StorageImage({
       }}>
       <Image
         // Use the 'url' prop directly for the source URI after processing
-        source={{ uri: getProcessedUrl(url) }}
+        source={{ uri: getProcessedUrl(url) || undefined }}
         style={{ width: '100%', height: '100%' }}
         contentFit={contentFit}
         accessibilityLabel={accessibilityLabel}

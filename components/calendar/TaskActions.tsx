@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, View, TouchableOpacity } from 'react-native';
 
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 export interface TaskActionsProps {
   visible: boolean;
@@ -43,7 +43,7 @@ function TaskActions({
             onPress={navigateToAddTaskPlant}
             accessibilityRole="button"
             accessibilityLabel="Add task to plant">
-            <Ionicons
+            <OptimizedIcon
               name="leaf"
               size={22}
               color={theme.colors.primary[500]}
@@ -56,7 +56,7 @@ function TaskActions({
             onPress={navigateToAddTaskAll}
             accessibilityRole="button"
             accessibilityLabel="Add task to all plants">
-            <Ionicons
+            <OptimizedIcon
               name="layers-outline"
               size={22}
               color={theme.colors.primary[500]}
@@ -69,7 +69,7 @@ function TaskActions({
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="Close task actions">
-            <Ionicons name="close" size={24} color={theme.colors.neutral[400]} />
+            <OptimizedIcon name="close" size={24} color={theme.colors.neutral[400]} />
           </TouchableOpacity>
         </View>
       </View>

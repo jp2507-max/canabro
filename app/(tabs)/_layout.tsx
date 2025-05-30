@@ -1,10 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native'; // Keep Pressable
-
-// Import useAuth and UserAvatar
+import { View, ActivityIndicator } from 'react-native';
 
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 
 export default function TabsLayout() {
   // Protect all tab routes
@@ -32,14 +30,18 @@ export default function TabsLayout() {
         name="strains"
         options={{
           title: 'Strains',
-          tabBarIcon: ({ color, size }) => <Ionicons name="leaf" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <OptimizedIcon name="leaf" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="index"
         options={{
           // title: 'Home', // Title is hidden by headerShown: false
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <OptimizedIcon name="home" size={size} color={color} />
+          ),
           // headerRight is removed as header is hidden
         }}
       />
@@ -47,21 +49,27 @@ export default function TabsLayout() {
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <OptimizedIcon name="calendar" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="diagnosis"
         options={{
           title: 'Diagnosis',
-          tabBarIcon: ({ color, size }) => <Ionicons name="medkit" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <OptimizedIcon name="medkit" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="community"
         options={{
           // title: 'Community', // Title is hidden by headerShown: false
-          tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <OptimizedIcon name="people" size={size} color={color} />
+          ),
           // headerRight is removed as header is hidden
         }}
       />

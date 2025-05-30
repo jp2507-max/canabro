@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Alert, Image } from 'react-native';
 
@@ -229,7 +229,7 @@ export default function CommentItem({ comment, currentUserId, onReply }: Comment
             backgroundColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200],
           }}
           accessibilityLabel={`${userProfile.username}'s avatar`}>
-          <Ionicons
+          <OptimizedIcon
             name="person-circle-outline"
             size={24}
             color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]}
@@ -300,7 +300,7 @@ export default function CommentItem({ comment, currentUserId, onReply }: Comment
             className="mr-4 flex-row items-center"
             accessibilityLabel={isLiked ? 'Unlike comment' : 'Like comment'}
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-            <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={16} color={likeIconColor} />
+            <OptimizedIcon name={isLiked ? 'heart' : 'heart-outline'} size={16} color={likeIconColor} />
             {likesCount > 0 && (
               <ThemedText
                 className="ml-1 text-xs"
@@ -318,7 +318,7 @@ export default function CommentItem({ comment, currentUserId, onReply }: Comment
               className="mr-4 flex-row items-center"
               accessibilityLabel="Reply to comment"
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-              <Ionicons name="chatbubble-outline" size={16} color={actionTextColor} />
+              <OptimizedIcon name="chatbubble-outline" size={16} color={actionTextColor} />
               <ThemedText
                 className="ml-1 text-xs"
                 darkClassName="text-neutral-400"
@@ -335,7 +335,7 @@ export default function CommentItem({ comment, currentUserId, onReply }: Comment
               className="flex-row items-center"
               accessibilityLabel="Delete comment"
               hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-              <Ionicons name="trash-outline" size={16} color={actionTextColor} />
+              <OptimizedIcon name="trash-outline" size={16} color={actionTextColor} />
               <ThemedText
                 className="ml-1 text-xs"
                 darkClassName="text-neutral-400"

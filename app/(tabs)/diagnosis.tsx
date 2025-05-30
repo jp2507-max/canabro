@@ -1,4 +1,4 @@
-import { AntDesign, Feather } from '@expo/vector-icons';
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import { BlurView } from 'expo-blur';
 import React, { useState } from 'react';
 import {
@@ -165,7 +165,7 @@ export default function DiagnosisScreen() {
                 flexDirection: 'row',
                 minWidth: width * 0.7,
               }}>
-              <AntDesign name="camera" size={20} color="white" style={{ marginRight: 10 }} />
+              <OptimizedIcon name="camera" size={20} color="white" style={{ marginRight: 10 }} />
               <ThemedText className="text-base font-semibold text-white">Take a Photo</ThemedText>
             </TouchableOpacity>
           </ThemedView>
@@ -182,10 +182,10 @@ export default function DiagnosisScreen() {
               {/* Controls overlay */}
               <View style={styles.imageControls}>
                 <TouchableOpacity onPress={resetImage}>
-                  <AntDesign name="close" size={24} color="white" />
+                  <OptimizedIcon name="close" size={24} color="white" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleCameraToggle}>
-                  <AntDesign name="camera" size={24} color="white" />
+                  <OptimizedIcon name="camera" size={24} color="white" />
                 </TouchableOpacity>
               </View>
 
@@ -194,7 +194,7 @@ export default function DiagnosisScreen() {
                 <BlurView intensity={40} style={styles.analysisOverlay}>
                   <ThemedView className="items-center rounded-2xl bg-white/90 px-6 py-8 dark:bg-neutral-800/90">
                     <Animated.View style={loadingAnimatedStyle}>
-                      <AntDesign name="loading1" size={36} color={theme.colors.primary[500]} />
+                      <OptimizedIcon name="loading1" size={36} color={theme.colors.primary[500]} />
                     </Animated.View>
                     <ThemedText className="mt-4 text-lg font-medium">
                       Analyzing your plant...
@@ -276,7 +276,7 @@ export default function DiagnosisScreen() {
 
                   {diagnosisResult.details?.recommendations.map((rec, index) => (
                     <View key={index} className="mb-2 flex-row items-start">
-                      <Feather
+                      <OptimizedIcon
                         name="check-circle"
                         size={16}
                         color={theme.colors.primary[500]}

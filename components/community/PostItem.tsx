@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons'; // Added Ionicons & MaterialCommunityIcons
 import dayjs from 'dayjs'; // Using dayjs for relative time
 import relativeTime from 'dayjs/plugin/relativeTime'; // Import plugin
 import React from 'react';
@@ -10,6 +9,7 @@ import { useTheme } from '../../lib/contexts/ThemeContext';
 import StorageImage from '../ui/StorageImage';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 dayjs.extend(relativeTime); // Extend dayjs with the plugin
 
@@ -166,7 +166,7 @@ function PostItem({
           className="mr-5 flex-row items-center"
           accessibilityLabel="Like button"
           accessibilityRole="button">
-          <Ionicons
+          <OptimizedIcon
             name={post.user_has_liked ? 'heart' : 'heart-outline'}
             size={20}
             color={
@@ -193,7 +193,7 @@ function PostItem({
           className="flex-row items-center"
           accessibilityLabel="Comment on post"
           accessibilityRole="button">
-          <Ionicons
+          <OptimizedIcon
             name="chatbubble-outline"
             size={20}
             color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}

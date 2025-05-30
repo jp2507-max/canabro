@@ -1,6 +1,6 @@
 /**
  * Metro configuration for React Native and Expo
- * This file has been simplified to reduce maintenance overhead
+ * Optimized for iOS production builds with bundle size reduction
  * 
  * ⛔️ DO NOT DELETE - Enables ws compatibility in React Native
  */
@@ -59,11 +59,40 @@ config.resolver.extraNodeModules = {
 // Add specific module resolution priority
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 
-// Note: We're no longer using the custom transformer as our polyfill approach 
-// is more maintainable and doesn't require runtime transformations
-
-// Add specific aliases for ws package internals
+// iOS Bundle size optimization settings
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'cjs', 'mjs'];
+
+// Configure transformer optimizations for iOS production
+if (process.env.NODE_ENV === 'production') {
+  config.transformer = {
+    ...config.transformer,
+    minifierConfig: {
+      mangle: {
+        keep_fnames: false, // Mangle function names for smaller bundles
+      },
+      output: {
+        comments: false, // Remove comments in production
+      },
+      compress: {
+        drop_console: true, // Remove console.log statements
+        reduce_vars: true,
+        dead_code: true,
+      },
+    },
+    // Enable advanced optimizations for iOS
+    experimentalImportSupport: true,
+  };
+}
+
+// Bundle splitting configuration for better caching
+config.serializer = {
+  ...config.serializer,
+  customSerializer: config.serializer?.customSerializer,
+  // Enable more aggressive asset optimization
+  getRunModulePath() {
+    return require.resolve('./node_modules/react-native/Libraries/Core/InitializeCore');
+  },
+};
 
 // Apply the NativeWind wrapper to the modified configuration
 module.exports = wrapWithReanimatedMetroConfig(withNativeWind(config, {

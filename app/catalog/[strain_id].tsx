@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -144,7 +144,7 @@ export default function StrainDetailPage() {
     ) : null;
 
   const statChip = (
-    icon: JSX.Element,
+    icon: React.JSX.Element,
     label: string,
     value: string | number | undefined,
     bg: string,
@@ -204,7 +204,7 @@ export default function StrainDetailPage() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Go back">
-            <Ionicons name="arrow-back" size={22} color={isDarkMode ? '#fff' : '#18181b'} />
+            <OptimizedIcon name="arrow-back" size={22} color={isDarkMode ? '#fff' : '#18181b'} />
           </TouchableOpacity>
           <TouchableOpacity
             style={{
@@ -220,7 +220,7 @@ export default function StrainDetailPage() {
             accessibilityRole="button"
             accessibilityLabel={isStrainFavorite ? 'Remove from favorites' : 'Add to favorites'}
             disabled={favoriteLoading}>
-            <Ionicons
+            <OptimizedIcon
               name={isStrainFavorite ? 'heart' : 'heart-outline'}
               size={22}
               color={isStrainFavorite ? '#f43f5e' : '#a1a1aa'}
@@ -254,7 +254,7 @@ export default function StrainDetailPage() {
           <View className="mb-2 flex-row items-center">
             {strain.rating && (
               <View className="mr-2 flex-row items-center">
-                <Ionicons name="star" size={18} color="#fbbf24" />
+                <OptimizedIcon name="star" size={18} color="#fbbf24" />
                 <ThemedText className="ml-1 text-base font-semibold text-yellow-500">
                   {strain.rating.toFixed(1)}
                 </ThemedText>
@@ -269,77 +269,77 @@ export default function StrainDetailPage() {
           className="mb-2 px-6"
           contentContainerStyle={{ gap: 8 }}>
           {statChip(
-            <MaterialCommunityIcons name="leaf" size={16} color="#34d399" />,
+            <OptimizedIcon name="leaf" size={16} color="#34d399" />,
             'THC',
             strain.thc ?? undefined,
             'bg-green-100 dark:bg-green-900',
             'text-green-800 dark:text-green-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="leaf" size={16} color="#38bdf8" />,
+            <OptimizedIcon name="leaf" size={16} color="#38bdf8" />,
             'CBD',
             strain.cbd ?? undefined,
             'bg-blue-100 dark:bg-blue-900',
             'text-blue-800 dark:text-blue-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="flower" size={16} color="#f59e42" />,
+            <OptimizedIcon name="flower" size={16} color="#f59e42" />,
             'Flower',
             strain.floweringTime,
             'bg-yellow-100 dark:bg-yellow-900',
             'text-yellow-800 dark:text-yellow-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="sprout" size={16} color="#818cf8" />,
+            <OptimizedIcon name="sprout" size={16} color="#818cf8" />,
             'Difficulty',
             strain.growDifficulty,
             'bg-indigo-100 dark:bg-indigo-900',
             'text-indigo-800 dark:text-indigo-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="scale-balance" size={16} color="#fb7185" />,
+            <OptimizedIcon name="scale-balance" size={16} color="#fb7185" />,
             'Yield Indoor',
             strain.yieldIndoor ?? strain.yield_indoor,
             'bg-pink-100 dark:bg-pink-900',
             'text-pink-800 dark:text-pink-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="scale-balance" size={16} color="#fb7185" />,
+            <OptimizedIcon name="scale-balance" size={16} color="#fb7185" />,
             'Yield Outdoor',
             strain.yieldOutdoor ?? strain.yield_outdoor,
             'bg-pink-200 dark:bg-pink-800',
             'text-pink-900 dark:text-pink-200'
           )}
           {statChip(
-            <MaterialCommunityIcons name="arrow-expand-vertical" size={16} color="#14b8a6" />,
+            <OptimizedIcon name="arrow-expand-vertical" size={16} color="#14b8a6" />,
             'Height Indoor',
             strain.heightIndoor ?? strain.height_indoor,
             'bg-teal-100 dark:bg-teal-900',
             'text-teal-800 dark:text-teal-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="arrow-expand-vertical" size={16} color="#0ea5e9" />,
+            <OptimizedIcon name="arrow-expand-vertical" size={16} color="#0ea5e9" />,
             'Height Outdoor',
             strain.heightOutdoor ?? strain.height_outdoor,
             'bg-teal-200 dark:bg-teal-700',
             'text-teal-900 dark:text-teal-200'
           )}
           {statChip(
-            <MaterialCommunityIcons name="calendar-range" size={16} color="#a3e635" />,
+            <OptimizedIcon name="calendar-range" size={16} color="#a3e635" />,
             'Harvest (Outdoor)',
             strain.harvestTimeOutdoor ?? strain.harvest_time_outdoor,
             'bg-lime-100 dark:bg-lime-900',
             'text-lime-800 dark:text-lime-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="dna" size={16} color="#818cf8" />,
+            <OptimizedIcon name="dna" size={16} color="#818cf8" />,
             'Genetics',
             strain.genetics,
             'bg-blue-100 dark:bg-blue-900',
             'text-blue-800 dark:text-blue-300'
           )}
           {statChip(
-            <MaterialCommunityIcons name="flower-outline" size={16} color="#f472b6" />,
+            <OptimizedIcon name="flower-outline" size={16} color="#f472b6" />,
             'Flowering Type',
             strain.floweringType ?? strain.flowering_type,
             'bg-pink-100 dark:bg-pink-900',
@@ -366,7 +366,7 @@ export default function StrainDetailPage() {
                 lightClassName="text-neutral-800"
                 darkClassName="text-neutral-100">
                 Description
-                <Ionicons
+                <OptimizedIcon
                   name={descExpanded ? 'chevron-up' : 'chevron-down'}
                   size={18}
                   color={isDarkMode ? '#fff' : '#18181b'}
@@ -400,7 +400,7 @@ export default function StrainDetailPage() {
                 lightClassName="text-neutral-800"
                 darkClassName="text-neutral-100">
                 Growing Tips
-                <Ionicons
+                <OptimizedIcon
                   name={tipsExpanded ? 'chevron-up' : 'chevron-down'}
                   size={18}
                   color={isDarkMode ? '#fff' : '#18181b'}
@@ -452,7 +452,7 @@ export default function StrainDetailPage() {
                 const sourceUrl = strain.link || strain.url;
                 if (sourceUrl) Linking.openURL(sourceUrl);
               }}>
-              <Ionicons name="globe-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <OptimizedIcon name="globe-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
               <ThemedText className="text-base font-semibold text-white">
                 Visit Official Website
               </ThemedText>

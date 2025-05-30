@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 
 /**
  * Displays a profile statistic with an icon, value, and label.
@@ -12,7 +12,7 @@ import ThemedView from '../ui/ThemedView';
 export interface StatItemProps {
   value: number | string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }
 
 const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({ value, label, icon }) {
@@ -22,7 +22,7 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({ value, 
       className="mx-1.5 flex-1 items-center rounded-lg p-3"
       lightClassName="bg-neutral-100"
       darkClassName="bg-neutral-800">
-      <Ionicons
+      <OptimizedIcon
         name={icon}
         size={22}
         color={isDarkMode ? theme.colors.primary[300] : theme.colors.primary[700]}

@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 import React from 'react';
 import { TouchableOpacity, FlatList } from 'react-native';
 
@@ -22,7 +22,7 @@ export type DiaryEntryType =
 interface EntryTypeOption {
   type: DiaryEntryType;
   label: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  icon: IconName;
   iconColor?: string; // Optional specific color
 }
 
@@ -59,13 +59,13 @@ export default function EntryTypeSelector({ onSelectType }: EntryTypeSelectorPro
       style={{
         backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100],
       }}>
-      <MaterialCommunityIcons
+      <OptimizedIcon
         name={item.icon}
         size={24}
         color={
           item.iconColor || (isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700])
         }
-        className="mr-4"
+        style={{ marginRight: 16 }}
       />
       <ThemedText className="text-base">{item.label}</ThemedText>
     </TouchableOpacity>

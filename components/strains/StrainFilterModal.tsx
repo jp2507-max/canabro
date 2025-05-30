@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Modal, View, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +6,7 @@ import { useTheme } from '../../lib/contexts/ThemeContext';
 import { StrainSpecies, StrainEffectType, StrainFlavorType } from '../../lib/types/strain'; // Assuming these enums/types exist
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 // Define the structure for active filters
 export interface ActiveFilters {
@@ -209,7 +209,7 @@ export default function StrainFilterModal({
             onPress={onClose}
             accessibilityLabel="Close filters"
             accessibilityRole="button">
-            <Ionicons name="close" size={28} color={theme.colors.neutral[isDarkMode ? 100 : 900]} />
+            <OptimizedIcon name="close" size={28} color={theme.colors.neutral[isDarkMode ? 100 : 900]} />
           </Pressable>
           <ThemedText className="text-xl font-bold">Filters</ThemedText>
           <Pressable

@@ -1,7 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, View, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+
+import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
@@ -13,7 +14,7 @@ interface PlantActionsProps {
 }
 
 interface ActionItemProps {
-  iconName: keyof typeof Ionicons.glyphMap;
+  iconName: IconName;
   label: string;
   onPress: () => void;
   isDarkMode: boolean;
@@ -44,8 +45,7 @@ function ActionItem({
     <TouchableOpacity
       className="flex-row items-center py-3.5"
       onPress={onPress}
-      accessibilityLabel={label}>
-      <Ionicons name={iconName} size={24} color={iconColor} />
+      accessibilityLabel={label}>      <OptimizedIcon name={iconName} size={24} color={iconColor} />
       <ThemedText className={`ml-4 text-lg ${textColor}`}>{label}</ThemedText>
       {subLabel && (
         <ThemedText
@@ -54,13 +54,12 @@ function ActionItem({
           darkClassName="text-neutral-500">
           {subLabel}
         </ThemedText>
-      )}
-      {!isDestructive && !subLabel && (
-        <Ionicons
+      )}      {!isDestructive && !subLabel && (
+        <OptimizedIcon
           name="chevron-forward"
           size={22}
           color={isDarkMode ? themeColors.neutral[400] : themeColors.neutral[500]}
-          className="ml-auto"
+          style={{ marginLeft: 'auto' }}
         />
       )}
     </TouchableOpacity>

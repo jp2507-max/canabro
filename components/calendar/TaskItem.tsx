@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { withObservables } from '@nozbe/watermelondb/react';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
@@ -7,6 +6,7 @@ import { useTheme } from '../../lib/contexts/ThemeContext';
 import { Plant } from '../../lib/models/Plant';
 import { PlantTask } from '../../lib/models/PlantTask';
 import ThemedText from '../ui/ThemedText';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 export interface TaskItemProps {
   task: PlantTask;
@@ -58,7 +58,7 @@ function TaskItemBase({
       }}
       accessibilityRole="button"
       accessibilityLabel={`Open task for ${plant?.name || 'plant'}`}>
-      <Ionicons
+      <OptimizedIcon
         name="leaf"
         size={24}
         color={theme.colors.primary[500]}
@@ -76,7 +76,7 @@ function TaskItemBase({
           style={{ marginLeft: 8 }}
           accessibilityRole="button"
           accessibilityLabel="Mark task as completed">
-          <Ionicons name="checkmark-circle" size={28} color={theme.colors.primary[400]} />
+          <OptimizedIcon name="checkmark-circle" size={28} color={theme.colors.primary[400]} />
         </TouchableOpacity>
       )}
     </TouchableOpacity>

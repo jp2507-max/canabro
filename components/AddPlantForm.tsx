@@ -1,6 +1,6 @@
 'use client';
 
-import { Ionicons } from '@expo/vector-icons';
+import { OptimizedIcon } from './ui/OptimizedIcon';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { decode } from 'base64-arraybuffer';
@@ -847,7 +847,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                   alignItems: 'center'
                 }}
               >
-                <Ionicons name="add-circle-outline" size={18} color={theme.colors.neutral[900]} />
+                <OptimizedIcon name="add-circle-outline" size={18} color={theme.colors.neutral[900]} />
                 <ThemedText style={{ color: theme.colors.neutral[900], marginLeft: 5 }}>Other...</ThemedText>
               </TouchableOpacity>
             </View>

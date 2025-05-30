@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { decode } from 'base64-arraybuffer'; // Import decode from base64-arraybuffer
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
@@ -25,6 +24,7 @@ import { createPost } from '../../lib/services/community-service'; // Import cre
 import supabase from '../../lib/supabase'; // Import supabase client
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 type CreatePostScreenProps = {
   visible: boolean;
@@ -318,13 +318,13 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
               {/* Icon Group - Using gap for precise spacing */}
               <View className="flex-row items-center" style={{ gap: 15 }}>
                 <TouchableOpacity onPress={handleTakePhoto} hitSlop={10}>
-                  <Ionicons name="camera-outline" size={28} color={iconColor} />
+                  <OptimizedIcon name="camera-outline" size={28} color={iconColor} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handlePickImage} hitSlop={10}>
-                  <Ionicons name="images-outline" size={28} color={iconColor} />
+                  <OptimizedIcon name="images-outline" size={28} color={iconColor} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleGetLocation} hitSlop={10}>
-                  <Ionicons name="location-outline" size={28} color={iconColor} />
+                  <OptimizedIcon name="location-outline" size={28} color={iconColor} />
                 </TouchableOpacity>
               </View>
               {/* Reply Text Removed */}

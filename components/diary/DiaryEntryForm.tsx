@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { decode } from 'base64-arraybuffer'; // Import decode
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
@@ -18,6 +17,7 @@ import {
 import * as z from 'zod';
 
 import { DiaryEntryType } from './EntryTypeSelector';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { useCreateDiaryEntry } from '../../lib/hooks/diary/useCreateDiaryEntry'; // Uncomment hook import
 import supabase from '../../lib/supabase'; // Import supabase client
@@ -369,7 +369,7 @@ export default function DiaryEntryForm({
               />
             ) : (
               <>
-                <MaterialCommunityIcons
+                <OptimizedIcon
                   name="image-plus"
                   size={32}
                   color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]}
@@ -561,7 +561,7 @@ export default function DiaryEntryForm({
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#ffffff" className="mr-2" />
           ) : (
-            <MaterialCommunityIcons name="check" size={18} color="#ffffff" className="mr-1" />
+            <OptimizedIcon name="check" size={18} color="#ffffff" style={{ marginRight: 4 }} />
           )}
           <Text style={{ color: '#ffffff', fontWeight: '500' }}>
             {isSubmitting ? 'Saving...' : 'Save Entry'}

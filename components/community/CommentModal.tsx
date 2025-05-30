@@ -1,5 +1,4 @@
 // Removed duplicate Ionicons import
-import { Ionicons } from '@expo/vector-icons';
 import { decode } from 'base64-arraybuffer'; // Import decode
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
@@ -28,6 +27,7 @@ import { useTheme } from '../../lib/contexts/ThemeContext';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
 import ThemedText from '../ui/ThemedText';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedView from '../ui/ThemedView';
 
 interface CommentModalProps {
@@ -455,7 +455,7 @@ export default function CommentModal({
                   onPress={onClose}
                   accessibilityLabel="Close comments"
                   hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-                  <Ionicons
+                  <OptimizedIcon
                     name="close"
                     size={24}
                     color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700]}
@@ -483,7 +483,7 @@ export default function CommentModal({
                     onRefresh={handleRefresh}
                     ListEmptyComponent={
                       <ThemedView className="flex-1 items-center justify-center p-8">
-                        <Ionicons
+                        <OptimizedIcon
                           name="chatbubble-outline"
                           size={40}
                           color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300]}
@@ -547,7 +547,7 @@ export default function CommentModal({
                             justifyContent: 'center',
                           }}
                           accessibilityLabel="Remove image">
-                          <Ionicons name="close" size={16} color="white" />
+                          <OptimizedIcon name="close" size={16} color="white" />
                         </TouchableOpacity>
                       </View>
                     )}
@@ -580,7 +580,7 @@ export default function CommentModal({
                         : theme.colors.neutral[300],
                     }}
                     accessibilityLabel="Attach photo">
-                    <Ionicons
+                    <OptimizedIcon
                       name="camera-outline"
                       size={18}
                       color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[600]}
@@ -606,7 +606,7 @@ export default function CommentModal({
                     {isSubmitting || isUploading ? (
                       <ActivityIndicator size="small" color="white" />
                     ) : (
-                      <Ionicons name="send" size={18} color="white" />
+                      <OptimizedIcon name="send" size={18} color="white" />
                     )}
                   </TouchableOpacity>
                 </ThemedView>

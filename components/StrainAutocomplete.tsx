@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard, useColorScheme, ScrollView } from 'react-native';
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { debounce } from 'lodash';
-import { Ionicons } from '@expo/vector-icons';
+
 import { RawStrainApiResponse } from '../lib/types/weed-db';
 import { searchStrainsIntelligent } from '../lib/services/strain-search.service';
 import darkTheme from '../lib/theme/dark';

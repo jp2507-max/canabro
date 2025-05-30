@@ -1,6 +1,5 @@
 'use client';
 
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Database, Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { useRouter } from 'expo-router';
@@ -12,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 
+import { OptimizedIcon } from './ui/OptimizedIcon';
 import ThemedText from './ui/ThemedText';
 import { useTheme } from '../lib/contexts/ThemeContext';
 import { Plant as WDBPlant } from '../lib/models/Plant'; // Renamed to WDBPlant to avoid conflict
@@ -48,7 +48,7 @@ const EmptyPlantList = () => {
   const { theme, isDarkMode } = useTheme();
   return (
     <View className="mt-10 flex-1 items-center justify-center p-6">
-      <MaterialCommunityIcons
+      <OptimizedIcon
         name="flower-tulip-outline"
         size={64}
         color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
@@ -149,10 +149,10 @@ const enhance = withObservables([], ({ database }: { database: Database }) => ({
     .observeWithColumns([
       'name', 
       'strain', 
-      'imageUrl', 
-      'health_percentage', // NEWLY ADDED
-      'next_watering_days', // NEWLY ADDED
-      'next_nutrient_days'  // NEWLY ADDED
+      'image_url',
+      'health_percentage',
+      'next_watering_days',
+      'next_nutrient_days'
     ]), 
 }));
 

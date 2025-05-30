@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Modal, TouchableOpacity, View } from 'react-native';
 
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
@@ -56,7 +56,7 @@ export default function CreatePostModal({
               <ThemedView
                 className="mr-3 h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: theme.colors.primary[100] }}>
-                <Ionicons name="leaf" size={24} color={theme.colors.primary[600]} />
+                <OptimizedIcon name="leaf" size={24} color={theme.colors.primary[600]} />
               </ThemedView>
               <ThemedView className="flex-1">
                 <ThemedText className="font-semibold">Share a Plant</ThemedText>
@@ -75,7 +75,7 @@ export default function CreatePostModal({
               <ThemedView
                 className="mr-3 h-10 w-10 items-center justify-center rounded-full"
                 style={{ backgroundColor: theme.colors.primary[100] }}>
-                <Ionicons name="help-circle" size={24} color={theme.colors.primary[600]} />
+                <OptimizedIcon name="help-circle" size={24} color={theme.colors.primary[600]} />
               </ThemedView>
               <ThemedView className="flex-1">
                 <ThemedText className="font-semibold">Ask a Question</ThemedText>

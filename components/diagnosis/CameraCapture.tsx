@@ -1,4 +1,3 @@
-import { AntDesign, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef } from 'react';
@@ -7,6 +6,7 @@ import { View, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 // Define the types based on expo-camera documentation
 type CameraType = 'front' | 'back';
@@ -125,10 +125,10 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
               lightClassName="bg-black/20"
               darkClassName="bg-black/40">
               <TouchableOpacity onPress={onClose}>
-                <AntDesign name="close" size={24} color="white" />
+                <OptimizedIcon name="close" size={24} color="white" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleFlashToggle}>
-                <Ionicons
+                <OptimizedIcon
                   name={flashMode === 'on' ? 'flash' : 'flash-off'}
                   size={24}
                   color="white"
@@ -142,7 +142,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
               lightClassName="bg-black/20"
               darkClassName="bg-black/40">
               <TouchableOpacity onPress={pickImage}>
-                <Ionicons name="image-outline" size={30} color="white" />
+                <OptimizedIcon name="image-outline" size={30} color="white" />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
@@ -150,7 +150,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
               </TouchableOpacity>
 
               <TouchableOpacity onPress={handleCameraTypeToggle}>
-                <MaterialCommunityIcons name="camera-flip-outline" size={30} color="white" />
+                <OptimizedIcon name="camera-flip-outline" size={30} color="white" />
               </TouchableOpacity>
             </ThemedView>
           </View>
