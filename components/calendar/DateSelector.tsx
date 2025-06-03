@@ -1,17 +1,142 @@
-import { format, addDays, isToday } from 'date-fns';
-import React, { useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { format, addDays, isToday, isYesterday, isTomorrow } from 'date-fns';
+import * as Haptics from 'expo-haptics';
+import React, { useMemo, useCallback, useEffect } from 'react';
+import { ScrollView, Pressable } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolateColor,
+  runOnJS,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
+import ThemedView from '../ui/ThemedView';
+
+// Reanimated AnimatedPressable
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export interface DateSelectorProps {
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
 }
 
+interface DateItemProps {
+  date: Date;
+  isSelected: boolean;
+  onSelect: (date: Date) => void;
+}
+
+// Individual date item component with animations
+const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
+  const scale = useSharedValue(1);
+  const shadowOpacity = useSharedValue(0.1);
+  const elevation = useSharedValue(1);
+  const selection = useSharedValue(isSelected ? 1 : 0);
+
+  const isCurrentToday = isToday(date);
+  const isCurrentYesterday = isYesterday(date);
+  const isCurrentTomorrow = isTomorrow(date);
+
+  // Update selection shared value when prop changes
+  useEffect(() => {
+    selection.value = withTiming(isSelected ? 1 : 0, { duration: 250 });
+  }, [isSelected, selection]);
+
+  // Get display label for special dates
+  const getDateLabel = useCallback(() => {
+    if (isCurrentToday) return 'Today';
+    if (isCurrentYesterday) return 'Yesterday';
+    if (isCurrentTomorrow) return 'Tomorrow';
+    return format(date, 'E');
+  }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow]);
+
+  // Modern gesture handling
+  const tapGesture = Gesture.Tap()
+    .onStart(() => {
+      'worklet';
+      scale.value = withSpring(0.95, { damping: 20, stiffness: 400 });
+      shadowOpacity.value = withTiming(0.15, { duration: 150 });
+      elevation.value = withTiming(2, { duration: 150 });
+      
+      runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light))();
+    })
+    .onEnd(() => {
+      'worklet';
+      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      shadowOpacity.value = withTiming(isSelected ? 0.2 : 0.1, { duration: 200 });
+      elevation.value = withTiming(isSelected ? 3 : 1, { duration: 200 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      runOnJS(onSelect)(date);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      selection.value,
+      [0, 1],
+      ['transparent', '#10b981'] // primary-500
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+      shadowOpacity: shadowOpacity.value,
+      elevation: elevation.value,
+    };
+  });
+
+  return (
+    <GestureDetector gesture={tapGesture}>
+      <AnimatedPressable
+        className="mx-2 h-16 w-16 items-center justify-center rounded-full"
+        style={[
+          animatedStyle,
+          {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowRadius: 3,
+          },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={`Select date ${format(date, 'PPP')}`}
+        accessibilityState={{ selected: isSelected }}
+        accessibilityHint={isSelected ? 'Currently selected date' : 'Tap to select this date'}
+      >
+        <ThemedText 
+          className={`text-xs font-medium ${
+            isSelected 
+              ? 'text-white' 
+              : isCurrentToday 
+                ? 'text-primary-600 dark:text-primary-400' 
+                : 'text-neutral-500 dark:text-neutral-400'
+          }`}
+        >
+          {getDateLabel()}
+        </ThemedText>
+        <ThemedText 
+          className={`text-lg font-bold ${
+            isSelected 
+              ? 'text-white' 
+              : isCurrentToday 
+                ? 'text-primary-700 dark:text-primary-300' 
+                : 'text-neutral-800 dark:text-neutral-200'
+          }`}
+        >
+          {format(date, 'd')}
+        </ThemedText>
+      </AnimatedPressable>
+    </GestureDetector>
+  );
+});
+
+DateItem.displayName = 'DateItem';
+
 function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
-  const { theme, isDarkMode } = useTheme();
+  // Generate date range (7 days: 3 before, today, 3 after)
   const dates = useMemo(() => {
     const result = [];
     const today = new Date();
@@ -21,67 +146,36 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
     return result;
   }, []);
 
+  const handleDateSelect = useCallback((date: Date) => {
+    onDateSelect(date);
+  }, [onDateSelect]);
+
   return (
-    <View style={{ marginBottom: 16, flexDirection: 'row' }}>
+    <ThemedView className="mb-4">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}>
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+        decelerationRate="fast"
+        snapToInterval={80} // Snap to each date item (64px width + 16px margin)
+        snapToAlignment="start"
+      >
         {dates.map((date, index) => {
           const dateString = format(date, 'yyyy-MM-dd');
           const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
           const isSelected = dateString === selectedDateString;
-          const isCurrentDateToday = isToday(date);
-          const bgColor = isSelected
-            ? theme.colors.primary[600]
-            : isCurrentDateToday
-              ? isDarkMode
-                ? theme.colors.primary[900]
-                : theme.colors.primary[100]
-              : isDarkMode
-                ? theme.colors.neutral[800]
-                : theme.colors.neutral[100];
-          const dayTextColor = isSelected
-            ? theme.colors.neutral[50]
-            : isDarkMode
-              ? theme.colors.neutral[400]
-              : theme.colors.neutral[500];
-          const dateTextColor = isSelected
-            ? theme.colors.neutral[50]
-            : isCurrentDateToday
-              ? isDarkMode
-                ? theme.colors.primary[500]
-                : theme.colors.primary[700]
-              : isDarkMode
-                ? theme.colors.neutral[300]
-                : theme.colors.neutral[800];
+          
           return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => onDateSelect(date)}
-              style={{
-                marginHorizontal: 8,
-                height: 64,
-                width: 64,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 32,
-                backgroundColor: bgColor,
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Select date ${format(date, 'PPP')}`}
-              accessibilityState={{ selected: isSelected }}>
-              <ThemedText style={{ fontSize: 12, color: dayTextColor }}>
-                {`${format(date, 'E')}`}
-              </ThemedText>
-              <ThemedText style={{ fontSize: 18, fontWeight: 'bold', color: dateTextColor }}>
-                {format(date, 'd')}
-              </ThemedText>
-            </TouchableOpacity>
+            <DateItem
+              key={`${dateString}-${index}`}
+              date={date}
+              isSelected={isSelected}
+              onSelect={handleDateSelect}
+            />
           );
         })}
       </ScrollView>
-    </View>
+    </ThemedView>
   );
 }
 

@@ -30,6 +30,8 @@
     "debug-auth": "node scripts/debugAuth.js"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
+    "@ai-sdk/provider-utils": "^2.2.8",
     "@hookform/resolvers": "^5.0.0",
     "@nozbe/simdjson": "^3.9.4",
     "@nozbe/watermelondb": "^0.28.0",

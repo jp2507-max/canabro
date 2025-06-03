@@ -1,5 +1,5 @@
-import React from 'react';
-import { ActivityIndicator, FlatList, View, RefreshControl } from 'react-native';
+import React, { useCallback } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DateSelector from '../../components/calendar/DateSelector';
@@ -8,7 +8,6 @@ import TaskItem from '../../components/calendar/TaskItem';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
 
@@ -25,6 +24,7 @@ interface CalendarScreenViewProps {
   onCloseTaskActions: () => void;
   onAddTaskPlant: () => void;
   onAddTaskAll: () => void;
+  onNavigateToPlant?: (plantId: string) => void;
 }
 
 function CalendarScreenView({
@@ -40,78 +40,105 @@ function CalendarScreenView({
   onCloseTaskActions,
   onAddTaskPlant,
   onAddTaskAll,
+  onNavigateToPlant,
 }: CalendarScreenViewProps) {
-  const { theme, isDarkMode } = useTheme();
   const { database } = useWatermelon();
 
   // FAB direct add-task logic (skip modal)
-  function handleFabPress() {
+  const handleFabPress = useCallback(() => {
     onAddTaskPlant();
-  }
+  }, [onAddTaskPlant]);
 
   // Handle task completion
-  function handleCompleteTask(task: PlantTask) {
+  const handleCompleteTask = useCallback((task: PlantTask) => {
     // Implement task completion logic here
     console.log('Task completed:', task.id);
-  }
+  }, []);
 
   // Handle navigation to plant details
-  function handleNavigateToPlant(plantId: string) {
-    // Implement navigation logic here
-    console.log('Navigate to plant:', plantId);
-  }
+  const handleNavigateToPlant = useCallback((plantId: string) => {
+    onNavigateToPlant?.(plantId);
+  }, [onNavigateToPlant]);
+
+  const renderTaskItem = useCallback(({ item }: { item: PlantTask }) => {
+    return (
+      <TaskItem
+        task={item}
+        database={database}
+        onComplete={handleCompleteTask}
+        onNavigate={handleNavigateToPlant}
+        onPress={() => setIsTaskActionsVisible(true)}
+      />
+    );
+  }, [database, handleCompleteTask, handleNavigateToPlant, setIsTaskActionsVisible]);
+
+  const renderEmptyState = useCallback(() => (
+    <ThemedView className="flex-1 items-center justify-center px-8 py-16">
+      <ThemedText className="text-center text-lg font-medium text-neutral-600 dark:text-neutral-400">
+        No tasks scheduled
+      </ThemedText>
+      <ThemedText className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-500">
+        Tap the + button to add your first task for this day
+      </ThemedText>
+    </ThemedView>
+  ), []);
+
+  const renderLoadingState = useCallback(() => (
+    <ThemedView className="flex-1 items-center justify-center">
+      <ActivityIndicator 
+        size="large" 
+        color="#10b981" // primary-500
+        className="mb-4"
+      />
+      <ThemedText className="text-neutral-600 dark:text-neutral-400">
+        Loading tasks...
+      </ThemedText>
+    </ThemedView>
+  ), []);
 
   return (
     <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50],
-      }}
-      edges={['top', 'left', 'right']}>
+      className="flex-1 bg-neutral-50 dark:bg-neutral-900"
+      edges={['top', 'left', 'right']}
+    >
       <ThemedView className="flex-1">
-        <DateSelector selectedDate={selectedDate} onDateSelect={onDateSelect} />
+        {/* Date Selector Header */}
+        <ThemedView className="bg-white dark:bg-neutral-800 shadow-sm">
+          <DateSelector 
+            selectedDate={selectedDate} 
+            onDateSelect={onDateSelect} 
+          />
+        </ThemedView>
+
+        {/* Tasks Content */}
         {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-          </View>
+          renderLoadingState()
         ) : (
           <FlatList
             data={tasks}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              // Use a type assertion to help TypeScript understand this HOC component
-              const EnhancedTaskItem = TaskItem as React.ComponentType<any>;
-              return (
-                <EnhancedTaskItem
-                  task={item}
-                  database={database}
-                  isDarkMode={isDarkMode}
-                  onComplete={handleCompleteTask}
-                  onNavigate={handleNavigateToPlant}
-                  onPress={() => setIsTaskActionsVisible(true)}
-                />
-              );
-            }}
-            ListEmptyComponent={
-              <ThemedText className="mt-8 text-center text-neutral-500 dark:text-neutral-400">
-                No tasks for this day.
-              </ThemedText>
-            }
+            renderItem={renderTaskItem}
+            ListEmptyComponent={renderEmptyState}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={[theme.colors.primary[500]]}
-                tintColor={theme.colors.primary[500]}
-                progressBackgroundColor={
-                  isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100]
-                }
+                colors={['#10b981']} // primary-500
+                tintColor="#10b981" // primary-500
+                progressBackgroundColor="#ffffff"
               />
             }
-            contentContainerStyle={{ paddingTop: 16, paddingBottom: 16, flexGrow: 1 }}
+            contentContainerStyle={{ 
+              paddingTop: 16, 
+              paddingBottom: 100, // Space for FAB
+              flexGrow: 1 
+            }}
+            showsVerticalScrollIndicator={false}
+            bounces={true}
           />
         )}
-        {/* FAB: opens modal on long press, direct add-task on press */}
+
+        {/* Floating Action Button */}
         <FloatingActionButton
           onPress={handleFabPress}
           onLongPress={onOpenTaskActions}
@@ -119,6 +146,8 @@ function CalendarScreenView({
           testID="calendar-fab"
           size={56}
         />
+
+        {/* Task Actions Modal */}
         <TaskActions
           visible={isTaskActionsVisible}
           onClose={onCloseTaskActions}
@@ -130,4 +159,4 @@ function CalendarScreenView({
   );
 }
 
-export default CalendarScreenView;
+export default React.memo(CalendarScreenView);

@@ -30,7 +30,6 @@ import { useDatabase } from '../../lib/contexts/DatabaseProvider';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { Plant } from '../../lib/models/Plant'; // GrowthStage enum is not exported/used in model
-import { colors as themeColors } from '../../lib/theme'; // Import theme colors directly if needed
 // PlantImageSection is no longer needed here as PlantHeroImage handles it
 // import PlantImageSection from '../../screens/PlantImageSection';
 import { formatDate, formatBoolean, formatNumber } from '../../screens/plantHelpers';
@@ -38,20 +37,7 @@ import { formatDate, formatBoolean, formatNumber } from '../../screens/plantHelp
 // Base component receiving the plant observable
 function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   const { sync, database } = useWatermelon();
-  const { theme, isDarkMode } = useTheme();
-
-  // ADD THESE LINES FOR DEBUGGING:
-  console.log('--- PlantDetailsScreenBase ---');
-  if (plant) {
-    console.log('Plant ID:', plant.id);
-    console.log('Plant Name:', plant.name);
-    console.log('Plant Image URL:', plant.imageUrl);
-    // You can log the whole plant object if it's not too large, or specific fields
-    // console.log('Full plant object:', JSON.stringify(plant, null, 2));
-  } else {
-    console.log('Plant object is null or undefined.');
-  }
-  // --- END OF DEBUGGING LINES ---
+  const { isDarkMode } = useTheme();
 
   const handleDelete = async () => {
     if (!plant) return;
@@ -84,18 +70,14 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   // Loading state
   if (!plant) {
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center p-4"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
+      <ThemedView className="flex-1 items-center justify-center p-4">
         <ActivityIndicator
           size="large"
-          color={isDarkMode ? themeColors.primary[400] : themeColors.primary[500]}
+          color={isDarkMode ? '#46db6f' : '#16a34a'}
         />
         <ThemedText
-          className="mt-4 text-center"
-          lightClassName="text-neutral-500"
-          darkClassName="text-neutral-400">
+          variant="muted"
+          className="mt-4 text-center">
           Loading plant details...
         </ThemedText>
         <TouchableOpacity
@@ -117,7 +99,7 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
 
   // Render actual content
   return (
-    <ThemedView className="flex-1" lightClassName="bg-neutral-50" darkClassName="bg-neutral-900">
+    <ThemedView className="flex-1">
       {/* Header Buttons - Placed above ScrollView for fixed positioning */}
       <SafeAreaView edges={['top']} style={{ flex: 0, backgroundColor: 'transparent' }} />
       <ThemedView className="absolute left-0 right-0 top-0 z-10 mt-3 flex-row items-center justify-between px-4 py-3">
@@ -163,10 +145,7 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
           {/* Notes Card */}
           {plant.notes && plant.notes.trim() !== '' && (
             <PlantInfoCard title="Notes">
-              <ThemedText
-                className="text-base leading-relaxed"
-                lightClassName="text-neutral-700"
-                darkClassName="text-neutral-200">
+              <ThemedText className="text-base leading-relaxed text-neutral-700 dark:text-neutral-200">
                 {plant.notes}
               </ThemedText>
             </PlantInfoCard>
@@ -227,25 +206,20 @@ export default function PlantDetailsWrapper() {
   // ID Missing State
   if (!id) {
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center p-4"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
+      <ThemedView className="flex-1 items-center justify-center p-4">
         <OptimizedIcon
           name="help-circle-outline"
           size={48}
-          color={isDarkMode ? themeColors.status.warning : themeColors.status.warning}
+          color="#f59e0b"
         />
         <ThemedText
-          className="mt-4 text-center text-lg font-semibold"
-          lightClassName="text-neutral-800"
-          darkClassName="text-neutral-100">
+          variant="heading"
+          className="mt-4 text-center text-lg">
           Missing Information
         </ThemedText>
         <ThemedText
-          className="mt-2 text-center"
-          lightClassName="text-neutral-600"
-          darkClassName="text-neutral-300">
+          variant="muted"
+          className="mt-2 text-center">
           No Plant ID was provided to view details.
         </ThemedText>
         <TouchableOpacity
@@ -261,18 +235,14 @@ export default function PlantDetailsWrapper() {
   // Database Loading State
   if (!database) {
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center p-4"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
+      <ThemedView className="flex-1 items-center justify-center p-4">
         <ActivityIndicator
           size="large"
-          color={isDarkMode ? themeColors.primary[400] : themeColors.primary[500]}
+          color={isDarkMode ? '#46db6f' : '#16a34a'}
         />
         <ThemedText
-          className="mt-4 text-center"
-          lightClassName="text-neutral-500"
-          darkClassName="text-neutral-400">
+          variant="muted"
+          className="mt-4 text-center">
           Connecting to database...
         </ThemedText>
         <TouchableOpacity

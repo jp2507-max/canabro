@@ -208,6 +208,70 @@ const gesture = Gesture.Pan()
 3. **Replace**: `onActive` → `onUpdate`
 4. **Context**: Use external `useSharedValue` instead of `ctx` parameter
 
+## 🎯 **Direct Imports vs Custom Animation Hooks (2025 Best Practice)**
+
+### **✅ Use Direct Imports For:**
+- Component-specific animations (FloatingActionButton example)
+- Performance-critical code (no abstraction overhead)
+- Fine-tuned, one-off animations
+- Simple animations that won't be reused
+
+```tsx
+// ✅ Direct imports - Perfect for specific components
+import { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+const scale = useSharedValue(1);
+const animatedStyle = useAnimatedStyle(() => ({
+  transform: [{ scale: scale.value }]
+}));
+```
+
+### **✅ Use Custom Animation Hooks For:**
+- Reusable patterns (cards, buttons, modals)
+- Complex gesture combinations
+- Standardized configurations
+- Business logic abstraction
+
+```tsx
+// ✅ Custom hooks - Perfect for reusable patterns
+import { useCardAnimation } from '@/lib/animations';
+
+const { animatedStyle, handlers } = useCardAnimation({
+  enableHaptics: true,
+  onPress: handlePress
+});
+```
+
+### **📁 Available Custom Animation System (`@/lib/animations/`)**
+```tsx
+// Core animation hooks
+import { 
+  useCardAnimation,        // Card press/shadow animations
+  useButtonAnimation,      // Button press animations  
+  useGestureAnimation,     // Tap + long press with rotation
+  useAdvancedGesture,      // Pan, pinch, rotation gestures
+  useScrollAnimation,      // Parallax, fade, scale on scroll
+  useAnimationSequence,    // Chained/staggered animations
+} from '@/lib/animations';
+
+// Animation presets and configs
+import { 
+  SPRING_CONFIGS,          // quick, smooth, bouncy, gentle
+  ANIMATION_PRESETS,       // strainCard, plantCard, button
+  SCALE_VALUES,            // cardPress, buttonPress, etc.
+} from '@/lib/animations/presets';
+
+// Utility components
+import { AnimatedCard } from '@/lib/animations/AnimatedCard';
+```
+
+### **🎭 Hybrid Approach Recommendations:**
+- **FloatingActionButton** → Direct imports (component-specific)
+- **PlantCard/StrainCard** → `useCardAnimation` (consistency)
+- **Form buttons** → `useButtonAnimation` (standardization)
+- **Gesture components** → `useAdvancedGesture` (complex patterns)
+- **Modal animations** → `useAnimationSequence` (entrance/exit)
+
 ## 🚨 **Common Pitfalls**
 
 1. **Don't** perform operations in inline styles with shared values
@@ -215,6 +279,7 @@ const gesture = Gesture.Pan()
 3. **Don't** name worklet functions same as imported functions (interpolateColor issue)
 4. **Don't** forget to cancel animations on unmount
 5. **Don't** mix percentage and pixel units with NativeWind animations
+6. **Don't** over-abstract simple animations into custom hooks
 
 ## 🎯 **Production Checklist**
 
