@@ -1,26 +1,26 @@
 import React from 'react';
 import { Text, TextProps } from 'react-native';
 
-import { useTheme } from '../../lib/contexts/ThemeContext';
-
 interface ThemedTextProps extends TextProps {
-  darkClassName?: string;
-  lightClassName?: string;
+  variant?: 'default' | 'muted' | 'heading' | 'caption';
 }
 
 function ThemedText({
   children,
   className = '',
-  darkClassName = 'text-white',
-  lightClassName = 'text-neutral-900',
+  variant = 'default',
   style,
   ...props
 }: ThemedTextProps) {
-  const { isDarkMode } = useTheme();
+  // Define base classes for each variant using NativeWind dark: prefix
+  const variantClasses = {
+    default: 'text-neutral-900 dark:text-neutral-100',
+    muted: 'text-neutral-600 dark:text-neutral-400', 
+    heading: 'text-neutral-900 dark:text-white font-bold',
+    caption: 'text-neutral-500 dark:text-neutral-500 text-sm',
+  };
 
-  const themeSpecificClass = isDarkMode ? darkClassName : lightClassName;
-
-  const combinedClassName = `${className} ${themeSpecificClass}`.trim();
+  const combinedClassName = `${variantClasses[variant]} ${className}`.trim();
 
   return (
     <Text className={combinedClassName} style={style} {...props}>

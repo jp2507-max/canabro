@@ -7,6 +7,7 @@ export default {
     version: '1.0.0',
     web: {
       favicon: './assets/favicon.png',
+      bundler: 'metro',
     },
     experiments: {
       tsconfigPaths: true,

@@ -88,15 +88,9 @@ if (process.env.NODE_ENV === 'production') {
 config.serializer = {
   ...config.serializer,
   customSerializer: config.serializer?.customSerializer,
-  // Enable more aggressive asset optimization
-  getRunModulePath() {
-    return require.resolve('./node_modules/react-native/Libraries/Core/InitializeCore');
-  },
 };
 
 // Apply the NativeWind wrapper to the modified configuration
 module.exports = wrapWithReanimatedMetroConfig(withNativeWind(config, {
   input: './global.css',
-  // Ensure we're using the right configuration for NativeWind 4.x
-  configPath: './tailwind.config.js',
 }));

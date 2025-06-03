@@ -5,52 +5,77 @@ module.exports = {
     './app/**/*.{js,jsx,ts,tsx}',
     './components/**/*.{js,jsx,ts,tsx}',
     './lib/**/*.{js,jsx,ts,tsx}',
+    './screens/**/*.{js,jsx,ts,tsx}',
   ],
   presets: [require('nativewind/preset')],
+  darkMode: 'media', // Automatic dark mode based on system preference
   theme: {
     extend: {
       colors: {
-        // Primary palette - greens
+        // Primary palette - using CSS variables for dynamic theming
         primary: {
-          50: '#f0fdf4', // Very light mint - backgrounds
-          100: '#dcfce7', // Light mint - secondary backgrounds
-          200: '#bbf7d0', // Light green - highlighted sections
-          300: '#86efac', // Medium green
-          400: '#4ade80', // Bright green
-          500: '#16a34a', // Primary green
-          600: '#059669', // Dark green - active states
-          700: '#047857', // Deeper green
-          800: '#065f46', // Very dark green
-          900: '#064e3b', // Almost black green
+          50: 'rgb(var(--color-primary-50) / <alpha-value>)',
+          100: 'rgb(var(--color-primary-100) / <alpha-value>)',
+          200: 'rgb(var(--color-primary-200) / <alpha-value>)',
+          300: 'rgb(var(--color-primary-300) / <alpha-value>)',
+          400: 'rgb(var(--color-primary-400) / <alpha-value>)',
+          500: 'rgb(var(--color-primary-500) / <alpha-value>)',
+          600: 'rgb(var(--color-primary-600) / <alpha-value>)',
+          700: 'rgb(var(--color-primary-700) / <alpha-value>)',
+          800: 'rgb(var(--color-primary-800) / <alpha-value>)',
+          900: 'rgb(var(--color-primary-900) / <alpha-value>)',
         },
-        // Neutral palette - warmer beige/earthy tones
+        // Neutral palette - using CSS variables for dynamic theming
         neutral: {
-          50: '#fdfbf7', // Very light beige/off-white
-          100: '#fbf6ef', // Light beige
-          200: '#f5eadc', // Soft beige
-          300: '#e9d8c0', // Light warm gray/beige
-          400: '#d3bfa8', // Warm gray/light brown
-          500: '#b8a18a', // Muted brown
-          600: '#9c846e', // Medium brown
-          700: '#7f6a56', // Darker brown
-          800: '#615141', // Dark brown
-          900: '#4b3f33', // Very dark brown
+          50: 'rgb(var(--color-neutral-50) / <alpha-value>)',
+          100: 'rgb(var(--color-neutral-100) / <alpha-value>)',
+          200: 'rgb(var(--color-neutral-200) / <alpha-value>)',
+          300: 'rgb(var(--color-neutral-300) / <alpha-value>)',
+          400: 'rgb(var(--color-neutral-400) / <alpha-value>)',
+          500: 'rgb(var(--color-neutral-500) / <alpha-value>)',
+          600: 'rgb(var(--color-neutral-600) / <alpha-value>)',
+          700: 'rgb(var(--color-neutral-700) / <alpha-value>)',
+          800: 'rgb(var(--color-neutral-800) / <alpha-value>)',
+          900: 'rgb(var(--color-neutral-900) / <alpha-value>)',
         },
-        // Status colors
+        // Status colors - static across themes
         status: {
-          success: '#22c55e', // Success green
-          warning: '#f59e0b', // Warning yellow/orange
-          danger: '#ef4444', // Error/danger red
-          info: '#3b82f6', // Info blue
+          success: '#22c55e',
+          warning: '#f59e0b', 
+          danger: '#ef4444',
+          info: '#3b82f6',
         },
         // Special colors for specific features
         special: {
-          watering: '#3b82f6', // Blue for watering
-          feeding: '#8b5cf6', // Purple for feeding
-          harvesting: '#f59e0b', // Orange/yellow for harvesting
+          watering: '#3b82f6',
+          feeding: '#8b5cf6',
+          harvesting: '#f59e0b',
+        },
+      },
+      // Animation support as per NativeWind v4 best practices
+      animation: {
+        'bounce': 'bounce 1s infinite',
+        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in': 'fadeIn 0.3s ease-in-out',
+        'slide-up': 'slideUp 0.3s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
     },
+  },
+  // Performance optimization - only enable plugins we actually use
+  corePlugins: {
+    borderOpacity: false, // Disabled for performance
+    textOpacity: false,   // Disabled for performance
+    backgroundOpacity: false, // Disabled for performance
   },
   plugins: [],
 };

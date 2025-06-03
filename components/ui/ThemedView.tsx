@@ -1,27 +1,26 @@
 import React from 'react';
 import { View, ViewProps } from 'react-native';
 
-import { useTheme } from '../../lib/contexts/ThemeContext';
-
 interface ThemedViewProps extends ViewProps {
-  darkClassName?: string;
-  lightClassName?: string;
+  variant?: 'default' | 'card' | 'surface' | 'elevated';
 }
 
 function ThemedView({
   children,
   className = '',
-  darkClassName = '',
-  lightClassName = '',
+  variant = 'default',
   style,
   ...props
 }: ThemedViewProps) {
-  const { isDarkMode } = useTheme();
+  // Define base classes for each variant using NativeWind dark: prefix
+  const variantClasses = {
+    default: 'bg-neutral-50 dark:bg-neutral-900',
+    card: 'bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700',
+    surface: 'bg-neutral-100 dark:bg-neutral-800', 
+    elevated: 'bg-white dark:bg-neutral-800 rounded-xl shadow-md',
+  };
 
-  const themeSpecificClass = isDarkMode ? darkClassName : lightClassName;
-
-  // Slightly more robust class name combination
-  const combinedClassName = [className, themeSpecificClass].filter(Boolean).join(' ');
+  const combinedClassName = `${variantClasses[variant]} ${className}`.trim();
 
   return (
     <View className={combinedClassName} style={style} {...props}>

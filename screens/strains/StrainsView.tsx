@@ -1,4 +1,3 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import React, { memo, useMemo } from 'react';
@@ -14,14 +13,26 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import { GestureDetector } from 'react-native-gesture-handler';
 
 import placeholderImageSource from '../../assets/images/placeholder.png';
 
 import EffectTag from '@/components/strains/EffectTag';
 import FlavorTag from '@/components/strains/FlavorTag';
 import StrainFilterModal, { ActiveFilters } from '@/components/strains/StrainFilterModal';
+import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
+import { 
+  useButtonAnimation,
+  useGestureAnimation,
+  useScrollAnimation,
+  AnimatedCard,
+  ANIMATION_PRESETS,
+  useAnimationSequence,
+  SEQUENCE_PRESETS
+} from '@/lib/animations';
 import { StrainEffectType, StrainFlavorType } from '@/lib/types/strain';
 import { Strain as BaseStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
@@ -30,6 +41,7 @@ const { width } = Dimensions.get('window');
 
 interface Strain extends BaseStrain {
   isFavorite?: boolean;
+  _id?: string; // MongoDB-style ID fallback
 }
 
 interface StrainsViewProps {
@@ -75,6 +87,13 @@ const StrainCard = memo(
     isFavorite?: boolean;
     onToggleFavorite?: (strain: any) => void;
   }) => {
+    // 🎬 Enhanced animation hooks from our animation system
+    const favoriteAnimation = useButtonAnimation({
+      enableHaptics: true,
+      hapticStyle: 'medium',
+      onPress: () => onToggleFavorite?.(item),
+    });
+
     // Safety checks - if item is invalid, don't render anything
     if (!item || typeof item !== 'object') {
       console.log('[DEBUG] StrainCard received invalid item:', item);
@@ -150,12 +169,6 @@ const StrainCard = memo(
           : [],
     };
 
-    // Safe handlers
-    const handlePress = onPress || (() => {});
-    const handleToggleFavorite = () => {
-      if (onToggleFavorite && item) onToggleFavorite(item);
-    };
-
     const safeIsDarkMode = isDarkMode === true;
     const safeIsFavorite = isFavorite === true;
 
@@ -170,25 +183,19 @@ const StrainCard = memo(
     };
 
     return (
-      <Pressable
+      <AnimatedCard
+        variant="strains-style"
+        size="medium"
+        enableAnimation={true}
+        enableShadowAnimation={true}
+        enableHaptics={false}
+        onPress={onPress}
         className="mb-8"
-        onPress={handlePress}
-        accessibilityRole="button"
-        accessibilityLabel={`View details for ${safeItem.name}`}
-        style={({ pressed }) => [
-          {
-            shadowColor: safeIsDarkMode ? '#000' : '#34d399',
-            shadowOpacity: pressed ? 0.15 : 0.25,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 8 },
-            transform: [{ scale: pressed ? 0.97 : 1 }],
-            backgroundColor: safeIsDarkMode ? '#18181b' : '#fff',
-            borderRadius: 26,
-            elevation: pressed ? 2 : 8,
-            marginHorizontal: 2,
-          },
-        ]}>
-        <View style={{ overflow: 'hidden', borderRadius: 24 }}>
+        style={{
+          shadowColor: safeIsDarkMode ? '#000' : '#34d399',
+          backgroundColor: safeIsDarkMode ? '#18181b' : '#fff',
+        }}>
+        <View style={{ overflow: 'hidden', borderRadius: 24, margin: -16 }}>
           <ExpoImage
             source={safeItem.image}
             style={{
@@ -212,7 +219,7 @@ const StrainCard = memo(
               paddingHorizontal: 10,
               paddingVertical: 4,
             }}>
-            <MaterialCommunityIcons
+            <OptimizedIcon
               name={strainTypeConfig.icon as any}
               size={20}
               color="#fff"
@@ -224,29 +231,33 @@ const StrainCard = memo(
               {safeItem.type.charAt(0).toUpperCase() + safeItem.type.slice(1)}
             </ThemedText>
           </View>
-          <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 18,
-              right: 18,
-              backgroundColor: safeIsDarkMode ? '#27272a' : '#fff',
-              borderRadius: 16,
-              padding: 7,
-              elevation: 4,
-            }}
-            accessibilityRole="button"
-            accessibilityLabel={safeIsFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            activeOpacity={0.8}
-            onPress={handleToggleFavorite}>
-            <Ionicons
-              name={safeIsFavorite ? 'heart' : 'heart-outline'}
-              size={22}
-              color={safeIsFavorite ? '#f43f5e' : '#a1a1aa'}
-              style={{ transform: [{ scale: safeIsFavorite ? 1.15 : 1 }] }}
-            />
-          </TouchableOpacity>
+          
+          <Animated.View style={[favoriteAnimation.animatedStyle]}>
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: 18,
+                right: 18,
+                backgroundColor: safeIsDarkMode ? '#27272a' : '#fff',
+                borderRadius: 16,
+                padding: 7,
+                elevation: 4,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={safeIsFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              activeOpacity={0.8}
+              {...favoriteAnimation.handlers}>
+              <OptimizedIcon
+                name={safeIsFavorite ? 'heart' : 'heart-outline'}
+                size={22}
+                color={safeIsFavorite ? '#f43f5e' : '#a1a1aa'}
+                style={{ transform: [{ scale: safeIsFavorite ? 1.15 : 1 }] }}
+              />
+            </TouchableOpacity>
+          </Animated.View>
         </View>
-        <View className="px-6 py-5">
+        
+        <View className="px-6 py-5" style={{ margin: -16, marginTop: 0, padding: 24 }}>
           <ThemedText
             className="mb-1 text-2xl font-extrabold capitalize"
             style={{ letterSpacing: 0.2 }}>
@@ -326,7 +337,7 @@ const StrainCard = memo(
             )}
           </View>
         </View>
-      </Pressable>
+      </AnimatedCard>
     );
   }
 );
@@ -360,45 +371,75 @@ const CategoryChips = memo(
           }
 
           return (
-            <TouchableOpacity
+            <CategoryChip
               key={cat.id}
+              category={cat}
+              isSelected={selected === cat.id}
               onPress={() => onSelect(cat.id as 'sativa' | 'indica' | 'hybrid')}
-              style={{
-                backgroundColor:
-                  selected === cat.id ? cat.color : isDarkMode ? '#27272a' : '#f3f4f6',
-                borderRadius: 18,
-                paddingVertical: 8,
-                paddingHorizontal: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginRight: 8,
-                shadowColor: selected === cat.id ? cat.color : 'transparent',
-                shadowOpacity: selected === cat.id ? 0.18 : 0,
-                shadowRadius: 8,
-                elevation: selected === cat.id ? 3 : 0,
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Filter by ${cat.name}`}>
-              <MaterialCommunityIcons
-                name={cat.icon as any}
-                size={20}
-                color={selected === cat.id ? '#fff' : cat.color}
-                style={{ marginRight: 7 }}
-              />
-              <ThemedText
-                className="text-base font-semibold"
-                style={{
-                  color: selected === cat.id ? '#fff' : isDarkMode ? '#e5e7eb' : '#374151',
-                }}>
-                {cat.emoji || ''} {cat.name}
-              </ThemedText>
-            </TouchableOpacity>
+              isDarkMode={isDarkMode}
+            />
           );
         })}
       </ScrollView>
     );
   }
 );
+
+const CategoryChip = memo(({
+  category,
+  isSelected,
+  onPress,
+  isDarkMode,
+}: {
+  category: typeof CATEGORIES_NEW[0];
+  isSelected: boolean;
+  onPress: () => void;
+  isDarkMode: boolean;
+}) => {
+  // 🎬 Use our button animation for category chips
+  const chipAnimation = useButtonAnimation({
+    enableHaptics: true,
+    hapticStyle: 'light',
+    onPress,
+    pressedScale: 0.96,
+  });
+
+  return (
+    <Animated.View style={[chipAnimation.animatedStyle]}>
+      <TouchableOpacity
+        {...chipAnimation.handlers}
+        style={{
+          backgroundColor: isSelected ? category.color : isDarkMode ? '#27272a' : '#f3f4f6',
+          borderRadius: 18,
+          paddingVertical: 8,
+          paddingHorizontal: 20,
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginRight: 8,
+          shadowColor: isSelected ? category.color : 'transparent',
+          shadowOpacity: isSelected ? 0.18 : 0,
+          shadowRadius: 8,
+          elevation: isSelected ? 3 : 0,
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Filter by ${category.name}`}>
+        <OptimizedIcon
+          name={category.icon as any}
+          size={20}
+          color={isSelected ? '#fff' : category.color}
+          style={{ marginRight: 7 }}
+        />
+        <ThemedText
+          className="text-base font-semibold"
+          style={{
+            color: isSelected ? '#fff' : isDarkMode ? '#e5e7eb' : '#374151',
+          }}>
+          {category.emoji || ''} {category.name}
+        </ThemedText>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+});
 
 const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   router = { push: () => {} },
@@ -429,6 +470,16 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   onToggleFavorite = () => {},
   onStrainHover = () => {},
 }) => {
+  // 🎬 Scroll animations for enhanced UX
+  const scrollAnimation = useScrollAnimation({
+    fadeDistance: 150,
+    parallaxFactor: 0.2,
+    scaleRange: { min: 0.98, max: 1 },
+  });
+
+  // 🎭 Animation sequence for loading states  
+  const { runSequence } = useAnimationSequence();
+
   // Define memoized values at the top level - not inside conditional blocks
   const filteredStrains = useMemo(() => {
     // Instead of placing useMemo inside a conditional, we handle the conditional inside useMemo
@@ -518,7 +569,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
                 className="absolute bottom-0 right-3 top-0 justify-center"
                 onPress={() => setSearchQuery('')}
                 accessibilityLabel="Clear search">
-                <Ionicons
+                <OptimizedIcon
                   name="close-circle"
                   size={20}
                   color={isDarkMode ? '#a1a1aa' : '#6b7280'}
@@ -526,24 +577,31 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
               </TouchableOpacity>
             ) : null}
           </View>
-          <TouchableOpacity
-            className="ml-2 rounded-full bg-neutral-200 p-2 dark:bg-neutral-700"
-            accessibilityRole="button"
-            accessibilityLabel="View favorite strains"
-            onPress={() => router.push('/strains/favorites')}>
-            <Ionicons name="heart" size={24} color={isDarkMode ? '#f43f5e' : '#be185d'} />
-          </TouchableOpacity>
+          <AnimatedCard
+            variant="outlined"
+            size="small"
+            enableAnimation={true}
+            onPress={() => router.push('/strains/favorites')}
+            className="ml-2">
+            <OptimizedIcon name="heart" size={24} color={isDarkMode ? '#f43f5e' : '#be185d'} />
+          </AnimatedCard>
         </View>
       </View>
-      <FlatList
+      <Animated.FlatList
+        {...scrollAnimation.scrollHandler}
         data={filteredStrains} // Use our memoized value here instead of direct strains
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) =>
+          item.id ??
+          item._id ??
+          // deterministic fallback so the key is stable across renders
+          `fallback-${index}`
+        }
         renderItem={({ item }) => (
           <StrainCard
             item={item}
             onPress={() => router.push(`/catalog/${item.id}`)}
             isDarkMode={isDarkMode}
-            isFavorite={checkIsFavorite(item.id)}
+            isFavorite={checkIsFavorite(item.id ?? item._id)}
             onToggleFavorite={onToggleFavorite}
           />
         )}

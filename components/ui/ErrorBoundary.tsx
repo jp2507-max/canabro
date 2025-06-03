@@ -1,49 +1,43 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text } from 'react-native';
-
-import ThemedText from '../ui/ThemedText';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
 }
 
-export function ErrorBoundary({ children }: ErrorBoundaryProps) {
-  const [hasError, setHasError] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
 
-  // Error boundary using componentDidCatch pattern
-  class Boundary extends React.Component<
-    { children: React.ReactNode },
-    { hasError: boolean; error: Error | null }
-  > {
-    constructor(props: { children: React.ReactNode }) {
-      super(props);
-      this.state = { hasError: false, error: null };
-    }
-    static getDerivedStateFromError(error: Error) {
-      return { hasError: true, error };
-    }
-    componentDidCatch(error: Error) {
-      setHasError(true);
-      setError(error);
-    }
-    render() {
-      if (this.state.hasError && this.state.error) {
-        return (
-          <View className="flex-1 items-center justify-center px-6">
-            <ThemedText className="mb-2 text-center text-xl font-bold">
-              Something went wrong
-            </ThemedText>
-            <ThemedText className="mb-4 text-center text-base">
-              {this.state.error.message}
-            </ThemedText>
-          </View>
-        );
-      }
-      return this.props.children;
-    }
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
   }
 
-  // Use the class-based boundary for error catching
-  return <Boundary>{children}</Boundary>;
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      return (
+        <View className="flex-1 items-center justify-center px-6">
+          <Text className="mb-2 text-center text-xl font-bold text-neutral-900 dark:text-white">
+            Something went wrong
+          </Text>
+          <Text className="mb-4 text-center text-base text-neutral-700 dark:text-neutral-300">
+            {this.state.error.message}
+          </Text>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
 }

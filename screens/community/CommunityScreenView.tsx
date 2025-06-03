@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { FlatList, TouchableOpacity, View, RefreshControl } from 'react-native';
 
@@ -7,6 +6,7 @@ import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
 import PostItem from '../../components/community/PostItem';
 import type { PostData } from '../../components/community/PostItem';
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
 import { useTheme } from '../../lib/contexts/ThemeContext';
@@ -84,7 +84,7 @@ function CommunityScreenView({
   const renderEmptyState = useMemo(
     () => (
       <ThemedView className="flex-1 items-center justify-center px-8 py-20">
-        <Ionicons
+        <OptimizedIcon
           name="leaf-outline"
           size={50}
           color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
@@ -145,7 +145,7 @@ function CommunityScreenView({
         onPress={() => setShowCreateModal(true)}
         accessibilityLabel="Create new post"
         accessibilityRole="button">
-        <Ionicons name="add" size={30} color="white" />
+        <OptimizedIcon name="add" size={30} color="white" />
       </TouchableOpacity>
 
       {/* Create post modal */}

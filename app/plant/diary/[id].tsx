@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Database, Q } from '@nozbe/watermelondb';
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
 import { format } from 'date-fns';
@@ -18,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OptimizedIcon } from '../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
 // import { isExpoGo } from '../../../lib/config'; // isExpoGo is unused
@@ -35,7 +35,7 @@ interface PlantDiaryScreenProps {
 
 // Base component that receives data from withObservables
 function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
-  const { theme, isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
   const { session } = useAuth();
   const { sync, isSyncing } = useWatermelon();
 
@@ -124,12 +124,9 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
   if (!plant) {
     return (
       <SafeAreaView className="flex-1">
-        <ThemedView
-          className="flex-1 items-center justify-center p-4"
-          lightClassName="bg-white"
-          darkClassName="bg-neutral-900">
-          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-          <ThemedText className="mt-4">Loading plant diary...</ThemedText>
+        <ThemedView variant="default" className="flex-1 items-center justify-center p-4">
+          <ActivityIndicator size="large" color="rgb(var(--color-primary-500))" />
+          <ThemedText variant="muted" className="mt-4">Loading plant diary...</ThemedText>
         </ThemedView>
       </SafeAreaView>
     );
@@ -138,58 +135,66 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
   const renderDiaryEntryItem = ({ item }: { item: DiaryEntry }) => {
     const entryDate = new Date(item.entryDate);
 
-    // Get entry type color
-    let typeColor = theme.colors.neutral[500];
-    let typeBgColor = theme.colors.neutral[100];
+    // Get entry type styling classes based on type
+    const getTypeStyles = (type: string) => {
+      switch (type) {
+        case 'watering':
+          return {
+            iconClasses: 'text-special-watering',
+            tagClasses: 'bg-blue-100 dark:bg-blue-900'
+          };
+        case 'feeding':
+          return {
+            iconClasses: 'text-special-feeding',
+            tagClasses: 'bg-purple-100 dark:bg-purple-900'
+          };
+        case 'pruning':
+          return {
+            iconClasses: 'text-status-success',
+            tagClasses: 'bg-green-100 dark:bg-green-900'
+          };
+        case 'issue':
+          return {
+            iconClasses: 'text-status-danger',
+            tagClasses: 'bg-red-100 dark:bg-red-900'
+          };
+        default:
+          return {
+            iconClasses: 'text-neutral-500',
+            tagClasses: 'bg-neutral-100 dark:bg-neutral-800'
+          };
+      }
+    };
 
-    if (item.entryType === 'watering') {
-      typeColor = theme.colors.primary[600];
-      typeBgColor = theme.colors.primary[100];
-    } else if (item.entryType === 'feeding') {
-      typeColor = theme.colors.status.warning;
-      typeBgColor = '#FEF3C7'; // amber-100
-    } else if (item.entryType === 'pruning') {
-      typeColor = theme.colors.status.success;
-      typeBgColor = '#D1FAE5'; // green-100
-    } else if (item.entryType === 'issue') {
-      typeColor = theme.colors.status.danger;
-      typeBgColor = '#FEE2E2'; // red-100
-    }
+    const typeStyles = getTypeStyles(item.entryType);
 
     return (
-      <ThemedView
-        className="mb-4 rounded-lg border p-4"
-        lightClassName="bg-white border-neutral-200"
-        darkClassName="bg-neutral-800 border-neutral-700">
+      <ThemedView variant="card" className="mb-4">
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
-            <ThemedText className="text-lg font-bold">
+            <ThemedText variant="heading" className="text-lg">
               {`Entry - ${format(entryDate, 'MMM d, yyyy')}`}
             </ThemedText>
 
             <View className="mb-2 mt-1 flex-row items-center">
-              <ThemedText
-                className="mr-2 text-xs"
-                lightClassName="text-neutral-500"
-                darkClassName="text-neutral-400">
+              <ThemedText variant="muted" className="mr-2 text-xs">
                 {format(entryDate, 'MMM d, yyyy • h:mm a')}
               </ThemedText>
 
               <View
-                style={{
-                  backgroundColor: isDarkMode ? 'rgba(0,0,0,0.2)' : typeBgColor,
-                  borderRadius: 12,
-                }}
-                className="px-2 py-0.5">
-                <ThemedText className="text-xs font-medium capitalize" style={{ color: typeColor }}>
+                className={`px-2 py-0.5 rounded-full ${typeStyles.tagClasses}`}>
+                <ThemedText className={`text-xs font-medium capitalize ${typeStyles.iconClasses}`}>
                   {item.entryType}
                 </ThemedText>
               </View>
             </View>
           </View>
 
-          <Pressable onPress={() => handleDeleteEntry(item)} className="p-2">
-            <Ionicons name="trash-outline" size={18} color={theme.colors.status.danger} />
+          <Pressable 
+            onPress={() => handleDeleteEntry(item)} 
+            className="p-2"
+            accessibilityLabel="Delete diary entry">
+            <OptimizedIcon name="trash-outline" size={18} color="rgb(var(--color-status-danger))" />
           </Pressable>
         </View>
 
@@ -212,24 +217,15 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1">
-          <ThemedView
-            className="flex-1 p-4"
-            lightClassName="bg-neutral-50"
-            darkClassName="bg-black">
+          <ThemedView variant="default" className="flex-1 p-4 transition-colors">
             {/* Plant Header */}
-            <ThemedView
-              className="mb-4 flex-row items-center rounded-lg p-4"
-              lightClassName="bg-white"
-              darkClassName="bg-neutral-800">
-              <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-primary-100">
-                <Ionicons name="leaf-outline" size={24} color={theme.colors.primary[500]} />
+            <ThemedView variant="card" className="mb-4 flex-row items-center p-4">
+              <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900">
+                <OptimizedIcon name="leaf-outline" size={24} color="rgb(var(--color-primary-500))" />
               </View>
               <View className="flex-1">
-                <ThemedText className="text-lg font-bold">{plant.name}</ThemedText>
-                <ThemedText
-                  className="text-sm"
-                  lightClassName="text-neutral-500"
-                  darkClassName="text-neutral-400">
+                <ThemedText variant="heading">{plant.name}</ThemedText>
+                <ThemedText variant="muted">
                   {plant.strain} • {plant.growthStage}
                 </ThemedText>
               </View>
@@ -245,30 +241,21 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
                 <RefreshControl
                   refreshing={refreshing || isSyncing}
                   onRefresh={onRefresh}
-                  colors={[theme.colors.primary[500]]}
-                  tintColor={theme.colors.primary[500]}
+                  colors={['rgb(var(--color-primary-500))']}
+                  tintColor="rgb(var(--color-primary-500))"
                 />
               }
               ListEmptyComponent={
-                <ThemedView
-                  className="items-center rounded-lg p-6"
-                  lightClassName="bg-white"
-                  darkClassName="bg-neutral-800">
-                  <Ionicons
+                <ThemedView variant="card" className="items-center p-6">
+                  <OptimizedIcon
                     name="document-text-outline"
                     size={48}
-                    color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300]}
+                    color={isDarkMode ? 'rgb(var(--color-neutral-600))' : 'rgb(var(--color-neutral-300))'}
                   />
-                  <ThemedText
-                    className="mt-3 text-center text-lg font-bold"
-                    lightClassName="text-neutral-800"
-                    darkClassName="text-neutral-200">
+                  <ThemedText variant="heading" className="mt-3 text-center">
                     No diary entries yet
                   </ThemedText>
-                  <ThemedText
-                    className="mt-1 text-center"
-                    lightClassName="text-neutral-500"
-                    darkClassName="text-neutral-400">
+                  <ThemedText variant="muted" className="mt-1 text-center">
                     Start keeping track of your plant's journey by adding your first entry!
                   </ThemedText>
                 </ThemedView>
@@ -279,7 +266,8 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
             {!isAddingEntry && (
               <View className="absolute bottom-4 right-4">
                 <Pressable
-                  className="h-14 w-14 items-center justify-center rounded-full bg-primary-500 shadow-xl"
+                  accessibilityLabel="Add diary entry"
+                  className="h-14 w-14 items-center justify-center rounded-full bg-primary-500 shadow-xl transition-colors"
                   onPress={() => {
                     setIsAddingEntry(true);
                     setTimeout(() => {
@@ -288,13 +276,11 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
                   }}
                   style={({ pressed }) => [
                     {
-                      backgroundColor: pressed
-                        ? theme.colors.primary[600]
-                        : theme.colors.primary[500],
+                      backgroundColor: pressed ? 'rgb(var(--color-primary-600))' : 'rgb(var(--color-primary-500))',
                       elevation: 4,
                     },
                   ]}>
-                  <Ionicons name="add" size={28} color="white" />
+                  <OptimizedIcon name="add" size={28} color="white" />
                 </Pressable>
               </View>
             )}
@@ -302,25 +288,23 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
             {/* Add Entry Form (shown when isAddingEntry is true) */}
             {isAddingEntry && (
               <ThemedView
-                className="absolute bottom-0 left-0 right-0 rounded-t-xl border-t p-4 shadow-xl"
-                lightClassName="bg-white border-neutral-200"
-                darkClassName="bg-neutral-800 border-neutral-700"
+                className="absolute bottom-0 left-0 right-0 rounded-t-xl border-t p-4 shadow-xl bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700"
                 style={[{ elevation: 8 }]}>
-                <View className="mb-3 flex-row items-center justify-between">
-                  <ThemedText className="text-lg font-bold">New Diary Entry</ThemedText>
-                  <Pressable
-                    onPress={() => {
-                      setIsAddingEntry(false);
-                      setEntryTitle('');
-                      setEntryContent('');
-                      setEntryType('general');
-                    }}>
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]}
-                    />
-                  </Pressable>
+                <View className="mb-3 flex-row items-center justify-between">                <ThemedText className="text-lg font-bold">New Diary Entry</ThemedText>
+                <Pressable
+                  accessibilityLabel="Close entry form"
+                  onPress={() => {
+                    setIsAddingEntry(false);
+                    setEntryTitle('');
+                    setEntryContent('');
+                    setEntryType('general');
+                  }}>
+                  <OptimizedIcon
+                    name="close"
+                    size={24}
+                    color={isDarkMode ? 'rgb(var(--color-neutral-400))' : 'rgb(var(--color-neutral-500))'}
+                  />
+                </Pressable>
                 </View>
 
                 {/* Entry Type Selection */}
@@ -328,53 +312,47 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
                   selectedType={entryType}
                   onSelect={setEntryType}
                   isDarkMode={isDarkMode}
-                  theme={theme}
                 />
 
                 {/* Entry Form */}
-                <ThemedView
-                  className="mb-3 rounded-lg border p-3"
-                  lightClassName="bg-neutral-50 border-neutral-200"
-                  darkClassName="bg-neutral-900 border-neutral-700">
+                <ThemedView className="mb-3 rounded-lg border p-3 bg-neutral-50 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
                   <TextInput
                     placeholder="Title (optional)"
                     placeholderTextColor={
-                      isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                      isDarkMode ? 'rgb(var(--color-neutral-500))' : 'rgb(var(--color-neutral-400))'
                     }
                     value={entryTitle}
                     onChangeText={setEntryTitle}
-                    className="mb-1 text-base font-medium"
-                    style={{ color: isDarkMode ? 'white' : 'black' }}
+                    className="mb-1 text-base font-medium text-neutral-900 dark:text-neutral-100"
                   />
                   <TextInput
                     ref={contentInputRef}
                     placeholder="What's happening with your plant today?"
                     placeholderTextColor={
-                      isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                      isDarkMode ? 'rgb(var(--color-neutral-500))' : 'rgb(var(--color-neutral-400))'
                     }
                     value={entryContent}
                     onChangeText={setEntryContent}
                     multiline
                     numberOfLines={4}
-                    className="min-h-[100px] text-base"
-                    style={{ color: isDarkMode ? 'white' : 'black' }}
+                    className="min-h-[100px] text-base text-neutral-900 dark:text-neutral-100"
                     textAlignVertical="top"
                   />
                 </ThemedView>
 
                 {/* Submit Button */}
                 <Pressable
-                  className="items-center rounded-lg bg-primary-500 py-3"
+                  className="items-center rounded-lg bg-primary-500 py-3 transition-colors"
                   onPress={handleAddEntry}
                   disabled={isSubmitting || !entryContent.trim()}
                   style={({ pressed }) => [
                     {
                       backgroundColor:
                         isSubmitting || !entryContent.trim()
-                          ? theme.colors.neutral[300]
+                          ? 'rgb(var(--color-neutral-300))'
                           : pressed
-                            ? theme.colors.primary[600]
-                            : theme.colors.primary[500],
+                            ? 'rgb(var(--color-primary-600))'
+                            : 'rgb(var(--color-primary-500))',
                     },
                   ]}>
                   {isSubmitting ? (
@@ -397,12 +375,10 @@ function ScrollableEntryTypeSelector({
   selectedType,
   onSelect,
   isDarkMode,
-  theme,
 }: {
   selectedType: string;
   onSelect: (type: string) => void;
   isDarkMode: boolean;
-  theme: any;
 }) {
   const options = [
     { id: 'general', label: 'General', icon: 'document-text-outline' },
@@ -418,34 +394,26 @@ function ScrollableEntryTypeSelector({
         <Pressable
           key={option.id}
           onPress={() => onSelect(option.id)}
-          className={`mx-1 flex-1 items-center justify-center rounded-lg py-2 ${selectedType === option.id ? 'bg-primary-100' : ''}`}
-          style={[
-            {
-              backgroundColor:
-                selectedType === option.id
-                  ? isDarkMode
-                    ? 'rgba(5, 150, 105, 0.2)'
-                    : theme.colors.primary[100]
-                  : isDarkMode
-                    ? theme.colors.neutral[800]
-                    : theme.colors.neutral[100],
-            },
-          ]}>
-          <Ionicons
+          className={`mx-1 flex-1 items-center justify-center rounded-lg py-2 transition-colors ${
+            selectedType === option.id ? 'bg-primary-100 dark:bg-primary-900' : 'bg-neutral-100 dark:bg-neutral-800'
+          }`}>
+          <OptimizedIcon
             name={option.icon as any}
             size={20}
             color={
               selectedType === option.id
-                ? theme.colors.primary[500]
+                ? 'rgb(var(--color-primary-500))'
                 : isDarkMode
-                  ? theme.colors.neutral[400]
-                  : theme.colors.neutral[500]
+                  ? 'rgb(var(--color-neutral-400))'
+                  : 'rgb(var(--color-neutral-500))'
             }
           />
           <ThemedText
-            className={`mt-1 text-xs ${selectedType === option.id ? 'font-bold' : ''}`}
-            lightClassName={selectedType === option.id ? 'text-primary-700' : 'text-neutral-600'}
-            darkClassName={selectedType === option.id ? 'text-primary-400' : 'text-neutral-400'}>
+            className={`mt-1 text-xs ${selectedType === option.id ? 'font-bold' : ''} ${
+              selectedType === option.id
+                ? 'text-primary-700 dark:text-primary-400'
+                : 'text-neutral-600 dark:text-neutral-400'
+            }`}>
             {option.label}
           </ThemedText>
         </Pressable>
@@ -502,15 +470,9 @@ export default function PlantDiaryWrapper() {
   if (!database) {
     return (
       <SafeAreaView className="flex-1">
-        <ThemedView
-          className="flex-1 items-center justify-center p-4"
-          lightClassName="bg-white"
-          darkClassName="bg-neutral-900">
-          <ActivityIndicator size="large" color="#10b981" />
-          <ThemedText
-            className="mt-4 text-center"
-            lightClassName="text-neutral-600"
-            darkClassName="text-neutral-400">
+        <ThemedView className="flex-1 items-center justify-center p-4 bg-white dark:bg-neutral-900">
+          <ActivityIndicator size="large" color="rgb(var(--color-primary-500))" />
+          <ThemedText className="mt-4 text-center text-neutral-600 dark:text-neutral-400">
             Loading plant data...
           </ThemedText>
         </ThemedView>

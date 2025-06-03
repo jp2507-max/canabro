@@ -1,3 +1,100 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* CSS Variables for Dynamic Theming - NativeWind v4 Best Practices */
+:root {
+  /* Primary colors - Light Mode */
+  --color-primary-50: 240 253 244;
+  --color-primary-100: 220 252 231; 
+  --color-primary-200: 187 247 208;
+  --color-primary-300: 134 239 172;
+  --color-primary-400: 74 222 128;
+  --color-primary-500: 22 163 74;
+  --color-primary-600: 5 150 105;
+  --color-primary-700: 4 120 87;
+  --color-primary-800: 6 95 70;
+  --color-primary-900: 6 78 59;
+  
+  /* Neutral colors - Light Mode (warm beige/earthy tones) */
+  --color-neutral-50: 253 251 247;
+  --color-neutral-100: 251 246 239;
+  --color-neutral-200: 245 234 220;
+  --color-neutral-300: 233 216 192;
+  --color-neutral-400: 211 191 168;
+  --color-neutral-500: 184 161 138;
+  --color-neutral-600: 156 132 110;
+  --color-neutral-700: 127 106 86;
+  --color-neutral-800: 97 81 65;
+  --color-neutral-900: 75 63 51;
+}
+
+/* Dark Mode CSS Variables - Automatic via media query */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Primary colors - Dark Mode */
+    --color-primary-50: 13 47 35;
+    --color-primary-100: 17 58 44;
+    --color-primary-200: 23 76 58;
+    --color-primary-300: 34 108 84;
+    --color-primary-400: 46 140 109;
+    --color-primary-500: 22 163 74;  /* Keep same for brand recognition */
+    --color-primary-600: 5 150 105;
+    --color-primary-700: 4 120 87;
+    --color-primary-800: 6 95 70;
+    --color-primary-900: 6 78 59;
+    
+    /* Neutral colors - Dark Mode (inverted warm tones) */
+    --color-neutral-50: 75 63 51;    /* Very dark brown */
+    --color-neutral-100: 97 81 65;   /* Dark brown */
+    --color-neutral-200: 127 106 86; /* Darker brown */
+    --color-neutral-300: 156 132 110; /* Medium brown */
+    --color-neutral-400: 184 161 138; /* Muted brown */
+    --color-neutral-500: 211 191 168; /* Light brown for text */
+    --color-neutral-600: 233 216 192; /* Lighter for text/borders */
+    --color-neutral-700: 245 234 220; /* Light elements */
+    --color-neutral-800: 251 246 239; /* Very light */
+    --color-neutral-900: 253 251 247; /* Highest contrast text */
+  }
+}
+
+/* Custom Animation Keyframes - NativeWind v4 Compatible */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateY(20px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    transform: scale(0.95); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+
+/* Component-specific animations */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}

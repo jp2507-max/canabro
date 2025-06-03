@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons'; // Added Ionicons
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, TouchableOpacity, ActivityIndicator, View } from 'react-native'; // Removed Text, added View
@@ -6,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DiaryEntryItem from '../../../components/diary/DiaryEntryItem';
 import JournalCalendar from '../../../components/diary/JournalCalendar'; // Import the new calendar component
+import { OptimizedIcon } from '../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
 import { useTheme } from '../../../lib/contexts/ThemeContext';
@@ -72,11 +72,8 @@ export default function PlantJournalScreen() {
   if (!routePlantId) {
     // Use theme classes for background
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center p-4"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
-        <ThemedText className="text-lg text-status-danger">Error: Invalid Plant ID.</ThemedText>
+      <ThemedView variant="default" className="flex-1 items-center justify-center p-4">
+        <ThemedText variant="default" className="text-lg text-status-danger">Error: Invalid Plant ID.</ThemedText>
       </ThemedView>
     );
   }
@@ -99,16 +96,10 @@ export default function PlantJournalScreen() {
   if (isLoadingPlant) {
     // Use theme classes for background
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
+      <ThemedView variant="default" className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color={theme.colors.primary[500]} />
         {/* Use ThemedText for consistent styling */}
-        <ThemedText
-          className="mt-2"
-          lightClassName="text-neutral-600"
-          darkClassName="text-neutral-400">
+        <ThemedText variant="muted" className="mt-2">
           Loading Plant Info...
         </ThemedText>
       </ThemedView>
@@ -121,10 +112,7 @@ export default function PlantJournalScreen() {
   if (plantError || !plant) {
     // Use theme classes for background and header
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center p-4"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
+      <ThemedView variant="default" className="flex-1 items-center justify-center p-4">
         <Stack.Screen
           options={{
             title: 'Error',
@@ -134,12 +122,9 @@ export default function PlantJournalScreen() {
             headerTintColor: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
           }}
         />
-        <ThemedText className="text-lg text-status-danger">Error loading plant data.</ThemedText>
+        <ThemedText variant="default" className="text-lg text-status-danger">Error loading plant data.</ThemedText>
         {/* Use ThemedText for consistent styling */}
-        <ThemedText
-          className="mt-2 text-center"
-          lightClassName="text-neutral-600"
-          darkClassName="text-neutral-400">
+        <ThemedText variant="muted" className="mt-2 text-center">
           {/* Display the actual error message */}
           {plantError?.message || 'Could not find the specified plant.'}
         </ThemedText>
@@ -149,7 +134,7 @@ export default function PlantJournalScreen() {
 
   // Main component render
   return (
-    <ThemedView className="flex-1" darkClassName="bg-neutral-900" lightClassName="bg-neutral-50">
+    <ThemedView variant="default" className="flex-1">
       <Stack.Screen
         options={{
           headerStyle: {
@@ -159,7 +144,7 @@ export default function PlantJournalScreen() {
           headerTitle: () => (
             <View className="flex-row items-center">
               {/* TODO: Add plant icon based on type/stage */}
-              <Ionicons
+              <OptimizedIcon
                 name="leaf-outline"
                 size={22}
                 color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[600]}
@@ -173,14 +158,14 @@ export default function PlantJournalScreen() {
           headerRight: () => (
             <View className="mr-2 flex-row items-center space-x-4">
               <TouchableOpacity onPress={handleGoToSettings}>
-                <Ionicons
+                <OptimizedIcon
                   name="settings-outline"
                   size={24}
                   color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}
                 />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleExport}>
-                <Ionicons
+                <OptimizedIcon
                   name="share-outline" // Using share icon for export/upload
                   size={24}
                   color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}
@@ -209,22 +194,16 @@ export default function PlantJournalScreen() {
           ) : entries.length === 0 ? (
             <View className="mt-10 items-center">
               {/* Use theme colors for icon */}
-              <Ionicons
+              <OptimizedIcon
                 name="document-text-outline"
                 size={40}
                 color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
               />
               {/* Use ThemedText for consistent styling */}
-              <ThemedText
-                className="mt-2 text-center text-lg font-medium"
-                lightClassName="text-neutral-700"
-                darkClassName="text-neutral-300">
+              <ThemedText variant="heading" className="mt-2 text-center text-lg font-medium">
                 No journal entries yet.
               </ThemedText>
-              <ThemedText
-                className="text-center"
-                lightClassName="text-neutral-500"
-                darkClassName="text-neutral-400">
+              <ThemedText variant="muted" className="text-center">
                 Start tracking your plant's journey!
               </ThemedText>
               {/* Add Entry Button for empty state */}
@@ -232,7 +211,7 @@ export default function PlantJournalScreen() {
                 onPress={handleAddNewEntry}
                 className="mt-6 flex-row items-center rounded-full px-6 py-3 active:opacity-80"
                 style={{ backgroundColor: theme.colors.primary[500] }}>
-                <Ionicons name="add-circle-outline" size={20} color="white" />
+                <OptimizedIcon name="add-circle-outline" size={20} color="white" />
                 <ThemedText className="ml-2 text-base font-semibold text-white">
                   Add First Entry
                 </ThemedText>
@@ -249,23 +228,13 @@ export default function PlantJournalScreen() {
                   <View className="mb-3 flex-row items-center justify-between">
                     <View className="flex-row items-center">
                       {/* Timeline Circle */}
-                      <ThemedView
-                        className="mr-3 h-3 w-3 rounded-full"
-                        lightClassName="bg-neutral-400"
-                        darkClassName="bg-neutral-600"
-                      />
+                      <ThemedView variant="surface" className="mr-3 h-3 w-3 rounded-full" />
                       {/* TODO: Calculate actual day number */}
-                      <ThemedText
-                        className="text-lg font-bold"
-                        lightClassName="text-neutral-800"
-                        darkClassName="text-neutral-200">
+                      <ThemedText variant="heading" className="text-lg font-bold">
                         Tag {entries.length - dayIndex * dayEntries.length} {/* Placeholder Day */}
                       </ThemedText>
                     </View>
-                    <ThemedText
-                      className="text-sm"
-                      lightClassName="text-neutral-500"
-                      darkClassName="text-neutral-400">
+                    <ThemedText variant="muted" className="text-sm">
                       {formatDate(new Date(dateKey))}
                     </ThemedText>
                   </View>
@@ -294,25 +263,18 @@ export default function PlantJournalScreen() {
                       // Add subtle background on hover/press?
                     >
                       {/* Timeline Circle */}
-                      <ThemedView
-                        className="mr-3 h-3 w-3 rounded-full border-2"
-                        lightClassName="border-primary-500 bg-neutral-50"
-                        darkClassName="border-primary-400 bg-neutral-900"
-                      />
-                      <ThemedText
-                        className="text-base font-medium"
-                        lightClassName="text-primary-600"
-                        darkClassName="text-primary-400">
+                      <ThemedView variant="default" className="mr-3 h-3 w-3 rounded-full border-2 border-primary-500 dark:border-primary-400" />
+                      <ThemedText variant="default" className="text-base font-medium text-primary-600 dark:text-primary-400">
                         + Eintrag {/* "+ Entry" */}
                       </ThemedText>
                       {/* TODO: Add small icons for common entry types */}
                       <View className="ml-2 flex-row space-x-1">
-                        <Ionicons
+                        <OptimizedIcon
                           name="reader-outline"
                           size={16}
                           color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[500]}
                         />
-                        <Ionicons
+                        <OptimizedIcon
                           name="water-outline"
                           size={16}
                           color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[500]}

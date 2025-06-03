@@ -1,18 +1,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
-import theme, { Theme } from '../theme';
-import darkTheme from '../theme/dark';
-
 type ThemeContextType = {
-  theme: Theme;
   isDarkMode: boolean;
   toggleTheme: () => void;
   setDarkMode: (isDark: boolean) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme,
   isDarkMode: false,
   toggleTheme: () => {},
   setDarkMode: () => {},
@@ -24,20 +19,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const colorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(colorScheme === 'dark');
 
-  // Use the appropriate theme based on dark mode state
-  const currentTheme = isDarkMode ? darkTheme : theme;
-
-  // Update based on system preference
+  // Update based on system preference - NativeWind handles the actual styling
   useEffect(() => {
     setIsDarkMode(colorScheme === 'dark');
   }, [colorScheme]);
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => !prev);
+    // Note: In a full NativeWind implementation, you would update the document class
+    // For React Native, this state can be used for manual overrides if needed
   };
 
   const contextValue = {
-    theme: currentTheme,
     isDarkMode,
     toggleTheme,
     setDarkMode: setIsDarkMode,

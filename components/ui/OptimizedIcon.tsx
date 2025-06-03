@@ -94,14 +94,34 @@ const IconSVG = {
   'help-circle-outline': '❓',
   'flower': '🌸',
   'flower-outline': '🌺',  // Different from flower
-  'sprout': '🌱',
-  'scale-balance': '⚖️',
+  'sprout': '🌱',  'scale-balance': '⚖️',
   'arrow-expand-vertical': '↕️',
   'calendar-range': '📅',
   'dna': '🧬',
-  
-  // Additional Ionicons
+    // Additional Ionicons
   'globe-outline': '🌐',
+  
+  // MaterialCommunityIcons for strains view
+  'white-balance-sunny': '☀️',
+  'moon-waning-crescent': '🌙',
+  'palette-swatch': '🎨',
+  
+  // Additional Ionicons for journal and diary
+  'settings-outline': '⚙️',
+  'share-outline': '📤',
+  'document-text-outline': '📄',
+  'reader-outline': '📖',
+  'nutrition-outline': '🥗',
+  'cut-outline': '✂️',
+  'warning-outline': '⚠️',
+  
+  // Missing icons from TypeScript errors
+  'close-outline': '⊗',
+  'add-outline': '⊕',
+  'chatbubble-ellipses': '💬',
+  'person': '👤',
+  'mail': '✉️',
+  'medal': '🏅',
   
   // Fallback
   'default': '◦'
@@ -180,11 +200,29 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   'flower': 'Flower',
   'flower-outline': 'Flower outline',
   'sprout': 'Sprout',
-  'scale-balance': 'Balance',
-  'arrow-expand-vertical': 'Expand vertical',
+  'scale-balance': 'Balance',  'arrow-expand-vertical': 'Expand vertical',
   'calendar-range': 'Date range',
   'dna': 'DNA',
   'globe-outline': 'Globe',
+  'white-balance-sunny': 'Sunny',
+  'moon-waning-crescent': 'Moon crescent',
+  'palette-swatch': 'Color palette',
+  'settings-outline': 'Settings',
+  'share-outline': 'Share',
+  'document-text-outline': 'Document',
+  'reader-outline': 'Reader',
+  'nutrition-outline': 'Nutrition',
+  'cut-outline': 'Cut',
+  'warning-outline': 'Warning',
+  
+  // Missing icons from TypeScript errors
+  'close-outline': 'Close',
+  'add-outline': 'Add item',
+  'chatbubble-ellipses': 'Messages',
+  'person': 'Person',
+  'mail': 'Email',
+  'medal': 'Achievement',
+  
   'default': 'Icon'
 };
 

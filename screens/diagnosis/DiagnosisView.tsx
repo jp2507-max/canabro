@@ -1,10 +1,10 @@
-import { Feather } from '@expo/vector-icons';
 import React, { memo } from 'react';
 import { View, ScrollView, Button } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CameraCapture from '../../components/diagnosis/CameraCapture';
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
 import type { DiagnosisResult } from '../../lib/types/diagnosis';
@@ -140,7 +140,7 @@ const DiagnosisResultCard = memo(function DiagnosisResultCard({
       </ThemedText>
       {diagnosisResult.details?.recommendations.map((rec, index) => (
         <View key={index} className="mb-2 flex-row items-start">
-          <Feather
+          <OptimizedIcon
             name="check-circle"
             size={16}
             color={theme.colors.primary[500]}
