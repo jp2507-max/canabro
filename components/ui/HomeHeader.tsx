@@ -121,16 +121,12 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 color={isDarkMode ? '#a78bfa' : '#8b5cf6'} // violet-400/500
               />
               <ThemedText 
-                className="mt-1 text-xs font-medium"
-                lightClassName="text-neutral-600"
-                darkClassName="text-neutral-400"
+                className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400"
               >
                 Active
               </ThemedText>
               <ThemedText 
-                className="text-sm font-bold"
-                lightClassName="text-neutral-900"
-                darkClassName="text-white"
+                className="text-sm font-bold text-neutral-900 dark:text-white"
               >
                 {plantCount}
               </ThemedText>
@@ -143,16 +139,12 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 color={isDarkMode ? '#60a5fa' : '#3b82f6'} // blue-400/500
               />
               <ThemedText 
-                className="mt-1 text-xs font-medium"
-                lightClassName="text-neutral-600"
-                darkClassName="text-neutral-400"
+                className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400"
               >
                 This Week
               </ThemedText>
               <ThemedText 
-                className="text-sm font-bold"
-                lightClassName="text-neutral-900"
-                darkClassName="text-white"
+                className="text-sm font-bold text-neutral-900 dark:text-white"
               >
                 {Math.ceil(plantCount * 2.5)}
               </ThemedText>
@@ -165,16 +157,12 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 color={isDarkMode ? '#34d399' : '#10b981'} // emerald-400/500
               />
               <ThemedText 
-                className="mt-1 text-xs font-medium"
-                lightClassName="text-neutral-600"
-                darkClassName="text-neutral-400"
+                className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400"
               >
                 Fed
               </ThemedText>
               <ThemedText 
-                className="text-sm font-bold"
-                lightClassName="text-neutral-900"
-                darkClassName="text-white"
+                className="text-sm font-bold text-neutral-900 dark:text-white"
               >
                 {Math.ceil(plantCount * 0.8)}
               </ThemedText>

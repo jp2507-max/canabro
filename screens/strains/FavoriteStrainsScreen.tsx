@@ -9,7 +9,6 @@ import { ActiveFilters } from '@/components/strains/StrainFilterModal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import ThemedText from '@/components/ui/ThemedText';
 import { useAuth } from '@/lib/contexts/AuthProvider';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
 import { WeedDbService } from '@/lib/services/weed-db.service';
 import { Strain } from '@/lib/types/weed-db';
@@ -193,7 +192,6 @@ function useFavoriteStrains(
  */
 export function FavoriteStrainsScreen() {
   const router = useRouter();
-  const { theme, isDarkMode } = useTheme();
   const { user } = useAuth();
   const userId = user?.id;
   const {
@@ -229,6 +227,7 @@ export function FavoriteStrainsScreen() {
     maxThc: null,
     minCbd: null,
     maxCbd: null,
+    showFavoritesOnly: false,
   });
 
   // Use the enhanced hook with both UUID and ObjectId data
@@ -291,8 +290,6 @@ export function FavoriteStrainsScreen() {
     <ErrorBoundary>
       <StrainsView
         router={router}
-        theme={theme}
-        isDarkMode={isDarkMode}
         selectedStrainType={selectedStrainType}
         setSelectedStrainType={setSelectedStrainType}
         searchQuery={searchQuery}
@@ -311,6 +308,10 @@ export function FavoriteStrainsScreen() {
         onToggleFavorite={(id) => {
           const strain = strains.find((s) => s.id === id);
           if (strain) handleToggleFavorite(strain);
+        }}
+        onStrainHover={(strain) => {
+          // Handle strain hover if needed
+          console.log('Strain hovered:', strain.name);
         }}
       />
     </ErrorBoundary>

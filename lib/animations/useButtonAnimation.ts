@@ -5,7 +5,15 @@
  * Optimized for buttons, FABs, and interactive elements.
  */
 
-import { useSharedValue, useAnimatedStyle, withSpring, runOnJS, SharedValue } from 'react-native-reanimated';
+import { ViewStyle } from 'react-native';
+import { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  runOnJS, 
+  SharedValue, 
+  AnimateStyle 
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { ANIMATION_PRESETS, SPRING_CONFIGS } from './presets';
 import { useAnimationCleanup } from './useAnimationCleanup';
@@ -29,7 +37,7 @@ interface UseButtonAnimationConfig {
 }
 
 export interface UseButtonAnimationReturn {
-  animatedStyle: ReturnType<typeof useAnimatedStyle>;
+  animatedStyle: AnimateStyle<ViewStyle>;
   handlers: {
     onPressIn: () => void;
     onPressOut: () => void;

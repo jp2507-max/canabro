@@ -1,11 +1,14 @@
 import { useRouter } from 'expo-router';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import StrainsView from './StrainsView';
 
 import { ActiveFilters } from '@/components/strains/StrainFilterModal';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import ThemedText from '@/components/ui/ThemedText';
+import ThemedView from '@/components/ui/ThemedView';
 import { useAuth } from '@/lib/contexts/AuthProvider';
 import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
@@ -18,7 +21,6 @@ export function StrainsContainer() {
   // Call all hooks at the top level always
   useProtectedRoute();
   const router = useRouter();
-  const { theme, isDarkMode } = useTheme();
   const { user } = useAuth();
   const userId = user?.id;
   const prefetchStrain = usePrefetchStrain();
@@ -37,6 +39,7 @@ export function StrainsContainer() {
     maxThc: null,
     minCbd: null,
     maxCbd: null,
+    showFavoritesOnly: false,
   });
 
   // Use the favorite manager hook for all favorites functionality - always at top level
@@ -120,26 +123,26 @@ export function StrainsContainer() {
     [prefetchStrain]
   );
 
-  // Render unauthenticated state
+  // Render unauthenticated state with proper safe area
   if (!userId) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-        <ThemedText className="mb-2 text-center text-xl font-bold">
-          User not authenticated
-        </ThemedText>
-        <ThemedText className="mb-4 text-center text-base">
-          Please log in to view strains.
-        </ThemedText>
-      </View>
+      <SafeAreaView className="flex-1 bg-white dark:bg-black">
+        <ThemedView variant="default" className="flex-1 items-center justify-center px-6">
+          <ThemedText className="mb-2 text-center text-xl font-bold">
+            User not authenticated
+          </ThemedText>
+          <ThemedText className="mb-4 text-center text-base">
+            Please log in to view strains.
+          </ThemedText>
+        </ThemedView>
+      </SafeAreaView>
     );
   }
 
-  try {
-    return (
+  return (
+    <ErrorBoundary>
       <StrainsView
         router={router}
-        theme={theme}
-        isDarkMode={isDarkMode}
         selectedStrainType={selectedStrainType}
         setSelectedStrainType={setSelectedStrainType}
         searchQuery={searchQuery}
@@ -158,22 +161,8 @@ export function StrainsContainer() {
         onToggleFavorite={handleToggleFavorite}
         onStrainHover={handleStrainHover}
       />
-    );
-  } catch (err) {
-    console.error('[ERROR] StrainsContainer crashed:', err);
-    // Simple fallback UI
-    return (
-      <View className="flex-1 items-center justify-center bg-white p-5 dark:bg-zinc-900">
-        <ThemedText className="mb-2.5 text-lg font-bold">Something went wrong</ThemedText>
-        <ThemedText className="mb-5 text-gray-700 dark:text-gray-300">
-          We're having trouble loading the strains catalog.
-        </ThemedText>
-        <TouchableOpacity className="rounded-lg bg-emerald-400 px-4 py-3" onPress={handleRefresh}>
-          <ThemedText className="font-medium text-white">Try Again</ThemedText>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+    </ErrorBoundary>
+  );
 }
 
 export default StrainsContainer;
