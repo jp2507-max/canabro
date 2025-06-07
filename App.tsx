@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+
 import { ScreenContent } from './components/ScreenContent';
 
 import './global.css';

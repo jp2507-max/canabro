@@ -1,50 +1,58 @@
+import * as Haptics from 'expo-haptics';
+import * as Localization from 'expo-localization';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
-import { ScrollView, TouchableOpacity, ActivityIndicator, View } from 'react-native'; // Removed Text, added View
+import React, { useEffect } from 'react';
+import { ScrollView, ActivityIndicator, View, RefreshControl } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  SlideInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+  runOnJS,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DiaryEntryItem from '../../../components/diary/DiaryEntryItem';
-import JournalCalendar from '../../../components/diary/JournalCalendar'; // Import the new calendar component
+import JournalCalendar from '../../../components/diary/JournalCalendar';
 import { OptimizedIcon } from '../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
-import { useTheme } from '../../../lib/contexts/ThemeContext';
 import { useDiaryEntries } from '../../../lib/hooks/diary/useDiaryEntries';
-import { usePlant } from '../../../lib/hooks/plants/usePlant'; // Restore usePlant hook
-import { DiaryEntry } from '../../../lib/types/diary'; // Correct import path for the type
+import { usePlant } from '../../../lib/hooks/plants/usePlant';
+import { DiaryEntry } from '../../../lib/types/diary';
 
-// Helper function to format date (adjust format as needed)
+const AnimatedPressable = Animated.createAnimatedComponent(View);
+
+// Helper function to format date
 const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' }); // e.g., 26. März
+  return date.toLocaleDateString(Localization.locale, { day: '2-digit', month: 'short' });
 };
 
 // Helper function to group entries by date string 'YYYY-MM-DD'
 const groupEntriesByDate = (entries: DiaryEntry[]) => {
   return entries.reduce<Record<string, DiaryEntry[]>>(
     (acc, entry) => {
-      // Use created_at, ensuring it exists before processing
       if (!entry.created_at) {
-        return acc; // Skip entries without a created_at date
+        return acc;
       }
 
-      // Create date key from the entry's creation date
       const entryDate = new Date(entry.created_at);
-      const dateKey = entryDate.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+      const dateKey = entryDate.toISOString().split('T')[0];
 
-      // Ensure dateKey is valid
       if (!dateKey) {
-        return acc; // Skip this entry if we couldn't create a valid dateKey
+        return acc;
       }
 
-      // Initialize an empty array if this dateKey doesn't exist yet
       if (!(dateKey in acc)) {
         acc[dateKey] = [];
       }
 
-      // Using non-null assertion since we've already checked that the key exists
       acc[dateKey]!.push(entry);
 
-      // Sort entries within the day by time (newest first) using created_at
       acc[dateKey]!.sort(
         (a: DiaryEntry, b: DiaryEntry) =>
           new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
@@ -56,78 +64,155 @@ const groupEntriesByDate = (entries: DiaryEntry[]) => {
   );
 };
 
+// Animated header button component
+function AnimatedHeaderButton({
+  onPress,
+  iconName,
+  accessibilityLabel,
+}: {
+  onPress: () => void;
+  iconName: string;
+  accessibilityLabel: string;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const gesture = Gesture.Tap()
+    .onStart(() => {
+      scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+    })
+    .onEnd(() => {
+      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      runOnJS(onPress)();
+    });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <AnimatedPressable
+        style={animatedStyle}
+        className="p-2"
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}>
+        <OptimizedIcon name={iconName as any} size={24} color={undefined} />
+      </AnimatedPressable>
+    </GestureDetector>
+  );
+}
+
 export default function PlantJournalScreen() {
   const { id: routePlantId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { theme, isDarkMode } = useTheme();
-  // Restore using usePlant hook
-  const { data: plant, loading: isLoadingPlant, error: plantError } = usePlant(routePlantId);
+  const {
+    data: plant,
+    loading: isLoadingPlant,
+    error: plantError,
+    refetch: refetchPlant,
+  } = usePlant(routePlantId);
   const {
     entries,
     isLoading: isLoadingEntries,
     error: entriesError,
+    refetch: refetchEntries,
   } = useDiaryEntries(routePlantId);
+
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  // Animation values for floating action
+  const fabScale = useSharedValue(0);
+  const fabOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    // Animate FAB entrance with delay
+    fabScale.value = withDelay(800, withSpring(1, { damping: 15, stiffness: 300 }));
+    fabOpacity.value = withDelay(800, withSpring(1, { damping: 20, stiffness: 300 }));
+  }, []);
+
+  const fabAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: fabScale.value }],
+    opacity: fabOpacity.value,
+  }));
+
+  // Handle refresh - properly wire to actual loading states
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      // Execute both refetch functions in parallel
+      await Promise.all([refetchPlant(), refetchEntries()]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchPlant, refetchEntries]);
 
   // Basic validation
   if (!routePlantId) {
-    // Use theme classes for background
     return (
       <ThemedView variant="default" className="flex-1 items-center justify-center p-4">
-        <ThemedText variant="default" className="text-lg text-status-danger">Error: Invalid Plant ID.</ThemedText>
+        <Animated.View entering={FadeIn.duration(600)}>
+          <ThemedText variant="default" className="text-status-danger text-lg">
+            Error: Invalid Plant ID.
+          </ThemedText>
+        </Animated.View>
       </ThemedView>
     );
   }
 
   const handleAddNewEntry = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push(`/plant/${routePlantId}/diary/create`);
   };
 
   const handleGoToSettings = () => {
-    // TODO: Implement navigation to plant settings screen
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('Navigate to plant settings');
   };
 
   const handleExport = () => {
-    // TODO: Implement export functionality
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('Export journal');
   };
 
   // Loading state
   if (isLoadingPlant) {
-    // Use theme classes for background
     return (
       <ThemedView variant="default" className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-        {/* Use ThemedText for consistent styling */}
-        <ThemedText variant="muted" className="mt-2">
-          Loading Plant Info...
-        </ThemedText>
+        <Animated.View entering={FadeIn.duration(400)} className="items-center">
+          <ActivityIndicator size="large" className="text-primary-500" />
+          <ThemedText variant="muted" className="mt-4 text-center">
+            Loading Plant Info...
+          </ThemedText>
+        </Animated.View>
       </ThemedView>
     );
   }
 
   // Error state
-  // IMPORTANT: Check for the specific relationship error here if possible,
-  // otherwise, any error in plant loading will show this generic message.
   if (plantError || !plant) {
-    // Use theme classes for background and header
     return (
       <ThemedView variant="default" className="flex-1 items-center justify-center p-4">
         <Stack.Screen
           options={{
             title: 'Error',
-            headerStyle: {
-              backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50],
-            },
-            headerTintColor: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
+            headerStyle: { backgroundColor: 'transparent' },
+            headerTintColor: undefined,
           }}
         />
-        <ThemedText variant="default" className="text-lg text-status-danger">Error loading plant data.</ThemedText>
-        {/* Use ThemedText for consistent styling */}
-        <ThemedText variant="muted" className="mt-2 text-center">
-          {/* Display the actual error message */}
-          {plantError?.message || 'Could not find the specified plant.'}
-        </ThemedText>
+        <Animated.View entering={FadeIn.duration(600)} className="items-center">
+          <OptimizedIcon name="help-circle-outline" size={48} color="#ef4444" />
+          <ThemedText variant="default" className="text-status-danger text-center text-lg">
+            Error loading plant data.
+          </ThemedText>
+          <ThemedText variant="muted" className="mt-2 text-center">
+            {plantError?.message || 'Could not find the specified plant.'}
+          </ThemedText>
+        </Animated.View>
       </ThemedView>
     );
   }
@@ -137,156 +222,201 @@ export default function PlantJournalScreen() {
     <ThemedView variant="default" className="flex-1">
       <Stack.Screen
         options={{
-          headerStyle: {
-            backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50],
-          },
-          headerTintColor: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
+          headerStyle: { backgroundColor: 'transparent' },
+          headerTintColor: undefined,
           headerTitle: () => (
-            <View className="flex-row items-center">
-              {/* TODO: Add plant icon based on type/stage */}
-              <OptimizedIcon
-                name="leaf-outline"
-                size={22}
-                color={isDarkMode ? theme.colors.primary[400] : theme.colors.primary[600]}
-              />
-              <ThemedText className="ml-2 text-lg font-semibold">
-                {/* Access plant name safely */}
+            <Animated.View
+              entering={SlideInDown.delay(200).duration(600)}
+              className="flex-row items-center">
+              <OptimizedIcon name="leaf-outline" size={22} color="#10b981" />
+              <ThemedText className="ml-2 text-lg font-extrabold">
                 {plant?.name || 'Plant Journal'}
               </ThemedText>
-            </View>
+            </Animated.View>
           ),
           headerRight: () => (
-            <View className="mr-2 flex-row items-center space-x-4">
-              <TouchableOpacity onPress={handleGoToSettings}>
-                <OptimizedIcon
-                  name="settings-outline"
-                  size={24}
-                  color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleExport}>
-                <OptimizedIcon
-                  name="share-outline" // Using share icon for export/upload
-                  size={24}
-                  color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}
-                />
-              </TouchableOpacity>
-            </View>
+            <Animated.View
+              entering={SlideInDown.delay(400).duration(600)}
+              className="flex-row items-center space-x-2">
+              <AnimatedHeaderButton
+                onPress={handleGoToSettings}
+                iconName="settings-outline"
+                accessibilityLabel="Plant settings"
+              />
+              <AnimatedHeaderButton
+                onPress={handleExport}
+                iconName="share-outline"
+                accessibilityLabel="Export journal"
+              />
+            </Animated.View>
           ),
-          headerShadowVisible: false, // Remove shadow like in the example
+          headerShadowVisible: false,
         }}
       />
-      {/* Wrap content in SafeAreaView for insets */}
+
       <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1 }}>
-        {/* Integrate the JournalCalendar component */}
-        <JournalCalendar />
+        {/* Journal Calendar with entrance animation */}
+        <Animated.View entering={FadeInDown.delay(300).duration(600)}>
+          <JournalCalendar />
+        </Animated.View>
 
         <ScrollView
-          className="flex-1 px-4 pt-4" // Added padding top
-          contentContainerStyle={{ paddingBottom: 40 }}>
+          className="flex-1 px-4 pt-4"
+          contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={undefined}
+              colors={['#10b981']}
+              progressBackgroundColor="transparent"
+            />
+          }>
           {/* Diary Entry Timeline */}
           {isLoadingEntries ? (
-            <ActivityIndicator color={theme.colors.primary[500]} />
+            <Animated.View
+              entering={FadeIn.delay(400).duration(600)}
+              className="flex-1 items-center justify-center py-20">
+              <ActivityIndicator className="text-primary-500" />
+              <ThemedText variant="muted" className="mt-4">
+                Loading entries...
+              </ThemedText>
+            </Animated.View>
           ) : entriesError ? (
-            <ThemedText className="text-center text-status-danger">
-              Error loading entries.
-            </ThemedText>
+            <Animated.View
+              entering={FadeIn.delay(400).duration(600)}
+              className="flex-1 items-center justify-center py-20">
+              <OptimizedIcon name="help-circle-outline" size={40} color="#ef4444" />
+              <ThemedText className="text-status-danger text-center">
+                Error loading entries.
+              </ThemedText>
+            </Animated.View>
           ) : entries.length === 0 ? (
-            <View className="mt-10 items-center">
-              {/* Use theme colors for icon */}
-              <OptimizedIcon
-                name="document-text-outline"
-                size={40}
-                color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
-              />
-              {/* Use ThemedText for consistent styling */}
-              <ThemedText variant="heading" className="mt-2 text-center text-lg font-medium">
-                No journal entries yet.
-              </ThemedText>
-              <ThemedText variant="muted" className="text-center">
-                Start tracking your plant's journey!
-              </ThemedText>
-              {/* Add Entry Button for empty state */}
-              <TouchableOpacity
-                onPress={handleAddNewEntry}
-                className="mt-6 flex-row items-center rounded-full px-6 py-3 active:opacity-80"
-                style={{ backgroundColor: theme.colors.primary[500] }}>
-                <OptimizedIcon name="add-circle-outline" size={20} color="white" />
-                <ThemedText className="ml-2 text-base font-semibold text-white">
-                  Add First Entry
+            <Animated.View
+              entering={FadeInDown.delay(500).duration(800)}
+              className="mt-20 items-center">
+              <View className="mb-8 items-center">
+                <View className="mb-4 rounded-full bg-neutral-100 p-6 dark:bg-neutral-800">
+                  <OptimizedIcon name="document-text-outline" size={48} color="#9ca3af" />
+                </View>
+                <ThemedText variant="heading" className="mb-2 text-center text-xl font-extrabold">
+                  No journal entries yet
                 </ThemedText>
-              </TouchableOpacity>
-            </View>
+                <ThemedText variant="muted" className="max-w-sm text-center">
+                  Start tracking your plant's journey and watch it grow!
+                </ThemedText>
+              </View>
+
+              {/* Enhanced Add Entry Button */}
+              <GestureDetector
+                gesture={Gesture.Tap()
+                  .onStart(() => {
+                    runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+                  })
+                  .onEnd(() => {
+                    runOnJS(handleAddNewEntry)();
+                  })}>
+                <AnimatedPressable
+                  className="flex-row items-center rounded-2xl bg-primary-500 px-8 py-4 shadow-lg dark:bg-primary-600"
+                  accessibilityRole="button"
+                  accessibilityLabel="Add first journal entry">
+                  <OptimizedIcon name="add-circle-outline" size={20} color="white" />
+                  <ThemedText className="ml-2 text-base font-bold text-white">
+                    Add First Entry
+                  </ThemedText>
+                </AnimatedPressable>
+              </GestureDetector>
+            </Animated.View>
           ) : (
-            // Render grouped entries
+            // Render grouped entries with staggered animations
             Object.entries(groupEntriesByDate(entries))
-              // Sort days descending (newest first)
               .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
               .map(([dateKey, dayEntries], dayIndex) => (
-                <View key={dateKey} className="mb-6">
+                <Animated.View
+                  key={dateKey}
+                  entering={FadeInDown.delay(600 + dayIndex * 100).duration(600)}
+                  className="mb-6">
                   {/* Day Header */}
-                  <View className="mb-3 flex-row items-center justify-between">
+                  <View className="mb-4 flex-row items-center justify-between">
                     <View className="flex-row items-center">
-                      {/* Timeline Circle */}
-                      <ThemedView variant="surface" className="mr-3 h-3 w-3 rounded-full" />
-                      {/* TODO: Calculate actual day number */}
-                      <ThemedText variant="heading" className="text-lg font-bold">
-                        Tag {entries.length - dayIndex * dayEntries.length} {/* Placeholder Day */}
+                      <View className="mr-4 h-3 w-3 rounded-full bg-primary-500 shadow-sm dark:bg-primary-600" />
+                      <ThemedText variant="heading" className="text-lg font-extrabold">
+                        Day {dayIndex + 1}
                       </ThemedText>
                     </View>
-                    <ThemedText variant="muted" className="text-sm">
+                    <ThemedText variant="muted" className="text-sm font-medium">
                       {formatDate(new Date(dateKey))}
                     </ThemedText>
                   </View>
 
                   {/* Entries for the day */}
-                  <View
-                    className="ml-[5px] border-l-2 pl-6"
-                    style={{
-                      borderColor: isDarkMode
-                        ? theme.colors.neutral[700]
-                        : theme.colors.neutral[300],
-                    }}>
+                  <View className="ml-[5px] border-l-2 border-neutral-300 pl-6 dark:border-neutral-600">
                     {dayEntries.map((entry, entryIndex) => (
                       <View
                         key={entry.id}
                         className={entryIndex < dayEntries.length - 1 ? 'mb-4' : ''}>
-                        {/* TODO: Redesign DiaryEntryItem to fit timeline */}
                         <DiaryEntryItem entry={entry} />
                       </View>
                     ))}
 
-                    {/* Add Entry Section for the day */}
-                    <TouchableOpacity
-                      onPress={handleAddNewEntry}
-                      className="-ml-6 mt-4 flex-row items-center rounded-lg p-2 active:opacity-70"
-                      // Add subtle background on hover/press?
-                    >
-                      {/* Timeline Circle */}
-                      <ThemedView variant="default" className="mr-3 h-3 w-3 rounded-full border-2 border-primary-500 dark:border-primary-400" />
-                      <ThemedText variant="default" className="text-base font-medium text-primary-600 dark:text-primary-400">
-                        + Eintrag {/* "+ Entry" */}
-                      </ThemedText>
-                      {/* TODO: Add small icons for common entry types */}
-                      <View className="ml-2 flex-row space-x-1">
-                        <OptimizedIcon
-                          name="reader-outline"
-                          size={16}
-                          color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[500]}
-                        />
-                        <OptimizedIcon
-                          name="water-outline"
-                          size={16}
-                          color={isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[500]}
-                        />
-                        {/* Add more icons */}
-                      </View>
-                    </TouchableOpacity>
+                    {/* Add Entry Section */}
+                    <GestureDetector
+                      gesture={Gesture.Tap()
+                        .onStart(() => {
+                          runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+                        })
+                        .onEnd(() => {
+                          runOnJS(handleAddNewEntry)();
+                        })}>
+                      <AnimatedPressable
+                        className="-ml-6 mt-4 flex-row items-center rounded-xl p-3 active:opacity-70"
+                        accessibilityRole="button"
+                        accessibilityLabel="Add new journal entry">
+                        <View className="mr-3 h-3 w-3 rounded-full border-2 border-primary-500 bg-primary-100 dark:border-primary-400 dark:bg-primary-800" />
+                        <ThemedText className="text-base font-bold text-primary-600 dark:text-primary-400">
+                          + Add Entry
+                        </ThemedText>
+                        <View className="ml-3 flex-row space-x-2">
+                          <View className="rounded bg-neutral-200 p-1 dark:bg-neutral-700">
+                            <OptimizedIcon name="reader-outline" size={14} color="#6b7280" />
+                          </View>
+                          <View className="rounded bg-neutral-200 p-1 dark:bg-neutral-700">
+                            <OptimizedIcon name="water-outline" size={14} color="#6b7280" />
+                          </View>
+                          <View className="rounded bg-neutral-200 p-1 dark:bg-neutral-700">
+                            <OptimizedIcon name="camera-outline" size={14} color="#6b7280" />
+                          </View>
+                        </View>
+                      </AnimatedPressable>
+                    </GestureDetector>
                   </View>
-                </View>
+                </Animated.View>
               ))
           )}
         </ScrollView>
+
+        {/* Floating Action Button with sophisticated animation */}
+        {entries.length > 0 && (
+          <Animated.View style={[fabAnimatedStyle]} className="absolute bottom-6 right-6">
+            <GestureDetector
+              gesture={Gesture.Tap()
+                .onStart(() => {
+                  fabScale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
+                  runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+                })
+                .onEnd(() => {
+                  fabScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+                  runOnJS(handleAddNewEntry)();
+                })}>
+              <AnimatedPressable
+                className="elevation-4 h-14 w-14 items-center justify-center rounded-full bg-primary-500 shadow-lg dark:bg-primary-600"
+                accessibilityRole="button"
+                accessibilityLabel="Add new journal entry">
+                <OptimizedIcon name="add" size={28} color="white" />
+              </AnimatedPressable>
+            </GestureDetector>
+          </Animated.View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );

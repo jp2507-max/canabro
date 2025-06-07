@@ -26,6 +26,7 @@ export interface Comment {
   post_id: string;
   user_id: string;
   content: string;
+  image_url?: string;
   likes_count: number;
   parent_id?: string; // For nested comments
   created_at: string;
@@ -70,6 +71,7 @@ export interface CreateCommentData {
   post_id: string;
   content: string;
   parent_id?: string;
+  image_url?: string;
 }
 
 /**

@@ -1,37 +1,38 @@
 /**
  * 🔄 useDerivedAnimation Hook
- * 
+ *
  * Provides optimized derived value utilities for complex animations.
  * Reduces unnecessary calculations and improves performance.
- * 
+ *
  * 🚨 PERFORMANCE NOTE:
  * When passing complex objects to the dependencies array, always memoize them
  * to prevent unnecessary worklet re-evaluations. Objects are compared by reference,
  * so recreating them on every render will cause worklets to be torn down and recreated.
- * 
+ *
  * @example
  * // ❌ Bad - creates new object on every render
  * const config = { min: 0, max: 1 };
  * useDerivedAnimation(fn, { dependencies: [value, config] });
- * 
+ *
  * // ✅ Good - memoized for referential stability
  * const memoConfig = useMemo(() => config, [config.min, config.max]);
  * useDerivedAnimation(fn, { dependencies: [value, memoConfig] });
  */
 
-import { useDerivedValue, useSharedValue, SharedValue } from 'react-native-reanimated';
 import { useMemo } from 'react';
+import { useDerivedValue, useSharedValue, SharedValue } from 'react-native-reanimated';
+
 import { useAnimationCleanup } from './useAnimationCleanup';
 
 /**
  * Helper to safely memoize objects for animation dependencies.
  * Prevents unnecessary worklet re-evaluations by maintaining referential stability.
  */
-export function useMemoizedDeps<T extends Record<string, any>>(
-  obj: T,
-  keys: (keyof T)[]
-): T {
-  return useMemo(() => obj, keys.map(key => obj[key]));
+export function useMemoizedDeps<T extends Record<string, any>>(obj: T, keys: (keyof T)[]): T {
+  return useMemo(
+    () => obj,
+    keys.map((key) => obj[key])
+  );
 }
 
 interface UseDerivedAnimationConfig {
@@ -39,42 +40,39 @@ interface UseDerivedAnimationConfig {
    * Dependencies that trigger re-evaluation.
    * Accept any value, the same way React's deps array works.
    */
-  dependencies?: ReadonlyArray<any>;
-  
+  dependencies?: readonly any[];
+
   // Optional bounds for clamping values
   bounds?: {
     min?: number;
     max?: number;
   };
-  
+
   // Whether to enable cleanup on unmount
   enableCleanup?: boolean;
 }
 
-export function useDerivedAnimation<T>(
-  derivedFn: () => T,
-  config: UseDerivedAnimationConfig
-) {
+export function useDerivedAnimation<T>(derivedFn: () => T, config: UseDerivedAnimationConfig) {
   const { dependencies = [], bounds, enableCleanup = true } = config;
-  
+
   // Create derived value with bounds checking
   const derivedValue = useDerivedValue(() => {
     const result = derivedFn();
-    
+
     // Apply bounds if specified and result is numeric
     if (bounds && typeof result === 'number') {
       const { min = -Infinity, max = Infinity } = bounds;
       return Math.max(min, Math.min(max, result));
     }
-    
+
     return result;
   }, dependencies as any);
-    // Always call; internally the hook can noop when disabled
+  // Always call; internally the hook can noop when disabled
   useAnimationCleanup({
     sharedValues: [derivedValue as SharedValue<any>],
     disabled: !enableCleanup,
   });
-  
+
   return {
     derivedValue,
     // Helper to get current value
@@ -92,10 +90,10 @@ export function useParallaxDerived(
   factor: number = 0.5,
   bounds?: { min?: number; max?: number }
 ) {
-  return useDerivedAnimation(
-    () => scrollY.value * factor,
-    { dependencies: [scrollY, factor], bounds }
-  );
+  return useDerivedAnimation(() => scrollY.value * factor, {
+    dependencies: [scrollY, factor],
+    bounds,
+  });
 }
 
 /**
@@ -111,9 +109,9 @@ export function useFadeDerived(
       const distance = Math.abs(position.value - fadeStart);
       return Math.max(0, 1 - distance / fadeDistance);
     },
-    { 
+    {
       dependencies: [position, fadeDistance, fadeStart],
-      bounds: { min: 0, max: 1 }
+      bounds: { min: 0, max: 1 },
     }
   );
 }
@@ -134,18 +132,16 @@ export function useScaleDerived(
     () => {
       const { start, end } = memoProgressRange;
       const { min, max } = memoScaleRange;
-      
+
       // Normalize progress to 0-1 range
-      const normalizedProgress = Math.max(0, Math.min(1, 
-        (progress.value - start) / (end - start)
-      ));
-      
+      const normalizedProgress = Math.max(0, Math.min(1, (progress.value - start) / (end - start)));
+
       // Interpolate between min and max scale
       return min + (max - min) * normalizedProgress;
     },
-    { 
+    {
       dependencies: [progress, memoScaleRange, memoProgressRange],
-      bounds: { min: memoScaleRange.min, max: memoScaleRange.max }
+      bounds: { min: memoScaleRange.min, max: memoScaleRange.max },
     }
   );
 }
@@ -162,9 +158,9 @@ export function useRotationDerived(
     () => {
       return Math.sin(input.value * frequency) * intensity;
     },
-    { 
+    {
       dependencies: [input, intensity, frequency],
-      bounds: { min: -intensity, max: intensity }
+      bounds: { min: -intensity, max: intensity },
     }
   );
 }
@@ -174,7 +170,7 @@ export function useRotationDerived(
  */
 export function useCombinedDerived<T>(
   combineFn: () => T,
-  dependencies: ReadonlyArray<any>,
+  dependencies: readonly any[],
   bounds?: { min?: number; max?: number }
 ) {
   return useDerivedAnimation(combineFn, { dependencies, bounds });
@@ -190,21 +186,21 @@ export function useSpringDerived(
   const { damping = 15, stiffness = 300 } = config;
   const currentValue = useSharedValue(0);
   const velocity = useSharedValue(0);
-  
+
   // Memoize config values to prevent unnecessary re-evaluations
   const memoDamping = useMemo(() => damping, [damping]);
   const memoStiffness = useMemo(() => stiffness, [stiffness]);
-  
+
   const { derivedValue, getValue } = useDerivedAnimation(
     () => {
       // Simple spring physics simulation
       const displacement = target.value - currentValue.value;
       const springForce = displacement * memoStiffness;
       const dampingForce = velocity.value * memoDamping;
-      
+
       velocity.value += (springForce - dampingForce) * 0.016; // 60fps delta
       currentValue.value += velocity.value * 0.016;
-      
+
       return currentValue.value;
     },
     { dependencies: [target, memoDamping, memoStiffness] }

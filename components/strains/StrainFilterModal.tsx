@@ -1,23 +1,33 @@
+import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import { Modal, View, Pressable, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Modal, View, ScrollView, ActivityIndicator } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnUI,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SPRING_CONFIGS } from '../../lib/animations/presets';
 import { StrainSpecies, StrainEffectType, StrainFlavorType } from '../../lib/types/strain';
-import ThemedText from '../ui/ThemedText';
-import ThemedView from '../ui/ThemedView';
+import {
+  triggerSelectionHaptic,
+  triggerSuccessHaptic,
+  triggerMediumHaptic,
+  triggerLightHaptic,
+} from '../../lib/utils/haptics';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import PotencySlider from '../ui/PotencySlider';
-import { 
-  triggerSelectionHaptic, 
-  triggerSuccessHaptic, 
-  triggerMediumHaptic,
-  triggerLightHaptic 
-} from '../../lib/utils/haptics';
+import ThemedText from '../ui/ThemedText';
+import ThemedView from '../ui/ThemedView';
 
 // Species icon color constants for consistency and maintainability
 const SPECIES_ICON_COLORS = {
   [StrainSpecies.INDICA]: '#9333ea',
-  [StrainSpecies.SATIVA]: '#ea580c', 
+  [StrainSpecies.SATIVA]: '#ea580c',
   [StrainSpecies.HYBRID]: '#16a34a',
   [StrainSpecies.RUDERALIS]: '#0891b2', // cyan-600 for ruderalis
   default: '#059669',
@@ -48,7 +58,7 @@ interface StrainFilterModalProps {
 // Enhanced: Add type-specific styling helpers
 const getSpeciesColor = (species: StrainSpecies | null, isSelected: boolean) => {
   if (!isSelected) return 'text-neutral-600 dark:text-neutral-400';
-  
+
   switch (species) {
     case StrainSpecies.INDICA:
       return 'text-purple-600 dark:text-purple-400';
@@ -63,7 +73,7 @@ const getSpeciesColor = (species: StrainSpecies | null, isSelected: boolean) => 
 
 const getSpeciesBackgroundColor = (species: StrainSpecies | null, isSelected: boolean) => {
   if (!isSelected) return 'bg-neutral-100 dark:bg-neutral-800';
-  
+
   switch (species) {
     case StrainSpecies.INDICA:
       return 'bg-purple-100 dark:bg-purple-900/30';
@@ -107,6 +117,131 @@ const POTENCY_RANGES = {
   cbd: { min: 0, max: 25, step: 0.5, defaultMin: 1, defaultMax: 15 },
 };
 
+// Animated Selection Button Component - moved to module scope for performance
+interface AnimatedSelectionButtonProps {
+  onPress: () => void;
+  children: React.ReactNode;
+  selected: boolean;
+  disabled?: boolean;
+  className?: string;
+  accessibilityLabel?: string;
+  accessibilityRole?: 'button' | 'checkbox' | 'radio';
+  accessibilityState?: any;
+  enableHaptics?: boolean;
+}
+
+const AnimatedSelectionButton = React.memo<AnimatedSelectionButtonProps>(
+  ({
+    onPress,
+    children,
+    selected,
+    disabled = false,
+    className = '',
+    accessibilityLabel,
+    accessibilityRole,
+    accessibilityState,
+    enableHaptics = true,
+  }) => {
+    const scale = useSharedValue(1);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }],
+    }));
+
+    const gesture = Gesture.Tap()
+      .enabled(!disabled)
+      .onBegin(() => {
+        runOnUI(() => {
+          scale.value = withTiming(0.95, { duration: 100 });
+        })();
+        if (enableHaptics) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+      })
+      .onFinalize(() => {
+        runOnUI(() => {
+          scale.value = withSpring(1, SPRING_CONFIGS.quick);
+        })();
+        if (!disabled) onPress();
+      });
+
+    return (
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          style={animatedStyle}
+          className={className}
+          accessibilityLabel={accessibilityLabel}
+          accessibilityRole={accessibilityRole}
+          accessibilityState={accessibilityState}>
+          {children}
+        </Animated.View>
+      </GestureDetector>
+    );
+  }
+);
+
+// Animated Action Button Component - moved to module scope for performance
+interface AnimatedActionButtonProps {
+  onPress: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  className?: string;
+  accessibilityLabel?: string;
+  accessibilityRole?: 'button';
+  enableHaptics?: boolean;
+}
+
+const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(
+  ({
+    onPress,
+    children,
+    disabled = false,
+    className = '',
+    accessibilityLabel,
+    accessibilityRole,
+    enableHaptics = true,
+  }) => {
+    const scale = useSharedValue(1);
+    const shadowOpacity = useSharedValue(0.2);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }],
+      shadowOpacity: shadowOpacity.value,
+    }));
+
+    const gesture = Gesture.Tap()
+      .enabled(!disabled)
+      .onBegin(() => {
+        runOnUI(() => {
+          scale.value = withTiming(0.98, { duration: 100 });
+          shadowOpacity.value = withTiming(0.1, { duration: 100 });
+        })();
+        if (enableHaptics) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+      })
+      .onFinalize(() => {
+        runOnUI(() => {
+          scale.value = withSpring(1, SPRING_CONFIGS.smooth);
+          shadowOpacity.value = withSpring(0.2, SPRING_CONFIGS.smooth);
+        })();
+        if (!disabled) onPress();
+      });
+
+    return (
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          style={animatedStyle}
+          className={className}
+          accessibilityLabel={accessibilityLabel}
+          accessibilityRole={accessibilityRole}>
+          {children}
+        </Animated.View>
+      </GestureDetector>
+    );
+  }
+);
+
 export default function StrainFilterModal({
   isVisible,
   onClose,
@@ -123,15 +258,16 @@ export default function StrainFilterModal({
     if (enableHaptics) {
       triggerMediumHaptic();
     }
-    
+
     setIsApplying(true);
-    
-    onApplyFilters(currentFilters);
-    
+
+    // Wait for onApplyFilters to complete, handling both sync and async cases
+    await Promise.resolve(onApplyFilters(currentFilters));
+
     if (enableHaptics) {
       triggerSuccessHaptic();
     }
-    
+
     setIsApplying(false);
     onClose();
   };
@@ -140,7 +276,7 @@ export default function StrainFilterModal({
     if (enableHaptics) {
       triggerLightHaptic(); // Enhanced: Use lighter haptic for reset
     }
-    
+
     const defaultFilters: ActiveFilters = {
       species: null,
       effects: [],
@@ -170,7 +306,7 @@ export default function StrainFilterModal({
     if (enableHaptics) {
       triggerSelectionHaptic();
     }
-    
+
     setCurrentFilters((prevFilters) => {
       const currentSelection = prevFilters[filterKey] as (StrainEffectType | StrainFlavorType)[];
       const isSelected = currentSelection.includes(value);
@@ -203,9 +339,7 @@ export default function StrainFilterModal({
   };
 
   const renderFilterSection = (title: string, children: React.ReactNode) => (
-    <ThemedView
-      variant="card"
-      className="mb-6 p-4">
+    <ThemedView variant="card" className="mb-6 p-4">
       <ThemedText className="mb-3 text-lg font-semibold">{title}</ThemedText>
       {children}
     </ThemedView>
@@ -213,17 +347,16 @@ export default function StrainFilterModal({
 
   // Enhanced: Improved species selector with better UI
   const renderSpeciesSelector = () => (
-    <ScrollView 
-      horizontal 
+    <ScrollView
+      horizontal
       showsHorizontalScrollIndicator={false}
       className="mb-2"
-      contentContainerStyle={{ paddingRight: 16 }}
-    >
+      contentContainerStyle={{ paddingRight: 16 }}>
       <View className="flex-row gap-3">
         {SPECIES_OPTIONS.map((option) => {
           const isSelected = currentFilters.species === option.id;
           return (
-            <TouchableOpacity
+            <AnimatedSelectionButton
               key={option.id ?? 'any'}
               onPress={() => {
                 if (enableHaptics) {
@@ -231,31 +364,28 @@ export default function StrainFilterModal({
                 }
                 setCurrentFilters({ ...currentFilters, species: option.id });
               }}
+              selected={isSelected}
               disabled={isLoading}
+              enableHaptics={enableHaptics}
               className={`
-                flex-row items-center px-4 py-3 rounded-xl border
+                flex-row items-center rounded-xl border px-4 py-3
                 ${getSpeciesBackgroundColor(option.id, isSelected)}
-                ${isSelected 
-                  ? 'border-current' 
-                  : 'border-neutral-200 dark:border-neutral-700'
-                }
+                ${isSelected ? 'border-current' : 'border-neutral-200 dark:border-neutral-700'}
                 ${isLoading ? 'opacity-50' : ''}
-              `}
-            >
+              `}>
               <OptimizedIcon
                 name={getSpeciesIcon(option.id)}
                 size={18}
-                color={isSelected 
-                  ? (SPECIES_ICON_COLORS[option.id as StrainSpecies] || SPECIES_ICON_COLORS.default)
-                  : SPECIES_ICON_COLORS.inactive
+                color={
+                  isSelected
+                    ? SPECIES_ICON_COLORS[option.id as StrainSpecies] || SPECIES_ICON_COLORS.default
+                    : SPECIES_ICON_COLORS.inactive
                 }
               />
-              <ThemedText 
-                className={`font-medium ${getSpeciesColor(option.id, isSelected)}`}
-              >
+              <ThemedText className={`font-medium ${getSpeciesColor(option.id, isSelected)}`}>
                 {option.name}
               </ThemedText>
-            </TouchableOpacity>
+            </AnimatedSelectionButton>
           );
         })}
       </View>
@@ -268,9 +398,11 @@ export default function StrainFilterModal({
       {EFFECT_OPTIONS.map((effect) => {
         const isSelected = currentFilters.effects.includes(effect);
         return (
-          <TouchableOpacity
+          <AnimatedSelectionButton
             key={effect}
             onPress={() => toggleMultiSelectFilter('effects', effect)}
+            selected={isSelected}
+            enableHaptics={enableHaptics}
             className={`rounded-full px-3 py-1.5 ${
               isSelected
                 ? 'bg-purple-600 dark:bg-purple-700' // Example color for effects
@@ -286,7 +418,7 @@ export default function StrainFilterModal({
               }`}>
               {effect}
             </ThemedText>
-          </TouchableOpacity>
+          </AnimatedSelectionButton>
         );
       })}
     </View>
@@ -298,9 +430,11 @@ export default function StrainFilterModal({
       {FLAVOR_OPTIONS.map((flavor) => {
         const isSelected = currentFilters.flavors.includes(flavor);
         return (
-          <TouchableOpacity
+          <AnimatedSelectionButton
             key={flavor}
             onPress={() => toggleMultiSelectFilter('flavors', flavor)}
+            selected={isSelected}
+            enableHaptics={enableHaptics}
             className={`rounded-full px-3 py-1.5 ${
               isSelected
                 ? 'bg-orange-500 dark:bg-orange-600' // Example color for flavors
@@ -316,7 +450,7 @@ export default function StrainFilterModal({
               }`}>
               {flavor}
             </ThemedText>
-          </TouchableOpacity>
+          </AnimatedSelectionButton>
         );
       })}
     </View>
@@ -342,7 +476,7 @@ export default function StrainFilterModal({
         unit="%"
         enableHaptics={enableHaptics}
       />
-      
+
       <PotencySlider
         label="CBD Content"
         min={POTENCY_RANGES.cbd.min}
@@ -368,43 +502,42 @@ export default function StrainFilterModal({
 
   // Enhanced: Add favorites filter renderer
   const renderFavoritesSelector = () => (
-    <TouchableOpacity
+    <AnimatedSelectionButton
       onPress={handleToggleFavorites}
+      selected={currentFilters.showFavoritesOnly ?? false}
       disabled={isLoading}
+      enableHaptics={enableHaptics}
       className={`
-        flex-row items-center justify-between p-4 rounded-xl border
-        ${currentFilters.showFavoritesOnly 
-          ? 'bg-red-100 dark:bg-red-900/30 border-red-500 dark:border-red-400' 
-          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+        flex-row items-center justify-between rounded-xl border p-4
+        ${
+          currentFilters.showFavoritesOnly
+            ? 'border-red-500 bg-red-100 dark:border-red-400 dark:bg-red-900/30'
+            : 'border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800'
         }
         ${isLoading ? 'opacity-50' : ''}
-      `}
-    >
+      `}>
       <View className="flex-row items-center">
         <OptimizedIcon
           name={currentFilters.showFavoritesOnly ? 'heart' : 'heart-outline'}
           size={20}
           color={currentFilters.showFavoritesOnly ? '#dc2626' : '#6b7280'}
         />
-        <ThemedText 
+        <ThemedText
           className={`ml-3 font-medium ${
-            currentFilters.showFavoritesOnly 
-              ? 'text-red-600 dark:text-red-400' 
+            currentFilters.showFavoritesOnly
+              ? 'text-red-600 dark:text-red-400'
               : 'text-neutral-700 dark:text-neutral-300'
-          }`}
-        >
+          }`}>
           Show Favorites Only
         </ThemedText>
       </View>
-      
+
       {currentFilters.showFavoritesOnly && (
-        <View className="bg-red-500 rounded-full px-2 py-1">
-          <ThemedText className="text-white text-xs font-medium">
-            Active
-          </ThemedText>
+        <View className="rounded-full bg-red-500 px-2 py-1">
+          <ThemedText className="text-xs font-medium text-white">Active</ThemedText>
         </View>
       )}
-    </TouchableOpacity>
+    </AnimatedSelectionButton>
   );
 
   return (
@@ -417,30 +550,30 @@ export default function StrainFilterModal({
         {/* Modal Header */}
         <ThemedView
           variant="card"
-          className="flex-row items-center justify-between px-4 py-3 rounded-none border-b border-neutral-200 dark:border-neutral-700">
-          <Pressable
+          className="flex-row items-center justify-between rounded-none border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+          <AnimatedActionButton
             onPress={handleClose}
-            disabled={isLoading}
+            disabled={Boolean(isLoading)}
+            enableHaptics={enableHaptics}
             accessibilityLabel="Close filters"
             accessibilityRole="button"
-            className={isLoading ? 'opacity-50' : ''}
-          >
+            className={isLoading ? 'opacity-50' : ''}>
             <OptimizedIcon name="close" size={28} color="#6b7280" />
-          </Pressable>
+          </AnimatedActionButton>
           <ThemedText className="text-xl font-bold">
             {isLoading ? 'Loading Filters...' : 'Filters'}
           </ThemedText>
-          <Pressable
+          <AnimatedActionButton
             onPress={handleReset}
-            disabled={isLoading}
+            disabled={Boolean(isLoading)}
+            enableHaptics={enableHaptics}
             accessibilityLabel="Reset filters"
             accessibilityRole="button"
-            className={isLoading ? 'opacity-50' : ''}
-          >
+            className={isLoading ? 'opacity-50' : ''}>
             <ThemedText className="text-base text-primary-600 dark:text-primary-400">
               Reset
             </ThemedText>
-          </Pressable>
+          </AnimatedActionButton>
         </ThemedView>
 
         {/* Filter Content */}
@@ -455,10 +588,11 @@ export default function StrainFilterModal({
         {/* Footer / Apply Button */}
         <ThemedView
           variant="card"
-          className="px-4 py-4 rounded-none border-t border-neutral-200 dark:border-neutral-700">
-          <TouchableOpacity
+          className="rounded-none border-t border-neutral-200 px-4 py-4 dark:border-neutral-700">
+          <AnimatedActionButton
             onPress={handleApply}
             disabled={isApplying || isLoading} // Enhanced: Disable when loading
+            enableHaptics={enableHaptics}
             className={`items-center justify-center rounded-full py-4 ${
               isApplying || isLoading
                 ? 'bg-neutral-400 dark:bg-neutral-600'
@@ -468,21 +602,15 @@ export default function StrainFilterModal({
             accessibilityRole="button">
             {isApplying || isLoading ? (
               <View className="flex-row items-center">
-                <ActivityIndicator 
-                  size="small" 
-                  color="white" 
-                  className="mr-2"
-                />
+                <ActivityIndicator size="small" color="white" className="mr-2" />
                 <ThemedText className="text-lg font-bold text-white">
                   {isLoading ? 'Loading...' : 'Applying...'}
                 </ThemedText>
               </View>
             ) : (
-              <ThemedText className="text-lg font-bold text-white">
-                Apply Filters
-              </ThemedText>
+              <ThemedText className="text-lg font-bold text-white">Apply Filters</ThemedText>
             )}
-          </TouchableOpacity>
+          </AnimatedActionButton>
         </ThemedView>
       </SafeAreaView>
     </Modal>

@@ -1,13 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import EditPlantForm from '../../../components/my-plants/EditPlantForm';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
 import { useDatabase } from '../../../lib/contexts/DatabaseProvider';
-import { Plant } from '../../../lib/models/Plant'; // Correct case-sensitive import
+import { Plant } from '../../../lib/models/Plant';
 
 export default function EditPlantScreen() {
   const router = useRouter();
@@ -45,21 +45,25 @@ export default function EditPlantScreen() {
   }, [plantId, database]);
 
   const handleUpdateSuccess = () => {
-    router.back(); // Or navigate to the plant detail screen: router.replace(`/plant/${plantId}`);
-  };  if (isLoading) {
+    router.back();
+  };
+
+  if (isLoading) {
     return (
-      <SafeAreaView className="flex-1">
-        <ThemedView className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" />
-          <ThemedText className="mt-4">Loading plant data...</ThemedText>
+      <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        <ThemedView className="flex-1 items-center justify-center px-4">
+          <ActivityIndicator size="large" className="text-primary-500" />
+          <ThemedText className="mt-4 text-center">Loading plant data...</ThemedText>
         </ThemedView>
       </SafeAreaView>
     );
-  }  if (error) {
+  }
+
+  if (error) {
     return (
-      <SafeAreaView className="flex-1">
-        <ThemedView className="flex-1 items-center justify-center">
-          <ThemedText className="font-semibold text-red-500 text-center">{error}</ThemedText>
+      <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        <ThemedView className="flex-1 items-center justify-center px-4">
+          <ThemedText className="text-status-danger text-center font-semibold">{error}</ThemedText>
         </ThemedView>
       </SafeAreaView>
     );
@@ -67,22 +71,27 @@ export default function EditPlantScreen() {
 
   if (!plant) {
     return (
-      <SafeAreaView className="flex-1">
-        <ThemedView className="flex-1 items-center justify-center">
-          <ThemedText className="font-semibold">Plant data could not be loaded.</ThemedText>
+      <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        <ThemedView className="flex-1 items-center justify-center px-4">
+          <ThemedText className="text-center font-semibold">
+            Plant data could not be loaded.
+          </ThemedText>
         </ThemedView>
       </SafeAreaView>
     );
-  }  return (
-    <SafeAreaView className="flex-1">
+  }
+
+  return (
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
       <Stack.Screen options={{ title: 'Edit Plant' }} />
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <ThemedView className="p-4 rounded-lg">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="p-4 pb-safe-or-4"
+        showsVerticalScrollIndicator={false}>
+        <ThemedView variant="card" className="rounded-lg">
           <EditPlantForm plant={plant} onUpdateSuccess={handleUpdateSuccess} />
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-// No need for StyleSheet since we're using NativeWind

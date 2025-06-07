@@ -14,15 +14,15 @@ interface DiagnosisAICoreProps {
   onError?: (error: Error) => void;
 }
 
-export default function DiagnosisAICore({ 
-  image, 
-  onDiagnosisComplete, 
-  onError 
+export default function DiagnosisAICore({
+  image,
+  onDiagnosisComplete,
+  onError,
 }: DiagnosisAICoreProps) {
   const tfRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [model, setModel] = useState<any>(null);
+  const [model] = useState<any>(null);
 
   useEffect(() => {
     // Dynamically import TensorFlow.js only when this component is used
@@ -33,14 +33,14 @@ export default function DiagnosisAICore({
           const tensorFlow = await import('@tensorflow/tfjs');
           tfRef.current = tensorFlow;
         }
-        
+
         await tfRef.current.ready();
         console.log('TensorFlow.js dynamically loaded and initialized');
-        
+
         // Load your plant disease detection model here
         // const loadedModel = await tfRef.current.loadLayersModel('/path/to/your/model.json');
         // setModel(loadedModel);
-        
+
         setIsInitializing(false);
       } catch (error) {
         console.error('Failed to initialize TensorFlow.js:', error);
@@ -75,15 +75,15 @@ export default function DiagnosisAICore({
       // 1. Preprocess the image
       // 2. Run inference with your trained model
       // 3. Post-process results
-      
+
       // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const mockResult = {
         confidence: 0.85,
         disease: 'Healthy',
         recommendations: ['Continue current care routine'],
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       onDiagnosisComplete?.(mockResult);
@@ -103,26 +103,20 @@ export default function DiagnosisAICore({
 
   if (isInitializing) {
     return (
-      <View className="flex-1 justify-center items-center p-4">
-        <Text className="text-lg font-semibold text-gray-800">
-          Initializing AI Engine...
-        </Text>
-        <Text className="text-sm text-gray-600 mt-2">
-          Loading TensorFlow.js dynamically...
-        </Text>
+      <View className="flex-1 items-center justify-center p-4">
+        <Text className="text-lg font-semibold text-gray-800">Initializing AI Engine...</Text>
+        <Text className="mt-2 text-sm text-gray-600">Loading TensorFlow.js dynamically...</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 justify-center items-center p-4">
+    <View className="flex-1 items-center justify-center p-4">
       <Text className="text-lg font-semibold text-gray-800">
         {isLoading ? 'Analyzing plant...' : 'AI Diagnosis Ready'}
       </Text>
       {isLoading && (
-        <Text className="text-sm text-gray-600 mt-2">
-          Running plant health analysis...
-        </Text>
+        <Text className="mt-2 text-sm text-gray-600">Running plant health analysis...</Text>
       )}
     </View>
   );

@@ -1,6 +1,6 @@
 /**
  * 🎬 Animation System Exports
- * 
+ *
  * Centralized exports for the animation system based on strains screen patterns.
  */
 
@@ -18,13 +18,13 @@ export { useAdvancedGesture } from './useAdvancedGesture';
 
 // Animation utilities
 export { default as AnimationUtils } from './animationUtils';
-export { 
+export {
   AnimationPerformance,
   AnimationPatterns,
   AnimationDebug,
   ValueTransformers,
   Easing,
-  AnimationManager
+  AnimationManager,
 } from './animationUtils';
 
 // Components
@@ -45,8 +45,4 @@ export {
 } from './presets';
 
 // Re-export commonly used types
-export type {
-  WithSpringConfig,
-  SharedValue,
-  AnimatedStyle,
-} from 'react-native-reanimated';
+export type { WithSpringConfig, SharedValue, AnimatedStyle } from 'react-native-reanimated';

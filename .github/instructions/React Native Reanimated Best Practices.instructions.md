@@ -1,39 +1,40 @@
 ---
-applyTo: '**'
+applyTo: 'Styling, Theming'
 ---
 # 🎬 React Native Reanimated Production Guide
 
-## 📅 Last Updated: June 3, 2025
+## 📅 Last Updated: June 2025
 
-Essential patterns for React Native Reanimated v3 + React Compiler (2025) - Streamlined for production use.
+Essential patterns for React Native Reanimated v3 - Production-ready with single source of truth.
 
 ---
 
-## 🔥 **React Compiler Compatibility (2025)**
+## 🎯 **Single Source of Truth: `.value` Syntax**
+
+**Use `.value` for all shared value operations** - this is the standard, production-proven approach that works across all Reanimated versions and setups.
 
 ```tsx
-// ✅ React Compiler optimized patterns
-import { useSharedValue, useAnimatedStyle, withSpring, runOnUI } from 'react-native-reanimated';
+// ✅ STANDARD PATTERN (USE THIS EVERYWHERE)
+import { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 const scale = useSharedValue(1);
 
-// Reading values in worklets
+// Reading values in useAnimatedStyle
 const animatedStyle = useAnimatedStyle(() => {
-  const currentScale = scale.get(); // React Compiler friendly
-  return { transform: [{ scale: currentScale }] };
+  return { transform: [{ scale: scale.value }] };
 });
 
 // Setting values in event handlers
 const handlePress = () => {
-  scale.set(withSpring(1.2)); // React Compiler friendly
+  scale.value = withSpring(1.2);
 };
 
 // Batch updates for performance
 const handleComplexUpdate = () => {
   runOnUI(() => {
     'worklet';
-    scale.set(1.2);
-    opacity.set(0.8);
+    scale.value = 1.2;
+    opacity.value = 0.8;
   })();
 };
 ```
@@ -281,16 +282,39 @@ import { AnimatedCard } from '@/lib/animations/AnimatedCard';
 5. **Don't** mix percentage and pixel units with NativeWind animations
 6. **Don't** over-abstract simple animations into custom hooks
 
+## 🔮 **React Compiler Support (Still RC - No Stable Release Yet)**
+
+**React Compiler remains in Release Candidate (RC)** phase as of June 2025, with working support for Reanimated. While the RC has been tested extensively in production at Meta and is described as "stable and near-final," the React team continues to recommend:
+
+> **"You don't have to rush into using the compiler now. It's okay to wait until it reaches a stable release before adopting it."**
+
+```tsx
+// ✅ REACT COMPILER COMPATIBLE (RC Available since April 2025)
+const animatedStyle = useAnimatedStyle(() => {
+  'worklet';
+  return { width: sv.get() * 100 };
+});
+
+const handlePress = () => {
+  sv.set((value) => value + 1);
+};
+```
+
+**Current status (June 2025)**: React Compiler is still in RC phase. Recommendation:
+- **Most teams**: Use `.value` syntax (universal compatibility, production-proven)
+- **Early adopters**: RC is stable but no stable release announced yet
+- **Meta-scale teams**: RC is production-ready if you follow Rules of React strictly
+
 ## 🎯 **Production Checklist**
 
-- ✅ Use React Compiler patterns (`.get()`, `.set()`, `runOnUI`)
+- ✅ Use `.value` syntax for all shared value operations
 - ✅ Migrate from `useAnimatedGestureHandler` to `Gesture` API
 - ✅ Combine NativeWind (static) + Reanimated (dynamic)
 - ✅ Add proper cleanup with `cancelAnimation`
 - ✅ Import `interpolateColor` with alias to avoid recursion
 - ✅ Use `GestureDetector` instead of handler components
+- ✅ Avoid mixing `.value` and `.get()/.set()` patterns
 
 ---
 
-**Status**: Production-ready patterns for 2025 🎉
-````
+**Status**: Production-ready single source of truth (`.value` syntax) 🎉

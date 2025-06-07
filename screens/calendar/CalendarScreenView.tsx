@@ -56,58 +56,64 @@ function CalendarScreenView({
   }, []);
 
   // Handle navigation to plant details
-  const handleNavigateToPlant = useCallback((plantId: string) => {
-    onNavigateToPlant?.(plantId);
-  }, [onNavigateToPlant]);
+  const handleNavigateToPlant = useCallback(
+    (plantId: string) => {
+      onNavigateToPlant?.(plantId);
+    },
+    [onNavigateToPlant]
+  );
 
-  const renderTaskItem = useCallback(({ item }: { item: PlantTask }) => {
-    return (
-      <TaskItem
-        task={item}
-        database={database}
-        onComplete={handleCompleteTask}
-        onNavigate={handleNavigateToPlant}
-        onPress={() => setIsTaskActionsVisible(true)}
-      />
-    );
-  }, [database, handleCompleteTask, handleNavigateToPlant, setIsTaskActionsVisible]);
+  const renderTaskItem = useCallback(
+    ({ item }: { item: PlantTask }) => {
+      return (
+        <TaskItem
+          task={item}
+          database={database}
+          onComplete={handleCompleteTask}
+          onNavigate={handleNavigateToPlant}
+          onPress={() => setIsTaskActionsVisible(true)}
+        />
+      );
+    },
+    [database, handleCompleteTask, handleNavigateToPlant, setIsTaskActionsVisible]
+  );
 
-  const renderEmptyState = useCallback(() => (
-    <ThemedView className="flex-1 items-center justify-center px-8 py-16">
-      <ThemedText className="text-center text-lg font-medium text-neutral-600 dark:text-neutral-400">
-        No tasks scheduled
-      </ThemedText>
-      <ThemedText className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-500">
-        Tap the + button to add your first task for this day
-      </ThemedText>
-    </ThemedView>
-  ), []);
+  const renderEmptyState = useCallback(
+    () => (
+      <ThemedView className="flex-1 items-center justify-center px-8 py-16">
+        <ThemedText className="text-center text-lg font-medium text-neutral-600 dark:text-neutral-400">
+          No tasks scheduled
+        </ThemedText>
+        <ThemedText className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-500">
+          Tap the + button to add your first task for this day
+        </ThemedText>
+      </ThemedView>
+    ),
+    []
+  );
 
-  const renderLoadingState = useCallback(() => (
-    <ThemedView className="flex-1 items-center justify-center">
-      <ActivityIndicator 
-        size="large" 
-        color="#10b981" // primary-500
-        className="mb-4"
-      />
-      <ThemedText className="text-neutral-600 dark:text-neutral-400">
-        Loading tasks...
-      </ThemedText>
-    </ThemedView>
-  ), []);
+  const renderLoadingState = useCallback(
+    () => (
+      <ThemedView className="flex-1 items-center justify-center">
+        <ActivityIndicator
+          size="large"
+          color="#10b981" // primary-500
+          className="mb-4"
+        />
+        <ThemedText className="text-neutral-600 dark:text-neutral-400">Loading tasks...</ThemedText>
+      </ThemedView>
+    ),
+    []
+  );
 
   return (
     <SafeAreaView
       className="flex-1 bg-neutral-50 dark:bg-neutral-900"
-      edges={['top', 'left', 'right']}
-    >
+      edges={['top', 'left', 'right']}>
       <ThemedView className="flex-1">
         {/* Date Selector Header */}
-        <ThemedView className="bg-white dark:bg-neutral-800 shadow-sm">
-          <DateSelector 
-            selectedDate={selectedDate} 
-            onDateSelect={onDateSelect} 
-          />
+        <ThemedView className="bg-white shadow-sm dark:bg-neutral-800">
+          <DateSelector selectedDate={selectedDate} onDateSelect={onDateSelect} />
         </ThemedView>
 
         {/* Tasks Content */}
@@ -128,13 +134,13 @@ function CalendarScreenView({
                 progressBackgroundColor="#ffffff"
               />
             }
-            contentContainerStyle={{ 
-              paddingTop: 16, 
+            contentContainerStyle={{
+              paddingTop: 16,
               paddingBottom: 100, // Space for FAB
-              flexGrow: 1 
+              flexGrow: 1,
             }}
             showsVerticalScrollIndicator={false}
-            bounces={true}
+            bounces
           />
         )}
 

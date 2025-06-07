@@ -2,9 +2,6 @@
  * Types and interfaces for the sync service
  */
 
-import { Database } from '@nozbe/watermelondb';
-import type { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
-
 /**
  * Health metrics for sync monitoring
  */

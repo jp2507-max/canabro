@@ -1,15 +1,25 @@
-import React, { useMemo } from 'react';
-import { FlatList, TouchableOpacity, View, RefreshControl } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useMemo, useEffect } from 'react';
+import { FlatList, View, RefreshControl } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  SlideInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+  cancelAnimation,
+} from 'react-native-reanimated';
 
 import CommentModal from '../../components/community/CommentModal';
 import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
 import PostItem from '../../components/community/PostItem';
 import type { PostData } from '../../components/community/PostItem';
+import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import ThemedText from '../../components/ui/ThemedText';
-import ThemedView from '../../components/ui/ThemedView';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 
 interface CommunityScreenViewProps {
   posts: PostData[];
@@ -62,12 +72,44 @@ function CommunityScreenView({
   likingPostId,
   user,
 }: CommunityScreenViewProps) {
-  const { theme, isDarkMode } = useTheme();
+  // 🎬 Enhanced Animation System with Entrance Sequences
+  const containerOpacity = useSharedValue(0);
+  const fabScale = useSharedValue(0);
+
+  const animatedContainerStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+  }));
+
+  const animatedFabStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: fabScale.value }],
+  }));
+
+  // 🎯 Initialize entrance animations
+  useEffect(() => {
+    containerOpacity.value = withDelay(100, withSpring(1, { damping: 20, stiffness: 300 }));
+    fabScale.value = withDelay(400, withSpring(1, { damping: 15, stiffness: 400 }));
+
+    return () => {
+      // Cancel any ongoing animations
+      cancelAnimation(containerOpacity);
+      cancelAnimation(fabScale);
+    };
+  }, []);
+
+  // 🎯 Enhanced FAB press handler with haptic feedback
+  const handleFabPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setShowCreateModal(true);
+  };
 
   const renderItem = useMemo(
     () =>
-      ({ item }: { item: PostData }) => (
-        <View className="px-3">
+      ({ item, index }: { item: PostData; index: number }) => (
+        <Animated.View
+          entering={FadeInDown.delay(index * 50)
+            .duration(400)
+            .springify()}
+          className="px-4">
           <PostItem
             post={item}
             currentUserId={user?.id}
@@ -76,79 +118,150 @@ function CommunityScreenView({
             onUserPress={() => {}}
             liking={likingPostId === item.id}
           />
-        </View>
+        </Animated.View>
       ),
     [user, handleLike, handleCommentPress, likingPostId]
   );
 
   const renderEmptyState = useMemo(
     () => (
-      <ThemedView className="flex-1 items-center justify-center px-8 py-20">
-        <OptimizedIcon
-          name="leaf-outline"
-          size={50}
-          color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
-          style={{ marginBottom: 16 }}
-        />
-        <ThemedText
-          className="mb-2 text-center text-lg font-bold"
-          darkClassName="text-neutral-300"
-          lightClassName="text-neutral-700">
-          No Posts Yet
-        </ThemedText>
-        <ThemedText
-          className="mb-8 text-center"
-          darkClassName="text-neutral-400"
-          lightClassName="text-neutral-500">
-          Be the first to share your plants or ask a question!
-        </ThemedText>
-        <TouchableOpacity
-          onPress={() => setShowCreateModal(true)}
-          className="rounded-full px-6 py-3"
-          style={{ backgroundColor: theme.colors.primary[500] }}
-          accessibilityLabel="Create Post"
-          accessibilityRole="button">
-          <ThemedText className="font-bold text-white">Create Post</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
+      <Animated.View
+        entering={FadeIn.delay(200).duration(600)}
+        className="flex-1 items-center justify-center px-8 py-20">
+        <Animated.View
+          entering={SlideInUp.delay(400).duration(500).springify()}
+          className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20">
+          <OptimizedIcon
+            name="leaf-outline"
+            size={40}
+            className="text-primary-600 dark:text-primary-400"
+          />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(600).duration(500)}>
+          <ThemedText className="mb-3 text-center text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            No Posts Yet
+          </ThemedText>
+          <ThemedText className="mb-8 text-center text-lg leading-6 text-neutral-600 dark:text-neutral-400">
+            Be the first to share your plants or ask a question!
+          </ThemedText>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(800).duration(500)}>
+          <FloatingActionButton
+            onPress={handleFabPress}
+            iconName="add"
+            size={56}
+            className="bg-primary-500 dark:bg-primary-600"
+            accessibilityLabel="Create Post"
+          />
+        </Animated.View>
+      </Animated.View>
     ),
-    [isDarkMode, theme, setShowCreateModal]
+    [handleFabPress]
+  );
+
+  const renderLoadingState = useMemo(
+    () => (
+      <Animated.View entering={FadeIn.duration(300)} className="flex-1 items-center justify-center">
+        <View className="items-center">
+          <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20">
+            <OptimizedIcon
+              name="leaf"
+              size={24}
+              className="text-primary-600 dark:text-primary-400"
+            />
+          </View>
+          <ThemedText className="text-lg font-medium text-neutral-600 dark:text-neutral-400">
+            Loading posts...
+          </ThemedText>
+        </View>
+      </Animated.View>
+    ),
+    []
+  );
+
+  const renderErrorState = useMemo(
+    () => (
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        className="flex-1 items-center justify-center px-8">
+        <View className="items-center">
+          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+            <OptimizedIcon
+              name="warning-outline"
+              size={32}
+              className="text-red-600 dark:text-red-400"
+            />
+          </View>
+          <ThemedText className="mb-2 text-center text-xl font-bold text-neutral-900 dark:text-neutral-100">
+            Something went wrong
+          </ThemedText>
+          <ThemedText className="mb-6 text-center text-base text-neutral-600 dark:text-neutral-400">
+            {fetchError || 'Failed to load posts. Please try again.'}
+          </ThemedText>
+          <FloatingActionButton
+            onPress={handleRefresh}
+            iconName="camera-flip-outline"
+            size={48}
+            className="bg-primary-500 dark:bg-primary-600"
+            accessibilityLabel="Retry loading posts"
+          />
+        </View>
+      </Animated.View>
+    ),
+    [fetchError, handleRefresh]
   );
 
   return (
-    <ThemedView className="flex-1" lightClassName="bg-neutral-50" darkClassName="bg-black">
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        ListEmptyComponent={renderEmptyState}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        contentContainerStyle={{ paddingBottom: 80 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            colors={[theme.colors.primary[500]]}
-            tintColor={theme.colors.primary[500]}
-            progressBackgroundColor={
-              isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100]
+    <Animated.View style={animatedContainerStyle} className="flex-1 bg-neutral-50 dark:bg-black">
+      {isLoading && posts.length === 0 ? (
+        renderLoadingState
+      ) : fetchError && posts.length === 0 ? (
+        renderErrorState
+      ) : (
+        <>
+          <FlatList
+            data={posts}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            ListEmptyComponent={renderEmptyState}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            contentContainerStyle={{
+              paddingBottom: 100,
+              paddingTop: 8,
+            }}
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                colors={['#10b981']}
+                tintColor="#10b981"
+                progressBackgroundColor="transparent"
+                className="bg-transparent"
+              />
             }
           />
-        }
-      />
 
-      {/* Floating action button */}
-      <TouchableOpacity
-        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full shadow-lg dark:shadow-neutral-900"
-        style={{ backgroundColor: theme.colors.primary[500] }}
-        onPress={() => setShowCreateModal(true)}
-        accessibilityLabel="Create new post"
-        accessibilityRole="button">
-        <OptimizedIcon name="add" size={30} color="white" />
-      </TouchableOpacity>
+          {/* 🚀 Enhanced Floating Action Button with Sophisticated Animations */}
+          {posts.length > 0 && (
+            <Animated.View style={animatedFabStyle} className="absolute bottom-6 right-6">
+              <FloatingActionButton
+                onPress={handleFabPress}
+                iconName="add"
+                size={64}
+                className="bg-primary-500 shadow-lg shadow-primary-500/25 dark:bg-primary-600"
+                accessibilityLabel="Create new post"
+              />
+            </Animated.View>
+          )}
+        </>
+      )}
 
-      {/* Create post modal */}
+      {/* 🎯 Enhanced Create Post Modal */}
       <CreatePostModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -156,7 +269,7 @@ function CommunityScreenView({
         onAskQuestion={handleAskQuestion}
       />
 
-      {/* Create post screen */}
+      {/* Create Post Screen */}
       <CreatePostScreen
         visible={showCreateScreen}
         onClose={() => setShowCreateScreen(false)}
@@ -171,7 +284,7 @@ function CommunityScreenView({
           onClose={handleCloseComments}
         />
       )}
-    </ThemedView>
+    </Animated.View>
   );
 }
 

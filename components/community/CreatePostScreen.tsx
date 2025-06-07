@@ -1,12 +1,12 @@
-import { decode } from 'base64-arraybuffer'; // Import decode from base64-arraybuffer
+import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
+import * as Haptics from 'expo-haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Modal,
-  TouchableOpacity,
   View,
   Pressable,
   TextInput,
@@ -16,15 +16,31 @@ import {
   ScrollView, // Import ScrollView
 } from 'react-native';
 // Import useSafeAreaInsets
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolateColor,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import { createPost } from '../../lib/services/community-service'; // Import createPost
 import supabase from '../../lib/supabase'; // Import supabase client
+import { OptimizedIcon, type IconName } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { OptimizedIcon } from '../ui/OptimizedIcon';
+
+// Animation configurations
+const SPRING_CONFIG = {
+  damping: 15,
+  stiffness: 200,
+  mass: 0.8,
+  restDisplacementThreshold: 0.01,
+  restSpeedThreshold: 0.01,
+};
 
 type CreatePostScreenProps = {
   visible: boolean;
@@ -32,11 +48,73 @@ type CreatePostScreenProps = {
   onSuccess?: () => void;
 };
 
+// Modern animated action button component
+const AnimatedActionButton = ({
+  onPress,
+  iconName,
+  size = 28,
+  hapticStyle = Haptics.ImpactFeedbackStyle.Light,
+}: {
+  onPress: () => void;
+  iconName: IconName;
+  size?: number;
+  hapticStyle?: Haptics.ImpactFeedbackStyle;
+}) => {
+  const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
+
+  const handlePress = useCallback(() => {
+    runOnJS(Haptics.impactAsync)(hapticStyle);
+    onPress();
+  }, [onPress, hapticStyle]);
+
+  const gesture = Gesture.Tap()
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.85, SPRING_CONFIG);
+      pressed.value = withSpring(1, SPRING_CONFIG);
+    })
+    .onFinalize(() => {
+      'worklet';
+      scale.value = withSpring(1, SPRING_CONFIG);
+      pressed.value = withSpring(0, SPRING_CONFIG);
+    })
+    .onEnd(() => {
+      runOnJS(handlePress)();
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      pressed.value,
+      [0, 1],
+      ['transparent', 'rgba(59, 130, 246, 0.08)']
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+      borderRadius: 12,
+      padding: 8,
+    };
+  });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={animatedStyle}>
+        <OptimizedIcon
+          name={iconName}
+          size={size}
+          className="text-neutral-600 dark:text-neutral-400"
+        />
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
 /**
- * Screen for creating a new community post, styled like the provided image.
+ * Screen for creating a new community post with modern animations and haptic feedback.
  */
 export default function CreatePostScreen({ visible, onClose, onSuccess }: CreatePostScreenProps) {
-  const { theme, isDarkMode } = useTheme();
   const { user } = useAuth(); // Keep user context if needed for posting
   const insets = useSafeAreaInsets(); // Get safe area insets
 
@@ -49,7 +127,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
 
   // --- Action Handlers ---
 
-  const handleTakePhoto = async () => {
+  const handleTakePhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission required', 'Camera permission is needed to take photos.');
@@ -65,9 +143,9 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       setImage(result.assets[0].uri);
       console.log('Photo taken:', result.assets[0].uri);
     }
-  };
+  }, []);
 
-  const handlePickImage = async () => {
+  const handlePickImage = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission required', 'Media library permission is needed to select photos.');
@@ -84,9 +162,9 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       setImage(result.assets[0].uri);
       console.log('Image selected:', result.assets[0].uri);
     }
-  };
+  }, []);
 
-  const handleGetLocation = async () => {
+  const handleGetLocation = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission required', 'Location permission is needed to add location.');
@@ -102,7 +180,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       console.error('Error fetching location:', error);
       Alert.alert('Error', 'Could not fetch location.');
     }
-  };
+  }, []);
 
   // --- Image Upload Function (Adapted from AddPlantForm) ---
   const uploadImage = async (userId: string, imageUri: string): Promise<string | null> => {
@@ -122,38 +200,53 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       );
       // ---
 
-      // Determine the correct MIME type (manipulation forces JPEG)
-      const mimeType = 'image/jpeg';
-      const extension = 'jpg'; // Manipulation forces JPEG
+      // Check file size before upload to prevent OOM issues
+      const fileInfo = await FileSystem.getInfoAsync(manipResult.uri);
+      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
+        // 10MB limit
+        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
+        return null;
+      }
 
-      // Step 1: Read the *manipulated* file as a Base64 string
-      console.log('Reading manipulated file as Base64...');
-      const base64Data = await FileSystem.readAsStringAsync(manipResult.uri, {
-        // Use manipResult.uri
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Manipulation forces JPEG extension
+      const extension = 'jpg';
 
-      // Step 2: Convert the Base64 string to an ArrayBuffer
-      console.log('Converting Base64 to ArrayBuffer...');
-      const arrayBuffer = decode(base64Data);
+      // Memory-efficient upload using FileSystem instead of fetch().blob()
+      // This streams the file without loading it entirely into memory
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No valid session for upload');
+      }
+
+      // Get Supabase URL from the client configuration (consistent with lib/supabase.ts)
+      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured');
+      }
 
       // Use a timestamp and proper extension for the filename
       const filename = `post_${Date.now()}.${extension || 'jpg'}`;
       const filePath = `${userId}/${filename}`;
       console.log('Uploading image to Supabase storage at path:', filePath);
 
-      // Step 3: Upload the ArrayBuffer with explicit content type
-      console.log('Uploading ArrayBuffer to Supabase...');
-      const { error: uploadError } = await supabase.storage
-        .from('posts')
-        .upload(filePath, arrayBuffer, {
-          contentType: mimeType,
-          upsert: false, // Set to false to ensure we don't overwrite existing files
-        });
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/posts/${filePath}`;
 
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        throw uploadError;
+      const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (uploadResult.status !== 200) {
+        const errorText = uploadResult.body || 'Unknown upload error';
+        console.error('Upload failed:', errorText);
+        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
       }
 
       console.log('Image uploaded successfully to Supabase.');
@@ -177,7 +270,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
   // ---
 
   // Handle post submission
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!canPost || !user) return;
     setIsSubmitting(true);
     console.log('Submitting post:', { content, imageUri: image, location: location?.coords });
@@ -222,48 +315,29 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
     } finally {
       setIsSubmitting(false);
     }
-    // Keep state clearing within try/finally or handle based on success
-    // setContent('');
-    setImage(null); // Clear image
-    setLocation(null); // Clear location
-    onClose(); // Close modal on success
-    onSuccess?.();
-  };
-
-  // Define UI color variables based on theme
-  const iconColor = isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600];
-  const placeholderTextColor = isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400];
-  const postButtonBg = isDarkMode ? theme.colors.primary[500] : theme.colors.primary[500];
-  const postButtonText = theme.colors.neutral[50]; // White text for both themes
-  const disabledPostButtonBg = isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[300];
-  const disabledPostButtonText = isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[500];
+  }, [canPost, user, content, image, location, onSuccess, onClose]);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <ThemedView className="flex-1" lightClassName="bg-white" darkClassName="bg-black">
+      <ThemedView className="flex-1 bg-white dark:bg-black">
         {/* Header with Top Safe Area Padding - Stays outside KAV */}
         <View style={{ paddingTop: insets.top }}>
           <View className="flex-row items-center justify-between px-4 py-3">
             <Pressable onPress={onClose} hitSlop={10}>
-              <ThemedText
-                className="text-lg"
-                lightClassName="text-neutral-800"
-                darkClassName="text-neutral-200">
+              <ThemedText className="text-lg text-neutral-800 dark:text-neutral-200">
                 Cancel
               </ThemedText>
             </Pressable>
             <Pressable
               onPress={handleSubmit}
               disabled={!canPost || isSubmitting}
-              className="rounded-full px-5 py-1.5"
-              style={{
-                backgroundColor: !canPost || isSubmitting ? disabledPostButtonBg : postButtonBg,
-              }}>
+              className={`rounded-full px-5 py-1.5 ${
+                !canPost || isSubmitting ? 'bg-neutral-300 dark:bg-neutral-800' : 'bg-primary-500'
+              }`}>
               <ThemedText
-                className="text-lg font-semibold"
-                style={{
-                  color: !canPost || isSubmitting ? disabledPostButtonText : postButtonText,
-                }}>
+                className={`text-lg font-semibold ${
+                  !canPost || isSubmitting ? 'text-neutral-500 dark:text-neutral-600' : 'text-white'
+                }`}>
                 Post
               </ThemedText>
             </Pressable>
@@ -289,11 +363,10 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
                 value={content}
                 onChangeText={setContent}
                 placeholder="What's on your mind?"
-                placeholderTextColor={placeholderTextColor}
+                placeholderTextColor="#9CA3AF"
                 multiline
-                className="flex-1 text-lg leading-snug" // Use flex-1 to take available space
+                className="flex-1 text-lg leading-snug text-neutral-900 dark:text-neutral-100" // Use flex-1 to take available space
                 style={{
-                  color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
                   textAlignVertical: 'top',
                 }} // Ensure text starts at top
               />
@@ -311,21 +384,27 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
 
           {/* Bottom Toolbar - Now INSIDE KeyboardAvoidingView */}
           <View
-            className="light:border-neutral-200 border-t px-4 dark:border-neutral-700" // Border only
+            className="border-t border-neutral-200 px-4 dark:border-neutral-700" // Border only
             style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 12, paddingTop: 12 }} // Apply padding top/bottom
           >
             <View className="flex-row items-center justify-between">
               {/* Icon Group - Using gap for precise spacing */}
-              <View className="flex-row items-center" style={{ gap: 15 }}>
-                <TouchableOpacity onPress={handleTakePhoto} hitSlop={10}>
-                  <OptimizedIcon name="camera-outline" size={28} color={iconColor} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handlePickImage} hitSlop={10}>
-                  <OptimizedIcon name="images-outline" size={28} color={iconColor} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleGetLocation} hitSlop={10}>
-                  <OptimizedIcon name="location-outline" size={28} color={iconColor} />
-                </TouchableOpacity>
+              <View className="flex-row items-center" style={{ gap: 20 }}>
+                <AnimatedActionButton
+                  onPress={handleTakePhoto}
+                  iconName="camera-outline"
+                  hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
+                />
+                <AnimatedActionButton
+                  onPress={handlePickImage}
+                  iconName="images-outline"
+                  hapticStyle={Haptics.ImpactFeedbackStyle.Light}
+                />
+                <AnimatedActionButton
+                  onPress={handleGetLocation}
+                  iconName="location-outline"
+                  hapticStyle={Haptics.ImpactFeedbackStyle.Light}
+                />
               </View>
               {/* Reply Text Removed */}
             </View>

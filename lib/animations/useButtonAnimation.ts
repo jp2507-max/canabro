@@ -1,20 +1,21 @@
 /**
  * 🔘 useButtonAnimation Hook
- * 
+ *
  * Standard button animation with quick response and optional haptic feedback.
  * Optimized for buttons, FABs, and interactive elements.
  */
 
-import { ViewStyle } from 'react-native';
-import { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  runOnJS, 
-  SharedValue, 
-  AnimateStyle 
-} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { ViewStyle } from 'react-native';
+import {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+  SharedValue,
+  AnimateStyle,
+} from 'react-native-reanimated';
+
 import { ANIMATION_PRESETS, SPRING_CONFIGS } from './presets';
 import { useAnimationCleanup } from './useAnimationCleanup';
 
@@ -22,14 +23,14 @@ interface UseButtonAnimationConfig {
   // Scale values
   pressedScale?: number;
   defaultScale?: number;
-  
+
   // Spring configuration
   springConfig?: typeof SPRING_CONFIGS.quick;
-  
+
   // Haptic feedback
   enableHaptics?: boolean;
   hapticStyle?: 'light' | 'medium' | 'heavy';
-  
+
   // Callbacks
   onPress?: () => void;
   onPressStart?: () => void;
@@ -52,7 +53,7 @@ export interface UseButtonAnimationReturn {
 }
 
 export function useButtonAnimation(
-  config: UseButtonAnimationConfig = {},
+  config: UseButtonAnimationConfig = {}
 ): UseButtonAnimationReturn {
   const {
     pressedScale = ANIMATION_PRESETS.button.scale,
@@ -71,13 +72,13 @@ export function useButtonAnimation(
   // Haptic feedback
   const triggerHaptics = () => {
     if (!enableHaptics) return;
-    
+
     const hapticMap = {
       light: Haptics.ImpactFeedbackStyle.Light,
       medium: Haptics.ImpactFeedbackStyle.Medium,
       heavy: Haptics.ImpactFeedbackStyle.Heavy,
     };
-    
+
     Haptics.impactAsync(hapticMap[hapticStyle]);
   };
 
@@ -89,7 +90,7 @@ export function useButtonAnimation(
   // Press handlers
   const handlePressIn = () => {
     scale.value = withSpring(pressedScale, springConfig);
-    
+
     if (enableHaptics) {
       runOnJS(triggerHaptics)();
     }
@@ -121,21 +122,21 @@ export function useButtonAnimation(
   return {
     // Animated style to apply to component
     animatedStyle,
-    
+
     // Event handlers for Pressable/TouchableOpacity
     handlers: {
       onPressIn: handlePressIn,
       onPressOut: handlePressOut,
       onPress: handlePress,
     },
-    
+
     // Manual controls
     controls: {
       pressIn: handlePressIn,
       pressOut: handlePressOut,
       press: handlePress,
     },
-    
+
     // Shared values for advanced usage
     sharedValues: {
       scale,

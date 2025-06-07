@@ -45,7 +45,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Create internal state for sync status
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const [syncError, setSyncError] = useState<Error | null>(null);
 
   // Use refs to manage interval and setup state reliably
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
@@ -145,7 +144,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Local flag to track sync in progress (component level protection)
     syncInProgressRef.current = true;
     setIsSyncing(true);
-    setSyncError(null); // Clear previous errors on new sync attempt
 
     try {
       console.log('Starting sync via synchronizeWithServer...');
@@ -168,7 +166,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       const syncErr = error instanceof Error ? error : new Error(String(error));
       console.error('Error during sync via synchronizeWithServer:', syncErr);
-      setSyncError(syncErr);
       Alert.alert('Sync Error', `Failed to sync with the server: ${syncErr.message}`);
       return false;
     } finally {

@@ -39,5 +39,11 @@ export {
 } from './utils';
 
 // Export all types and constants from types.ts
-export type * from './types';
+export type {
+  SyncHealthMetrics,
+  NetworkStatus,
+  SyncConfig,
+  SyncMetadata,
+  CacheEntry,
+} from './types';
 export { TABLES_TO_SYNC, SYNC_CONSTANTS, SYNC_METADATA_KEYS } from './types';

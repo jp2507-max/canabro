@@ -1,43 +1,96 @@
 import { Database } from '@nozbe/watermelondb';
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
-import dayjs from 'dayjs'; // For date formatting
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  View, // Keep standard View for specific layout cases if needed
-  StyleSheet,
-} from 'react-native';
+import React, { useCallback } from 'react';
+import { ScrollView, Alert, ActivityIndicator, View, Dimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  SlideInDown,
+  runOnJS,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// NEW IMPORTS for sub-components
-import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
-import { PlantHeroImage } from '../../components/plant-detail/PlantHeroImage';
-import { PlantHeader } from '../../components/plant-detail/PlantHeader';
-import { PlantInfoCard } from '../../components/plant-detail/PlantInfoCard';
-import { PlantDetailRow } from '../../components/plant-detail/PlantDetailRow';
-import { PlantActions } from '../../components/plant-detail/PlantActions';
+// Modern animation imports
 
-import StorageImage from '../../components/ui/StorageImage';
+// Sub-components
+import { PlantActions } from '../../components/plant-detail/PlantActions';
+import { PlantDetailRow } from '../../components/plant-detail/PlantDetailRow';
+import { PlantHeader } from '../../components/plant-detail/PlantHeader';
+import { PlantHeroImage } from '../../components/plant-detail/PlantHeroImage';
+import { PlantInfoCard } from '../../components/plant-detail/PlantInfoCard';
+import { OptimizedIcon, IconName } from '../../components/ui/OptimizedIcon';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
 import { useDatabase } from '../../lib/contexts/DatabaseProvider';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import useWatermelon from '../../lib/hooks/useWatermelon';
-import { Plant } from '../../lib/models/Plant'; // GrowthStage enum is not exported/used in model
-// PlantImageSection is no longer needed here as PlantHeroImage handles it
-// import PlantImageSection from '../../screens/PlantImageSection';
+import { Plant } from '../../lib/models/Plant';
 import { formatDate, formatBoolean, formatNumber } from '../../screens/plantHelpers';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+// Modern animated navigation button component
+function AnimatedNavButton({
+  iconName,
+  onPress,
+  accessibilityLabel,
+  position = 'left',
+}: {
+  iconName: IconName;
+  onPress: () => void;
+  accessibilityLabel: string;
+  position?: 'left' | 'right';
+}) {
+  const scale = useSharedValue(1);
+  const shadowOpacity = useSharedValue(0.3);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    shadowOpacity: shadowOpacity.value,
+  }));
+
+  const tapGesture = Gesture.Tap()
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
+      shadowOpacity.value = withTiming(0.1, { duration: 150 });
+
+      // Haptic feedback
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+    })
+    .onEnd(() => {
+      'worklet';
+      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      shadowOpacity.value = withTiming(0.3, { duration: 200 });
+
+      runOnJS(onPress)();
+    });
+
+  return (
+    <GestureDetector gesture={tapGesture}>
+      <Animated.View
+        entering={FadeIn.delay(position === 'left' ? 300 : 400).duration(600)}
+        style={[animatedStyle]}
+        className="rounded-full bg-black/40 p-3 shadow-lg"
+        accessible
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button">
+        <OptimizedIcon name={iconName} size={24} color="white" />
+      </Animated.View>
+    </GestureDetector>
+  );
+}
 
 // Base component receiving the plant observable
 function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   const { sync, database } = useWatermelon();
-  const { isDarkMode } = useTheme();
 
   const handleDelete = async () => {
     if (!plant) return;
@@ -52,13 +105,14 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
           onPress: async () => {
             try {
               await database.write(async () => {
-                await plant.markAsDeleted(); // Mark for deletion
-                // Optionally, permanently delete if needed: await plant.destroyPermanently();
+                await plant.markAsDeleted();
               });
-              sync(); // Sync deletion with Supabase
+              sync();
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.back();
             } catch (error) {
               console.error('Error deleting plant:', error);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', 'Failed to delete plant');
             }
           },
@@ -67,108 +121,135 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
     );
   };
 
-  // Loading state
+  const handleBackPress = useCallback(() => {
+    router.back();
+  }, []);
+
+  const handleEditPress = useCallback(() => {
+    if (plant) {
+      router.push(`/plant/${plant.id}/edit`);
+    }
+  }, [plant]);
+
+  // Enhanced loading state with modern animations
   if (!plant) {
     return (
-      <ThemedView className="flex-1 items-center justify-center p-4">
-        <ActivityIndicator
-          size="large"
-          color={isDarkMode ? '#46db6f' : '#16a34a'}
-        />
-        <ThemedText
-          variant="muted"
-          className="mt-4 text-center">
-          Loading plant details...
-        </ThemedText>
-        <TouchableOpacity
-          className="mt-6 rounded-lg bg-primary-500 px-4 py-2"
-          onPress={() => router.back()}
-          accessibilityLabel="Go back">
-          <ThemedText className="font-medium text-white">Go Back</ThemedText>
-        </TouchableOpacity>
+      <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        <SafeAreaView className="flex-1 items-center justify-center p-6">
+          <Animated.View entering={FadeIn.duration(800)} className="items-center">
+            <View className="mb-6 rounded-full bg-primary-100 p-6 dark:bg-primary-900/30">
+              <ActivityIndicator size="large" color="#10b981" />
+            </View>
+            <Animated.View entering={FadeInUp.delay(200).duration(600)}>
+              <ThemedText variant="heading" className="mb-2 text-center text-xl font-bold">
+                Loading Plant Details
+              </ThemedText>
+              <ThemedText variant="muted" className="max-w-xs text-center">
+                Fetching your plant information...
+              </ThemedText>
+            </Animated.View>
+            <Animated.View entering={FadeInUp.delay(400).duration(600)} className="mt-8">
+              <AnimatedNavButton
+                iconName="arrow-back"
+                onPress={handleBackPress}
+                accessibilityLabel="Go back"
+              />
+            </Animated.View>
+          </Animated.View>
+        </SafeAreaView>
       </ThemedView>
     );
   }
 
-  // Plant not found state (after observable resolves to null)
-  // This check might be redundant if the loading state already covers plant being null
-  // However, it's good for explicit "not found" vs "still loading"
-  // For this refactor, we'll assume the initial !plant check is sufficient for loading,
-  // and a more specific "not found" could be handled if plant is explicitly null after attempting to load.
-  // The HOC wrapper already handles cases where ID is missing or DB is not ready.
-
-  // Render actual content
+  // Render actual content with staggered animations
   return (
-    <ThemedView className="flex-1">
-      {/* Header Buttons - Placed above ScrollView for fixed positioning */}
-      <SafeAreaView edges={['top']} style={{ flex: 0, backgroundColor: 'transparent' }} />
-      <ThemedView className="absolute left-0 right-0 top-0 z-10 mt-3 flex-row items-center justify-between px-4 py-3">
-        <TouchableOpacity
-          className="rounded-full bg-black/40 p-2.5 shadow-md"
-          onPress={() => router.back()}
-          accessibilityLabel="Go back">
-          <OptimizedIcon name="arrow-back" size={26} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="rounded-full bg-black/40 p-2.5 shadow-md"
-          onPress={() => router.push(`/plant/${plant.id}/edit`)}
-          accessibilityLabel="Edit plant details">
-          <OptimizedIcon name="pencil" size={24} color="white" />
-        </TouchableOpacity>
-      </ThemedView>
+    <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+      {/* Floating Navigation Buttons */}
+      <View className="pt-safe-or-3 absolute left-4 right-4 top-0 z-20 flex-row items-center justify-between py-3">
+        <AnimatedNavButton
+          iconName="arrow-back"
+          onPress={handleBackPress}
+          accessibilityLabel="Go back"
+          position="left"
+        />
+        <AnimatedNavButton
+          iconName="pencil"
+          onPress={handleEditPress}
+          accessibilityLabel="Edit plant details"
+          position="right"
+        />
+      </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        <PlantHeroImage imageUrl={plant.imageUrl} plantId={plant.id} imageHeight={350} />
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}>
+        {/* Hero Image with entrance animation */}
+        <Animated.View entering={FadeIn.duration(800)}>
+          <PlantHeroImage
+            imageUrl={plant.imageUrl}
+            plantId={plant.id}
+            imageHeight={screenWidth * 0.75}
+          />
+        </Animated.View>
 
-        <PlantHeader name={plant.name} strain={plant.strain} />
+        {/* Plant Header with slide animation */}
+        <Animated.View entering={SlideInDown.delay(200).duration(600)}>
+          <PlantHeader name={plant.name} strain={plant.strain} />
+        </Animated.View>
 
         <View className="px-4">
-          {/* Details Card */}
-          <PlantInfoCard title="Details">
-            <PlantDetailRow label="Planted Date" value={formatDate(plant.plantedDate)} />
-            <PlantDetailRow label="Growth Stage" value={plant.growthStage} />
-            <PlantDetailRow label="Height" value={formatNumber(plant.height, ' cm')} />
-            <PlantDetailRow
-              label="Expected Harvest"
-              value={formatDate(plant.expectedHarvestDate)}
-            />
-          </PlantInfoCard>
-
-          {/* Genetics Card */}
-          <PlantInfoCard title="Genetics">
-            <PlantDetailRow label="Auto Flower" value={formatBoolean(plant.isAutoFlower)} />
-            <PlantDetailRow label="Feminized" value={formatBoolean(plant.isFeminized)} />
-            <PlantDetailRow label="THC Content" value={formatNumber(plant.thcContent, '%')} />
-            <PlantDetailRow label="CBD Content" value={formatNumber(plant.cbdContent, '%')} />
-          </PlantInfoCard>
-
-          {/* Notes Card */}
-          {plant.notes && plant.notes.trim() !== '' && (
-            <PlantInfoCard title="Notes">
-              <ThemedText className="text-base leading-relaxed text-neutral-700 dark:text-neutral-200">
-                {plant.notes}
-              </ThemedText>
+          {/* Details Card with staggered entrance */}
+          <Animated.View entering={FadeInDown.delay(400).duration(600)}>
+            <PlantInfoCard title="Details">
+              <PlantDetailRow label="Planted Date" value={formatDate(plant.plantedDate)} />
+              <PlantDetailRow label="Growth Stage" value={plant.growthStage} />
+              <PlantDetailRow label="Height" value={formatNumber(plant.height, ' cm')} />
+              <PlantDetailRow
+                label="Expected Harvest"
+                value={formatDate(plant.expectedHarvestDate)}
+              />
             </PlantInfoCard>
+          </Animated.View>
+
+          {/* Genetics Card with staggered entrance */}
+          <Animated.View entering={FadeInDown.delay(600).duration(600)}>
+            <PlantInfoCard title="Genetics">
+              <PlantDetailRow label="Auto Flower" value={formatBoolean(plant.isAutoFlower)} />
+              <PlantDetailRow label="Feminized" value={formatBoolean(plant.isFeminized)} />
+              <PlantDetailRow label="THC Content" value={formatNumber(plant.thcContent, '%')} />
+              <PlantDetailRow label="CBD Content" value={formatNumber(plant.cbdContent, '%')} />
+            </PlantInfoCard>
+          </Animated.View>
+
+          {/* Notes Card with conditional rendering and animation */}
+          {plant.notes && plant.notes.trim() !== '' && (
+            <Animated.View entering={FadeInDown.delay(800).duration(600)}>
+              <PlantInfoCard title="Notes">
+                <ThemedText className="text-base leading-relaxed text-neutral-700 dark:text-neutral-200">
+                  {plant.notes}
+                </ThemedText>
+              </PlantInfoCard>
+            </Animated.View>
           )}
 
-          {/* Actions Card is now a dedicated component */}
-          <PlantActions plantId={plant.id} onDelete={handleDelete} />
+          {/* Actions Card with final staggered entrance */}
+          <Animated.View entering={FadeInDown.delay(1000).duration(600)}>
+            <PlantActions plantId={plant.id} onDelete={handleDelete} />
+          </Animated.View>
         </View>
       </ScrollView>
-      {/* Ensure bottom safe area for content that might scroll behind a nav bar if any */}
-      <SafeAreaView edges={['bottom']} style={{ flex: 0 }} />
+
+      <SafeAreaView edges={['bottom']} />
     </ThemedView>
   );
 }
 
-// --- HOCs and Wrapper ---
-
-// 1. Enhance with database
+// HOCs and Wrapper remain the same but with enhanced error states
 const PlantDetailsWithDB = withDatabase(PlantDetailsScreenBase);
 
-// 2. Enhance with observables
 const PlantDetailsEnhanced = withObservables(
-  ['route', 'database'], // Depend on route and database props
+  ['route', 'database'],
   ({ database, route }: { database: Database; route: any }) => {
     const id = route?.params?.id as string | undefined;
 
@@ -177,85 +258,88 @@ const PlantDetailsEnhanced = withObservables(
         hasDb: !!database,
         hasId: !!id,
       });
-      return { plant: null }; // Return null observable if DB or ID is missing
+      return { plant: null };
     }
 
     try {
-      // Observe a single record by ID
       const plantObservable = database.collections.get<Plant>('plants').findAndObserve(id);
-
-      // WORKAROUND: Instead of using the relationship directly, we'll manually fetch the strain
-      // This bypasses the relationship issue between 'plants' and 'strains'
-      return {
-        plant: plantObservable,
-      };
+      return { plant: plantObservable };
     } catch (error) {
       console.error(`[withObservables] Error observing plant with ID ${id}:`, error);
-      return { plant: null }; // Return null observable on error
+      return { plant: null };
     }
   }
 )(PlantDetailsWithDB);
 
-// Wrapper component to handle route params and render the enhanced screen
+// Enhanced wrapper with modern error states
 export default function PlantDetailsWrapper() {
   const params = useLocalSearchParams();
   const id = params.id as string;
-  const { database } = useDatabase(); // Get database from context
-  const { isDarkMode } = useTheme(); // Get theme info for loading/error states
+  const { database } = useDatabase();
 
-  // ID Missing State
+  const handleBackPress = useCallback(() => {
+    router.back();
+  }, []);
+
+  // Enhanced ID Missing State
   if (!id) {
     return (
-      <ThemedView className="flex-1 items-center justify-center p-4">
-        <OptimizedIcon
-          name="help-circle-outline"
-          size={48}
-          color="#f59e0b"
-        />
-        <ThemedText
-          variant="heading"
-          className="mt-4 text-center text-lg">
-          Missing Information
-        </ThemedText>
-        <ThemedText
-          variant="muted"
-          className="mt-2 text-center">
-          No Plant ID was provided to view details.
-        </ThemedText>
-        <TouchableOpacity
-          className="mt-6 rounded-lg bg-primary-500 px-4 py-2"
-          onPress={() => router.back()}
-          accessibilityLabel="Go back">
-          <ThemedText className="font-medium text-white">Go Back</ThemedText>
-        </TouchableOpacity>
+      <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        <SafeAreaView className="flex-1 items-center justify-center p-6">
+          <Animated.View entering={FadeIn.duration(800)} className="items-center">
+            <View className="mb-6 rounded-full bg-amber-100 p-6 dark:bg-amber-900/30">
+              <OptimizedIcon name="help-circle-outline" size={48} color="#f59e0b" />
+            </View>
+            <Animated.View entering={FadeInUp.delay(200).duration(600)}>
+              <ThemedText variant="heading" className="mb-2 text-center text-xl font-bold">
+                Missing Information
+              </ThemedText>
+              <ThemedText variant="muted" className="max-w-xs text-center">
+                No Plant ID was provided to view details.
+              </ThemedText>
+            </Animated.View>
+            <Animated.View entering={FadeInUp.delay(400).duration(600)} className="mt-8">
+              <AnimatedNavButton
+                iconName="arrow-back"
+                onPress={handleBackPress}
+                accessibilityLabel="Go back"
+              />
+            </Animated.View>
+          </Animated.View>
+        </SafeAreaView>
       </ThemedView>
     );
   }
 
-  // Database Loading State
+  // Enhanced Database Loading State
   if (!database) {
     return (
-      <ThemedView className="flex-1 items-center justify-center p-4">
-        <ActivityIndicator
-          size="large"
-          color={isDarkMode ? '#46db6f' : '#16a34a'}
-        />
-        <ThemedText
-          variant="muted"
-          className="mt-4 text-center">
-          Connecting to database...
-        </ThemedText>
-        <TouchableOpacity
-          className="mt-6 rounded-lg bg-primary-500 px-4 py-2"
-          onPress={() => router.back()}
-          accessibilityLabel="Go back">
-          <ThemedText className="font-medium text-white">Go Back</ThemedText>
-        </TouchableOpacity>
+      <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        <SafeAreaView className="flex-1 items-center justify-center p-6">
+          <Animated.View entering={FadeIn.duration(800)} className="items-center">
+            <View className="mb-6 rounded-full bg-blue-100 p-6 dark:bg-blue-900/30">
+              <ActivityIndicator size="large" color="#3b82f6" />
+            </View>
+            <Animated.View entering={FadeInUp.delay(200).duration(600)}>
+              <ThemedText variant="heading" className="mb-2 text-center text-xl font-bold">
+                Connecting to Database
+              </ThemedText>
+              <ThemedText variant="muted" className="max-w-xs text-center">
+                Establishing database connection...
+              </ThemedText>
+            </Animated.View>
+            <Animated.View entering={FadeInUp.delay(400).duration(600)} className="mt-8">
+              <AnimatedNavButton
+                iconName="arrow-back"
+                onPress={handleBackPress}
+                accessibilityLabel="Go back"
+              />
+            </Animated.View>
+          </Animated.View>
+        </SafeAreaView>
       </ThemedView>
     );
   }
 
-  // Render the enhanced component, passing route params and database
-  // Key prop helps React re-mount if ID changes, ensuring observable updates
   return <PlantDetailsEnhanced key={id} route={{ params: { id } }} database={database} />;
 }

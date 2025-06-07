@@ -17,7 +17,7 @@ export enum GrowthStage {
 }
 
 // Added Enums (moved from AddPlantForm.tsx)
-export enum GrowLocation {
+export enum PlantGrowLocation {
   GrowTent = 'Grow Tent',
   GrowRoom = 'Grow Room',
   Indoor = 'Indoor',
@@ -81,8 +81,8 @@ export interface Plant {
   cannabis_type?: CannabisType;
   grow_medium?: GrowMedium;
   light_condition?: LightCondition;
-  location_description?: string; // Kept as string to allow custom descriptions, or use GrowLocation enum
-                                 // If using GrowLocation enum strictly: location_description?: GrowLocation;
+  location_description?: string; // Kept as string to allow custom descriptions, or use PlantGrowLocation enum
+  // If using PlantGrowLocation enum strictly: location_description?: PlantGrowLocation;
 }
 
 /**

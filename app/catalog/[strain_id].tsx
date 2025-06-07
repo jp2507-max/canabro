@@ -1,24 +1,33 @@
-import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-  View,
-  Linking,
-} from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { ActivityIndicator, Alert, ScrollView, View, Linking } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withSequence,
+  interpolateColor as rInterpolateColor,
+  runOnJS,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
 import { WeedDbService } from '@/lib/services/weed-db.service';
-import { isObjectId, isUuid } from '@/lib/utils/strainIdMapping';
+import { isObjectId } from '@/lib/utils/strainIdMapping';
+
+// Animation configuration
+const SPRING_CONFIG = {
+  damping: 15,
+  stiffness: 150,
+  mass: 0.8,
+};
 
 /**
  * Enhanced hook to fetch strain details, using MongoDB ObjectId for API calls when available
@@ -51,10 +60,287 @@ function useWeedDbStrain(
   });
 }
 
+/**
+ * Animated floating action button component for back navigation
+ */
+const AnimatedBackButton = ({ onPress }: { onPress: () => void }) => {
+  const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
+
+  const gesture = Gesture.Tap()
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.92, SPRING_CONFIG);
+      pressed.value = withTiming(1, { duration: 150 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      scale.value = withSpring(1, SPRING_CONFIG);
+      pressed.value = withTiming(0, { duration: 150 });
+      runOnJS(onPress)();
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = rInterpolateColor(
+      pressed.value,
+      [0, 1],
+      ['rgba(255, 255, 255, 0.9)', 'rgba(245, 245, 245, 0.95)']
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+      elevation: pressed.value === 1 ? 2 : 3,
+    };
+  });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            top: 18,
+            left: 18,
+            borderRadius: 18,
+            padding: 7,
+          },
+          animatedStyle,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Go back">
+        <OptimizedIcon name="arrow-back" size={22} className="text-neutral-900 dark:text-white" />
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
+/**
+ * Animated favorite heart button with sophisticated press animations
+ */
+const AnimatedFavoriteButton = ({
+  isFavorite,
+  onPress,
+  isLoading,
+}: {
+  isFavorite: boolean;
+  onPress: () => void;
+  isLoading: boolean;
+}) => {
+  const scale = useSharedValue(1);
+  const heartScale = useSharedValue(1);
+  const pressed = useSharedValue(0);
+
+  const gesture = Gesture.Tap()
+    .enabled(!isLoading)
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.88, SPRING_CONFIG);
+      heartScale.value = withSpring(0.85, SPRING_CONFIG);
+      pressed.value = withTiming(1, { duration: 150 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      scale.value = withSpring(1, SPRING_CONFIG);
+      heartScale.value = withSequence(
+        withSpring(1.15, SPRING_CONFIG),
+        withSpring(1, SPRING_CONFIG)
+      );
+      pressed.value = withTiming(0, { duration: 150 });
+      runOnJS(onPress)();
+    });
+
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = rInterpolateColor(
+      pressed.value,
+      [0, 1],
+      ['rgba(255, 255, 255, 0.9)', 'rgba(245, 245, 245, 0.95)']
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+      elevation: pressed.value === 1 ? 2 : 3,
+    };
+  });
+
+  const heartAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            top: 18,
+            right: 18,
+            borderRadius: 18,
+            padding: 7,
+          },
+          containerAnimatedStyle,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
+        <Animated.View style={heartAnimatedStyle}>
+          <OptimizedIcon
+            name={isFavorite ? 'heart' : 'heart-outline'}
+            size={22}
+            color={isFavorite ? '#f43f5e' : '#a1a1aa'}
+          />
+        </Animated.View>
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
+/**
+ * Animated expandable section with sophisticated reveal animations
+ */
+const AnimatedExpandableSection = ({
+  title,
+  content,
+  isExpanded,
+  onToggle,
+}: {
+  title: string;
+  content: string | string[];
+  isExpanded: boolean;
+  onToggle: () => void;
+}) => {
+  const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
+  const rotateZ = useSharedValue(0);
+
+  useEffect(() => {
+    rotateZ.value = withSpring(isExpanded ? 180 : 0, SPRING_CONFIG);
+  }, [isExpanded]);
+
+  const gesture = Gesture.Tap()
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.98, SPRING_CONFIG);
+      pressed.value = withTiming(1, { duration: 100 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      scale.value = withSpring(1, SPRING_CONFIG);
+      pressed.value = withTiming(0, { duration: 100 });
+      runOnJS(onToggle)();
+    });
+
+  const titleAnimatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = rInterpolateColor(
+      pressed.value,
+      [0, 1],
+      ['transparent', 'rgba(59, 130, 246, 0.05)']
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+    };
+  });
+
+  const chevronAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateZ: `${rotateZ.value}deg` }],
+  }));
+
+  return (
+    <ThemedView className="mx-6 mt-4 rounded-2xl border border-neutral-200 p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          style={[{ borderRadius: 8, padding: 4, margin: -4 }, titleAnimatedStyle]}
+          accessibilityRole="button"
+          accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${title.toLowerCase()}`}>
+          <View className="flex-row items-center justify-between">
+            <ThemedText className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
+              {title}
+            </ThemedText>
+            <Animated.View style={chevronAnimatedStyle}>
+              <OptimizedIcon
+                name="chevron-down"
+                size={18}
+                className="text-neutral-900 dark:text-white"
+              />
+            </Animated.View>
+          </View>
+        </Animated.View>
+      </GestureDetector>
+      <ThemedText
+        className="mt-2 text-base leading-relaxed text-neutral-700 dark:text-neutral-300"
+        numberOfLines={isExpanded ? undefined : title === 'Description' ? 4 : 3}>
+        {Array.isArray(content) ? content.join('\n\n') : content}
+      </ThemedText>
+    </ThemedView>
+  );
+};
+
+/**
+ * Animated website button with sophisticated press effects
+ */
+const AnimatedWebsiteButton = ({ onPress, url }: { onPress: () => void; url: string }) => {
+  const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
+
+  const gesture = Gesture.Tap()
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.95, SPRING_CONFIG);
+      pressed.value = withTiming(1, { duration: 150 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      scale.value = withSpring(1, SPRING_CONFIG);
+      pressed.value = withTiming(0, { duration: 150 });
+      runOnJS(onPress)();
+    });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = rInterpolateColor(
+      pressed.value,
+      [0, 1],
+      ['rgb(37, 99, 235)', 'rgb(29, 78, 216)'] // primary-600 to primary-700
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+      elevation: pressed.value === 1 ? 4 : 2,
+    };
+  });
+
+  return (
+    <ThemedView className="mx-6 mt-6">
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+            },
+            animatedStyle,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Open strain source website">
+          <OptimizedIcon name="globe-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <ThemedText className="text-base font-semibold text-white">
+            Visit Official Website
+          </ThemedText>
+        </Animated.View>
+      </GestureDetector>
+    </ThemedView>
+  );
+};
+
 export default function StrainDetailPage() {
   const { strain_id } = useLocalSearchParams<{ strain_id: string }>();
   const router = useRouter();
-  const { theme, isDarkMode } = useTheme();
   const [imageError, setImageError] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [tipsExpanded, setTipsExpanded] = useState(false);
@@ -95,13 +381,31 @@ export default function StrainDetailPage() {
     }
   };
 
+  const handleBackPress = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleWebsitePress = useCallback(async () => {
+    const sourceUrl = strain?.link || strain?.url;
+    if (sourceUrl) {
+      try {
+        const canOpen = await Linking.canOpenURL(sourceUrl);
+        if (canOpen) {
+          await Linking.openURL(sourceUrl);
+        } else {
+          Alert.alert('Unable to open link', 'The provided URL cannot be opened on this device.');
+        }
+      } catch (error) {
+        console.error('Error opening URL:', error);
+        Alert.alert('Error', 'An error occurred while trying to open the link.');
+      }
+    }
+  }, [strain]);
+
   if (isLoading || favoriteLoading) {
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
-        <ActivityIndicator size="large" color={theme.colors.primary[500]} />
+      <ThemedView className="flex-1 items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+        <ActivityIndicator size="large" color="rgb(34, 197, 94)" />
         <ThemedText className="mt-4 text-lg">Loading Strain Details...</ThemedText>
       </ThemedView>
     );
@@ -117,10 +421,7 @@ export default function StrainDetailPage() {
       : 'Strain not found.';
   if (combinedError || !strain) {
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
+      <ThemedView className="flex-1 items-center justify-center bg-neutral-50 dark:bg-neutral-900">
         <ThemedText className="mb-2 text-base text-red-600 dark:text-red-400">
           {errorMessage}
         </ThemedText>
@@ -188,44 +489,17 @@ export default function StrainDetailPage() {
               height: 80,
               borderBottomLeftRadius: 32,
               borderBottomRightRadius: 32,
-              backgroundColor: isDarkMode ? 'rgba(24,24,27,0.7)' : 'rgba(255,255,255,0.7)',
             }}
+            className="bg-white/70 dark:bg-neutral-900/70"
           />
-          <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 18,
-              left: 18,
-              backgroundColor: isDarkMode ? '#18181bcc' : '#fff',
-              borderRadius: 18,
-              padding: 7,
-              elevation: 3,
-            }}
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel="Go back">
-            <OptimizedIcon name="arrow-back" size={22} color={isDarkMode ? '#fff' : '#18181b'} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 18,
-              right: 18,
-              backgroundColor: isDarkMode ? '#18181bcc' : '#fff',
-              borderRadius: 18,
-              padding: 7,
-              elevation: 3,
-            }}
+
+          <AnimatedBackButton onPress={handleBackPress} />
+          <AnimatedFavoriteButton
+            isFavorite={isStrainFavorite}
             onPress={handleToggleFavorite}
-            accessibilityRole="button"
-            accessibilityLabel={isStrainFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            disabled={favoriteLoading}>
-            <OptimizedIcon
-              name={isStrainFavorite ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isStrainFavorite ? '#f43f5e' : '#a1a1aa'}
-            />
-          </TouchableOpacity>
+            isLoading={favoriteLoading}
+          />
+
           {strain.type && (
             <View style={{ position: 'absolute', bottom: 18, left: 18 }}>
               <View
@@ -245,10 +519,7 @@ export default function StrainDetailPage() {
         </View>
 
         <View className="px-6 pb-1 pt-5">
-          <ThemedText
-            className="mb-1 text-3xl font-extrabold capitalize"
-            lightClassName="text-neutral-900"
-            darkClassName="text-neutral-50">
+          <ThemedText className="mb-1 text-3xl font-extrabold capitalize text-neutral-900 dark:text-neutral-50">
             {strain.name}
           </ThemedText>
           <View className="mb-2 flex-row items-center">
@@ -348,92 +619,38 @@ export default function StrainDetailPage() {
         </ScrollView>
 
         <View className="px-6">
-          {renderChips(strain.effects, isDarkMode ? 'bg-teal-700' : 'bg-teal-500')}
-          {renderChips(strain.flavors, isDarkMode ? 'bg-primary-700' : 'bg-primary-500')}
+          {renderChips(strain.effects, 'bg-teal-500 dark:bg-teal-700')}
+          {renderChips(strain.flavors, 'bg-primary-500 dark:bg-primary-700')}
         </View>
 
         {strain.description && (
-          <ThemedView
-            className="mx-6 mt-4 rounded-2xl border p-4 shadow-sm"
-            lightClassName="bg-white border-neutral-200"
-            darkClassName="bg-neutral-800 border-neutral-700">
-            <TouchableOpacity
-              onPress={() => setDescExpanded((v) => !v)}
-              accessibilityRole="button"
-              accessibilityLabel="Expand description">
-              <ThemedText
-                className="mb-2 text-xl font-semibold"
-                lightClassName="text-neutral-800"
-                darkClassName="text-neutral-100">
-                Description
-                <OptimizedIcon
-                  name={descExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={18}
-                  color={isDarkMode ? '#fff' : '#18181b'}
-                  style={{ marginLeft: 8 }}
-                />
-              </ThemedText>
-            </TouchableOpacity>
-            <ThemedText
-              className="text-base leading-relaxed"
-              numberOfLines={descExpanded ? undefined : 4}
-              lightClassName="text-neutral-700"
-              darkClassName="text-neutral-300">
-              {Array.isArray(strain.description)
-                ? strain.description.join('\n\n')
-                : strain.description}
-            </ThemedText>
-          </ThemedView>
+          <AnimatedExpandableSection
+            title="Description"
+            content={strain.description}
+            isExpanded={descExpanded}
+            onToggle={() => setDescExpanded((v) => !v)}
+          />
         )}
 
         {(strain.growingTips || strain.growing_tips) && (
-          <ThemedView
-            className="mx-6 mt-4 rounded-2xl border p-4 shadow-sm"
-            lightClassName="bg-white border-neutral-200"
-            darkClassName="bg-neutral-800 border-neutral-700">
-            <TouchableOpacity
-              onPress={() => setTipsExpanded((v) => !v)}
-              accessibilityRole="button"
-              accessibilityLabel="Expand growing tips">
-              <ThemedText
-                className="mb-2 text-xl font-semibold"
-                lightClassName="text-neutral-800"
-                darkClassName="text-neutral-100">
-                Growing Tips
-                <OptimizedIcon
-                  name={tipsExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={18}
-                  color={isDarkMode ? '#fff' : '#18181b'}
-                  style={{ marginLeft: 8 }}
-                />
-              </ThemedText>
-            </TouchableOpacity>
-            <ThemedText
-              className="text-base leading-relaxed"
-              numberOfLines={tipsExpanded ? undefined : 3}
-              lightClassName="text-neutral-700"
-              darkClassName="text-neutral-300">
-              {strain.growingTips || strain.growing_tips}
-            </ThemedText>
-          </ThemedView>
+          <AnimatedExpandableSection
+            title="Growing Tips"
+            content={(strain.growingTips || strain.growing_tips) as string}
+            isExpanded={tipsExpanded}
+            onToggle={() => setTipsExpanded((v) => !v)}
+          />
         )}
 
         {strain.parents && Array.isArray(strain.parents) && strain.parents.length > 0 && (
-          <ThemedView
-            className="mx-6 mt-4 rounded-2xl border p-4 shadow-sm"
-            lightClassName="bg-white border-neutral-200"
-            darkClassName="bg-neutral-800 border-neutral-700">
-            <ThemedText
-              className="mb-2 text-xl font-semibold"
-              lightClassName="text-neutral-800"
-              darkClassName="text-neutral-100">
+          <ThemedView className="mx-6 mt-4 rounded-2xl border border-neutral-200 p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+            <ThemedText className="mb-2 text-xl font-semibold text-neutral-800 dark:text-neutral-100">
               Parent Genetics
             </ThemedText>
             <View className="mt-1 flex-row flex-wrap gap-2">
               {strain.parents.map((parent: string) => (
                 <View
                   key={parent}
-                  className={`rounded-full px-3 py-1 ${isDarkMode ? 'bg-orange-700' : 'bg-orange-500'}`}>
+                  className="rounded-full bg-orange-500 px-3 py-1 dark:bg-orange-700">
                   <ThemedText className="text-sm capitalize text-white">{parent}</ThemedText>
                 </View>
               ))}
@@ -443,21 +660,10 @@ export default function StrainDetailPage() {
 
         {/* Source Website Button */}
         {(strain.url || strain.link) && (
-          <ThemedView className="mx-6 mt-6">
-            <TouchableOpacity
-              className="flex-row items-center justify-center rounded-xl bg-primary-600 px-4 py-3 dark:bg-primary-500"
-              accessibilityRole="button"
-              accessibilityLabel="Open strain source website"
-              onPress={() => {
-                const sourceUrl = strain.link || strain.url;
-                if (sourceUrl) Linking.openURL(sourceUrl);
-              }}>
-              <OptimizedIcon name="globe-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <ThemedText className="text-base font-semibold text-white">
-                Visit Official Website
-              </ThemedText>
-            </TouchableOpacity>
-          </ThemedView>
+          <AnimatedWebsiteButton
+            onPress={handleWebsitePress}
+            url={(strain.link || strain.url) as string}
+          />
         )}
       </ScrollView>
     </SafeAreaView>

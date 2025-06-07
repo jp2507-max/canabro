@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useCallback } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,13 +13,12 @@ import Animated, {
   Extrapolation,
   runOnUI,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
+import { SPRING_CONFIGS } from '../../lib/animations/presets';
+import type { DiagnosisResult } from '../../lib/types/diagnosis';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { SPRING_CONFIGS } from '../../lib/animations/presets';
-import type { DiagnosisResult } from '../../lib/types/diagnosis';
 
 interface DiagnosisResultCardProps {
   diagnosisResult: DiagnosisResult;
@@ -36,13 +36,11 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
   const titleY = useSharedValue(20);
   const contentY = useSharedValue(30);
   const cardPressScale = useSharedValue(1);
+  const retryButtonScale = useSharedValue(1);
 
   // Animated styles
   const cardStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value * cardPressScale.value },
-      { translateY: titleY.value }
-    ],
+    transform: [{ scale: scale.value * cardPressScale.value }, { translateY: titleY.value }],
     opacity: opacity.value,
   }));
 
@@ -60,6 +58,10 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
     width: `${confidenceWidth.value}%`,
   }));
 
+  const retryButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: retryButtonScale.value }],
+  }));
+
   const confidencePercentage = Math.round(diagnosisResult.confidence * 100);
 
   // Entrance animations
@@ -69,11 +71,11 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
       // Card entrance
       scale.value = withSpring(1, SPRING_CONFIGS.smooth);
       opacity.value = withTiming(1, { duration: 400 });
-      
+
       // Staggered content entrance
       titleY.value = withDelay(100, withSpring(0, SPRING_CONFIGS.smooth));
       contentY.value = withDelay(200, withSpring(0, SPRING_CONFIGS.smooth));
-      
+
       // Animated confidence bar
       confidenceWidth.value = withDelay(
         300,
@@ -85,13 +87,25 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
   }, [diagnosisResult.confidence]);
 
   // Gesture handlers
-  const cardGesture = Gesture.Tap()
-    .onStart(() => {
+  const cardGesture = Gesture.Tap().onStart(() => {
+    'worklet';
+    cardPressScale.value = withSequence(
+      withSpring(0.98, SPRING_CONFIGS.quick),
+      withSpring(1, SPRING_CONFIGS.smooth)
+    );
+  });
+
+  const retryGesture = Gesture.Tap()
+    .onBegin(() => {
       'worklet';
-      cardPressScale.value = withSequence(
-        withSpring(0.98, SPRING_CONFIGS.quick),
-        withSpring(1, SPRING_CONFIGS.smooth)
-      );
+      retryButtonScale.value = withSpring(0.9, SPRING_CONFIGS.quick);
+    })
+    .onFinalize(() => {
+      'worklet';
+      retryButtonScale.value = withSpring(1, SPRING_CONFIGS.smooth);
+    })
+    .onEnd(() => {
+      handleRetry();
     });
 
   const handleRetry = useCallback(async () => {
@@ -118,7 +132,7 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
   return (
     <GestureDetector gesture={cardGesture}>
       <Animated.View style={cardStyle}>
-        <ThemedView className="rounded-3xl bg-white dark:bg-neutral-800 p-6 shadow-lg shadow-black/10 dark:shadow-black/30">
+        <ThemedView className="rounded-3xl bg-white p-6 shadow-lg shadow-black/10 dark:bg-neutral-800 dark:shadow-black/30">
           {/* Header */}
           <Animated.View style={titleStyle}>
             <View className="mb-4 flex-row items-center justify-between">
@@ -126,13 +140,16 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
                 Diagnosis Results
               </ThemedText>
               {onRetry && (
-                <TouchableOpacity
-                  onPress={handleRetry}
-                  className="rounded-full bg-neutral-100 dark:bg-neutral-700 p-2"
-                  accessibilityRole="button"
-                  accessibilityLabel="Retry diagnosis">
-                  <OptimizedIcon name="arrow-back" size={20} color="#10b981" />
-                </TouchableOpacity>
+                <GestureDetector gesture={retryGesture}>
+                  <Animated.View
+                    style={retryButtonStyle}
+                    className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-700"
+                    accessible
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry diagnosis">
+                    <OptimizedIcon name="arrow-back" size={20} color="#10b981" />
+                  </Animated.View>
+                </GestureDetector>
               )}
             </View>
           </Animated.View>
@@ -140,7 +157,7 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
           {/* Main content */}
           <Animated.View style={contentStyle}>
             {/* Issue name */}
-            <View className="mb-4 rounded-2xl bg-primary-50 dark:bg-primary-950/30 p-4">
+            <View className="dark:bg-primary-950/30 mb-4 rounded-2xl bg-primary-50 p-4">
               <ThemedText className="mb-2 text-xl font-bold text-primary-800 dark:text-primary-300">
                 {diagnosisResult.details?.name || 'Unknown Issue'}
               </ThemedText>
@@ -155,7 +172,7 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
                     {confidencePercentage}%
                   </ThemedText>
                 </View>
-                
+
                 <View className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
                   <Animated.View
                     style={confidenceBarStyle}
@@ -171,26 +188,27 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
             </View>
 
             {/* Recommendations */}
-            {diagnosisResult.details?.recommendations && diagnosisResult.details.recommendations.length > 0 && (
-              <View className="space-y-3">
-                <ThemedText className="text-lg font-bold text-primary-800 dark:text-primary-300">
-                  Recommended Actions
-                </ThemedText>
-                
+            {diagnosisResult.details?.recommendations &&
+              diagnosisResult.details.recommendations.length > 0 && (
                 <View className="space-y-3">
-                  {diagnosisResult.details.recommendations.map((recommendation, index) => (
-                    <View key={index} className="flex-row items-start space-x-3">
-                      <View className="mt-1 rounded-full bg-primary-500 p-1">
-                        <OptimizedIcon name="checkmark" size={12} color="white" />
+                  <ThemedText className="text-lg font-bold text-primary-800 dark:text-primary-300">
+                    Recommended Actions
+                  </ThemedText>
+
+                  <View className="space-y-3">
+                    {diagnosisResult.details.recommendations.map((recommendation, index) => (
+                      <View key={index} className="flex-row items-start space-x-3">
+                        <View className="mt-1 rounded-full bg-primary-500 p-1">
+                          <OptimizedIcon name="checkmark" size={12} color="white" />
+                        </View>
+                        <ThemedText className="flex-1 leading-6 text-neutral-700 dark:text-neutral-300">
+                          {recommendation}
+                        </ThemedText>
                       </View>
-                      <ThemedText className="flex-1 leading-6 text-neutral-700 dark:text-neutral-300">
-                        {recommendation}
-                      </ThemedText>
-                    </View>
-                  ))}
+                    ))}
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
           </Animated.View>
         </ThemedView>
       </Animated.View>
@@ -198,4 +216,4 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
   );
 });
 
-export default DiagnosisResultCard; 
+export default DiagnosisResultCard;

@@ -252,16 +252,15 @@ const cardTheme = vars({
 
 ### **Theme Strategy Choice**
 
-#### **System Theme (Recommended - Current Implementation)**
-- Remove `darkMode` from `tailwind.config.js` (uses media queries by default)
-- Automatic system preference detection
-- Simpler implementation, fewer bugs
-- Better performance with CSS variables
+#### **Hybrid Theme System (Current Implementation)**
+- Uses `darkMode: 'class'` in `tailwind.config.js` for manual toggle support
+- CSS variables respond to both `.dark` class AND `@media (prefers-color-scheme: dark)`
+- Supports both manual theme toggling AND automatic system preference detection
+- Best of both worlds: user control + automatic fallback
 
-#### **Manual Theme Toggle (Alternative)**
+#### **Manual Theme Toggle**
 ```tsx
-// Only if you need manual override of system preference
-// Add to tailwind.config.js: darkMode: "class"
+// Manual theme toggle with hybrid support
 import { useColorScheme } from 'nativewind';
 
 function ThemeToggle() {
@@ -273,6 +272,14 @@ function ThemeToggle() {
     </Pressable>
   );
 }
+```
+
+#### **System Preference Only (Alternative)**
+```tsx
+// If you only want system preference detection:
+// 1. Remove `darkMode: 'class'` from tailwind.config.js
+// 2. Remove `.dark,` from global.css selectors
+// 3. Keep only `@media (prefers-color-scheme: dark)` selectors
 ```
 
 ---
@@ -324,15 +331,16 @@ const { theme, isDarkMode } = useTheme();
 - Use `dark:` prefixes for dark mode styles
 - Leverage `ThemedView` and `ThemedText` components
 - Use semantic color names (`neutral-900` instead of hardcoded colors)
-- Test in both light and dark modes
+- Test in both light and dark modes (manual toggle + system preference)
 - Use `transition-colors` for smooth theme switching
+- Ensure CSS selectors match Tailwind's `darkMode` configuration
 
 ### **Don't ❌**
 - Create custom theme objects (use CSS variables)
-- Manually switch themes with JavaScript (unless specifically needed)
 - Use hardcoded color values
 - Enable unnecessary TailwindCSS core plugins
 - Mix percentage and pixel units in calc() (NativeWind limitation)
+- Mismatch `darkMode` config with CSS selectors (causes broken manual toggle)
 
 ---
 

@@ -1,33 +1,21 @@
 // React & React Native Core
-import React, { memo, useMemo, useCallback } from 'react';
-import {
-  View,
-  ScrollView,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
-  TouchableOpacity,
-  Pressable,
-  Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Expo
+import * as Haptics from 'expo-haptics';
 import { Image as ExpoImage } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-
-// Reanimated v3 - React Compiler Compatible
+import React, { memo, useMemo, useCallback } from 'react';
+import { View, ScrollView, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
-  runOnUI,
-  interpolateColor as rInterpolateColor,
+  runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Local Components
+import placeholderImageSource from '../../assets/images/placeholder.png';
+
 import EffectTag from '@/components/strains/EffectTag';
 import FlavorTag from '@/components/strains/FlavorTag';
 import StrainFilterModal, { ActiveFilters } from '@/components/strains/StrainFilterModal';
@@ -35,24 +23,12 @@ import StrainSearch from '@/components/strains/StrainSearch';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
-
 // Animation System (Modern Reanimated v3)
-import { 
-  useButtonAnimation,
-  useScrollAnimation,
-  AnimatedCard,
-  ANIMATION_PRESETS,
-  useAnimationSequence,
-  SEQUENCE_PRESETS
-} from '@/lib/animations';
-
+import { useScrollAnimation, AnimatedCard, useAnimationSequence } from '@/lib/animations';
 // Types & Utils
 import { StrainEffectType, StrainFlavorType } from '@/lib/types/strain';
 import { Strain as BaseStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
-
-// Assets
-import placeholderImageSource from '../../assets/images/placeholder.png';
 
 const { width } = Dimensions.get('window');
 
@@ -83,10 +59,38 @@ interface StrainsViewProps {
 }
 
 const CATEGORIES_NEW = [
-  { id: 'sativa', name: 'Sativa', icon: 'white-balance-sunny', color: '#34d399', emoji: '🌞' },
-  { id: 'indica', name: 'Indica', icon: 'moon-waning-crescent', color: '#818cf8', emoji: '🌙' },
-  { id: 'hybrid', name: 'Hybrid', icon: 'palette-swatch', color: '#f59e42', emoji: '🧬' },
+  { id: 'sativa', name: 'Sativa', icon: 'white-balance-sunny', emoji: '🌞' },
+  { id: 'indica', name: 'Indica', icon: 'moon-waning-crescent', emoji: '🌙' },
+  { id: 'hybrid', name: 'Hybrid', icon: 'palette-swatch', emoji: '🧬' },
 ];
+
+// ✅ MIGRATED: Simple helper that returns CSS colors for strain types
+const getStrainTypeColor = (type: string) => {
+  switch (type) {
+    case 'sativa':
+      return 'rgb(var(--color-sativa-500))';
+    case 'indica':
+      return 'rgb(var(--color-indica-500))';
+    case 'hybrid':
+      return 'rgb(var(--color-hybrid-500))';
+    default:
+      return 'rgb(var(--color-neutral-600))';
+  }
+};
+
+// ✅ MIGRATED: Helper for className-based strain colors
+const getStrainClassName = (type: string) => {
+  switch (type) {
+    case 'sativa':
+      return 'text-sativa-500';
+    case 'indica':
+      return 'text-indica-500';
+    case 'hybrid':
+      return 'text-hybrid-500';
+    default:
+      return 'text-neutral-600';
+  }
+};
 
 const StrainCard = memo(
   ({
@@ -103,7 +107,7 @@ const StrainCard = memo(
     // 🎯 React Compiler Compatible Animation
     const scale = useSharedValue(1);
     const pressed = useSharedValue(false);
-    
+
     const favoriteAnimation = useAnimatedStyle(() => ({
       transform: [{ scale: scale.value }],
     }));
@@ -115,34 +119,30 @@ const StrainCard = memo(
         scale.set(withSpring(0.95));
         pressed.set(true);
       })
-      .onEnd(() => {
+      .onFinalize(() => {
         'worklet';
         scale.set(withSpring(1));
         pressed.set(false);
-        
-        // Extract the ID from item and pass it to onToggleFavorite
-        const id = item?.id ?? item?._id;
-        if (id) onToggleFavorite?.(id);
+      })
+      .onEnd(() => {
+        'worklet';
+        const handleToggle = () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+          // Extract the ID from item and pass it to onToggleFavorite
+          const id = item?.id ?? item?._id;
+          if (id) onToggleFavorite?.(id);
+        };
+        runOnJS(handleToggle)();
       });
 
-    // Safety checks - if item is invalid, don't render anything
-    if (!item || typeof item !== 'object') {
-      console.log('[DEBUG] StrainCard received invalid item:', item);
-      return null;
-    }
+    // Convert the strain ID to UUID for consistent comparison - must be before any early returns
+    const strainUuid = useMemo(
+      () => ensureUuid(item?.id || item?._id || ''),
+      [item?.id, item?._id]
+    );
 
-    // Convert the strain ID to UUID for consistent comparison
-    const strainUuid = useMemo(() => ensureUuid(item.id || item._id || ''), [item.id, item._id]);
-
-    // Log for debugging
-    console.log(`[DEBUG] StrainCard rendering:`, {
-      name: item.name,
-      originalId: item.id || item._id,
-      uuid: strainUuid,
-      isFavorite,
-    });
-
-    // Function to determine the proper strain type from available data
+    // Function to determine the proper strain type from available data - must be before any early returns
     const determineStrainType = useCallback((): 'sativa' | 'indica' | 'hybrid' => {
       // Use the type property directly if it's one of our expected values
       if (item.type === 'sativa' || item.type === 'indica' || item.type === 'hybrid') {
@@ -167,10 +167,24 @@ const StrainCard = memo(
 
       // Default fallback
       return 'hybrid';
-    }, [item.type, item.genetics]);
+    }, [item?.type, item?.genetics]);
+
+    // Safety checks - if item is invalid, don't render anything (must be after hooks)
+    if (!item || typeof item !== 'object') {
+      console.log('[DEBUG] StrainCard received invalid item:', item);
+      return null;
+    }
 
     // Get the actual strain type
     const actualType = determineStrainType();
+
+    // Log for debugging
+    console.log(`[DEBUG] StrainCard rendering:`, {
+      name: item.name,
+      originalId: item.id || item._id,
+      uuid: strainUuid,
+      isFavorite,
+    });
 
     // Log type determination for debugging
     console.log(`[DEBUG] Strain ${item.name} type determined as: ${actualType}`, {
@@ -208,7 +222,6 @@ const StrainCard = memo(
       id: 'hybrid',
       name: 'Hybrid',
       icon: 'palette-swatch',
-      color: '#f59e42',
       emoji: '🧬',
     };
 
@@ -216,12 +229,12 @@ const StrainCard = memo(
       <AnimatedCard
         variant="strains-style"
         size="medium"
-        enableAnimation={true}
-        enableShadowAnimation={true}
+        enableAnimation
+        enableShadowAnimation
         enableHaptics={false}
         onPress={onPress}
         className="mb-8 bg-white dark:bg-zinc-900">
-        <View className="overflow-hidden rounded-3xl -m-4">
+        <View className="-m-4 overflow-hidden rounded-3xl">
           <ExpoImage
             source={safeItem.image}
             style={{
@@ -233,39 +246,36 @@ const StrainCard = memo(
             contentFit="cover"
             accessibilityIgnoresInvertColors
           />
-          <View className="absolute top-5 left-5 flex-row items-center bg-black/50 rounded-2xl px-3 py-1">
+          <View className="absolute left-5 top-5 flex-row items-center rounded-2xl bg-black/50 px-3 py-1">
             <OptimizedIcon
               name={strainTypeConfig.icon as any}
               size={20}
-              color="#fff"
-              style={{ marginRight: 4 }}
+              className="mr-1 text-neutral-50"
             />
             <ThemedText
               className="text-xs font-bold text-white"
-              style={{ textShadowColor: '#000', textShadowRadius: 4 }}>
+              style={{ textShadowColor: 'rgb(var(--color-neutral-900))', textShadowRadius: 4 }}>
               {safeItem.type.charAt(0).toUpperCase() + safeItem.type.slice(1)}
             </ThemedText>
           </View>
-          
+
           <GestureDetector gesture={tapGesture}>
-            <Animated.View style={favoriteAnimation}>
-              <TouchableOpacity
-                className="absolute top-5 right-5 bg-white dark:bg-zinc-800 rounded-2xl p-2 shadow-lg"
-                accessibilityRole="button"
-                accessibilityLabel={safeIsFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                activeOpacity={0.8}>
-                <OptimizedIcon
-                  name={safeIsFavorite ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={safeIsFavorite ? '#f43f5e' : '#a1a1aa'}
-                  style={{ transform: [{ scale: safeIsFavorite ? 1.15 : 1 }] }}
-                />
-              </TouchableOpacity>
+            <Animated.View
+              style={favoriteAnimation}
+              className="absolute right-5 top-5 rounded-2xl bg-white p-2 shadow-lg dark:bg-zinc-800"
+              accessibilityRole="button"
+              accessibilityLabel={safeIsFavorite ? 'Remove from favorites' : 'Add to favorites'}>
+              <OptimizedIcon
+                name={safeIsFavorite ? 'heart' : 'heart-outline'}
+                size={22}
+                className={safeIsFavorite ? 'text-danger-500' : 'text-neutral-400'}
+                style={{ transform: [{ scale: safeIsFavorite ? 1.15 : 1 }] }}
+              />
             </Animated.View>
           </GestureDetector>
         </View>
-        
-        <View className="px-6 py-5 -m-4 mt-0 p-6">
+
+        <View className="-m-4 mt-0 p-6 px-6 py-5">
           <ThemedText
             className="mb-1 text-2xl font-extrabold capitalize"
             style={{ letterSpacing: 0.2 }}>
@@ -273,8 +283,8 @@ const StrainCard = memo(
           </ThemedText>
           <View className="mb-2 flex-row items-center">
             {safeItem.growDifficulty && (
-              <View className="bg-yellow-200 rounded-lg px-2 py-1 mr-2">
-                <ThemedText className="text-xs font-semibold text-yellow-800">
+              <View className="mr-2 rounded-lg bg-warning-100 px-2 py-1 dark:bg-warning-900">
+                <ThemedText className="text-xs font-semibold text-warning-800 dark:text-warning-300">
                   {safeItem.growDifficulty}
                 </ThemedText>
               </View>
@@ -297,7 +307,7 @@ const StrainCard = memo(
                   />
                 ))}
             {safeItem.effects && safeItem.effects.length > 2 && (
-              <View className="bg-neutral-100 dark:bg-neutral-700 rounded-lg px-2 ml-1 justify-center">
+              <View className="ml-1 justify-center rounded-lg bg-neutral-100 px-2 dark:bg-neutral-700">
                 <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
                   +{safeItem.effects.length - 2} more
                 </ThemedText>
@@ -316,7 +326,7 @@ const StrainCard = memo(
                   />
                 ))}
             {safeItem.flavors && safeItem.flavors.length > 2 && (
-              <View className="bg-neutral-100 dark:bg-neutral-700 rounded-lg px-2 ml-1 justify-center">
+              <View className="ml-1 justify-center rounded-lg bg-neutral-100 px-2 dark:bg-neutral-700">
                 <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
                   +{safeItem.flavors.length - 2} more
                 </ThemedText>
@@ -350,7 +360,7 @@ const CategoryChips = memo(
         contentContainerStyle={{ paddingHorizontal: 8, gap: 12 }}>
         {safeCategories.map((cat) => {
           // Ensure cat is a valid object with all required properties
-          if (!cat || typeof cat !== 'object' || !cat.id || !cat.name || !cat.icon || !cat.color) {
+          if (!cat || typeof cat !== 'object' || !cat.id || !cat.name || !cat.icon || !cat.emoji) {
             console.error('[ERROR] Invalid category:', cat);
             return null;
           }
@@ -369,71 +379,82 @@ const CategoryChips = memo(
   }
 );
 
-const CategoryChip = memo(({
-  category,
-  isSelected,
-  onPress,
-}: {
-  category: typeof CATEGORIES_NEW[0];
-  isSelected: boolean;
-  onPress: () => void;
-}) => {
-  // � Modern React Compiler Compatible Animation
-  const scale = useSharedValue(1);
-  
-  const chipAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+const CategoryChip = memo(
+  ({
+    category,
+    isSelected,
+    onPress,
+  }: {
+    category: (typeof CATEGORIES_NEW)[0];
+    isSelected: boolean;
+    onPress: () => void;
+  }) => {
+    // 🎯 React Compiler Compatible Animation
+    const scale = useSharedValue(1);
 
-  // 🎬 Modern gesture handling
-  const tapGesture = Gesture.Tap()
-    .onBegin(() => {
-      'worklet';
-      scale.set(withSpring(0.96));
-    })
-    .onEnd(() => {
-      'worklet';
-      scale.set(withSpring(1));
+    const chipAnimatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }],
+    }));
+
+    // 🎬 Modern gesture handling
+    const handlePress = useCallback(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onPress();
-    });
+    }, [onPress]);
 
-  return (
-    <GestureDetector gesture={tapGesture}>
-      <Animated.View style={chipAnimatedStyle}>
-        <TouchableOpacity
-          className={`rounded-2xl py-2 px-5 flex-row items-center mr-2 ${
-            isSelected 
-              ? 'shadow-lg' 
-              : 'bg-neutral-100 dark:bg-zinc-800'
+    const tapGesture = Gesture.Tap()
+      .onBegin(() => {
+        'worklet';
+        scale.set(withSpring(0.96));
+      })
+      .onFinalize(() => {
+        'worklet';
+        scale.set(withSpring(1));
+      })
+      .onEnd(() => {
+        'worklet';
+        runOnJS(handlePress)();
+      });
+
+    // ✅ MIGRATED: Get CSS color for strain type
+    const strainColor = getStrainTypeColor(category.id);
+
+    return (
+      <GestureDetector gesture={tapGesture}>
+        <Animated.View
+          style={[
+            chipAnimatedStyle,
+            {
+              backgroundColor: isSelected ? strainColor : undefined,
+              shadowColor: isSelected ? strainColor : 'transparent',
+              shadowOpacity: isSelected ? 0.18 : 0,
+              shadowRadius: 8,
+              elevation: isSelected ? 3 : 0,
+            },
+          ]}
+          className={`mr-2 flex-row items-center rounded-2xl px-5 py-2 ${
+            isSelected ? 'shadow-lg' : 'bg-neutral-100 dark:bg-zinc-800'
           }`}
-          style={{
-            backgroundColor: isSelected ? category.color : undefined,
-            shadowColor: isSelected ? category.color : 'transparent',
-            shadowOpacity: isSelected ? 0.18 : 0,
-            shadowRadius: 8,
-            elevation: isSelected ? 3 : 0,
-          }}
           accessibilityRole="button"
           accessibilityLabel={`Filter by ${category.name}`}>
           <OptimizedIcon
             name={category.icon as any}
             size={20}
-            color={isSelected ? '#fff' : category.color}
-            style={{ marginRight: 7 }}
+            className={
+              isSelected ? 'mr-2 text-neutral-50' : `${getStrainClassName(category.id)} mr-2`
+            }
           />
           <ThemedText
-            className={`text-base font-semibold ${
-              isSelected 
-                ? 'text-white' 
-                : 'text-neutral-700 dark:text-neutral-300'
+            className={`font-bold ${
+              isSelected ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'
             }`}>
-            {category.emoji || ''} {category.name}
+            {category.name}
           </ThemedText>
-        </TouchableOpacity>
-      </Animated.View>
-    </GestureDetector>
-  );
-});
+        </Animated.View>
+      </GestureDetector>
+    );
+  }
+);
 
 const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   router = { push: () => {} },
@@ -469,8 +490,13 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     scaleRange: { min: 0.98, max: 1 },
   });
 
-  // 🎭 Animation sequence for loading states  
-  const { runSequence } = useAnimationSequence();
+  // 🎭 Animation sequence for loading states
+  useAnimationSequence();
+
+  // 🎯 Haptic feedback functions (worklet-safe)
+  const triggerMediumHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
 
   // Define memoized values at the top level - not inside conditional blocks
   const filteredStrains = useMemo(() => {
@@ -507,7 +533,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
       <SafeAreaView className="flex-1 bg-white dark:bg-black">
         <ThemedView variant="default" className="flex-1 items-center justify-center px-6">
           <View className="animate-pulse">
-            <ActivityIndicator size="large" className="text-primary-500" />
+            <ActivityIndicator size="large" color="rgb(var(--color-primary-500))" />
           </View>
           <ThemedText className="mt-4 text-center text-base text-neutral-600 dark:text-neutral-400">
             Loading cannabis strains...
@@ -521,24 +547,29 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-black">
         <ThemedView variant="default" className="flex-1 items-center justify-center px-6">
-          <OptimizedIcon 
-            name="warning-outline" 
-            size={64} 
-            color="#ef4444" 
-            style={{ marginBottom: 16 }}
-          />
+          <OptimizedIcon name="warning-outline" size={64} className="mb-4 text-danger-500" />
           <ThemedText className="mb-2 text-center text-xl font-bold">
             Failed to load strains
           </ThemedText>
           <ThemedText className="mb-6 text-center text-base text-neutral-600 dark:text-neutral-400">
             {error.message || 'An error occurred while fetching strains.'}
           </ThemedText>
-          <TouchableOpacity
-            className="rounded-xl bg-primary-500 px-6 py-3 shadow-sm"
-            onPress={handleRefresh}
-            accessibilityRole="button">
-            <ThemedText className="font-semibold text-white">Try Again</ThemedText>
-          </TouchableOpacity>
+          <GestureDetector
+            gesture={Gesture.Tap()
+              .onBegin(() => {
+                'worklet';
+                runOnJS(triggerMediumHaptic)();
+              })
+              .onEnd(() => {
+                'worklet';
+                runOnJS(handleRefresh)();
+              })}>
+            <Animated.View
+              className="rounded-xl bg-primary-500 px-6 py-3 shadow-sm"
+              accessibilityRole="button">
+              <ThemedText className="font-semibold text-white">Try Again</ThemedText>
+            </Animated.View>
+          </GestureDetector>
         </ThemedView>
       </SafeAreaView>
     );
@@ -547,26 +578,23 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-black" edges={['top']}>
       <StatusBar style="auto" />
-      <View className="px-4 pt-safe-or-2">
-        <CategoryChips
-          selected={selectedStrainType}
-          onSelect={setSelectedStrainType}
-        />
+      <View className="pt-safe-or-2 px-4">
+        <CategoryChips selected={selectedStrainType} onSelect={setSelectedStrainType} />
         {/* Enhanced Search Component */}
-        <StrainSearch 
+        <StrainSearch
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Search strains..."
         />
-        
+
         <View className="mb-3 flex-row items-center px-4">
           <AnimatedCard
             variant="outlined"
             size="small"
-            enableAnimation={true}
+            enableAnimation
             onPress={() => router.push('/strains/favorites')}
             className="ml-2">
-            <OptimizedIcon name="heart" size={24} color="#f43f5e" />
+            <OptimizedIcon name="heart" size={24} className="text-danger-500" />
           </AnimatedCard>
         </View>
       </View>
@@ -587,10 +615,10 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
             onToggleFavorite={onToggleFavorite}
           />
         )}
-        contentContainerStyle={{ 
-          paddingHorizontal: 8, 
+        contentContainerStyle={{
+          paddingHorizontal: 8,
           paddingBottom: 32,
-          paddingTop: 4 
+          paddingTop: 4,
         }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -604,7 +632,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
           <RefreshControl
             refreshing={isFetching}
             onRefresh={handleRefresh}
-            tintColor="#22c55e"
+            tintColor="rgb(var(--color-primary-500))"
           />
         }
         accessibilityLabel="Strains list"
@@ -612,7 +640,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
         initialNumToRender={6}
         maxToRenderPerBatch={10}
         windowSize={10}
-        removeClippedSubviews={true}
+        removeClippedSubviews
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       />
@@ -621,7 +649,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
         onClose={() => setIsFilterModalVisible(false)}
         initialFilters={activeFilters}
         onApplyFilters={handleApplyFilters}
-        enableHaptics={true}
+        enableHaptics
         isLoading={isLoading || isFetching}
       />
     </SafeAreaView>

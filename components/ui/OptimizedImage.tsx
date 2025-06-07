@@ -1,6 +1,7 @@
+import { Image as ExpoImage } from 'expo-image';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Image, ImageStyle, LayoutChangeEvent, Dimensions } from 'react-native';
-import { Image as ExpoImage } from 'expo-image';
+
 import { assetOptimizations } from '../../lib/utils/production-utils';
 
 interface OptimizedImageProps {
@@ -35,12 +36,13 @@ export function OptimizedImage({
   priority = 'normal',
   cachePolicy = 'memory',
   lazyLoad = true,
-  threshold = 100
+  threshold = 100,
 }: OptimizedImageProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [shouldLoad, setShouldLoad] = useState(priority === 'high' || !lazyLoad);
-  const [currentSource, setCurrentSource] = useState<{ uri: string; cacheKey?: string } | number | null>(null);
+  const [currentSource, setCurrentSource] = useState<
+    { uri: string; cacheKey?: string } | number | null
+  >(null);
   const [componentLayout, setComponentLayout] = useState<{
     x: number;
     y: number;
@@ -54,19 +56,19 @@ export function OptimizedImage({
   useEffect(() => {
     if (typeof source === 'object' && source.uri) {
       const originalUri = source.uri;
-      
+
       // Check if we should attempt optimization
       if (assetOptimizations.shouldUseOptimizedFormat(originalUri)) {
         const optimizedUri = assetOptimizations.getOptimizedImageFormat(originalUri);
-        setCurrentSource({ 
+        setCurrentSource({
           uri: optimizedUri,
-          cacheKey: originalUri // Use original URI as cache key for consistency
+          cacheKey: originalUri, // Use original URI as cache key for consistency
         });
       } else {
         // Use original URI without optimization
-        setCurrentSource({ 
+        setCurrentSource({
           uri: originalUri,
-          cacheKey: originalUri 
+          cacheKey: originalUri,
         });
       }
     } else {
@@ -75,26 +77,35 @@ export function OptimizedImage({
   }, [source]);
 
   // Generate placeholder with enhanced error handling
-  const placeholderUri = placeholder 
-    ? assetOptimizations.createPlaceholderUri(width, height, hasError ? 'Failed to load' : 'Loading...')
+  const placeholderUri = placeholder
+    ? assetOptimizations.createPlaceholderUri(
+        width,
+        height,
+        hasError ? 'Failed to load' : 'Loading...'
+      )
     : undefined;
 
   // Handle image load errors with fallback attempt
   const handleImageError = () => {
-    if (typeof currentSource === 'object' && currentSource?.uri && typeof source === 'object' && source.uri) {
+    if (
+      typeof currentSource === 'object' &&
+      currentSource?.uri &&
+      typeof source === 'object' &&
+      source.uri
+    ) {
       const fallbackUri = assetOptimizations.getFallbackUri(currentSource.uri, source.uri);
-      
+
       // If we haven't tried the fallback yet, try it
       if (fallbackUri !== currentSource.uri) {
-        setCurrentSource({ 
+        setCurrentSource({
           uri: fallbackUri,
-          cacheKey: source.uri 
+          cacheKey: source.uri,
         });
         setHasError(false); // Reset error state for fallback attempt
         return;
       }
     }
-    
+
     // If fallback also failed or no fallback available, set error state
     setHasError(true);
   };
@@ -103,10 +114,10 @@ export function OptimizedImage({
   const checkVisibility = (layout: { x: number; y: number; width: number; height: number }) => {
     const screenData = Dimensions.get('window');
     const screenHeight = screenData.height;
-    
+
     // Simple viewport detection - component is visible if it's within screen bounds + threshold
     const isVisible = layout.y < screenHeight + threshold && layout.y + layout.height > -threshold;
-    
+
     if (isVisible && !shouldLoad) {
       setShouldLoad(true);
     }
@@ -116,17 +127,17 @@ export function OptimizedImage({
   const handleLayout = (event: LayoutChangeEvent) => {
     if (!lazyLoad || shouldLoad) return;
 
-    const { x, y, width: layoutWidth, height: layoutHeight } = event.nativeEvent.layout;
-    
+    const { width: layoutWidth, height: layoutHeight } = event.nativeEvent.layout;
+
     // Measure absolute position on screen
     containerRef.current?.measureInWindow((windowX, windowY) => {
       const layout = {
         x: windowX,
         y: windowY,
         width: layoutWidth,
-        height: layoutHeight
+        height: layoutHeight,
       };
-      
+
       setComponentLayout(layout);
       checkVisibility(layout);
     });
@@ -144,17 +155,8 @@ export function OptimizedImage({
   // Show placeholder while not loaded or loading
   if (!shouldLoad && placeholder) {
     return (
-      <View 
-        ref={containerRef}
-        style={[baseStyle, style]}
-        onLayout={handleLayout}
-      >
-        {placeholderUri && (
-          <Image 
-            source={{ uri: placeholderUri }} 
-            style={[baseStyle, style]}
-          />
-        )}
+      <View ref={containerRef} style={[baseStyle, style]} onLayout={handleLayout}>
+        {placeholderUri && <Image source={{ uri: placeholderUri }} style={[baseStyle, style]} />}
       </View>
     );
   }
@@ -162,25 +164,19 @@ export function OptimizedImage({
   // Show error state
   if (hasError && placeholder) {
     return (
-      <View 
+      <View
         ref={containerRef}
         style={[
           baseStyle,
-          { 
+          {
             backgroundColor: '#f3f4f6',
             justifyContent: 'center',
-            alignItems: 'center'
-          }, 
-          style
+            alignItems: 'center',
+          },
+          style,
         ]}
-        onLayout={handleLayout}
-      >
-        {placeholderUri && (
-          <Image 
-            source={{ uri: placeholderUri }} 
-            style={[baseStyle, style]}
-          />
-        )}
+        onLayout={handleLayout}>
+        {placeholderUri && <Image source={{ uri: placeholderUri }} style={[baseStyle, style]} />}
       </View>
     );
   }
@@ -197,7 +193,6 @@ export function OptimizedImage({
         placeholderContentFit="cover"
         placeholder={placeholderUri}
         onLoad={() => {
-          setIsLoaded(true);
           setHasError(false);
         }}
         onError={handleImageError}
@@ -215,37 +210,40 @@ export const useScrollBasedLazyLoading = (
   threshold: number = 100
 ) => {
   const [shouldLoad, setShouldLoad] = useState(false);
-  
+
   useEffect(() => {
     const screenHeight = Dimensions.get('window').height;
-    const isVisible = 
+    const isVisible =
       componentY < scrollY + screenHeight + threshold &&
       componentY + componentHeight > scrollY - threshold;
-    
+
     if (isVisible && !shouldLoad) {
       setShouldLoad(true);
     }
   }, [scrollY, componentY, componentHeight, threshold, shouldLoad]);
-  
+
   return shouldLoad;
 };
 
 // Preload critical images for better performance with fallback handling
 export const preloadImages = async (imageUris: string[]) => {
   if (__DEV__) return;
-  
+
   const preloadPromises = imageUris.map(async (uri) => {
     try {
       // Check if we should optimize this URI
       if (assetOptimizations.shouldUseOptimizedFormat(uri)) {
         const optimizedUri = assetOptimizations.getOptimizedImageFormat(uri);
-        
+
         try {
           // Try to prefetch the optimized version first
           await ExpoImage.prefetch(optimizedUri);
         } catch (optimizedError) {
           // If optimized version fails, fallback to original
-          console.warn(`Failed to preload optimized image ${optimizedUri}, falling back to original:`, optimizedError);
+          console.warn(
+            `Failed to preload optimized image ${optimizedUri}, falling back to original:`,
+            optimizedError
+          );
           await ExpoImage.prefetch(uri);
         }
       } else {
@@ -257,7 +255,7 @@ export const preloadImages = async (imageUris: string[]) => {
       // Continue with other images even if one fails
     }
   });
-  
+
   // Wait for all preloading attempts to complete
   await Promise.allSettled(preloadPromises);
 };

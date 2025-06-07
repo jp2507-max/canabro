@@ -58,7 +58,8 @@ interface RawApiStrainData {
 
 // Helper function to parse percentage values (THC, CBD)
 function parsePercentage(value?: string | number): number | null {
-  if (value === null || value === undefined || String(value).toLowerCase() === "unknown") return null;
+  if (value === null || value === undefined || String(value).toLowerCase() === 'unknown')
+    return null;
   if (typeof value === 'number') {
     return value;
   }
@@ -112,7 +113,10 @@ function prepareStrainDataForSupabase(rawData: RawApiStrainData): Partial<Strain
   const effectiveApiId = rawData.api_id || rawData._id;
 
   if (!effectiveApiId) {
-    console.error('[StrainSyncService] Critical: Cannot determine effective API ID from rawData:', rawData);
+    console.error(
+      '[StrainSyncService] Critical: Cannot determine effective API ID from rawData:',
+      rawData
+    );
     return null;
   }
 
@@ -127,9 +131,10 @@ function prepareStrainDataForSupabase(rawData: RawApiStrainData): Partial<Strain
     flowering_time: extractFloweringTimeInWeeks(rawData.floweringTime || rawData.fromSeedToHarvest),
     flowering_type: rawData.floweringType || null,
     grow_difficulty: rawData.growDifficulty || null,
-    average_yield: rawData.yieldIndoor && rawData.yieldOutdoor
-      ? `Indoor: ${rawData.yieldIndoor}, Outdoor: ${rawData.yieldOutdoor}`
-      : (rawData.yieldIndoor || rawData.yieldOutdoor || null),
+    average_yield:
+      rawData.yieldIndoor && rawData.yieldOutdoor
+        ? `Indoor: ${rawData.yieldIndoor}, Outdoor: ${rawData.yieldOutdoor}`
+        : rawData.yieldIndoor || rawData.yieldOutdoor || null,
     height_indoor: rawData.heightIndoor || null,
     height_outdoor: rawData.heightOutdoor || null,
     effects: rawData.effects || null,
@@ -142,15 +147,18 @@ function prepareStrainDataForSupabase(rawData: RawApiStrainData): Partial<Strain
 
   // Clean up properties that are explicitly undefined to avoid issues with Supabase.
   // Supabase client might handle undefined as no-change for updates, but explicit null is clearer.
-  Object.keys(supabaseData).forEach(key => {
+  Object.keys(supabaseData).forEach((key) => {
     const k = key as keyof typeof supabaseData;
     if (supabaseData[k] === undefined) {
       // @ts-ignore
       supabaseData[k] = null;
     }
   });
-  
-  console.log('[StrainSyncService] Data prepared for Supabase:', JSON.stringify(supabaseData, null, 2));
+
+  console.log(
+    '[StrainSyncService] Data prepared for Supabase:',
+    JSON.stringify(supabaseData, null, 2)
+  );
   return supabaseData;
 }
 
@@ -197,7 +205,10 @@ export async function findOrCreateLocalStrain(
             }
           }
           if (needsUpdate) {
-            console.log('[StrainSyncService] Updating existing strain in Supabase for api_id:', apiId);
+            console.log(
+              '[StrainSyncService] Updating existing strain in Supabase for api_id:',
+              apiId
+            );
             const { data: updatedStrain, error: updateError } = await supabase
               .from('strains')
               .update(preparedUpdateData)
@@ -217,13 +228,19 @@ export async function findOrCreateLocalStrain(
 
     // If not found, and rawApiStrainData is provided, create it
     if (!rawApiStrainData) {
-      console.warn('[StrainSyncService] Strain not found for api_id and no data provided to create:', apiId);
+      console.warn(
+        '[StrainSyncService] Strain not found for api_id and no data provided to create:',
+        apiId
+      );
       return null;
     }
 
     const preparedData = prepareStrainDataForSupabase(rawApiStrainData);
     if (!preparedData) {
-      console.error('[StrainSyncService] Failed to prepare data for new strain with api_id:', apiId);
+      console.error(
+        '[StrainSyncService] Failed to prepare data for new strain with api_id:',
+        apiId
+      );
       return null;
     }
 
@@ -241,7 +258,6 @@ export async function findOrCreateLocalStrain(
 
     console.log('[StrainSyncService] Successfully created new strain in Supabase:', newStrain);
     return newStrain;
-
   } catch (error) {
     console.error('[StrainSyncService] Unexpected error in findOrCreateLocalStrain:', error);
     return null;
@@ -263,18 +279,21 @@ export async function syncStrainFromApi(
   updateIfExists: boolean = true // Default to true, consistent with findOrCreateLocalStrain logic
 ): Promise<Strain | null> {
   if (!apiId || !rawApiStrainData) {
-    console.error('[StrainSyncService] syncStrainFromApi: apiId and rawApiStrainData are required.');
+    console.error(
+      '[StrainSyncService] syncStrainFromApi: apiId and rawApiStrainData are required.'
+    );
     return null;
   }
-  
+
   // Ensure the rawApiStrainData itself has the api_id consistent with the passed apiId parameter
   // This is a good safeguard.
   if (rawApiStrainData.api_id !== apiId && rawApiStrainData._id !== apiId) {
-    console.warn(`[StrainSyncService] Mismatch between apiId parameter ('${apiId}') and api_id in rawApiStrainData ('${rawApiStrainData.api_id || rawApiStrainData._id}'). Using parameter.`);
+    console.warn(
+      `[StrainSyncService] Mismatch between apiId parameter ('${apiId}') and api_id in rawApiStrainData ('${rawApiStrainData.api_id || rawApiStrainData._id}'). Using parameter.`
+    );
     // Ensure the rawData passed to findOrCreate uses the explicit apiId parameter
     rawApiStrainData.api_id = apiId;
   }
-
 
   try {
     // findOrCreateLocalStrain now handles both finding, creating, and optionally updating if data is passed.
@@ -284,9 +303,8 @@ export async function syncStrainFromApi(
     // For simplicity and to align with how findOrCreateLocalStrain is now structured,
     // we'll always pass the rawApiStrainData. If you need a strict "don't update if exists"
     // when updateIfExists is false, findOrCreateLocalStrain would need adjustment.
-    
-    return await findOrCreateLocalStrain(apiId, rawApiStrainData);
 
+    return await findOrCreateLocalStrain(apiId, rawApiStrainData);
   } catch (error) {
     console.error(`[StrainSyncService] Error in syncStrainFromApi for api_id ${apiId}:`, error);
     return null;

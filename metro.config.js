@@ -1,13 +1,16 @@
 /**
  * Metro configuration for React Native and Expo
  * Optimized for iOS production builds with bundle size reduction
- * 
+ *
  * ⛔️ DO NOT DELETE - Enables ws compatibility in React Native
+ * @environment node
  */
+
+/* eslint-env node */
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
-const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
 const path = require('path');
+const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
 
 // Get the default configuration
 // eslint-disable-next-line no-undef
@@ -50,10 +53,10 @@ config.resolver.extraNodeModules = {
   url: path.resolve(__dirname, 'node_modules/url'),
   process: path.resolve(__dirname, 'node_modules/process/browser'),
   util: path.resolve(__dirname, 'node_modules/util'),
-  
+
   // Dedicated polyfills for specific modules
   net: path.resolve(__dirname, 'lib/polyfills/net-polyfill.js'),
-  'ws': path.resolve(__dirname, 'lib/polyfills/index.js'), // Provides proper default export for WebSocket
+  ws: path.resolve(__dirname, 'lib/polyfills/index.js'), // Provides proper default export for WebSocket
 };
 
 // Add specific module resolution priority
@@ -91,6 +94,8 @@ config.serializer = {
 };
 
 // Apply the NativeWind wrapper to the modified configuration
-module.exports = wrapWithReanimatedMetroConfig(withNativeWind(config, {
-  input: './global.css',
-}));
+module.exports = wrapWithReanimatedMetroConfig(
+  withNativeWind(config, {
+    input: './global.css',
+  })
+);

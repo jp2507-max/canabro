@@ -137,8 +137,8 @@ export default appSchema({
         { name: 'cbd_percentage', type: 'number', isOptional: true },
         { name: 'flowering_time', type: 'number', isOptional: true }, // Matches model
         { name: 'grow_difficulty', type: 'string', isOptional: true },
-        { name: 'effects', type: 'string', isOptional: true }, 
-        { name: 'flavors', type: 'string', isOptional: true }, 
+        { name: 'effects', type: 'string', isOptional: true },
+        { name: 'flavors', type: 'string', isOptional: true },
         { name: 'terpenes', type: 'string', isOptional: true }, // Added to match model
         { name: 'parents', type: 'string', isOptional: true }, // Added to match model
         { name: 'origin', type: 'string', isOptional: true }, // Added to match model

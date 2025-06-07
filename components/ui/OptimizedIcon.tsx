@@ -4,108 +4,109 @@ import { View, Text, Platform } from 'react-native';
 // Enhanced icon mapping with better semantic distinction
 const IconSVG = {
   // Basic icons with distinct symbols
-  'add': '＋',
+  add: '＋',
   'add-circle-outline': '⊕',
   'leaf-outline': '🍃',
-  'leaf': '🌿',
-  'heart': '♥',
+  leaf: '🌿',
+  heart: '♥',
   'heart-outline': '♡',
-  'close': '✕',
+  close: '✕',
   'close-circle': '⊗',
-  'send': '📤',
-  
+  send: '📤',
+
   // Checkmarks with semantic distinction
-  'checkmark': '✓',
-  'check-circle': '☑',  // Different from checkmark
+  checkmark: '✓',
+  'check-circle': '☑', // Different from checkmark
   'checkmark-circle': '✅',
-  
+
   'pricetag-outline': '🏷️',
   'person-circle-outline': '👤',
-  
+
   // Tab bar icons
-  'home': '🏠',
-  'calendar': '📅',
-  'calendar-outline': '📆',  // Slight distinction
-  'medkit': '🩺',
-  'people': '👥',
-  
+  home: '🏠',
+  calendar: '📅',
+  'calendar-outline': '📆', // Slight distinction
+  medkit: '🩺',
+  people: '👥',
+
   // Navigation icons with better distinction
   'chevron-forward-outline': '›',
   'chevron-forward': '▶',
   'chevron-back-outline': '‹',
   'arrow-back': '←',
-  'pencil': '✏️',
+  pencil: '✏️',
   'chevron-up-outline': '⌃',
-  'chevron-up': '▲',  // More distinct
+  'chevron-up': '▲', // More distinct
   'chevron-down-outline': '⌄',
-  'chevron-down': '▼',  // More distinct
-  
+  'chevron-down': '▼', // More distinct
+
   'water-outline': '💧',
   'layers-outline': '⧉',
-  
+
   // Additional commonly used icons
-  'camera': '📷',
-  'camera-outline': '📸',  // Slight distinction
-  'search': '🔍',
-  'settings': '⚙️',
-  'edit': '✏️',
-  'trash': '🗑️',
-  'share': '📤',
-  'bookmark': '🔖',
-  'star': '⭐',
-  'notification': '🔔',
+  camera: '📷',
+  'camera-outline': '📸', // Slight distinction
+  search: '🔍',
+  settings: '⚙️',
+  edit: '✏️',
+  trash: '🗑️',
+  share: '📤',
+  bookmark: '🔖',
+  star: '⭐',
+  notification: '🔔',
   'chatbubble-outline': '💬',
   'image-outline': '🖼️',
-  'images-outline': '🗂️',  // Different for multiple images
+  'images-outline': '🗂️', // Different for multiple images
   'location-outline': '📍',
-  'flash': '⚡',
+  flash: '⚡',
   'flash-off': '🔆',
   'camera-flip-outline': '🔄',
-  
+
   // Community and help icons
   'help-circle': '❓',
-  
+
   // Moon and sun icons
   'moon-outline': '🌙',
   'sunny-outline': '☀️',
-  'sun': '☀️',
-  'moon': '🌙',
-  
+  sun: '☀️',
+  moon: '🌙',
+
   // Activity and stats icons
   'journal-outline': '📓',
   'stats-chart-outline': '📊',
   'trash-outline': '🗑️',
-  
+
   // Loading
-  'loading1': '⭮',
-  
+  loading1: '⭮',
+
   // MaterialCommunityIcons equivalents
   'flower-tulip-outline': '🌷',
   'image-plus': '🖼️➕',
-  'check': '✓',
+  check: '✓',
   'note-text-outline': '📝',
   'flask-outline': '🧪',
   'content-cut': '✂️',
   'vector-polyline': '📐',
-  'waves': '🌊',
+  waves: '🌊',
   'spider-thread': '🕷️',
   'thermometer-lines': '🌡️',
   'scissors-cutting': '✂️',
   'help-circle-outline': '❓',
-  'flower': '🌸',
-  'flower-outline': '🌺',  // Different from flower
-  'sprout': '🌱',  'scale-balance': '⚖️',
+  flower: '🌸',
+  'flower-outline': '🌺', // Different from flower
+  sprout: '🌱',
+  'scale-balance': '⚖️',
   'arrow-expand-vertical': '↕️',
   'calendar-range': '📅',
-  'dna': '🧬',
-    // Additional Ionicons
+  dna: '🧬',
+  // Additional Ionicons
   'globe-outline': '🌐',
-  
+
   // MaterialCommunityIcons for strains view
   'white-balance-sunny': '☀️',
   'moon-waning-crescent': '🌙',
   'palette-swatch': '🎨',
-  
+
   // Additional Ionicons for journal and diary
   'settings-outline': '⚙️',
   'share-outline': '📤',
@@ -114,95 +115,96 @@ const IconSVG = {
   'nutrition-outline': '🥗',
   'cut-outline': '✂️',
   'warning-outline': '⚠️',
-  
+
   // Missing icons from TypeScript errors
   'close-outline': '⊗',
   'add-outline': '⊕',
   'chatbubble-ellipses': '💬',
-  'person': '👤',
-  'mail': '✉️',
-  'medal': '🏅',
-  
+  person: '👤',
+  mail: '✉️',
+  medal: '🏅',
+
   // Fallback
-  'default': '◦'
+  default: '◦',
 } as const;
 
 // Icon labels for accessibility
 const IconLabels: Record<keyof typeof IconSVG, string> = {
-  'add': 'Add',
+  add: 'Add',
   'add-circle-outline': 'Add item',
   'leaf-outline': 'Leaf outline',
-  'leaf': 'Leaf',
-  'heart': 'Heart filled',
+  leaf: 'Leaf',
+  heart: 'Heart filled',
   'heart-outline': 'Heart outline',
-  'close': 'Close',
+  close: 'Close',
   'close-circle': 'Close circle',
-  'send': 'Send',
-  'checkmark': 'Checkmark',
+  send: 'Send',
+  checkmark: 'Checkmark',
   'check-circle': 'Check circle',
   'checkmark-circle': 'Checkmark circle',
   'pricetag-outline': 'Price tag',
   'person-circle-outline': 'Person profile',
-  'home': 'Home',
-  'calendar': 'Calendar',
+  home: 'Home',
+  calendar: 'Calendar',
   'calendar-outline': 'Calendar outline',
-  'medkit': 'Medical kit',
-  'people': 'People',
+  medkit: 'Medical kit',
+  people: 'People',
   'chevron-forward-outline': 'Forward arrow',
   'chevron-forward': 'Forward',
   'chevron-back-outline': 'Back arrow',
   'arrow-back': 'Back',
-  'pencil': 'Edit',
+  pencil: 'Edit',
   'chevron-up-outline': 'Up arrow',
   'chevron-up': 'Up',
   'chevron-down-outline': 'Down arrow',
   'chevron-down': 'Down',
   'water-outline': 'Water',
   'layers-outline': 'Layers',
-  'camera': 'Camera',
+  camera: 'Camera',
   'camera-outline': 'Camera outline',
-  'search': 'Search',
-  'settings': 'Settings',
-  'edit': 'Edit',
-  'trash': 'Delete',
-  'share': 'Share',
-  'bookmark': 'Bookmark',
-  'star': 'Star',
-  'notification': 'Notification',
+  search: 'Search',
+  settings: 'Settings',
+  edit: 'Edit',
+  trash: 'Delete',
+  share: 'Share',
+  bookmark: 'Bookmark',
+  star: 'Star',
+  notification: 'Notification',
   'chatbubble-outline': 'Chat',
   'image-outline': 'Image',
   'images-outline': 'Images',
   'location-outline': 'Location',
-  'flash': 'Flash on',
+  flash: 'Flash on',
   'flash-off': 'Flash off',
   'camera-flip-outline': 'Flip camera',
   'help-circle': 'Help',
   'moon-outline': 'Moon',
   'sunny-outline': 'Sun',
-  'sun': 'Sun',
-  'moon': 'Moon',
+  sun: 'Sun',
+  moon: 'Moon',
   'journal-outline': 'Journal',
   'stats-chart-outline': 'Statistics',
   'trash-outline': 'Delete',
-  'loading1': 'Loading',
+  loading1: 'Loading',
   'flower-tulip-outline': 'Tulip flower',
   'image-plus': 'Add image',
-  'check': 'Check',
+  check: 'Check',
   'note-text-outline': 'Note',
   'flask-outline': 'Flask',
   'content-cut': 'Cut',
   'vector-polyline': 'Vector line',
-  'waves': 'Waves',
+  waves: 'Waves',
   'spider-thread': 'Thread',
   'thermometer-lines': 'Temperature',
   'scissors-cutting': 'Scissors',
   'help-circle-outline': 'Help',
-  'flower': 'Flower',
+  flower: 'Flower',
   'flower-outline': 'Flower outline',
-  'sprout': 'Sprout',
-  'scale-balance': 'Balance',  'arrow-expand-vertical': 'Expand vertical',
+  sprout: 'Sprout',
+  'scale-balance': 'Balance',
+  'arrow-expand-vertical': 'Expand vertical',
   'calendar-range': 'Date range',
-  'dna': 'DNA',
+  dna: 'DNA',
   'globe-outline': 'Globe',
   'white-balance-sunny': 'Sunny',
   'moon-waning-crescent': 'Moon crescent',
@@ -214,16 +216,16 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   'nutrition-outline': 'Nutrition',
   'cut-outline': 'Cut',
   'warning-outline': 'Warning',
-  
+
   // Missing icons from TypeScript errors
   'close-outline': 'Close',
   'add-outline': 'Add item',
   'chatbubble-ellipses': 'Messages',
-  'person': 'Person',
-  'mail': 'Email',
-  'medal': 'Achievement',
-  
-  'default': 'Icon'
+  person: 'Person',
+  mail: 'Email',
+  medal: 'Achievement',
+
+  default: 'Icon',
 };
 
 type IconName = keyof typeof IconSVG;
@@ -240,13 +242,14 @@ const PlatformFallbacks = Platform.select({
     // Android-specific adjustments
     'thermometer-lines': '🌡️',
   },
-  default: {}
+  default: {},
 }) as Partial<Record<IconName, string>>;
 
 interface OptimizedIconProps {
   name: IconName;
   size?: number;
   color?: string;
+  className?: string;
   style?: any;
   accessibilityLabel?: string;
   testID?: string;
@@ -258,35 +261,38 @@ interface OptimizedIconProps {
 }
 
 /**
- * Lightweight icon component that replaces @expo/vector-icons
- * Uses Unicode symbols instead of font files to reduce bundle size
- * Reduces icon assets from ~4.5MB to virtually nothing
- * 
+ * ✅ UPDATED: Lightweight icon component with NativeWind v4 support
+ *
+ * Now supports both color prop (legacy) and className prop (NativeWind v4)
+ * Use className="text-primary-500" for theme colors that change globally
+ * Use color="#ff0000" for hardcoded colors (legacy support)
+ *
  * Features:
+ * - ✅ NEW: NativeWind v4 className support for true "one file" theming
  * - Cross-platform emoji rendering
  * - Full accessibility support
  * - Semantic icon labeling
  * - Platform-specific optimizations
  * - Fallback support for problematic emojis
- * 
+ *
  * @example
  * ```tsx
- * <OptimizedIcon 
- *   name="checkmark" 
- *   size={24} 
- *   color="#00FF00"
- *   accessibilityLabel="Task completed"
- * />
+ * // ✅ NEW: Use className for theme colors (preferred)
+ * <OptimizedIcon name="checkmark" size={24} className="text-primary-500" />
+ *
+ * // ✅ LEGACY: Still works for hardcoded colors
+ * <OptimizedIcon name="checkmark" size={24} color="#00FF00" />
  * ```
  */
-export const OptimizedIcon = memo(function OptimizedIcon({ 
-  name, 
-  size = 24, 
-  color = '#000', 
+export const OptimizedIcon = memo(function OptimizedIcon({
+  name,
+  size = 24,
+  color = '#000',
+  className,
   style,
   accessibilityLabel,
   testID,
-  allowFallback = true
+  allowFallback = true,
 }: OptimizedIconProps) {
   // Get symbol with platform fallback support
   const getSymbol = () => {
@@ -295,46 +301,45 @@ export const OptimizedIcon = memo(function OptimizedIcon({
     }
     return IconSVG[name] || IconSVG.default;
   };
-  
+
   const symbol = getSymbol();
   const defaultLabel = IconLabels[name] || IconLabels.default;
   const finalLabel = accessibilityLabel || defaultLabel;
-  
+
   // Platform-specific font size adjustment for better rendering
   const fontSize = Platform.select({
     ios: size * 0.8,
     android: size * 0.75, // Android renders emojis slightly larger
     web: size * 0.8,
-    default: size * 0.8
+    default: size * 0.8,
   });
-  
+
   return (
-    <View 
+    <View
       style={[
-        { 
-          width: size, 
-          height: size, 
-          alignItems: 'center', 
-          justifyContent: 'center' 
-        }, 
-        style
+        {
+          width: size,
+          height: size,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        style,
       ]}
       accessibilityRole="image"
       accessibilityLabel={finalLabel}
-      testID={testID}
-    >
-      <Text 
-        style={{ 
-          fontSize, 
-          color, 
+      testID={testID}>
+      <Text
+        className={className}
+        style={{
+          fontSize,
+          color: className ? undefined : color,
           lineHeight: size,
           textAlign: 'center',
           // Improve emoji rendering consistency
           fontVariant: Platform.OS === 'ios' ? ['tabular-nums'] : undefined,
         }}
-        accessibilityElementsHidden={true}
-        selectable={false}
-      >
+        accessibilityElementsHidden
+        selectable={false}>
         {symbol}
       </Text>
     </View>

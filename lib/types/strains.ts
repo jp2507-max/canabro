@@ -6,13 +6,13 @@ export interface Strain {
   id: string;
   name: string;
   type: 'indica' | 'sativa' | 'hybrid' | 'cbd' | 'unknown';
-  thc_content?: number;  // Using snake_case to match database schema
-  cbd_content?: number;  // Using snake_case to match database schema
+  thc_content?: number; // Using snake_case to match database schema
+  cbd_content?: number; // Using snake_case to match database schema
   effects?: string[];
   flavors?: string[];
   description?: string;
-  image_url?: string;    // Using snake_case to match database schema
-  grow_difficulty?: 'easy' | 'moderate' | 'hard';  // Using snake_case
+  image_url?: string; // Using snake_case to match database schema
+  grow_difficulty?: 'easy' | 'moderate' | 'hard'; // Using snake_case
   is_favorite?: boolean; // Used in the component
   created_at?: string;
   updated_at?: string;

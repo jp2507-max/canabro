@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import debounce from 'lodash.debounce';
+import { useState, useEffect } from 'react';
 
 /**
  * A hook that returns a debounced value of the input value

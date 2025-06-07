@@ -1,13 +1,15 @@
 /**
  * 🃏 useCardAnimation Hook
- * 
+ *
  * Provides the standard card animation pattern extracted from the excellent
  * strains screen implementation. Creates smooth, professional card interactions.
  */
 
-import { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useTheme } from '@/lib/contexts/ThemeContext';
+import { useColorScheme } from 'nativewind';
+import { useEffect } from 'react';
+import { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
+
 import { ANIMATION_PRESETS, SHADOW_VALUES, SPRING_CONFIGS } from './presets';
 import { useAnimationCleanup } from './useAnimationCleanup';
 
@@ -15,18 +17,18 @@ interface UseCardAnimationConfig {
   // Override default scale values
   pressedScale?: number;
   defaultScale?: number;
-  
+
   // Shadow configuration
   enableShadowAnimation?: boolean;
   customShadowValues?: {
     light: { default: number; pressed: number };
     dark: { default: number; pressed: number };
   };
-  
+
   // Haptic feedback
   enableHaptics?: boolean;
   hapticStyle?: 'light' | 'medium' | 'heavy';
-  
+
   // Callbacks
   onPress?: () => void;
   onPressStart?: () => void;
@@ -34,8 +36,6 @@ interface UseCardAnimationConfig {
 }
 
 export function useCardAnimation(config: UseCardAnimationConfig = {}) {
-  const { isDarkMode } = useTheme();
-  
   // Configuration with defaults
   const {
     pressedScale = ANIMATION_PRESETS.strainCard.scale,
@@ -49,24 +49,56 @@ export function useCardAnimation(config: UseCardAnimationConfig = {}) {
     onPressEnd,
   } = config;
 
-  // Shared values for smooth animations
+  // Get current theme for theme-aware shadows
+  const { colorScheme } = useColorScheme();
+
+  // Helper function to get current shadow values based on live theme state
+  const getCurrentShadowValues = () => {
+    const isDarkMode = colorScheme === 'dark';
+
+    const defaultShadow = customShadowValues
+      ? isDarkMode
+        ? customShadowValues.dark.default
+        : customShadowValues.light.default
+      : isDarkMode
+        ? ANIMATION_PRESETS.strainCard.shadowDark
+        : ANIMATION_PRESETS.strainCard.shadowLight;
+
+    // For pressed state, ensure higher opacity for better visibility
+    // Dark mode needs higher values for visibility, light mode needs moderate increase
+    const pressedShadow = customShadowValues
+      ? isDarkMode
+        ? customShadowValues.dark.pressed
+        : customShadowValues.light.pressed
+      : isDarkMode
+        ? SHADOW_VALUES.dark.elevated
+        : SHADOW_VALUES.light.elevated;
+
+    return { defaultShadow, pressedShadow };
+  };
+
+  // Shared values for smooth animations - initialize with correct theme values
   const scale = useSharedValue(defaultScale);
-  const shadowOpacity = useSharedValue(
-    isDarkMode 
-      ? customShadowValues?.dark.default ?? SHADOW_VALUES.dark.default
-      : customShadowValues?.light.default ?? SHADOW_VALUES.light.default
-  );
+  const shadowOpacity = useSharedValue(getCurrentShadowValues().defaultShadow);
+
+  // React to theme changes and update shadow values accordingly
+  useEffect(() => {
+    if (enableShadowAnimation) {
+      const { defaultShadow } = getCurrentShadowValues();
+      shadowOpacity.value = withSpring(defaultShadow, SPRING_CONFIGS.gentle);
+    }
+  }, [colorScheme, customShadowValues, enableShadowAnimation]);
 
   // Trigger haptic feedback
   const triggerHaptics = () => {
     if (!enableHaptics) return;
-    
+
     const hapticMap = {
       light: Haptics.ImpactFeedbackStyle.Light,
       medium: Haptics.ImpactFeedbackStyle.Medium,
       heavy: Haptics.ImpactFeedbackStyle.Heavy,
     };
-    
+
     Haptics.impactAsync(hapticMap[hapticStyle]);
   };
 
@@ -86,12 +118,9 @@ export function useCardAnimation(config: UseCardAnimationConfig = {}) {
   // Press handlers
   const handlePressIn = () => {
     scale.value = withSpring(pressedScale, SPRING_CONFIGS.smooth);
-    
+
     if (enableShadowAnimation) {
-      const pressedShadow = isDarkMode
-        ? customShadowValues?.dark.pressed ?? SHADOW_VALUES.dark.pressed  
-        : customShadowValues?.light.pressed ?? SHADOW_VALUES.light.pressed;
-      
+      const { pressedShadow } = getCurrentShadowValues();
       shadowOpacity.value = withSpring(pressedShadow, SPRING_CONFIGS.smooth);
     }
 
@@ -106,12 +135,9 @@ export function useCardAnimation(config: UseCardAnimationConfig = {}) {
 
   const handlePressOut = () => {
     scale.value = withSpring(defaultScale, SPRING_CONFIGS.smooth);
-    
+
     if (enableShadowAnimation) {
-      const defaultShadow = isDarkMode
-        ? customShadowValues?.dark.default ?? SHADOW_VALUES.dark.default
-        : customShadowValues?.light.default ?? SHADOW_VALUES.light.default;
-      
+      const { defaultShadow } = getCurrentShadowValues();
       shadowOpacity.value = withSpring(defaultShadow, SPRING_CONFIGS.smooth);
     }
 
@@ -125,6 +151,7 @@ export function useCardAnimation(config: UseCardAnimationConfig = {}) {
       runOnJS(onPress)();
     }
   };
+
   // Set up automatic cleanup for animations
   useAnimationCleanup({
     sharedValues: [scale, shadowOpacity],
@@ -134,21 +161,21 @@ export function useCardAnimation(config: UseCardAnimationConfig = {}) {
   return {
     // Animated style to apply to component
     animatedStyle,
-    
+
     // Event handlers for Pressable
     handlers: {
       onPressIn: handlePressIn,
       onPressOut: handlePressOut,
       onPress: handlePress,
     },
-    
+
     // Manual control (for gesture handlers)
     controls: {
       pressIn: handlePressIn,
       pressOut: handlePressOut,
       press: handlePress,
     },
-    
+
     // Shared values for advanced usage
     sharedValues: {
       scale,

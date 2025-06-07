@@ -1,34 +1,53 @@
 // Removed duplicate Ionicons import
-import { decode } from 'base64-arraybuffer'; // Import decode
+
+import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
+import * as Haptics from 'expo-haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Modal,
   View,
   TextInput,
   FlatList,
-  TouchableOpacity,
   KeyboardAvoidingView, // Keep KAV for now, revert its props later if needed
   Platform,
   ActivityIndicator,
   Keyboard,
-  Animated,
   Pressable,
   Alert,
   Image,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolateColor,
+  interpolate,
+  runOnJS,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CommentItem from './CommentItem';
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
-import ThemedText from '../ui/ThemedText';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
+import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+
+// Animation configuration
+const SPRING_CONFIG = {
+  damping: 15,
+  stiffness: 150,
+  mass: 1,
+  overshootClamping: false,
+  restDisplacementThreshold: 0.01,
+  restSpeedThreshold: 0.01,
+};
 
 interface CommentModalProps {
   postId: string;
@@ -43,8 +62,73 @@ interface CommentWithProfile extends Comment {
     username: string;
     avatar_url: string | null;
   };
-  image_url?: string | null;
 }
+
+// Animated Action Button Component
+interface AnimatedActionButtonProps {
+  onPress: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  style?: any;
+  accessibilityLabel?: string;
+  hapticStyle?: Haptics.ImpactFeedbackStyle;
+}
+
+const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
+  onPress,
+  disabled = false,
+  children,
+  className = '',
+  style,
+  accessibilityLabel,
+  hapticStyle = Haptics.ImpactFeedbackStyle.Light,
+}) => {
+  const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
+
+  const handlePress = useCallback(() => {
+    if (disabled) return;
+    Haptics.impactAsync(hapticStyle);
+    onPress();
+  }, [onPress, disabled, hapticStyle]);
+
+  const gesture = Gesture.Tap()
+    .enabled(!disabled)
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.95, SPRING_CONFIG);
+      pressed.value = withTiming(1, { duration: 100 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      scale.value = withSpring(1, SPRING_CONFIG);
+      pressed.value = withTiming(0, { duration: 150 });
+      runOnJS(handlePress)();
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    backgroundColor: interpolateColor(
+      pressed.value,
+      [0, 1],
+      ['transparent', 'rgba(59, 130, 246, 0.1)']
+    ),
+  }));
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        className={className}
+        style={[animatedStyle, style]}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}>
+        {children}
+      </Animated.View>
+    </GestureDetector>
+  );
+};
 
 export default function CommentModal({
   postId,
@@ -52,7 +136,6 @@ export default function CommentModal({
   onClose,
   onCommentAdded,
 }: CommentModalProps) {
-  const { theme, isDarkMode } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [commentText, setCommentText] = useState('');
@@ -65,37 +148,31 @@ export default function CommentModal({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  // Removed keyboardHeight state and listeners
+
+  // Animation values
+  const modalScale = useSharedValue(0.95);
+  const modalOpacity = useSharedValue(0);
+  const backdropOpacity = useSharedValue(0);
 
   // Fetch comments when modal becomes visible
   useEffect(() => {
     if (isVisible && postId) {
       fetchComments();
+      // Animate modal entrance
+      modalScale.value = withSpring(1, SPRING_CONFIG);
+      modalOpacity.value = withSpring(1, SPRING_CONFIG);
+      backdropOpacity.value = withTiming(1, { duration: 200 });
     } else {
       // Reset when modal is hidden
       setComments([]);
       setCommentText('');
       setIsLoading(true);
+      // Animate modal exit
+      modalScale.value = withSpring(0.95, SPRING_CONFIG);
+      modalOpacity.value = withTiming(0, { duration: 150 });
+      backdropOpacity.value = withTiming(0, { duration: 150 });
     }
   }, [isVisible, postId]);
-
-  // Animate modal appearance
-  useEffect(() => {
-    if (isVisible) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isVisible, fadeAnim]);
 
   // Fetch comments from Supabase
   const fetchComments = async () => {
@@ -208,7 +285,7 @@ export default function CommentModal({
     );
   };
 
-  // Upload image to Supabase storage using ArrayBuffer (Corrected Implementation)
+  // Upload image to Supabase storage using Blob (Memory Efficient Implementation)
   const uploadImage = async (userId: string, uri: string): Promise<string | null> => {
     console.log('Starting comment image processing and upload for URI:', uri);
     try {
@@ -227,37 +304,53 @@ export default function CommentModal({
         `(${manipResult.width}x${manipResult.height})`
       );
 
-      // Determine the correct MIME type and extension
-      const mimeType = 'image/jpeg';
+      // Check file size before upload to prevent OOM issues
+      const fileInfo = await FileSystem.getInfoAsync(manipResult.uri);
+      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
+        // 10MB limit
+        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
+        return null;
+      }
+
+      // Determine the correct extension
       const extension = 'jpg';
 
-      // Step 1: Read the *manipulated* file as a Base64 string
-      console.log('Reading manipulated comment file as Base64...');
-      const base64Data = await FileSystem.readAsStringAsync(manipResult.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Memory-efficient upload using FileSystem instead of fetch().blob()
+      // This streams the file without loading it entirely into memory
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No valid session for upload');
+      }
 
-      // Step 2: Convert the Base64 string to an ArrayBuffer
-      console.log('Converting Base64 to ArrayBuffer for comment image...');
-      const arrayBuffer = decode(base64Data);
+      // Get Supabase URL from the client configuration (consistent with lib/supabase.ts)
+      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured');
+      }
 
       // Use a timestamp and proper extension for the filename within user's comments folder
       const filename = `comment_${Date.now()}.${extension}`;
       const filePath = `${userId}/comments/${filename}`; // Store in posts bucket under user/comments/
       console.log('Uploading comment image to Supabase storage at path:', filePath);
 
-      // Step 3: Upload the ArrayBuffer with explicit content type to the 'posts' bucket
-      console.log('Uploading ArrayBuffer to Supabase (posts bucket)...');
-      const { error: uploadError } = await supabase.storage
-        .from('posts') // Use the 'posts' bucket
-        .upload(filePath, arrayBuffer, {
-          contentType: mimeType,
-          upsert: false,
-        });
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/posts/${filePath}`;
 
-      if (uploadError) {
-        console.error('Supabase upload error for comment image:', uploadError);
-        throw uploadError; // Throw error to be caught by handleAddComment
+      const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (uploadResult.status !== 200) {
+        const errorText = uploadResult.body || 'Unknown upload error';
+        console.error('Upload failed:', errorText);
+        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
       }
 
       console.log('Comment image uploaded successfully to Supabase.');
@@ -289,7 +382,7 @@ export default function CommentModal({
     setIsSubmitting(true);
 
     try {
-      // Upload image if selected
+      // Upload image if selected BEFORE creating the comment
       let imageUrl: string | null = null;
       if (selectedImage) {
         imageUrl = await uploadImage(user.id, selectedImage);
@@ -300,86 +393,62 @@ export default function CommentModal({
         }
       }
 
-      // Call RPC function *without* image URL
-      const { error: rpcError } = await supabase.rpc('create_comment', {
+      // Call RPC function WITH image URL - single atomic operation
+      const { data: commentId, error: rpcError } = await supabase.rpc('create_comment', {
         p_post_id: postId,
         p_content: commentText.trim(),
         p_user_id: user.id,
-        // p_image_url: imageUrl // REMOVED - Function doesn't accept it
+        p_image_url: imageUrl, // Now included in the atomic operation
       });
-      // Removed .throwOnError() to handle error manually if needed
 
       if (rpcError) {
         console.error('Error calling create_comment RPC:', rpcError);
-        // Attempt to provide a more specific error message based on common issues
         if (rpcError.message.includes('violates foreign key constraint')) {
           Alert.alert('Error', 'Could not add comment. The associated post may no longer exist.');
         } else {
           Alert.alert('Error', 'Failed to add comment. Please try again.');
         }
-        throw rpcError; // Re-throw to be caught by outer catch block
+        throw rpcError;
       }
 
-      // Fetch the newly created comment to get its ID and other details
-      // Important: Fetch based on user_id and post_id, ordered by creation time descending
-      const { data: commentData, error: fetchError } = await supabase
-        .from('comments')
-        .select(
+      // Fetch the newly created comment using the returned ID
+      if (commentId) {
+        const { data: commentData, error: fetchError } = await supabase
+          .from('comments')
+          .select(
+            `
+            *,
+            profiles (username, avatar_url)
           `
-          *,
-          profiles (username, avatar_url)
-        `
-        )
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
+          )
+          .eq('id', commentId)
+          .single();
 
-      if (fetchError) {
-        console.error('Error fetching newly created comment:', fetchError);
-        // Proceed cautiously, maybe alert user? Or just log?
-        Alert.alert('Warning', 'Comment added, but could not immediately display it.');
-        // For now, just log and continue without adding to UI immediately
-      } else if (commentData && commentData[0]) {
-        const newCommentRaw = commentData[0];
-        let finalImageUrl = null; // Default to null
+        if (fetchError) {
+          console.error('Error fetching newly created comment:', fetchError);
+          Alert.alert('Warning', 'Comment added, but could not immediately display it.');
+        } else if (commentData) {
+          // Add new comment to state - image_url is already set from the atomic operation
+          const newComment: CommentWithProfile = {
+            ...commentData,
+            profile: commentData.profiles as { username: string; avatar_url: string | null },
+            image_url: commentData.image_url, // Already set in the database
+          };
+          setComments((prev) => [newComment, ...prev]);
+          setCommentsCount((prev) => prev + 1);
 
-        // If an image was uploaded, update the comment record with the URL
-        if (imageUrl) {
-          console.log(`Updating comment ${newCommentRaw.id} with image URL: ${imageUrl}`);
-          const { error: updateError } = await supabase
-            .from('comments')
-            .update({ image_url: imageUrl })
-            .eq('id', newCommentRaw.id);
-
-          if (updateError) {
-            console.error('Error updating comment with image URL:', updateError);
-            // Decide how to handle this - maybe alert user?
-            Alert.alert('Warning', 'Comment added, but failed to attach image.');
-          } else {
-            finalImageUrl = imageUrl; // Set final URL only if update succeeds
-          }
+          // Call the callback if provided
+          if (onCommentAdded) onCommentAdded();
         }
-
-        // Add new comment to state with potentially updated image URL
-        const newComment: CommentWithProfile = {
-          ...newCommentRaw,
-          profile: newCommentRaw.profiles as { username: string; avatar_url: string | null },
-          image_url: finalImageUrl, // Use the final URL
-        };
-        setComments((prev) => [newComment, ...prev]);
-        setCommentsCount((prev) => prev + 1);
-
-        // Call the callback if provided
-        if (onCommentAdded) onCommentAdded();
       } else {
-        console.warn('Could not fetch the newly created comment after RPC call.');
-        Alert.alert('Warning', 'Comment added, but could not immediately display it.');
-        // Maybe try fetching again or inform user?
+        console.warn('RPC function did not return comment ID.');
+        Alert.alert(
+          'Warning',
+          'Comment may have been created, but could not immediately display it.'
+        );
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      // Show error to user
       Alert.alert('Error', 'Failed to add comment. Please try again.');
     } finally {
       setCommentText('');
@@ -398,223 +467,188 @@ export default function CommentModal({
     <CommentItem comment={item} currentUserId={user?.id} />
   );
 
-  // Theme colors for UI elements
-  const inputBgColor = isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[100];
-  const inputTextColor = isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900];
-  const placeholderTextColor = isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500];
+  // Backdrop gesture
+  const backdropGesture = Gesture.Tap().onEnd(() => {
+    runOnJS(onClose)();
+  });
 
-  const headerBg = isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[50];
-  const modalBg = isDarkMode ? theme.colors.neutral[900] : theme.colors.background; // Use theme background for light mode
+  // Modal animated styles
+  const backdropAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: modalScale.value },
+      {
+        translateY: interpolate(modalOpacity.value, [0, 1], [300, 0]),
+      },
+    ],
+    opacity: modalOpacity.value,
+  }));
 
   return (
     <Modal animationType="none" transparent visible={isVisible} onRequestClose={onClose}>
-      <Animated.View
-        style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          opacity: fadeAnim,
-        }}>
-        <Pressable style={{ flex: 1 }} onPress={onClose}>
-          <Animated.View
-            style={{
-              flex: 1,
-              marginTop: 60,
-              backgroundColor: modalBg,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              overflow: 'hidden',
-              // Removed marginBottom: keyboardHeight
-              transform: [
-                {
-                  translateY: fadeAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [300, 0],
-                  }),
-                },
-              ],
-            }}>
-            <Pressable style={{ flex: 1 }}>
-              {/* Header is outside KAV */}
-              <ThemedView
-                className="flex-row items-center justify-between border-b px-4 py-3"
-                style={{ backgroundColor: headerBg }}
-                lightClassName="border-neutral-200"
-                darkClassName="border-neutral-700">
-                <View className="flex-row items-center">
-                  <ThemedText className="text-lg font-bold">Comments</ThemedText>
-                  {commentsCount > 0 && (
-                    <ThemedText
-                      className="ml-2 text-sm font-medium"
-                      darkClassName="text-neutral-400"
-                      lightClassName="text-neutral-500">
-                      {commentsCount}
-                    </ThemedText>
-                  )}
-                </View>
-                <TouchableOpacity
-                  onPress={onClose}
-                  accessibilityLabel="Close comments"
-                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-                  <OptimizedIcon
-                    name="close"
-                    size={24}
-                    color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700]}
-                  />
-                </TouchableOpacity>
-              </ThemedView>
-              {/* KAV wraps FlatList and Input Area */}
-              <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Reverted behavior
-                style={{ flex: 1 }}
-                keyboardVerticalOffset={insets.bottom + 10} // Reverted offset
-              >
-                {/* Comment List */}
-                {isLoading ? (
-                  <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-                  </View>
-                ) : (
-                  <FlatList
-                    data={comments}
-                    renderItem={renderComment}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingBottom: insets.bottom + 80 }} // Reverted extra padding
-                    refreshing={isRefreshing}
-                    onRefresh={handleRefresh}
-                    ListEmptyComponent={
-                      <ThemedView className="flex-1 items-center justify-center p-8">
-                        <OptimizedIcon
-                          name="chatbubble-outline"
-                          size={40}
-                          color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300]}
-                        />
-                        <ThemedText
-                          className="mt-3 text-center text-base"
-                          darkClassName="text-neutral-400"
-                          lightClassName="text-neutral-500">
-                          No comments yet. Be the first to share your thoughts!
-                        </ThemedText>
-                        <TouchableOpacity
-                          onPress={focusCommentInput}
-                          className="mt-4 rounded-full px-5 py-2"
-                          style={{ backgroundColor: theme.colors.primary[500] }}>
-                          <ThemedText className="font-medium text-white">Add Comment</ThemedText>
-                        </TouchableOpacity>
-                      </ThemedView>
-                    }
-                    initialNumToRender={10}
-                    maxToRenderPerBatch={5}
-                    windowSize={10}
-                  />
-                )}
-
-                {/* Input Area */}
-                <ThemedView
-                  className="flex-row items-center border-t p-3"
-                  style={{ backgroundColor: headerBg }} // Removed explicit paddingBottom
-                  lightClassName="border-neutral-200"
-                  darkClassName="border-neutral-700">
-                  {/* User Avatar REMOVED */}
-                  {/* <View className="mr-2"> ... </View> */}
-
-                  <View className="flex-1">
-                    {/* Selected Image Preview */}
-                    {selectedImage && (
-                      <View className="relative mb-2">
-                        <Image
-                          source={{ uri: selectedImage }}
-                          style={{
-                            width: '100%',
-                            height: 120,
-                            borderRadius: 8,
-                            backgroundColor: isDarkMode
-                              ? theme.colors.neutral[700]
-                              : theme.colors.neutral[200],
-                          }}
-                          resizeMode="cover"
-                        />
-                        <TouchableOpacity
-                          onPress={() => setSelectedImage(null)}
-                          style={{
-                            position: 'absolute',
-                            top: 8,
-                            right: 8,
-                            backgroundColor: 'rgba(0,0,0,0.5)',
-                            borderRadius: 12,
-                            width: 24,
-                            height: 24,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                          accessibilityLabel="Remove image">
-                          <OptimizedIcon name="close" size={16} color="white" />
-                        </TouchableOpacity>
-                      </View>
+      <GestureDetector gesture={backdropGesture}>
+        <Animated.View className="flex-1 bg-black/50" style={backdropAnimatedStyle}>
+          <Pressable style={{ flex: 1 }} onPress={onClose}>
+            <Animated.View
+              className="mt-15 flex-1 overflow-hidden rounded-t-[20px] bg-white dark:bg-neutral-900"
+              style={modalAnimatedStyle}>
+              <Pressable style={{ flex: 1 }}>
+                {/* Header is outside KAV */}
+                <ThemedView className="flex-row items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
+                  <View className="flex-row items-center">
+                    <ThemedText className="text-lg font-bold">Comments</ThemedText>
+                    {commentsCount > 0 && (
+                      <ThemedText className="ml-2 text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                        {commentsCount}
+                      </ThemedText>
                     )}
-
-                    {/* Input Field */}
-                    <TextInput
-                      ref={inputRef}
-                      className="max-h-[100px] flex-1 rounded-[20px] px-[15px] py-[10px] text-base"
-                      style={{ backgroundColor: inputBgColor, color: inputTextColor }}
-                      placeholder="Add a comment..."
-                      placeholderTextColor={placeholderTextColor}
-                      value={commentText}
-                      onChangeText={setCommentText}
-                      multiline
-                      editable={!isSubmitting && !isUploading}
-                      returnKeyType="send"
-                      blurOnSubmit
-                      onSubmitEditing={commentText.trim() ? handleAddComment : undefined}
-                    />
                   </View>
-
-                  {/* Photo Button */}
-                  <TouchableOpacity
-                    onPress={handleAttachPhoto} // Changed to present choice
-                    disabled={isSubmitting || isUploading}
-                    className="ml-2 rounded-full p-2"
-                    style={{
-                      backgroundColor: isDarkMode
-                        ? theme.colors.neutral[700]
-                        : theme.colors.neutral[300],
-                    }}
-                    accessibilityLabel="Attach photo">
+                  <AnimatedActionButton
+                    onPress={onClose}
+                    className="rounded-full p-2"
+                    accessibilityLabel="Close comments"
+                    hapticStyle={Haptics.ImpactFeedbackStyle.Medium}>
                     <OptimizedIcon
-                      name="camera-outline"
-                      size={18}
-                      color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[600]}
+                      name="close"
+                      size={24}
+                      className="text-neutral-700 dark:text-neutral-300"
                     />
-                  </TouchableOpacity>
-
-                  {/* Send Button */}
-                  <TouchableOpacity
-                    onPress={handleAddComment}
-                    disabled={
-                      (!commentText.trim() && !selectedImage) || isSubmitting || isUploading
-                    }
-                    className="ml-2 rounded-full p-2"
-                    style={{
-                      backgroundColor:
-                        (!commentText.trim() && !selectedImage) || isSubmitting || isUploading
-                          ? isDarkMode
-                            ? theme.colors.neutral[700]
-                            : theme.colors.neutral[200]
-                          : theme.colors.primary[500],
-                    }}
-                    accessibilityLabel="Send comment">
-                    {isSubmitting || isUploading ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <OptimizedIcon name="send" size={18} color="white" />
-                    )}
-                  </TouchableOpacity>
+                  </AnimatedActionButton>
                 </ThemedView>
-              </KeyboardAvoidingView>
-            </Pressable>
-          </Animated.View>
-        </Pressable>
-      </Animated.View>
+                {/* KAV wraps FlatList and Input Area */}
+                <KeyboardAvoidingView
+                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Reverted behavior
+                  style={{ flex: 1 }}
+                  keyboardVerticalOffset={insets.bottom + 10} // Reverted offset
+                >
+                  {/* Comment List */}
+                  {isLoading ? (
+                    <View className="flex-1 items-center justify-center">
+                      <ActivityIndicator size="large" className="text-primary-500" />
+                    </View>
+                  ) : (
+                    <FlatList
+                      data={comments}
+                      renderItem={renderComment}
+                      keyExtractor={(item) => item.id}
+                      contentContainerStyle={{ paddingBottom: insets.bottom + 80 }} // Reverted extra padding
+                      refreshing={isRefreshing}
+                      onRefresh={handleRefresh}
+                      ListEmptyComponent={
+                        <ThemedView className="flex-1 items-center justify-center p-8">
+                          <OptimizedIcon
+                            name="chatbubble-outline"
+                            size={40}
+                            className="text-neutral-300 dark:text-neutral-600"
+                          />
+                          <ThemedText className="mt-3 text-center text-base text-neutral-500 dark:text-neutral-400">
+                            No comments yet. Be the first to share your thoughts!
+                          </ThemedText>
+                          <AnimatedActionButton
+                            onPress={focusCommentInput}
+                            className="mt-4 rounded-full bg-primary-500 px-5 py-2"
+                            accessibilityLabel="Add Comment"
+                            hapticStyle={Haptics.ImpactFeedbackStyle.Medium}>
+                            <ThemedText className="font-medium text-white">Add Comment</ThemedText>
+                          </AnimatedActionButton>
+                        </ThemedView>
+                      }
+                      initialNumToRender={10}
+                      maxToRenderPerBatch={5}
+                      windowSize={10}
+                    />
+                  )}
+
+                  {/* Input Area */}
+                  <ThemedView className="flex-row items-center border-t border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-800">
+                    {/* User Avatar REMOVED */}
+                    {/* <View className="mr-2"> ... </View> */}
+
+                    <View className="flex-1">
+                      {/* Selected Image Preview */}
+                      {selectedImage && (
+                        <View className="relative mb-2">
+                          <Image
+                            source={{ uri: selectedImage }}
+                            style={{
+                              width: '100%',
+                              height: 120,
+                              borderRadius: 8,
+                            }}
+                            className="bg-neutral-200 dark:bg-neutral-700"
+                            resizeMode="cover"
+                          />
+                          <AnimatedActionButton
+                            onPress={() => setSelectedImage(null)}
+                            className="absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-full bg-black/50"
+                            accessibilityLabel="Remove image"
+                            hapticStyle={Haptics.ImpactFeedbackStyle.Light}>
+                            <OptimizedIcon name="close" size={16} className="text-white" />
+                          </AnimatedActionButton>
+                        </View>
+                      )}
+
+                      {/* Input Field */}
+                      <TextInput
+                        ref={inputRef}
+                        className="max-h-[100px] flex-1 rounded-[20px] bg-neutral-100 px-[15px] py-[10px] text-base text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100"
+                        placeholder="Add a comment..."
+                        placeholderTextColor="#9ca3af"
+                        value={commentText}
+                        onChangeText={setCommentText}
+                        multiline
+                        editable={!isSubmitting && !isUploading}
+                        returnKeyType="send"
+                        blurOnSubmit
+                        onSubmitEditing={commentText.trim() ? handleAddComment : undefined}
+                      />
+                    </View>
+
+                    {/* Photo Button */}
+                    <AnimatedActionButton
+                      onPress={handleAttachPhoto} // Changed to present choice
+                      disabled={isSubmitting || isUploading}
+                      className="ml-2 rounded-full bg-neutral-300 p-2 dark:bg-neutral-700"
+                      accessibilityLabel="Attach photo"
+                      hapticStyle={Haptics.ImpactFeedbackStyle.Light}>
+                      <OptimizedIcon
+                        name="camera-outline"
+                        size={18}
+                        className="text-neutral-600 dark:text-neutral-300"
+                      />
+                    </AnimatedActionButton>
+
+                    {/* Send Button */}
+                    <AnimatedActionButton
+                      onPress={handleAddComment}
+                      disabled={
+                        (!commentText.trim() && !selectedImage) || isSubmitting || isUploading
+                      }
+                      className="ml-2 rounded-full p-2"
+                      style={{
+                        backgroundColor:
+                          (!commentText.trim() && !selectedImage) || isSubmitting || isUploading
+                            ? '#e5e7eb'
+                            : '#10b981',
+                      }}
+                      accessibilityLabel="Send comment"
+                      hapticStyle={Haptics.ImpactFeedbackStyle.Medium}>
+                      {isSubmitting || isUploading ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <OptimizedIcon name="send" size={18} className="text-white" />
+                      )}
+                    </AnimatedActionButton>
+                  </ThemedView>
+                </KeyboardAvoidingView>
+              </Pressable>
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
+      </GestureDetector>
     </Modal>
   );
 }

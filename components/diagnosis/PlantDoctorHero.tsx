@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
+import { View, Image, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,21 +14,19 @@ import Animated, {
   Extrapolation,
   cancelAnimation,
   runOnUI,
+  runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
+import { SPRING_CONFIGS } from '../../lib/animations/presets';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { SPRING_CONFIGS } from '../../lib/animations/presets';
 
 interface PlantDoctorHeroProps {
   onTakePhoto: () => void;
 }
 
-const PlantDoctorHero = React.memo(function PlantDoctorHero({
-  onTakePhoto,
-}: PlantDoctorHeroProps) {
+const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: PlantDoctorHeroProps) {
   const { width } = useWindowDimensions();
 
   // Animation values
@@ -45,7 +44,7 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
     transform: [
       { translateY: companionY.value },
       { scale: companionScale.value },
-      { rotate: `${companionRotation.value}deg` }
+      { rotate: `${companionRotation.value}deg` },
     ],
   }));
 
@@ -60,10 +59,7 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
   }));
 
   const buttonStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: buttonY.value },
-      { scale: buttonScale.value }
-    ],
+    transform: [{ translateY: buttonY.value }, { scale: buttonScale.value }],
     opacity: interpolate(buttonY.value, [50, 0], [0, 1], Extrapolation.CLAMP),
   }));
 
@@ -78,11 +74,11 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
       // Companion entrance
       companionScale.value = withSpring(1, SPRING_CONFIGS.smooth);
       companionY.value = withSpring(0, SPRING_CONFIGS.smooth);
-      
+
       // Staggered text entrance
       titleY.value = withSpring(0, SPRING_CONFIGS.smooth);
       subtitleY.value = withSpring(0, SPRING_CONFIGS.smooth);
-      
+
       // Button entrance
       buttonScale.value = withSpring(1, SPRING_CONFIGS.bouncy);
       buttonY.value = withSpring(0, SPRING_CONFIGS.smooth);
@@ -123,34 +119,7 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
     };
   }, []);
 
-  // Gesture handlers
-  const buttonGesture = Gesture.Tap()
-    .onStart(() => {
-      'worklet';
-      buttonScale.value = withSequence(
-        withSpring(0.95, SPRING_CONFIGS.quick),
-        withSpring(1, SPRING_CONFIGS.smooth)
-      );
-      iconRotation.value = withSequence(
-        withTiming(15, { duration: 150 }),
-        withTiming(0, { duration: 150 })
-      );
-    });
-
-  const companionGesture = Gesture.Tap()
-    .onStart(() => {
-      'worklet';
-      companionRotation.value = withSequence(
-        withTiming(10, { duration: 200 }),
-        withTiming(-5, { duration: 200 }),
-        withTiming(0, { duration: 200 })
-      );
-      companionScale.value = withSequence(
-        withSpring(1.1, SPRING_CONFIGS.quick),
-        withSpring(1.05, SPRING_CONFIGS.smooth)
-      );
-    });
-
+  // Memoized handlers
   const handleTakePhoto = useCallback(async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onTakePhoto();
@@ -160,34 +129,66 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
+  // Gesture handlers with proper completion patterns
+  const buttonGesture = Gesture.Tap()
+    .onBegin(() => {
+      'worklet';
+      buttonScale.value = withSpring(0.95, SPRING_CONFIGS.quick);
+      iconRotation.value = withTiming(15, { duration: 150 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      buttonScale.value = withSpring(1, SPRING_CONFIGS.smooth);
+      iconRotation.value = withTiming(0, { duration: 150 });
+    })
+    .onEnd(() => {
+      runOnJS(handleTakePhoto)();
+    });
+
+  const companionGesture = Gesture.Tap()
+    .onBegin(() => {
+      'worklet';
+      companionScale.value = withSpring(1.1, SPRING_CONFIGS.quick);
+      companionRotation.value = withTiming(10, { duration: 200 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      companionRotation.value = withSequence(
+        withTiming(-5, { duration: 200 }),
+        withTiming(0, { duration: 200 })
+      );
+      companionScale.value = withSpring(1.05, SPRING_CONFIGS.smooth);
+    })
+    .onEnd(() => {
+      runOnJS(handleCompanionTap)();
+    });
+
   return (
     <ThemedView className="flex-1 items-center justify-center px-6 py-8">
       {/* Plant Doctor Companion */}
       <GestureDetector gesture={companionGesture}>
-        <TouchableOpacity 
-          onPress={handleCompanionTap}
+        <Animated.View
+          style={[companionStyle, { marginBottom: 32 }]}
           accessibilityRole="button"
           accessibilityLabel="Plant Doctor companion"
           accessibilityHint="Tap for a friendly interaction">
-          <Animated.View style={[companionStyle, { marginBottom: 32 }]}>
-            <View className="items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 p-8 shadow-lg shadow-primary-500/20">
-              <Image
-                source={require('../../assets/icon.png')}
-                style={{ width: 120, height: 120 }}
-                resizeMode="contain"
-              />
-              
-              {/* Floating indicators */}
-              <View className="absolute -right-2 -top-2 rounded-full bg-primary-500 p-2">
-                <OptimizedIcon name="medal" size={16} color="white" />
-              </View>
-              
-              <View className="absolute -bottom-1 -left-1 rounded-full bg-status-success p-1">
-                <OptimizedIcon name="checkmark-circle" size={12} color="white" />
-              </View>
+          <View className="items-center justify-center rounded-full bg-primary-100 p-8 shadow-lg shadow-primary-500/20 dark:bg-primary-900/30">
+            <Image
+              source={require('../../assets/icon.png')}
+              style={{ width: 120, height: 120 }}
+              resizeMode="contain"
+            />
+
+            {/* Floating indicators */}
+            <View className="absolute -right-2 -top-2 rounded-full bg-primary-500 p-2">
+              <OptimizedIcon name="medal" size={16} color="white" />
             </View>
-          </Animated.View>
-        </TouchableOpacity>
+
+            <View className="bg-status-success absolute -bottom-1 -left-1 rounded-full p-1">
+              <OptimizedIcon name="checkmark-circle" size={12} color="white" />
+            </View>
+          </View>
+        </Animated.View>
       </GestureDetector>
 
       {/* Title */}
@@ -203,34 +204,30 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
           Take a photo of your plant and get{'\n'}
           <ThemedText className="font-semibold text-primary-600 dark:text-primary-400">
             AI-powered diagnosis
-          </ThemedText>
-          {' '}in seconds
+          </ThemedText>{' '}
+          in seconds
         </ThemedText>
       </Animated.View>
 
       {/* Action Button */}
       <GestureDetector gesture={buttonGesture}>
-        <TouchableOpacity
-          onPress={handleTakePhoto}
+        <Animated.View
+          style={buttonStyle}
           accessibilityRole="button"
           accessibilityLabel="Take a photo"
           accessibilityHint="Opens camera to capture plant image for diagnosis">
-          <Animated.View style={buttonStyle}>
-            <View 
-              className="flex-row items-center justify-center rounded-2xl bg-primary-500 px-8 py-4 shadow-lg shadow-primary-500/25"
-              style={{ minWidth: width * 0.7 }}>
-              <Animated.View style={[iconStyle, { marginRight: 12 }]}>
-                <OptimizedIcon name="camera" size={24} color="white" />
-              </Animated.View>
-              <ThemedText className="text-lg font-bold text-white">
-                Take a Photo
-              </ThemedText>
-            </View>
-            
-            {/* Button glow effect */}
-            <View className="absolute inset-0 -z-10 rounded-2xl bg-primary-400 opacity-40 blur-xl" />
-          </Animated.View>
-        </TouchableOpacity>
+          <View
+            className="flex-row items-center justify-center rounded-2xl bg-primary-500 px-8 py-4 shadow-lg shadow-primary-500/25"
+            style={{ minWidth: width * 0.7 }}>
+            <Animated.View style={[iconStyle, { marginRight: 12 }]}>
+              <OptimizedIcon name="camera" size={24} color="white" />
+            </Animated.View>
+            <ThemedText className="text-lg font-bold text-white">Take a Photo</ThemedText>
+          </View>
+
+          {/* Button glow effect */}
+          <View className="absolute inset-0 -z-10 rounded-2xl bg-primary-400 opacity-40 blur-xl" />
+        </Animated.View>
       </GestureDetector>
 
       {/* Features list */}
@@ -241,7 +238,7 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
           { icon: 'star', text: 'Personalized recommendations' },
         ].map((feature, index) => (
           <View key={index} className="flex-row items-center space-x-3">
-            <View className="rounded-full bg-primary-100 dark:bg-primary-900/30 p-2">
+            <View className="rounded-full bg-primary-100 p-2 dark:bg-primary-900/30">
               <OptimizedIcon name={feature.icon as any} size={16} color="#10b981" />
             </View>
             <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -254,4 +251,4 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({
   );
 });
 
-export default PlantDoctorHero; 
+export default PlantDoctorHero;

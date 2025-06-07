@@ -1,10 +1,19 @@
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  SlideInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
 import ProfileDetail from './ProfileDetail';
 import StatItem from './StatItem';
 import { useSyncContext } from '../../lib/contexts/SyncContext';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import { Profile } from '../../lib/models/Profile';
 import SyncStatus from '../ui/SyncStatus';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -24,7 +33,7 @@ export interface ProfileScreenBaseProps {
 
 /**
  * Main profile screen layout, displaying user details and stats.
- * Receives profile data and stats as props.
+ * Enhanced with sophisticated animations and modern UX patterns.
  */
 const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScreenBase({
   profile,
@@ -33,56 +42,117 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
   isRefreshing = false,
   onRefresh,
 }) {
-  const { isDarkMode } = useTheme();
   const { triggerSync } = useSyncContext();
 
-  // Handle manual sync trigger from the sync status component
+  const syncButtonScale = useSharedValue(1);
+
+  // Handle manual sync trigger with haptic feedback
   const handleSyncPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (triggerSync) triggerSync(true);
   };
 
-  // Example: You can further modularize sections if needed
+  // Animated sync button gesture
+  const syncGesture = Gesture.Tap()
+    .onBegin(() => {
+      syncButtonScale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
+    })
+    .onFinalize(() => {
+      syncButtonScale.value = withSpring(1, { damping: 15, stiffness: 400 });
+    })
+    .onEnd(() => {
+      handleSyncPress();
+    });
+
+  const syncAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: syncButtonScale.value }],
+  }));
+
   return (
-    <ThemedView className="flex-1" lightClassName="bg-background" darkClassName="bg-neutral-900">
+    <ThemedView variant="default" className="flex-1 bg-neutral-50 dark:bg-neutral-900">
       <ScrollView
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
-          onRefresh ? <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} /> : undefined
+          onRefresh ? (
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              colors={['#22c55e']} // primary-500
+              tintColor="#22c55e"
+            />
+          ) : undefined
         }
-        keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <View className="mb-4 flex-row items-center justify-between">
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {/* Animated Header */}
+        <Animated.View
+          entering={FadeInDown.delay(100).duration(600)}
+          className="mb-6 flex-row items-center justify-between">
           <ThemedText
-            className="text-2xl font-bold"
-            lightClassName="text-primary-800"
-            darkClassName="text-primary-100">
+            variant="heading"
+            className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100">
             Profile
           </ThemedText>
-          <ThemeToggle />
+          <Animated.View entering={FadeIn.delay(200).duration(500)}>
+            <ThemeToggle />
+          </Animated.View>
+        </Animated.View>
+
+        {/* Animated Stats Section */}
+        <Animated.View entering={SlideInDown.delay(300).duration(700)} className="mb-8 flex-row">
+          <StatItem
+            value={plantsCount}
+            label="Plants"
+            icon="leaf"
+            index={0}
+            // onPress={() => {
+            //   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            //   // TODO: Navigate to plants list
+            // }}
+          />
+          <StatItem
+            value={postsCount}
+            label="Posts"
+            icon="chatbubble-ellipses"
+            index={1}
+            // onPress={() => {
+            //   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            //   // TODO: Navigate to posts list
+            // }}
+          />
+        </Animated.View>
+
+        {/* Animated Profile Details */}
+        <View className="mb-8">
+          <ProfileDetail label="Username" value={profile?.username} icon="person" index={0} />
+          <ProfileDetail label="User ID" value={profile?.userId} icon="mail" index={1} />
+          <ProfileDetail
+            label="Experience"
+            value={profile?.experienceLevel}
+            icon="medal"
+            index={2}
+          />
+          <ProfileDetail
+            label="Grow Method"
+            value={profile?.preferredGrowMethod}
+            icon="flower"
+            index={3}
+          />
         </View>
 
-        {/* Stats */}
-        <View className="mb-6 flex-row">
-          <StatItem value={plantsCount} label="Plants" icon="leaf" />
-          <StatItem value={postsCount} label="Posts" icon="chatbubble-ellipses" />
-        </View>
-
-        {/* Profile Details */}
-        <ProfileDetail label="Username" value={profile?.username} icon="person" />
-        <ProfileDetail label="User ID" value={profile?.userId} icon="mail" />
-        <ProfileDetail label="Experience" value={profile?.experienceLevel} icon="medal" />
-        <ProfileDetail label="Grow Method" value={profile?.preferredGrowMethod} icon="flower" />
-
-        {/* Sync Status Section */}
-        <View className="mb-4 mt-8">
+        {/* Animated Sync Status Section */}
+        <Animated.View entering={FadeInDown.delay(800).duration(600)} className="mb-4">
           <ThemedText
-            className="mb-2 text-lg font-semibold"
-            lightClassName="text-gray-800"
-            darkClassName="text-gray-200">
+            variant="heading"
+            className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200">
             Data Synchronization
           </ThemedText>
-          <SyncStatus onPress={handleSyncPress} />
-        </View>
+          <GestureDetector gesture={syncGesture}>
+            <Animated.View style={syncAnimatedStyle}>
+              <SyncStatus />
+            </Animated.View>
+          </GestureDetector>
+        </Animated.View>
       </ScrollView>
     </ThemedView>
   );

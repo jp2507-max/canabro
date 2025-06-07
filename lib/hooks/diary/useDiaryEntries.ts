@@ -2,7 +2,7 @@
  * Hook for fetching diary entries
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 import { useAuth } from '../../contexts/AuthProvider';
 import supabase from '../../supabase';
@@ -18,32 +18,34 @@ export function useDiaryEntries(plantId: string | null | undefined) {
   const [error, setError] = useState<Error | null>(null);
   const { session } = useAuth();
 
-  useEffect(() => {
+  const fetchEntries = useCallback(async () => {
     if (!plantId || !session?.user) return;
 
-    const fetchEntries = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        const { data, error } = await supabase
-          .from('diary_entries')
-          .select('*')
-          .eq('plant_id', plantId)
-          .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('*')
+        .eq('plant_id', plantId)
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setEntries(data || []);
-      } catch (err) {
-        console.error('Error fetching diary entries:', err);
-        setError(err instanceof Error ? err : new Error('Failed to fetch diary entries'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setEntries(data || []);
+    } catch (err) {
+      console.error('Error fetching diary entries:', err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch diary entries'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [plantId, session?.user]);
 
+  useEffect(() => {
     fetchEntries();
+
+    if (!plantId || !session?.user) return;
 
     // Subscribe to changes
     const subscription = supabase
@@ -76,7 +78,7 @@ export function useDiaryEntries(plantId: string | null | undefined) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [plantId, session?.user]);
+  }, [fetchEntries]);
 
-  return { entries, isLoading, error };
+  return { entries, isLoading, error, refetch: fetchEntries };
 }

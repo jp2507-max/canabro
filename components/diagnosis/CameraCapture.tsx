@@ -2,7 +2,8 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, Alert, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,16 +14,11 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
+import { SPRING_CONFIGS } from '../../lib/animations/presets';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { OptimizedIcon } from '../ui/OptimizedIcon';
-import { SPRING_CONFIGS } from '../../lib/animations/presets';
-
-// Define the types based on expo-camera documentation
-type CameraType = 'front' | 'back';
-type FlashMode = 'off' | 'on' | 'auto';
 
 type CameraCaptureProps = {
   onImageCaptured: (imageUri: string) => void;
@@ -30,37 +26,53 @@ type CameraCaptureProps = {
 };
 
 const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose }) => {
-  const { width, height } = useWindowDimensions();
   const [permission, requestPermission] = useCameraPermissions();
-  const [cameraType, setCameraType] = useState<CameraType>('back');
-  const [flashMode, setFlashMode] = useState<FlashMode>('off');
-  const cameraRef = useRef<any>(null);
+  const [cameraType, setCameraType] = useState<'front' | 'back'>('back');
+  const [flashMode, setFlashMode] = useState<'off' | 'on' | 'auto'>('off');
+  const cameraRef = useRef<CameraView>(null);
 
   // Animation values
   const captureScale = useSharedValue(1);
   const captureRotation = useSharedValue(0);
   const controlsOpacity = useSharedValue(0);
   const permissionScale = useSharedValue(0.8);
+  const flashButtonScale = useSharedValue(1);
+  const galleryButtonScale = useSharedValue(1);
+  const flipButtonScale = useSharedValue(1);
+  const permissionButtonScale = useSharedValue(1);
+  const backButtonScale = useSharedValue(1);
 
   // Animated styles
   const captureButtonStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: captureScale.value },
-      { rotate: `${captureRotation.value}deg` }
-    ],
+    transform: [{ scale: captureScale.value }, { rotate: `${captureRotation.value}deg` }],
   }));
 
   const controlsStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      controlsOpacity.value,
-      [0, 1],
-      [0, 1],
-      Extrapolation.CLAMP
-    ),
+    opacity: interpolate(controlsOpacity.value, [0, 1], [0, 1], Extrapolation.CLAMP),
   }));
 
   const permissionStyle = useAnimatedStyle(() => ({
     transform: [{ scale: permissionScale.value }],
+  }));
+
+  const flashButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: flashButtonScale.value }],
+  }));
+
+  const galleryButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: galleryButtonScale.value }],
+  }));
+
+  const flipButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: flipButtonScale.value }],
+  }));
+
+  const permissionButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: permissionButtonScale.value }],
+  }));
+
+  const backButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: backButtonScale.value }],
   }));
 
   // Initialize entrance animations
@@ -92,7 +104,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
         withTiming(5, { duration: 100 }),
         withTiming(0, { duration: 100 })
       );
-      
+
       // Trigger haptic feedback on main thread
       runOnJS(triggerCaptureHaptic)();
     })
@@ -106,6 +118,76 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
     .onStart(() => {
       'worklet';
       controlsOpacity.value = withTiming(0, { duration: 300 });
+    })
+    .onEnd(() => {
+      'worklet';
+      runOnJS(handleClose)();
+    });
+
+  // 🎯 Enhanced Flash Toggle Gesture
+  const flashGesture = Gesture.Tap()
+    .onStart(() => {
+      'worklet';
+      flashButtonScale.value = withSequence(
+        withSpring(0.9, SPRING_CONFIGS.quick),
+        withSpring(1, SPRING_CONFIGS.smooth)
+      );
+    })
+    .onEnd(() => {
+      'worklet';
+      runOnJS(handleFlashToggle)();
+    });
+
+  // 🎯 Enhanced Gallery Button Gesture
+  const galleryGesture = Gesture.Tap()
+    .onStart(() => {
+      'worklet';
+      galleryButtonScale.value = withSequence(
+        withSpring(0.9, SPRING_CONFIGS.quick),
+        withSpring(1, SPRING_CONFIGS.smooth)
+      );
+    })
+    .onEnd(() => {
+      'worklet';
+      runOnJS(pickImage)();
+    });
+
+  // 🎯 Enhanced Camera Flip Gesture
+  const flipGesture = Gesture.Tap()
+    .onStart(() => {
+      'worklet';
+      flipButtonScale.value = withSequence(
+        withSpring(0.9, SPRING_CONFIGS.quick),
+        withSpring(1, SPRING_CONFIGS.smooth)
+      );
+    })
+    .onEnd(() => {
+      'worklet';
+      runOnJS(handleCameraTypeToggle)();
+    });
+
+  // 🎯 Enhanced Permission Button Gesture
+  const permissionGesture = Gesture.Tap()
+    .onStart(() => {
+      'worklet';
+      permissionButtonScale.value = withSequence(
+        withSpring(0.95, SPRING_CONFIGS.quick),
+        withSpring(1, SPRING_CONFIGS.smooth)
+      );
+    })
+    .onEnd(() => {
+      'worklet';
+      runOnJS(handlePermissionRequest)();
+    });
+
+  // 🎯 Enhanced Back Button Gesture
+  const backGesture = Gesture.Tap()
+    .onStart(() => {
+      'worklet';
+      backButtonScale.value = withSequence(
+        withSpring(0.95, SPRING_CONFIGS.quick),
+        withSpring(1, SPRING_CONFIGS.smooth)
+      );
     })
     .onEnd(() => {
       'worklet';
@@ -143,7 +225,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
 
   const pickImage = useCallback(async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -169,10 +251,10 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
       withSpring(0.95, SPRING_CONFIGS.quick),
       withSpring(1, SPRING_CONFIGS.smooth)
     );
-    requestPermission();
+    await requestPermission();
   }, [requestPermission]);
 
-  if (!permission) {
+  if (permission === null) {
     return (
       <ThemedView className="flex-1 items-center justify-center bg-neutral-900">
         <Animated.View style={permissionStyle}>
@@ -182,7 +264,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
     );
   }
 
-  if (!permission.granted) {
+  if (!permission?.granted) {
     return (
       <ThemedView className="flex-1 items-center justify-center bg-neutral-900 px-6">
         <Animated.View style={[permissionStyle, { alignItems: 'center' }]}>
@@ -193,26 +275,30 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
           <ThemedText className="mb-8 text-center text-base text-neutral-300">
             Please allow camera access to take photos of your plants for diagnosis
           </ThemedText>
-          
-          <TouchableOpacity
-            onPress={handlePermissionRequest}
-            className="mb-4 rounded-2xl bg-primary-500 px-8 py-4"
-            accessibilityRole="button"
-            accessibilityLabel="Grant camera permission">
-            <ThemedText className="text-center font-semibold text-white">
-              Grant Permission
-            </ThemedText>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            onPress={handleClose}
-            className="rounded-2xl bg-neutral-600 px-8 py-4"
-            accessibilityRole="button"
-            accessibilityLabel="Go back without granting permission">
-            <ThemedText className="text-center font-medium text-white">
-              Go Back
-            </ThemedText>
-          </TouchableOpacity>
+
+          {/* 🎯 Enhanced Permission Button */}
+          <GestureDetector gesture={permissionGesture}>
+            <Animated.View
+              style={permissionButtonStyle}
+              className="mb-4 rounded-2xl bg-primary-500 px-8 py-4"
+              accessibilityRole="button"
+              accessibilityLabel="Grant camera permission">
+              <ThemedText className="text-center font-semibold text-white">
+                Grant Permission
+              </ThemedText>
+            </Animated.View>
+          </GestureDetector>
+
+          {/* 🎯 Enhanced Back Button */}
+          <GestureDetector gesture={backGesture}>
+            <Animated.View
+              style={backButtonStyle}
+              className="rounded-2xl bg-neutral-600 px-8 py-4"
+              accessibilityRole="button"
+              accessibilityLabel="Go back without granting permission">
+              <ThemedText className="text-center font-medium text-white">Go Back</ThemedText>
+            </Animated.View>
+          </GestureDetector>
         </Animated.View>
       </ThemedView>
     );
@@ -232,10 +318,9 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             Alert.alert('Error', 'Failed to initialize camera');
           }}>
-          
           <Animated.View style={[styles.cameraContent, controlsStyle]}>
             {/* Top controls */}
-            <ThemedView className="absolute left-0 right-0 top-0 flex-row justify-between p-4 pt-safe bg-black/30">
+            <ThemedView className="pt-safe absolute left-0 right-0 top-0 flex-row justify-between bg-black/30 p-4">
               <GestureDetector gesture={closeGesture}>
                 <Animated.View
                   className="rounded-full bg-black/40 p-3"
@@ -244,29 +329,35 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
                   <OptimizedIcon name="close" size={24} color="white" />
                 </Animated.View>
               </GestureDetector>
-              
-              <TouchableOpacity 
-                onPress={handleFlashToggle}
-                className="rounded-full bg-black/40 p-3"
-                accessibilityRole="button"
-                accessibilityLabel={`Toggle flash ${flashMode === 'on' ? 'off' : 'on'}`}>
-                <OptimizedIcon
-                  name={flashMode === 'on' ? 'flash' : 'flash-off'}
-                  size={24}
-                  color={flashMode === 'on' ? '#10b981' : 'white'}
-                />
-              </TouchableOpacity>
+
+              {/* 🎯 Enhanced Flash Toggle */}
+              <GestureDetector gesture={flashGesture}>
+                <Animated.View
+                  style={flashButtonStyle}
+                  className="rounded-full bg-black/40 p-3"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Toggle flash ${flashMode === 'on' ? 'off' : 'on'}`}>
+                  <OptimizedIcon
+                    name={flashMode === 'on' ? 'flash' : 'flash-off'}
+                    size={24}
+                    color={flashMode === 'on' ? '#10b981' : 'white'}
+                  />
+                </Animated.View>
+              </GestureDetector>
             </ThemedView>
 
             {/* Bottom controls */}
-            <ThemedView className="absolute bottom-0 left-0 right-0 flex-row items-center justify-between px-8 py-6 pb-safe bg-black/30">
-              <TouchableOpacity 
-                onPress={pickImage}
-                className="rounded-full bg-black/40 p-4"
-                accessibilityRole="button"
-                accessibilityLabel="Select image from gallery">
-                <OptimizedIcon name="image-outline" size={30} color="white" />
-              </TouchableOpacity>
+            <ThemedView className="pb-safe absolute bottom-0 left-0 right-0 flex-row items-center justify-between bg-black/30 px-8 py-6">
+              {/* 🎯 Enhanced Gallery Button */}
+              <GestureDetector gesture={galleryGesture}>
+                <Animated.View
+                  style={galleryButtonStyle}
+                  className="rounded-full bg-black/40 p-4"
+                  accessibilityRole="button"
+                  accessibilityLabel="Select image from gallery">
+                  <OptimizedIcon name="image-outline" size={30} color="white" />
+                </Animated.View>
+              </GestureDetector>
 
               <GestureDetector gesture={captureGesture}>
                 <Animated.View
@@ -277,13 +368,16 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
                 </Animated.View>
               </GestureDetector>
 
-              <TouchableOpacity 
-                onPress={handleCameraTypeToggle}
-                className="rounded-full bg-black/40 p-4"
-                accessibilityRole="button"
-                accessibilityLabel={`Switch to ${cameraType === 'back' ? 'front' : 'back'} camera`}>
-                <OptimizedIcon name="camera-flip-outline" size={30} color="white" />
-              </TouchableOpacity>
+              {/* 🎯 Enhanced Camera Flip Button */}
+              <GestureDetector gesture={flipGesture}>
+                <Animated.View
+                  style={flipButtonStyle}
+                  className="rounded-full bg-black/40 p-4"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Switch to ${cameraType === 'back' ? 'front' : 'back'} camera`}>
+                  <OptimizedIcon name="camera-flip-outline" size={30} color="white" />
+                </Animated.View>
+              </GestureDetector>
             </ThemedView>
           </Animated.View>
         </CameraView>

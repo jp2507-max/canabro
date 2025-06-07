@@ -1,24 +1,22 @@
-import { withObservables } from '@nozbe/watermelondb/react';
 import { Database } from '@nozbe/watermelondb';
+import { withObservables } from '@nozbe/watermelondb/react';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback } from 'react';
 import { Pressable } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
-  interpolateColor,
-  runOnUI,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Plant } from '../../lib/models/Plant';
 import { PlantTask } from '../../lib/models/PlantTask';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 // Reanimated AnimatedPressable
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -70,7 +68,7 @@ function TaskItemBase({
       shadowOpacity.value = withTiming(0.12, { duration: 150 });
       elevation.value = withTiming(4, { duration: 150 });
       translateY.value = withTiming(-1, { duration: 150 });
-      
+
       runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
     })
     .onEnd(() => {
@@ -102,10 +100,7 @@ function TaskItemBase({
 
   const cardAnimatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { scale: scale.value },
-        { translateY: translateY.value }
-      ],
+      transform: [{ scale: scale.value }, { translateY: translateY.value }],
       shadowOpacity: shadowOpacity.value,
       elevation: elevation.value,
     };
@@ -120,7 +115,7 @@ function TaskItemBase({
   // Get task type icon and color
   const getTaskTypeDetails = useCallback(() => {
     const taskType = task.title?.toLowerCase() || '';
-    
+
     if (taskType.includes('water')) {
       return { icon: 'water-outline' as const, color: '#3b82f6' }; // blue-500
     } else if (taskType.includes('feed') || taskType.includes('fertiliz')) {
@@ -150,16 +145,11 @@ function TaskItemBase({
         ]}
         accessibilityRole="button"
         accessibilityLabel={`Task: ${task.title} for ${plant?.name || 'plant'}`}
-        accessibilityHint="Tap to view task details"
-      >
+        accessibilityHint="Tap to view task details">
         <ThemedView className="flex-row items-center p-4">
           {/* Task Type Icon */}
           <ThemedView className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
-            <OptimizedIcon
-              name={icon}
-              size={24}
-              color={color}
-            />
+            <OptimizedIcon name={icon} size={24} color={color} />
           </ThemedView>
 
           {/* Task Content */}
@@ -185,22 +175,15 @@ function TaskItemBase({
                 style={completeButtonAnimatedStyle}
                 accessibilityRole="button"
                 accessibilityLabel="Mark task as completed"
-                accessibilityHint="Tap to complete this task"
-              >
-                <OptimizedIcon
-                  name="checkmark-circle"
-                  size={24}
-                  color="#10b981"
-                />
+                accessibilityHint="Tap to complete this task">
+                <OptimizedIcon name="checkmark-circle" size={24} color="#10b981" />
               </AnimatedPressable>
             </GestureDetector>
           )}
         </ThemedView>
 
         {/* Subtle gradient overlay for depth */}
-        <ThemedView 
-          className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-600"
-        />
+        <ThemedView className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-600" />
       </AnimatedPressable>
     </GestureDetector>
   );

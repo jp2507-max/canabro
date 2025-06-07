@@ -1,5 +1,5 @@
-import { Strain } from '../../types/strain';
 import supabase from '../../supabase';
+import { Strain } from '../../types/strain';
 import { parseStringArray } from '../../utils/string-utils';
 
 /**
@@ -8,9 +8,11 @@ import { parseStringArray } from '../../utils/string-utils';
  * Returns the strain id if successful, or null if failed.
  */
 export async function ensureStrainExistsForSync(strain: Strain): Promise<string | null> {
-  console.log('[Sync] ensureStrainExistsForSync called with strain:', 
-    strain ? JSON.stringify({id: strain.id, name: strain.name}) : 'undefined strain');
-    
+  console.log(
+    '[Sync] ensureStrainExistsForSync called with strain:',
+    strain ? JSON.stringify({ id: strain.id, name: strain.name }) : 'undefined strain'
+  );
+
   if (!strain?.id || !strain.name) {
     console.error('[Sync] Strain missing id or name:', strain);
     return null;
@@ -18,11 +20,11 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
 
   // Check if strain exists by id
   try {
-    const { data: existing, error: checkError, status: checkStatus } = await supabase
-      .from('strains')
-      .select('id')
-      .eq('id', strain.id)
-      .maybeSingle();
+    const {
+      data: existing,
+      error: checkError,
+      status: checkStatus,
+    } = await supabase.from('strains').select('id').eq('id', strain.id).maybeSingle();
 
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('[Sync] Error checking strain existence:', checkError, 'Status:', checkStatus);
@@ -36,19 +38,19 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
   } catch (queryError) {
     console.error('[Sync] Exception during strain existence check:', queryError);
     return null;
-  } 
+  }
   // Define a list of known safe fields to reduce chances of schema errors
   // Update this list if the database schema changes
   const KNOWN_STRAIN_FIELDS = [
-    'id', 
-    'name', 
-    'type', 
-    'description', 
-    'thc_percentage', 
-    'cbd_percentage', 
+    'id',
+    'name',
+    'type',
+    'description',
+    'thc_percentage',
+    'cbd_percentage',
     'grow_difficulty',
-    'effects', 
-    'flavors', 
+    'effects',
+    'flavors',
     'parents',
     'created_at',
     'updated_at',
@@ -61,7 +63,7 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
     'height_outdoor',
     'harvest_time_outdoor',
     'flowering_type',
-    'link'
+    'link',
   ];
 
   /**
@@ -73,33 +75,33 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
     const safePayload: Record<string, any> = {
       id: strain.id,
       name: strain.name,
-    };    
-    
+    };
+
     // Map of common field name variations to their standardized DB column names
     const fieldMappings: Record<string, string[]> = {
-      'type': ['type', 'species', 'strainType'], 
-      'thc_percentage': ['thc_content', 'thc', 'thcContent', 'thcPercentage', 'THC'],
-      'cbd_percentage': ['cbd_content', 'cbd', 'cbdContent', 'cbdPercentage', 'CBD'],
-      'grow_difficulty': ['grow_difficulty', 'growDifficulty', 'difficulty', 'growDifficulty'],
-      'created_at': ['created_at', 'createdAt'],
-      'updated_at': ['updated_at', 'updatedAt'],
-      'flowering_time': ['flowering_time', 'floweringTime'],
-      'average_yield': ['average_yield', 'yield', 'averageYield'],
-      'api_id': ['api_id', 'apiId', '_id', 'originalId'],
-      'genetics': ['genetics'],
-      'height_indoor': ['height_indoor', 'heightIndoor'],
-      'height_outdoor': ['height_outdoor', 'heightOutdoor'],
-      'harvest_time_outdoor': ['harvest_time_outdoor', 'harvestTimeOutdoor'],
-      'flowering_type': ['flowering_type', 'floweringType']
+      type: ['type', 'species', 'strainType'],
+      thc_percentage: ['thc_content', 'thc', 'thcContent', 'thcPercentage', 'THC'],
+      cbd_percentage: ['cbd_content', 'cbd', 'cbdContent', 'cbdPercentage', 'CBD'],
+      grow_difficulty: ['grow_difficulty', 'growDifficulty', 'difficulty', 'growDifficulty'],
+      created_at: ['created_at', 'createdAt'],
+      updated_at: ['updated_at', 'updatedAt'],
+      flowering_time: ['flowering_time', 'floweringTime'],
+      average_yield: ['average_yield', 'yield', 'averageYield'],
+      api_id: ['api_id', 'apiId', '_id', 'originalId'],
+      genetics: ['genetics'],
+      height_indoor: ['height_indoor', 'heightIndoor'],
+      height_outdoor: ['height_outdoor', 'heightOutdoor'],
+      harvest_time_outdoor: ['harvest_time_outdoor', 'harvestTimeOutdoor'],
+      flowering_type: ['flowering_type', 'floweringType'],
     };
-    
+
     // Array fields that need special JSON parsing
     const arrayFields = ['effects', 'flavors', 'parents'];
-      // Strictly only add fields that are in our known list
+    // Strictly only add fields that are in our known list
     for (const dbField of KNOWN_STRAIN_FIELDS) {
       // Skip id and name as they're already handled
       if (dbField === 'id' || dbField === 'name') continue;
-      
+
       // Special handling for array fields
       if (arrayFields.includes(dbField)) {
         const rawValue = (strain as any)[dbField];
@@ -109,7 +111,7 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
         }
         continue;
       }
-      
+
       // For fields with known variations, check all possible source properties
       if (fieldMappings[dbField]) {
         for (const sourceField of fieldMappings[dbField]) {
@@ -124,12 +126,12 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
         safePayload[dbField] = (strain as any)[dbField];
       }
     }
-    
+
     return safePayload;
   }
   // Map incoming fields to Supabase schema (only using fields confirmed to exist in the DB)
   const insertPayload = createSafeStrainPayload(strain);
-  
+
   // Convert thcContent to thc_percentage if needed
   if ((strain as any).thcContent !== undefined && insertPayload.thc_percentage === undefined) {
     insertPayload.thc_percentage = (strain as any).thcContent;
@@ -139,20 +141,33 @@ export async function ensureStrainExistsForSync(strain: Strain): Promise<string 
   if ((strain as any).cbdContent !== undefined && insertPayload.cbd_percentage === undefined) {
     insertPayload.cbd_percentage = (strain as any).cbdContent;
   }
-  
+
   // Log only known fields in payload for debugging
   console.log('[Sync] Upserting strain with safe payload:', JSON.stringify(insertPayload, null, 2));
-  console.log('[Sync] Safe payload has', Object.keys(insertPayload).length, 'fields:', Object.keys(insertPayload).join(', '));
+  console.log(
+    '[Sync] Safe payload has',
+    Object.keys(insertPayload).length,
+    'fields:',
+    Object.keys(insertPayload).join(', ')
+  );
   console.log('[Sync] Original strain object keys:', Object.keys(strain).join(', '));
-  
+
   // Use upsert to avoid race conditions and handle existing records
-  const { error: upsertError, data: upsertData, status: upsertStatus } = await supabase
-    .from('strains')
-    .upsert([insertPayload], { onConflict: 'id' })
-    .select();
+  const {
+    error: upsertError,
+    data: upsertData,
+    status: upsertStatus,
+  } = await supabase.from('strains').upsert([insertPayload], { onConflict: 'id' }).select();
 
   if (upsertError) {
-    console.error('[Sync] Error upserting strain:', upsertError, 'Status:', upsertStatus, 'Payload:', insertPayload);
+    console.error(
+      '[Sync] Error upserting strain:',
+      upsertError,
+      'Status:',
+      upsertStatus,
+      'Payload:',
+      insertPayload
+    );
     return null;
   }
   if (upsertData && upsertData.length > 0) {

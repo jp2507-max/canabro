@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { decode } from 'base64-arraybuffer'; // Import decode
+import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
+import * as Haptics from 'expo-haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
@@ -8,21 +9,31 @@ import { Controller, useForm } from 'react-hook-form';
 import {
   View,
   TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   Text,
   Image,
-} from 'react-native'; // Added Text, Image imports
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolateColor,
+  runOnJS,
+} from 'react-native-reanimated';
 import * as z from 'zod';
 
 import { DiaryEntryType } from './EntryTypeSelector';
-import { OptimizedIcon } from '../ui/OptimizedIcon';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import { useCreateDiaryEntry } from '../../lib/hooks/diary/useCreateDiaryEntry'; // Uncomment hook import
 import supabase from '../../lib/supabase'; // Import supabase client
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
-import ThemedView from '../ui/ThemedView';
 
 // Define base schema
 const baseSchema = z.object({
@@ -82,21 +93,125 @@ interface DiaryEntryFormProps {
   onCancel?: () => void; // Callback for cancellation
 }
 
+// Animated Pressable Component for Buttons
+const AnimatedPressable = ({ children, onPress, disabled, variant = 'primary', ...props }: any) => {
+  const scale = useSharedValue(1);
+  const backgroundColor = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const bgColor = interpolateColor(
+      backgroundColor.value,
+      [0, 1],
+      variant === 'secondary'
+        ? ['rgb(39 39 42)', 'rgb(63 63 70)'] // neutral-800 to neutral-700
+        : ['rgb(34 197 94)', 'rgb(21 128 61)'] // green-500 to green-700
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor: bgColor,
+    };
+  });
+
+  const gesture = Gesture.Tap()
+    .enabled(!disabled)
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.95, { damping: 15 });
+      backgroundColor.value = withSpring(1, { damping: 15 });
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+    })
+    .onFinalize((event) => {
+      'worklet';
+      scale.value = withSpring(1, { damping: 15 });
+      backgroundColor.value = withSpring(0, { damping: 15 });
+      if (event.state === 4 && onPress) {
+        // State.END
+        runOnJS(onPress)();
+      }
+    });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={[animatedStyle]} {...props}>
+        {children}
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
+// Animated Image Picker Component
+const AnimatedImagePicker = ({ onPress, selectedImageUri, disabled }: any) => {
+  const scale = useSharedValue(1);
+  const borderColor = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const border = interpolateColor(
+      borderColor.value,
+      [0, 1],
+      ['rgb(115 115 115)', 'rgb(34 197 94)'] // neutral-500 to green-500
+    );
+
+    return {
+      transform: [{ scale: scale.value }],
+      borderColor: border,
+    };
+  });
+
+  const gesture = Gesture.Tap()
+    .enabled(!disabled)
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.98, { damping: 15 });
+      borderColor.value = withSpring(1, { damping: 15 });
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+    })
+    .onFinalize((event) => {
+      'worklet';
+      scale.value = withSpring(1, { damping: 15 });
+      borderColor.value = withSpring(0, { damping: 15 });
+      if (event.state === 4 && onPress) {
+        // State.END
+        runOnJS(onPress)();
+      }
+    });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        style={[animatedStyle]}
+        className="h-32 items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-700">
+        {selectedImageUri ? (
+          <Image
+            source={{ uri: selectedImageUri }}
+            className="h-full w-full rounded-lg"
+            resizeMode="cover"
+          />
+        ) : (
+          <>
+            <OptimizedIcon
+              name="image-plus"
+              size={32}
+              color="rgb(115 115 115)" // neutral-500
+            />
+            <ThemedText variant="muted" className="mt-1 text-xs">
+              Tap to add image
+            </ThemedText>
+          </>
+        )}
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
 export default function DiaryEntryForm({
   plantId,
   entryType,
   onSubmitSuccess,
   onCancel,
 }: DiaryEntryFormProps) {
-  const { theme, isDarkMode } = useTheme();
-  // const [isSubmitting, setIsSubmitting] = useState(false); // Remove local submitting state
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const {
-    createDiaryEntry,
-    loading: isSubmitting,
-
-    reset: resetMutation,
-  } = useCreateDiaryEntry(); // Use hook state
+  const { createDiaryEntry, loading: isSubmitting, reset: resetMutation } = useCreateDiaryEntry(); // Use hook state
 
   // Get the dynamic schema based on the entryType prop
   const validationSchema = getValidationSchema(entryType);
@@ -117,10 +232,7 @@ export default function DiaryEntryForm({
     },
   });
 
-  // Watch metrics fields if needed for dynamic UI updates (optional)
-  // const watchedMetrics = watch("metrics");
-
-  // --- Image Upload Function (Adapted from CreatePostScreen) ---
+  // --- Image Upload Function (Memory Optimized) ---
   const uploadImage = async (userId: string, imageUri: string): Promise<string | null> => {
     console.log('Starting diary image processing and upload for URI:', imageUri);
     try {
@@ -136,36 +248,52 @@ export default function DiaryEntryForm({
         `(${manipResult.width}x${manipResult.height})`
       );
 
-      const mimeType = 'image/jpeg';
+      // Check file size before upload to prevent OOM issues
+      const fileInfo = await FileSystem.getInfoAsync(manipResult.uri);
+      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
+        // 10MB limit
+        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
+        return null;
+      }
+
       const extension = 'jpg';
 
-      // Read manipulated file as Base64
-      console.log('Reading manipulated file as Base64...');
-      const base64Data = await FileSystem.readAsStringAsync(manipResult.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Memory-efficient upload using FileSystem instead of fetch().blob()
+      // This streams the file without loading it entirely into memory
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No valid session for upload');
+      }
 
-      // Convert Base64 to ArrayBuffer
-      console.log('Converting Base64 to ArrayBuffer...');
-      const arrayBuffer = decode(base64Data);
+      // Get Supabase URL from the client configuration (consistent with lib/supabase.ts)
+      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured');
+      }
 
       // Construct file path for diary entries
       const filename = `diary_${plantId}_${Date.now()}.${extension}`;
       const filePath = `${userId}/${filename}`; // Store under user ID
       console.log('Uploading diary image to Supabase storage at path:', filePath);
 
-      // Upload ArrayBuffer
-      console.log('Uploading ArrayBuffer to Supabase...');
-      const { error: uploadError } = await supabase.storage
-        .from('diary_entries') // Use 'diary_entries' bucket
-        .upload(filePath, arrayBuffer, {
-          contentType: mimeType,
-          upsert: false,
-        });
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/diary_entries/${filePath}`;
 
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        throw uploadError;
+      const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (uploadResult.status !== 200) {
+        const errorText = uploadResult.body || 'Unknown upload error';
+        console.error('Upload failed:', errorText);
+        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
       }
       console.log('Diary image uploaded successfully.');
 
@@ -206,6 +334,7 @@ export default function DiaryEntryForm({
     if (!result.canceled && result.assets?.[0]?.uri) {
       setSelectedImageUri(result.assets[0].uri);
       console.log('Selected Image URI:', result.assets[0].uri);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
 
@@ -258,9 +387,11 @@ export default function DiaryEntryForm({
       if (result.error) {
         console.error('Error creating diary entry via hook:', result.error);
         Alert.alert('Error', result.error.message || 'Failed to add diary entry.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       } else {
         console.log('Diary entry created successfully:', result.data);
         Alert.alert('Success', 'Diary entry added!');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         reset(); // Reset form fields
         setSelectedImageUri(null); // Clear selected image
         onSubmitSuccess?.(); // Call success callback
@@ -269,305 +400,265 @@ export default function DiaryEntryForm({
       // Catch unexpected errors during the hook call itself
       console.error('Unexpected error during createDiaryEntry call:', error);
       Alert.alert('Error', error.message || 'An unexpected error occurred.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
     // Loading state is handled by the hook's `isSubmitting` variable
     // --- ---
   };
 
-  const inputStyle = {
-    backgroundColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[100],
-    color: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
-    borderColor: isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[300],
-    borderWidth: 1,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing[3],
-    fontSize: theme.typography.fontSize.base,
-  };
-
-  const textAreaStyle = {
-    ...inputStyle,
-    height: 100, // Adjust height for notes
-    textAlignVertical: 'top' as 'top', // Ensure text starts at the top for multiline
-  };
-
   return (
-    <ThemedView className="flex-1 p-4">
-      <ThemedText className="mb-4 text-xl font-semibold capitalize">{entryType} Entry</ThemedText>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <Animated.View entering={FadeIn.duration(300)} className="flex-1 p-4">
+          <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+            <ThemedText variant="heading" className="mb-6 text-xl font-semibold capitalize">
+              {entryType} Entry
+            </ThemedText>
+          </Animated.View>
 
-      {/* Entry Date Input */}
-      <View className="mb-4">
-        <ThemedText className="mb-1 text-sm font-medium">Date</ThemedText>
-        <Controller
-          control={control}
-          name="entry_date"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={inputStyle}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={
-                isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-              }
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              keyboardType="numeric" // Basic numeric keyboard
-              maxLength={10}
-            />
-          )}
-        />
-        {errors.entry_date && (
-          <ThemedText className="mt-1 text-sm text-status-danger">
-            {errors.entry_date.message}
-          </ThemedText>
-        )}
-      </View>
-
-      {/* Notes Input */}
-      <View className="mb-4">
-        <ThemedText className="mb-1 text-sm font-medium">
-          Notes {entryType === 'note' ? '' : '(Optional)'}
-        </ThemedText>
-        <Controller
-          control={control}
-          name="content"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={textAreaStyle}
-              placeholder={
-                entryType === 'note' ? 'Enter your note...' : 'Add any relevant notes...'
-              }
-              placeholderTextColor={
-                isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-              }
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              multiline
-            />
-          )}
-        />
-        {errors.content && (
-          <ThemedText className="mt-1 text-sm text-status-danger">
-            {errors.content.message}
-          </ThemedText>
-        )}
-      </View>
-
-      {/* Image Picker Section */}
-      <View className="mb-4">
-        <ThemedText className="mb-1 text-sm font-medium">Image (Optional)</ThemedText>
-        <TouchableOpacity onPress={pickImage} disabled={isSubmitting}>
-          <ThemedView
-            className="h-32 items-center justify-center rounded-lg border border-dashed"
-            lightClassName="border-neutral-300 bg-neutral-100"
-            darkClassName="border-neutral-600 bg-neutral-700">
-            {selectedImageUri ? (
-              <Image
-                source={{ uri: selectedImageUri }}
-                className="h-full w-full rounded-lg"
-                resizeMode="cover"
-              />
-            ) : (
-              <>
-                <OptimizedIcon
-                  name="image-plus"
-                  size={32}
-                  color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]}
+          {/* Entry Date Input */}
+          <Animated.View entering={FadeInDown.delay(200).duration(400)} className="mb-4">
+            <ThemedText className="mb-2 text-sm font-medium">Date</ThemedText>
+            <Controller
+              control={control}
+              name="entry_date"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  className="rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="rgb(115 115 115)" // neutral-500
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  keyboardType="numeric" // Basic numeric keyboard
+                  maxLength={10}
                 />
-                <ThemedText
-                  className="mt-1 text-xs"
-                  lightClassName="text-neutral-500"
-                  darkClassName="text-neutral-400">
-                  Tap to add image
+              )}
+            />
+            {errors.entry_date && (
+              <Animated.View entering={FadeIn.duration(200)}>
+                <ThemedText className="text-status-danger mt-1 text-sm">
+                  {errors.entry_date.message}
                 </ThemedText>
-              </>
+              </Animated.View>
             )}
-          </ThemedView>
-        </TouchableOpacity>
-        {selectedImageUri && (
-          <TouchableOpacity
-            onPress={() => setSelectedImageUri(null)}
-            className="mt-2 self-start rounded bg-status-danger/80 px-2 py-1">
-            <Text className="text-xs text-white">Remove Image</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          </Animated.View>
 
-      {/* Conditional Metrics Fields */}
-      {entryType === 'watering' && (
-        <View className="mb-4">
-          <ThemedText className="mb-2 text-sm font-medium">Watering Details</ThemedText>
-          <View className="flex-row">
+          {/* Notes Input */}
+          <Animated.View entering={FadeInDown.delay(300).duration(400)} className="mb-4">
+            <ThemedText className="mb-2 text-sm font-medium">
+              Notes {entryType === 'note' ? '' : '(Optional)'}
+            </ThemedText>
             <Controller
               control={control}
-              name="metrics.amount"
+              name="content"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  style={[inputStyle, { flex: 1, marginRight: theme.spacing[2] }]}
-                  placeholder="Amount"
-                  placeholderTextColor={
-                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
+                  className="h-24 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                  style={{ textAlignVertical: 'top' }}
+                  placeholder={
+                    entryType === 'note' ? 'Enter your note...' : 'Add any relevant notes...'
                   }
+                  placeholderTextColor="rgb(115 115 115)" // neutral-500
                   onBlur={onBlur}
-                  onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
-                  value={value?.toString() ?? ''}
-                  keyboardType="numeric"
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="metrics.unit"
-              render={({ field: { onChange, value } }) => (
-                // TODO: Replace with a Picker/Select component
-                <TextInput
-                  style={[inputStyle, { flex: 1 }]}
-                  placeholder="Unit (ml/L)"
-                  placeholderTextColor={
-                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                  }
                   onChangeText={onChange}
-                  value={value as string | undefined} // Explicit cast
+                  value={value}
+                  multiline
                 />
               )}
             />
-          </View>
-          {/* Add specific errors for metrics if needed */}
-        </View>
-      )}
-
-      {entryType === 'feeding' && (
-        <View className="mb-4">
-          <ThemedText className="mb-2 text-sm font-medium">Feeding Details</ThemedText>
-          <Controller
-            control={control}
-            name="metrics.product_name"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[inputStyle, { marginBottom: theme.spacing[2] }]}
-                placeholder="Product Name (Optional)"
-                placeholderTextColor={
-                  isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                }
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value as string | undefined} // Explicit cast
-              />
+            {errors.content && (
+              <Animated.View entering={FadeIn.duration(200)}>
+                <ThemedText className="text-status-danger mt-1 text-sm">
+                  {errors.content.message}
+                </ThemedText>
+              </Animated.View>
             )}
-          />
-          <View className="flex-row">
-            <Controller
-              control={control}
-              name="metrics.amount"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[inputStyle, { flex: 1, marginRight: theme.spacing[2] }]}
-                  placeholder="Amount"
-                  placeholderTextColor={
-                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                  }
-                  onBlur={onBlur}
-                  onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
-                  value={value?.toString() ?? ''}
-                  keyboardType="numeric"
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="metrics.unit"
-              render={({ field: { onChange, value } }) => (
-                // TODO: Replace with a Picker/Select component
-                <TextInput
-                  style={[inputStyle, { flex: 1 }]}
-                  placeholder="Unit (ml/L)"
-                  placeholderTextColor={
-                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                  }
-                  onChangeText={onChange}
-                  value={value as string | undefined} // Explicit cast
-                />
-              )}
-            />
-          </View>
-        </View>
-      )}
+          </Animated.View>
 
-      {entryType === 'environment' && (
-        <View className="mb-4">
-          <ThemedText className="mb-2 text-sm font-medium">Environment Readings</ThemedText>
-          <View className="flex-row">
-            <Controller
-              control={control}
-              name="metrics.temperature"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[inputStyle, { flex: 1, marginRight: theme.spacing[2] }]}
-                  placeholder="Temp (°C/°F)"
-                  placeholderTextColor={
-                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                  }
-                  onBlur={onBlur}
-                  onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
-                  value={value?.toString() ?? ''}
-                  keyboardType="numeric"
-                />
-              )}
+          {/* Image Picker Section */}
+          <Animated.View entering={FadeInDown.delay(400).duration(400)} className="mb-4">
+            <ThemedText className="mb-2 text-sm font-medium">Image (Optional)</ThemedText>
+            <AnimatedImagePicker
+              onPress={pickImage}
+              selectedImageUri={selectedImageUri}
+              disabled={isSubmitting}
             />
-            <Controller
-              control={control}
-              name="metrics.humidity"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[inputStyle, { flex: 1 }]}
-                  placeholder="Humidity (%)"
-                  placeholderTextColor={
-                    isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                  }
-                  onBlur={onBlur}
-                  // Ensure onChange handles potential NaN from parseFloat
-                  onChangeText={(text) => {
-                    const num = parseFloat(text);
-                    onChange(isNaN(num) ? undefined : num);
+            {selectedImageUri && (
+              <Animated.View entering={FadeIn.duration(200)} className="mt-2">
+                <AnimatedPressable
+                  onPress={() => {
+                    setSelectedImageUri(null);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
-                  value={value?.toString() ?? ''} // Value is already string | undefined
-                  keyboardType="numeric"
-                />
-              )}
-            />
-          </View>
-          {/* Add specific errors for metrics if needed */}
-        </View>
-      )}
+                  variant="secondary"
+                  className="self-start rounded-lg px-3 py-2">
+                  <Text className="text-xs text-white">Remove Image</Text>
+                </AnimatedPressable>
+              </Animated.View>
+            )}
+          </Animated.View>
 
-      {/* Action Buttons */}
-      <View className="mt-6 flex-row justify-end">
-        {onCancel && (
-          <TouchableOpacity
-            onPress={onCancel}
-            className="mr-3 rounded-full px-6 py-3"
-            style={{
-              backgroundColor: isDarkMode ? theme.colors.neutral[700] : theme.colors.neutral[200],
-            }}
-            disabled={isSubmitting}>
-            <ThemedText className="font-medium">Cancel</ThemedText>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={handleSubmit(onSubmit)}
-          className="flex-row items-center rounded-full px-6 py-3"
-          style={{ backgroundColor: theme.colors.primary[500] }}
-          disabled={isSubmitting}>
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#ffffff" className="mr-2" />
-          ) : (
-            <OptimizedIcon name="check" size={18} color="#ffffff" style={{ marginRight: 4 }} />
+          {/* Conditional Metrics Fields */}
+          {entryType === 'watering' && (
+            <Animated.View entering={FadeInDown.delay(500).duration(400)} className="mb-4">
+              <ThemedText className="mb-2 text-sm font-medium">Watering Details</ThemedText>
+              <View className="flex-row space-x-2">
+                <Controller
+                  control={control}
+                  name="metrics.amount"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className="flex-1 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                      placeholder="Amount"
+                      placeholderTextColor="rgb(115 115 115)"
+                      onBlur={onBlur}
+                      onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
+                      value={value?.toString() ?? ''}
+                      keyboardType="numeric"
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="metrics.unit"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      className="flex-1 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                      placeholder="Unit (ml/L)"
+                      placeholderTextColor="rgb(115 115 115)"
+                      onChangeText={onChange}
+                      value={value as string | undefined}
+                    />
+                  )}
+                />
+              </View>
+            </Animated.View>
           )}
-          <Text style={{ color: '#ffffff', fontWeight: '500' }}>
-            {isSubmitting ? 'Saving...' : 'Save Entry'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ThemedView>
+
+          {entryType === 'feeding' && (
+            <Animated.View entering={FadeInDown.delay(500).duration(400)} className="mb-4">
+              <ThemedText className="mb-2 text-sm font-medium">Feeding Details</ThemedText>
+              <Controller
+                control={control}
+                name="metrics.product_name"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className="mb-2 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                    placeholder="Product Name (Optional)"
+                    placeholderTextColor="rgb(115 115 115)"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value as string | undefined}
+                  />
+                )}
+              />
+              <View className="flex-row space-x-2">
+                <Controller
+                  control={control}
+                  name="metrics.amount"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className="flex-1 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                      placeholder="Amount"
+                      placeholderTextColor="rgb(115 115 115)"
+                      onBlur={onBlur}
+                      onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
+                      value={value?.toString() ?? ''}
+                      keyboardType="numeric"
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="metrics.unit"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      className="flex-1 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                      placeholder="Unit (ml/L)"
+                      placeholderTextColor="rgb(115 115 115)"
+                      onChangeText={onChange}
+                      value={value as string | undefined}
+                    />
+                  )}
+                />
+              </View>
+            </Animated.View>
+          )}
+
+          {entryType === 'environment' && (
+            <Animated.View entering={FadeInDown.delay(500).duration(400)} className="mb-4">
+              <ThemedText className="mb-2 text-sm font-medium">Environment Readings</ThemedText>
+              <View className="flex-row space-x-2">
+                <Controller
+                  control={control}
+                  name="metrics.temperature"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className="flex-1 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                      placeholder="Temp (°C/°F)"
+                      placeholderTextColor="rgb(115 115 115)"
+                      onBlur={onBlur}
+                      onChangeText={(text) => onChange(text ? parseFloat(text) : undefined)}
+                      value={value?.toString() ?? ''}
+                      keyboardType="numeric"
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="metrics.humidity"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className="flex-1 rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-3 text-base text-neutral-900 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100"
+                      placeholder="Humidity (%)"
+                      placeholderTextColor="rgb(115 115 115)"
+                      onBlur={onBlur}
+                      // Ensure onChange handles potential NaN from parseFloat
+                      onChangeText={(text) => {
+                        const num = parseFloat(text);
+                        onChange(isNaN(num) ? undefined : num);
+                      }}
+                      value={value?.toString() ?? ''}
+                      keyboardType="numeric"
+                    />
+                  )}
+                />
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Action Buttons */}
+          <Animated.View
+            entering={FadeInDown.delay(600).duration(400)}
+            className="mt-6 flex-row justify-end space-x-3">
+            {onCancel && (
+              <AnimatedPressable
+                onPress={onCancel}
+                disabled={isSubmitting}
+                variant="secondary"
+                className="rounded-full px-6 py-3">
+                <ThemedText className="font-medium text-white">Cancel</ThemedText>
+              </AnimatedPressable>
+            )}
+            <AnimatedPressable
+              onPress={handleSubmit(onSubmit)}
+              disabled={isSubmitting}
+              className="flex-row items-center rounded-full px-6 py-3">
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#ffffff" style={{ marginRight: 8 }} />
+              ) : (
+                <OptimizedIcon name="check" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              )}
+              <Text className="font-medium text-white">
+                {isSubmitting ? 'Saving...' : 'Save Entry'}
+              </Text>
+            </AnimatedPressable>
+          </Animated.View>
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

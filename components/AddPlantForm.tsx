@@ -1,58 +1,54 @@
 'use client';
 
-import { OptimizedIcon } from './ui/OptimizedIcon';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { decode } from 'base64-arraybuffer';
 import { format, isValid } from 'date-fns';
+import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
+import * as Haptics from 'expo-haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import {
   TextInput,
-  TouchableOpacity,
   Alert,
   Image,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Modal,
-  View,
-  Text, // Added Text for basic text rendering if ThemedText has issues
-  Platform, // Added Platform for OS-specific logic if needed
+  Platform,
+  useColorScheme,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolateColor,
+  runOnUI,
+} from 'react-native-reanimated';
 import { z } from 'zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { StrainAutocomplete } from './StrainAutocomplete'; // Ensure this path is correct
-import ThemedText from './ui/ThemedText'; // Ensure this path is correct
-import ThemedView from './ui/ThemedView'; // Ensure this path is correct
-import { useTheme } from '../lib/contexts/ThemeContext';
-import { RawStrainApiResponse } from '../lib/types/weed-db';
-import { GrowthStage } from '../lib/types/plant';
+import { StrainAutocomplete } from './StrainAutocomplete';
+import { OptimizedIcon } from './ui/OptimizedIcon';
+import ThemedText from './ui/ThemedText';
+import ThemedView from './ui/ThemedView';
+import { useAuth } from '../lib/contexts/AuthProvider';
+import { useDatabase } from '../lib/contexts/DatabaseProvider';
+import { Plant as PlantModel } from '../lib/models/Plant';
 import {
   ensureStrainInLocalDB,
   ensureStrainInSupabase,
   prepareDataForSupabase,
-  prepareDataForWatermelonDB,
 } from '../lib/services/strain-sync.service';
-import { Strain as WDBStrainModel } from '../lib/models/Strain';
-import { SupabaseStrain } from '../lib/types/supabase';
 import supabase from '../lib/supabase';
-import { useAuth } from '../lib/contexts/AuthProvider';
-import { useDatabase } from '../lib/contexts/DatabaseProvider';
-import useWatermelon from '../lib/hooks/useWatermelon';
-import { Plant as PlantType, GrowLocation, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant'; // Import Plant as PlantType
-import { Plant as PlantModel } from '../lib/models/Plant'; // Import the actual Model class
-import { Model } from '@nozbe/watermelondb';
-import { takePhoto as takePhotoSimple, selectFromGallery } from '../lib/utils/ultra-simple-image-picker';
+import { GrowthStage, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
+import { RawStrainApiResponse } from '../lib/types/weed-db';
 
-// Define type aliases to match the property naming in the WatermelonDB model
-// This allows us to have type-safety without modifying the actual WatermelonDB model class
-type WatermelonProps = {
+interface PlantFormProps {
   userId: string;
   name: string;
   strainId: string;
@@ -63,14 +59,14 @@ type WatermelonProps = {
   growMedium?: string;
   lightCondition?: string;
   locationDescription?: string;
-  imageUrl?: string | null;
+  imageUrl?: string;
   notes?: string;
 }
 
-// Zod Validation Schema
 const plantFormSchema = z.object({
   name: z.string().min(1, 'Plant name is required.'),
-  strain: z.string().min(1, 'Strain is required.'), // This will store the strain NAME from autocomplete
+  strain: z.string().min(1, 'Strain is required.'),
+  strain_id: z.string().optional(),
   planted_date: z.date({ required_error: 'Planted date is required.' }),
   growth_stage: z.nativeEnum(GrowthStage, { required_error: 'Growth stage is required.' }),
   cannabis_type: z.nativeEnum(CannabisType).optional(),
@@ -81,1046 +77,1303 @@ const plantFormSchema = z.object({
   notes: z.string().optional(),
 });
 
-// Infer the type from the schema
 type PlantFormData = z.infer<typeof plantFormSchema>;
 
-// Step interface
 interface FormStep {
   id: string;
   title: string;
   description?: string;
-  fields: (keyof PlantFormData)[]; // Fields relevant to this step for validation
+  fields: (keyof PlantFormData)[];
 }
 
-// Steps for the wizard
 const FORM_STEPS: FormStep[] = [
-  { id: 'photo', title: 'Add Photo', description: 'Add a photo of your plant', fields: ['image_url'] },
-  { id: 'basicInfo', title: 'Basic Info', description: 'Name, strain, type, and stage', fields: ['name', 'strain', 'cannabis_type', 'growth_stage'] },
-  { id: 'location', title: 'Location', description: 'Where is your plant located?', fields: ['location_description'] },
-  { id: 'lighting', title: 'Lighting', description: 'Light conditions for your plant', fields: ['light_condition'] },
-  { id: 'details', title: 'Growing Details', description: 'Medium and additional notes', fields: ['grow_medium', 'notes'] },
-  { id: 'dates', title: 'Important Dates', description: 'Key dates for your plant', fields: ['planted_date'] },
+  {
+    id: 'photo',
+    title: 'Add Photo',
+    description: 'Add a photo of your plant',
+    fields: ['image_url'],
+  },
+  {
+    id: 'basicInfo',
+    title: 'Basic Info',
+    description: 'Name, strain, type, and stage',
+    fields: ['name', 'strain', 'cannabis_type', 'growth_stage'],
+  },
+  {
+    id: 'location',
+    title: 'Location',
+    description: 'Where is your plant located?',
+    fields: ['location_description'],
+  },
+  {
+    id: 'lighting',
+    title: 'Lighting',
+    description: 'Light conditions for your plant',
+    fields: ['light_condition'],
+  },
+  {
+    id: 'details',
+    title: 'Growing Details',
+    description: 'Medium and additional notes',
+    fields: ['grow_medium', 'notes'],
+  },
+  {
+    id: 'dates',
+    title: 'Important Dates',
+    description: 'Key dates for your plant',
+    fields: ['planted_date'],
+  },
 ];
 
-// Add error classification types and helper function before the component
+// Animation configurations following React Compiler patterns
+const SPRING_CONFIG = {
+  damping: 15,
+  stiffness: 400,
+};
+
+const BUTTON_SCALE_CONFIG = {
+  pressed: 0.97,
+  released: 1,
+  timing: { duration: 100 },
+};
+
 interface ErrorClassification {
   shouldShowToUser: boolean;
   userMessage?: string;
   logLevel: 'info' | 'warn' | 'error';
 }
 
-// Helper function to classify errors more robustly
 function classifyStrainSyncError(error: Error): ErrorClassification {
   const errorMessage = String(error.message || '').toLowerCase();
   const errorCode = (error as any).code;
   const errorName = String((error as any).name || '');
 
-  // Handle cancellation/abort errors - these are expected and shouldn't show to user
-  if (errorName === 'AbortError' || errorMessage.includes('cancelled') || errorMessage.includes('aborted')) {
-    return {
-      shouldShowToUser: false,
-      logLevel: 'info'
-    };
+  if (
+    errorName === 'AbortError' ||
+    errorMessage.includes('cancelled') ||
+    errorMessage.includes('aborted')
+  ) {
+    return { shouldShowToUser: false, logLevel: 'info' };
   }
-
-  // Handle duplicate entries - these are expected when strain already exists
-  if (errorCode === '23505' || errorMessage.includes('23505') || errorMessage.includes('duplicate')) {
-    return {
-      shouldShowToUser: false,
-      logLevel: 'info'
-    };
+  if (
+    errorCode === '23505' ||
+    errorMessage.includes('23505') ||
+    errorMessage.includes('duplicate')
+  ) {
+    return { shouldShowToUser: false, logLevel: 'info' };
   }
-
-  // Handle missing required fields
-  if (errorCode === 'MISSING_REQUIRED_FIELD' || 
-      errorMessage.includes('api_id is required') || 
-      errorMessage.includes('name is required')) {
+  if (
+    errorCode === 'MISSING_REQUIRED_FIELD' ||
+    errorMessage.includes('api_id is required') ||
+    errorMessage.includes('name is required')
+  ) {
     return {
       shouldShowToUser: true,
       userMessage: 'Strain data is incomplete. Please try selecting a different strain.',
-      logLevel: 'warn'
+      logLevel: 'warn',
     };
   }
-
-  // Handle network-related errors
-  if (errorName === 'NetworkError' || 
-      errorMessage.includes('network') || 
-      errorMessage.includes('fetch') ||
-      errorMessage.includes('connection')) {
+  if (
+    errorName === 'NetworkError' ||
+    errorMessage.includes('network') ||
+    errorMessage.includes('fetch') ||
+    errorMessage.includes('connection')
+  ) {
     return {
       shouldShowToUser: true,
-      userMessage: 'Network error while syncing strain. Please check your connection and try again.',
-      logLevel: 'warn'
+      userMessage:
+        'Network error while syncing strain. Please check your connection and try again.',
+      logLevel: 'warn',
     };
   }
-
-  // Handle timeout errors
   if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
     return {
       shouldShowToUser: true,
       userMessage: 'Request timed out. Please try again.',
-      logLevel: 'warn'
+      logLevel: 'warn',
     };
   }
-
-  // Handle database constraint violations (other than duplicates)
   if (errorCode && errorCode.startsWith('23')) {
     return {
       shouldShowToUser: true,
       userMessage: 'Database constraint error. Please try selecting a different strain.',
-      logLevel: 'error'
+      logLevel: 'error',
     };
   }
-
-  // Handle authentication/authorization errors
-  if (errorMessage.includes('unauthorized') || errorMessage.includes('forbidden') || errorCode === '401' || errorCode === '403') {
+  if (
+    errorMessage.includes('unauthorized') ||
+    errorMessage.includes('forbidden') ||
+    errorCode === '401' ||
+    errorCode === '403'
+  ) {
     return {
       shouldShowToUser: true,
       userMessage: 'Authentication error. Please log in again and try.',
-      logLevel: 'error'
+      logLevel: 'error',
     };
   }
-
-  // Default case for unknown errors
   return {
     shouldShowToUser: true,
     userMessage: `Failed to sync strain: ${error.message}`,
-    logLevel: 'error'
+    logLevel: 'error',
   };
 }
 
-// Add helper function for safe date formatting
 const safeFormatDate = (date: any, formatString: string = 'PPP'): string => {
   try {
-    // Check if date is valid
-    if (!date) {
-      return format(new Date(), formatString);
-    }
-    
-    // If it's already a Date object, check if it's valid
-    if (date instanceof Date) {
+    if (!date) return format(new Date(), formatString);
+    if (date instanceof Date)
       return isValid(date) ? format(date, formatString) : format(new Date(), formatString);
-    }
-    
-    // Try to create a Date from the value
     const parsedDate = new Date(date);
-    return isValid(parsedDate) ? format(parsedDate, formatString) : format(new Date(), formatString);
+    return isValid(parsedDate)
+      ? format(parsedDate, formatString)
+      : format(new Date(), formatString);
   } catch (error) {
     console.warn('[AddPlantForm] Error formatting date:', error);
     return format(new Date(), formatString);
   }
 };
 
-export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
-  const { theme, isDarkMode } = useTheme();
-  const { database } = useDatabase();
-  const { sync } = useWatermelon();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+interface AnimatedButtonProps {
+  onPress: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'destructive';
+  className?: string;
+}
 
-  const [currentStepId, setCurrentStepId] = useState<string>(FORM_STEPS[0]?.id ?? 'photo');
-  const currentStepObj = FORM_STEPS.find((step) => step.id === currentStepId) ?? FORM_STEPS[0];
-  if (!currentStepObj) {
-    throw new Error('Current step object could not be determined.');
+const AnimatedButton: React.FC<AnimatedButtonProps> = ({
+  onPress,
+  children,
+  disabled = false,
+  variant = 'primary',
+  className = '',
+}) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  // Memoize variant classes for performance
+  const variantClasses = useMemo(() => {
+    const baseClasses = 'flex-row items-center justify-center rounded-2xl px-4 py-3 shadow-md';
+    switch (variant) {
+      case 'primary':
+        return `${baseClasses} bg-primary-500 dark:bg-primary-600`;
+      case 'secondary':
+        return `${baseClasses} bg-neutral-200 dark:bg-neutral-700`;
+      case 'tertiary':
+        return `${baseClasses} bg-transparent border border-neutral-300 dark:border-neutral-600`;
+      case 'destructive':
+        return `${baseClasses} bg-status-danger`;
+      default:
+        return baseClasses;
+    }
+  }, [variant]);
+
+  const gesture = Gesture.Tap()
+    .enabled(!disabled)
+    .onBegin(() => {
+      runOnUI(() => {
+        'worklet';
+        scale.value = withTiming(BUTTON_SCALE_CONFIG.pressed, BUTTON_SCALE_CONFIG.timing);
+      })();
+
+      // Haptic feedback based on variant
+      const hapticStyle =
+        variant === 'destructive'
+          ? Haptics.ImpactFeedbackStyle.Heavy
+          : variant === 'primary'
+            ? Haptics.ImpactFeedbackStyle.Medium
+            : Haptics.ImpactFeedbackStyle.Light;
+      Haptics.impactAsync(hapticStyle);
+    })
+    .onFinalize(() => {
+      runOnUI(() => {
+        'worklet';
+        scale.value = withSpring(BUTTON_SCALE_CONFIG.released, SPRING_CONFIG);
+      })();
+      onPress();
+    });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        style={animatedStyle}
+        className={`${variantClasses} ${disabled ? 'opacity-50' : ''} ${className}`}>
+        {children}
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
+interface AnimatedSelectionButtonProps {
+  onPress: () => void;
+  children: React.ReactNode;
+  selected: boolean;
+  disabled?: boolean;
+}
+
+const AnimatedSelectionButton: React.FC<AnimatedSelectionButtonProps> = ({
+  onPress,
+  children,
+  selected,
+  disabled = false,
+}) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    // Using CSS-compatible colors for cross-platform consistency
+    const backgroundColor = interpolateColor(
+      selected ? 1 : 0,
+      [0, 1],
+      ['rgba(0,0,0,0)', '#22c55e'] // transparent to green-500
+    );
+    const borderColor = interpolateColor(
+      selected ? 1 : 0,
+      [0, 1],
+      ['#d4d4d8', '#22c55e'] // neutral-300 to green-500
+    );
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+      borderColor,
+      borderWidth: 2,
+    };
+  });
+
+  const gesture = Gesture.Tap()
+    .enabled(!disabled)
+    .onBegin(() => {
+      runOnUI(() => {
+        'worklet';
+        scale.value = withTiming(BUTTON_SCALE_CONFIG.pressed, BUTTON_SCALE_CONFIG.timing);
+      })();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    })
+    .onFinalize(() => {
+      runOnUI(() => {
+        'worklet';
+        scale.value = withSpring(BUTTON_SCALE_CONFIG.released, SPRING_CONFIG);
+      })();
+      onPress();
+    });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={animatedStyle} className="flex-grow items-center rounded-2xl px-3 py-2">
+        {children}
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
+interface AnimatedTextInputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  onBlur?: () => void;
+  onFocus?: () => void;
+  placeholder?: string;
+  multiline?: boolean;
+  className?: string;
+  hasError?: boolean;
+}
+
+const AnimatedTextInput: React.FC<AnimatedTextInputProps> = ({
+  value,
+  onChangeText,
+  onBlur,
+  onFocus,
+  placeholder,
+  multiline = false,
+  className = '',
+  hasError = false,
+}) => {
+  const focusAnimation = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const colorScheme = useColorScheme();
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const borderColor = interpolateColor(
+      focusAnimation.value,
+      [0, 1],
+      hasError
+        ? ['#ef4444', '#ef4444'] // Keep error color
+        : ['#d1d5db', '#3b82f6'] // neutral to blue
+    );
+
+    return {
+      borderColor,
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const handleFocus = () => {
+    focusAnimation.value = withSpring(1, SPRING_CONFIG);
+    scale.value = withSpring(1.02, SPRING_CONFIG);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onFocus?.();
+  };
+
+  const handleBlur = () => {
+    focusAnimation.value = withSpring(0, SPRING_CONFIG);
+    scale.value = withSpring(1, SPRING_CONFIG);
+    onBlur?.();
+  };
+
+  const placeholderTextColor = colorScheme === 'dark' ? '#9ca3af' : '#6b7280';
+  const baseClasses = `border rounded-lg p-3 text-base bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 ${
+    hasError ? 'border-status-danger' : 'border-neutral-300 dark:border-neutral-600'
+  } ${multiline ? 'min-h-[100px]' : ''}`;
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <TextInput
+        className={`${baseClasses} ${className}`}
+        placeholder={placeholder}
+        placeholderTextColor={placeholderTextColor}
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        multiline={multiline}
+        textAlignVertical={multiline ? 'top' : 'center'}
+      />
+    </Animated.View>
+  );
+};
+
+// Step Components
+interface StepProps {
+  control: any;
+  setValue: any;
+  errors: any;
+  getValues: any;
+}
+
+const PhotoStep: React.FC<
+  StepProps & {
+    takePhoto: () => Promise<void>;
+    pickImage: () => Promise<void>;
   }
+> = ({ control, setValue, takePhoto, pickImage }) => (
+  <ThemedView className="space-y-6">
+    <Controller
+      control={control}
+      name="image_url"
+      render={({ field: { value } }) => (
+        <ThemedView className="items-center space-y-4">
+          {value ? (
+            <ThemedView className="relative">
+              <Image source={{ uri: value }} className="h-48 w-48 rounded-2xl" />
+              <AnimatedButton
+                onPress={() => setValue('image_url', null)}
+                variant="destructive"
+                className="absolute -right-2 -top-2 h-8 w-8 rounded-full">
+                <OptimizedIcon name="close" size={16} className="text-white" />
+              </AnimatedButton>
+            </ThemedView>
+          ) : (
+            <ThemedView className="h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-200 dark:border-neutral-600 dark:bg-neutral-700">
+              <OptimizedIcon
+                name="image-outline"
+                size={48}
+                className="text-neutral-400 dark:text-neutral-500"
+              />
+              <ThemedText variant="muted" className="mt-2">
+                No photo selected
+              </ThemedText>
+            </ThemedView>
+          )}
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-    watch,
-    setValue,
-    reset,
-    trigger,
-  } = useForm<PlantFormData>({
-    resolver: zodResolver(plantFormSchema),
-    mode: 'onChange',
-    defaultValues: {
-      name: '',
-      strain: '',
-      planted_date: new Date(),
-      growth_stage: GrowthStage.SEEDLING,
-      cannabis_type: CannabisType.Unknown,
-      grow_medium: GrowMedium.Soil,
-      light_condition: LightCondition.Artificial,
-      location_description: GrowLocation.Indoor,
-      image_url: null,
-      notes: '',
-    },
-  });
+          <ThemedView className="flex-row space-x-4">
+            <AnimatedButton onPress={takePhoto} variant="primary">
+              <OptimizedIcon name="camera" size={20} className="mr-2 text-white" />
+              <ThemedText className="font-medium text-white">Camera</ThemedText>
+            </AnimatedButton>
 
-  const [selectedStrainApiData, setSelectedStrainApiData] = useState<RawStrainApiResponse | null>(null);
-  const [syncedLocalStrainId, setSyncedLocalStrainId] = useState<string | null>(null);
-
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreviewUri, setImagePreviewUri] = useState<string | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [processingImage, setProcessingImage] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
-  const [tempCustomLocation, setTempCustomLocation] = useState('');
-  // Store the current AbortController to manage cancellation
-  const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
-
-  const strainSyncMutation = useMutation<
-    string | null,
-    Error,
-    RawStrainApiResponse
-  >({
-    // Add a mutation key to identify this mutation
-    mutationKey: ['strainSync'],
-    mutationFn: async (strainToSync: RawStrainApiResponse) => {
-      if (!strainToSync.api_id) {
-        throw new Error('Strain API ID is missing, cannot sync.');
-      }
-      console.log('[AddPlantForm] Starting strain synchronization for:', strainToSync.name);
-      
-      // Create a new AbortController for this mutation
-      const abortController = new AbortController();
-      setCurrentAbortController(abortController);
-      const { signal } = abortController;
-      
-      // Setup a handler to throw if aborted
-      const checkAbort = () => {
-        if (signal.aborted) {
-          throw new Error('Strain sync operation was cancelled');
-        }
-      };
-      
-      // Initial abort check
-      checkAbort();
-
-      const preparedSupabaseData = prepareDataForSupabase(strainToSync) as Partial<SupabaseStrain> & { api_id: string }; // Added type assertion
-      // Pass the signal to your async operations (you may need to update these functions to accept a signal parameter)
-      const supabaseId = await Promise.race([
-        ensureStrainInSupabase(preparedSupabaseData),
-        new Promise<never>((_, reject) => {
-          signal.addEventListener('abort', () => reject(new Error('Supabase sync aborted')));
-        })
-      ]).catch(error => {
-        if (signal.aborted) {
-          throw new Error('Strain sync operation was cancelled during Supabase sync');
-        }
-        throw error;
-      });
-
-      console.log(`[AddPlantForm] Strain ${supabaseId ? 'synced' : 'failed to sync'} with Supabase. Supabase ID: ${supabaseId}`);
-      if (!supabaseId) throw new Error('Failed to sync strain with Supabase.');
-      
-      // Check if aborted between operations
-      checkAbort();
-
-      const preparedWdbData = prepareDataForWatermelonDB(strainToSync) as Partial<WDBStrainModel> & { api_id: string }; // Added type assertion
-      
-      const localId = await Promise.race([
-        ensureStrainInLocalDB(preparedWdbData),
-        new Promise<never>((_, reject) => {
-          signal.addEventListener('abort', () => reject(new Error('Local DB sync aborted')));
-        })
-      ]).catch(error => {
-        if (signal.aborted) {
-          throw new Error('Strain sync operation was cancelled during local DB sync');
-        }
-        throw error;
-      });
-      
-      console.log(`[AddPlantForm] Strain ${localId ? 'synced' : 'failed to sync'} with local DB. Local ID: ${localId}`);
-      if (!localId) throw new Error('Failed to sync strain with local WatermelonDB.');
-
-      return localId;
-    },
-    onSuccess: (localId, variables) => {
-      // Check if this success callback corresponds to the currently selected strain
-      if (selectedStrainApiData?.api_id === variables.api_id) {
-        console.log(`[AddPlantForm] Strain "${variables.name}" synced successfully. Local DB ID: ${localId}`);
-        // setSelectedStrainApiData(variables); // Already set by handleStrainSelectionAndSync
-        setSyncedLocalStrainId(localId);
-        setValue('strain', variables.name, { shouldValidate: true });
-        Alert.alert('Strain Synced', `${variables.name} has been successfully synced.`);
-        queryClient.invalidateQueries({ queryKey: ['strains'] });
-      } else {
-        console.log(`[AddPlantForm] Strain "${variables.name}" sync success ignored, a newer strain is selected.`);
-      }
-    },
-    onError: (error: Error, variables: RawStrainApiResponse) => {
-      // Check if this error callback corresponds to the currently selected strain
-      if (selectedStrainApiData?.api_id === variables.api_id) {
-        const classification = classifyStrainSyncError(error);
-        
-        // Log the error with appropriate level
-        const logMessage = `Error syncing strain "${variables.name}" (API ID: ${variables.api_id}): ${error.message}`;
-        switch (classification.logLevel) {
-          case 'info':
-            console.log(`[AddPlantForm] ${logMessage}`);
-            break;
-          case 'warn':
-            console.warn(`[AddPlantForm] ${logMessage}`);
-            break;
-          case 'error':
-            console.error(`[AddPlantForm] ${logMessage}`, error);
-            break;
-        }
-        
-        // Only show alert to user if classification indicates we should
-        if (classification.shouldShowToUser && classification.userMessage) {
-          Alert.alert('Sync Error', classification.userMessage);
-          // Clear the strain selection for user-facing errors
-          setSelectedStrainApiData(null);
-          setSyncedLocalStrainId(null);
-          setValue('strain', '', { shouldValidate: true });
-        } else if (!classification.shouldShowToUser) {
-          // For non-user-facing errors (like duplicates), log but don't clear selection
-          console.log('[AddPlantForm] Strain sync completed with expected condition, not clearing selection');
-        }
-      } else {
-        console.warn(`[AddPlantForm] Error for strain "${variables.name}" (API ID: ${variables.api_id}) ignored, as current selection is different (API ID: ${selectedStrainApiData?.api_id}). Error: ${error.message}`);
-      }
-    },
-  });
-
-  const handleStrainSelectionAndSync = (selectedRawStrain: RawStrainApiResponse | null) => {
-    if (!selectedRawStrain) {
-      // Handle the case where strain is null, e.g., clear selection or do nothing
-      console.log('[AddPlantForm] Strain selection cleared or null.');
-      // Optionally, reset related state if a null selection means clearing things
-      // setValue('strain', null); // Or however you manage this in your form state
-      return;
-    }
-    console.log('[AddPlantForm] Strain selected from autocomplete:', selectedRawStrain.name, 'API ID:', selectedRawStrain.api_id);
-    
-    // Reset local sync-status whenever the user picks a new strain
-    setSelectedStrainApiData(selectedRawStrain);
-    setSyncedLocalStrainId(null);
-    
-    // Pre-populate to satisfy synchronous form validation
-    setValue('strain', selectedRawStrain.name, { shouldValidate: true });
-    
-    // Cancel any in-flight requests to prevent unnecessary API calls and database operations
-    if (strainSyncMutation.isPending) {
-      console.log('[AddPlantForm] Cancelling previous strain sync request');
-      // Cancel the current operation using the AbortController
-      if (currentAbortController) {
-        currentAbortController.abort();
-        console.log('[AddPlantForm] Aborted previous strain sync operation');
-      }
-      // Also reset the mutation state to clear UI states
-      strainSyncMutation.reset();
-    }
-    
-    // Start a new mutation - the callbacks will handle ensuring only the latest strain's 
-    // results are applied to our state
-    strainSyncMutation.mutate(selectedRawStrain);
-  };
-
-  // Step navigation - Updated to use validation trigger and currentStepId
-  const goToNextStep = async () => {
-    // Find the current step index based on currentStepId
-    const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
-    // Get the current step object (add check for safety)
-    const stepObj = FORM_STEPS[stepIndex];
-    if (!stepObj) {
-      console.error('Could not find step object for index:', stepIndex);
-      return; // Should not happen, but prevents crash
-    }
-    // Get fields for the current step using optional chaining
-    const fieldsToValidate = stepObj.fields; // Removed optional chaining (?.) since we've already checked stepObj exists
-    if (!fieldsToValidate) {
-      console.error('Could not find fields for step object:', stepObj); // stepObj is guaranteed by the check above
-      return; // Prevent proceeding if fields are missing
-    }
-
-    // Trigger validation only for the current step's fields
-    const isValidStep = await trigger(fieldsToValidate.length > 0 ? fieldsToValidate : undefined);
-
-    if (isValidStep && stepIndex < FORM_STEPS.length - 1) {
-      // Ensure next step exists before setting
-      const nextStepId = FORM_STEPS[stepIndex + 1]?.id;
-      if (nextStepId) {
-        setCurrentStepId(nextStepId);
-      } else {
-        console.error('Could not find next step ID for index:', stepIndex + 1);
-      }
-    } else if (!isValidStep) {
-      console.log('Validation errors on step:', currentStepId, errors);
-      const firstErrorField = fieldsToValidate.find((field: keyof PlantFormData) => errors[field]);
-      
-      // Create a more user-friendly error message based on the current step
-      let userFriendlyMessage = 'Please correct the errors before proceeding.';
-      
-      if (currentStepId === 'basicInfo') {
-        const hasNameError = errors.name;
-        const hasStrainError = errors.strain;
-        
-        if (hasNameError && hasStrainError) {
-          userFriendlyMessage = 'Please enter a plant name and select a strain before continuing.';
-        } else if (hasNameError) {
-          userFriendlyMessage = 'Please enter a name for your plant before continuing.';
-        } else if (hasStrainError) {
-          userFriendlyMessage = 'Please select a strain before continuing.';
-        }
-      } else if (currentStepId === 'dates') {
-        userFriendlyMessage = 'Please select a valid planted date before continuing.';
-      } else if (currentStepId === 'location') {
-        userFriendlyMessage = 'Please select a location for your plant before continuing.';
-      }
-      
-      // Refined check for errorMessage - ensure errorObject is checked
-      const errorObject = firstErrorField ? errors[firstErrorField] : undefined;
-      const errorMessage = errorObject?.message
-        ? String(errorObject.message) // Ensure it's a string
-        : userFriendlyMessage;
-      
-      // Show the alert with the appropriate message
-      Alert.alert('Required Information Missing', errorMessage);
-    }
-  };
-
-  const goToPreviousStep = () => {
-    // Find the current step index based on currentStepId
-    const stepIndex = FORM_STEPS.findIndex((step) => step.id === currentStepId);
-
-    if (stepIndex > 0) {
-      // Add check for safety, though stepIndex > 0 implies FORM_STEPS[stepIndex - 1] exists
-      const previousStepId = FORM_STEPS[stepIndex - 1]?.id;
-      if (previousStepId) {
-        setCurrentStepId(previousStepId);
-      } else {
-        console.error('Could not find previous step ID for index:', stepIndex - 1);
-        router.back(); // Fallback
-      }
-    } else {
-      router.back();
-    }
-  };
-
-  // Process image immediately after selection to avoid memory issues with large gallery images
-  const processImage = async (uri: string): Promise<string | null> => {
-    try {
-      const manipResult = await manipulateAsync(
-        uri,
-        [{ resize: { width: 1024 } }], // Resize immediately to manage memory
-        { compress: 0.7, format: SaveFormat.JPEG }
-      );
-      return manipResult.uri;
-    } catch (error) {
-      console.error('Error processing image:', error);
-      Alert.alert('Error', 'Failed to process image. Please try a different image.');
-      return null;
-    }
-  };
-
-  // Camera and image handling
-  const pickImage = async () => {
-    try {
-      console.log('[AddPlantForm] Starting image picking process...');
-      setProcessingImage(true);
-      
-      const result = await selectFromGallery();
-      
-      if (result) {
-        console.log('[AddPlantForm] Image selected, processing...');
-        const processedUri = await processImage(result.uri);
-        if (processedUri) {
-          setImagePreviewUri(processedUri);
-          setValue('image_url', null);
-        }
-      } else {
-        console.log('[AddPlantForm] No image selected or picker was canceled');
-      }
-    } catch (error) {
-      console.error('[AddPlantForm] Error picking image:', error);
-      Alert.alert('Error', 'Failed to access photo gallery. Please try again.');
-    } finally {
-      setProcessingImage(false);
-    }
-  };
-
-  const takePhoto = async () => {
-    try {
-      console.log('[AddPlantForm] Starting photo taking process...');
-      setProcessingImage(true);
-      
-      const result = await takePhotoSimple();
-      
-      if (result) {
-        console.log('[AddPlantForm] Photo taken, processing...');
-        const processedUri = await processImage(result.uri);
-        if (processedUri) {
-          setImagePreviewUri(processedUri);
-          setValue('image_url', null);
-        }
-      } else {
-        console.log('[AddPlantForm] No photo taken or camera was canceled');
-      }
-    } catch (error) {
-      console.error('[AddPlantForm] Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
-    } finally {
-      setProcessingImage(false);
-    }
-  };
-
-  const uploadImage = async (userId: string): Promise<string | null> => {
-    if (!imagePreviewUri) return null;
-    setUploadingImage(true);
-    try {
-      // Image is already processed, so we can upload it directly
-      const fileBase64 = await FileSystem.readAsStringAsync(imagePreviewUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const arrayBuffer = decode(fileBase64);
-      const filename = `plant_${Date.now()}.jpg`;
-      const filePath = `${userId}/${filename}`;
-      const { error: uploadError } = await supabase.storage
-        .from('plants')
-        .upload(filePath, arrayBuffer, {
-          contentType: 'image/jpeg',
-          upsert: false,
-        });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('plants').getPublicUrl(filePath);
-      setValue('image_url', urlData.publicUrl, { shouldValidate: true });
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Upload Error', 'Failed to upload image.');
-      return null;
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  // Form submission - Updated for react-hook-form
-  const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
-    if (!user) {
-      Alert.alert('Error', 'You must be logged in to add a plant.');
-      setIsSubmitting(false);
-      return;
-    }
-    if (!selectedStrainApiData || !selectedStrainApiData.api_id || !syncedLocalStrainId) {
-      Alert.alert(
-        'Error',
-        'Please select a valid strain and ensure it is synced before submitting. The local synchronized ID is missing.'
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
-    console.log('[AddPlantForm] onSubmit triggered. Form data:', JSON.stringify(data, null, 2));
-    console.log('[AddPlantForm] Current selectedStrainApiData (from API):', JSON.stringify(selectedStrainApiData, null, 2));
-    console.log('[AddPlantForm] Synced Local Strain ID:', syncedLocalStrainId);
-    setIsSubmitting(true);
-
-    try {
-      let imageUrlToSave: string | null = data.image_url ?? null;
-      if (imagePreviewUri && imagePreviewUri !== data.image_url) {
-        const uploadedUrl = await uploadImage(user.id);
-        if (uploadedUrl) {
-          imageUrlToSave = uploadedUrl;
-        } else if (imagePreviewUri) {
-          console.warn('[AddPlantForm] Image upload may have failed, but a preview URI was present.');
-        }
-      }
-
-      const localStrainIdToLink = syncedLocalStrainId;
-      console.log(`[AddPlantForm] Using local strain ID for new plant: ${localStrainIdToLink}`);
-
-      const plantsCollection = database.collections.get<PlantModel>('plants');
-      await database.write(async () => {
-        await plantsCollection.create((plant) => {
-          // WatermelonDB handles ID generation
-          plant.userId = user.id;
-          plant.name = data.name;
-          plant.strainId = localStrainIdToLink; // Link to the local WatermelonDB strain ID
-          plant.strain = selectedStrainApiData!.name; // Store the strain name directly as well for easier display
-          
-          // Safely handle the planted date
-          const plantedDate = data.planted_date && isValid(new Date(data.planted_date)) 
-            ? new Date(data.planted_date) 
-            : new Date();
-          plant.plantedDate = plantedDate.toISOString();
-          
-          plant.growthStage = data.growth_stage;
-          plant.cannabisType = data.cannabis_type;
-          plant.growMedium = data.grow_medium;
-          plant.lightCondition = data.light_condition;
-          plant.locationDescription = data.location_description;
-          plant.imageUrl = imageUrlToSave || undefined;
-          plant.notes = data.notes;
-          // createdAt and updatedAt are handled by WatermelonDB automatically
-          // No need to set synced_at as it's handled by the sync process
-        });
-      });
-
-      console.log('[AddPlantForm] Plant created successfully in WatermelonDB.');
-      await sync();
-
-      Alert.alert('Success', 'Plant added successfully!');
-      reset();
-      setImagePreviewUri(null);
-      setSelectedStrainApiData(null);
-      setSyncedLocalStrainId(null);
-      setCurrentStepId(FORM_STEPS[0]?.id ?? 'photo');
-      if (onSuccess) onSuccess();
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      console.error('[AddPlantForm] Error submitting form:', error);
-      Alert.alert('Error', `Failed to add plant: ${error.message || 'Unknown error'}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- Render functions for each step (renderPhotoStep, renderBasicInfoStep, etc.) ---
-  // These functions will use Controller for form fields and Themed components for UI.
-  // Example for one field in renderBasicInfoStep:
-  const renderPhotoStep = () => (
-    <ThemedView className="space-y-4">
-      <ThemedText className="mb-2 text-lg font-semibold">Upload Plant Photo</ThemedText>
-      {imagePreviewUri && (
-        <Image source={{ uri: imagePreviewUri }} style={{ width: '100%', height: 200, borderRadius: 8, marginBottom: 12 }} />
+            <AnimatedButton onPress={pickImage} variant="secondary">
+              <OptimizedIcon
+                name="image-outline"
+                size={20}
+                className="mr-2 text-neutral-900 dark:text-neutral-100"
+              />
+              <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
+                Gallery
+              </ThemedText>
+            </AnimatedButton>
+          </ThemedView>
+        </ThemedView>
       )}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 }}>
-        <TouchableOpacity 
-          onPress={pickImage} 
-          style={{ padding: 12, backgroundColor: theme.colors.primary[500], borderRadius: 8 }}
-          disabled={processingImage || uploadingImage}
-        >
-          <ThemedText style={{ color: theme.colors.neutral[50] }}>Pick from Gallery</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          onPress={takePhoto} 
-          style={{ padding: 12, backgroundColor: theme.colors.primary[500], borderRadius: 8 }}
-          disabled={processingImage || uploadingImage}
-        >
-          <ThemedText style={{ color: theme.colors.neutral[50] }}>Take Photo</ThemedText>
-        </TouchableOpacity>
-      </View>
-      {(uploadingImage || processingImage) && (
-        <View style={{ alignItems: 'center', marginVertical: 12 }}>
-          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
-          <ThemedText style={{ marginTop: 8, color: theme.colors.neutral[600] }}>
-            {processingImage ? 'Processing image...' : 'Uploading...'}
+    />
+  </ThemedView>
+);
+
+const BasicInfoStep: React.FC<
+  StepProps & {
+    handleStrainSelectionAndSync: (strain: any) => Promise<void>;
+    isSyncingStrain: boolean;
+    syncError: string | null;
+  }
+> = ({ control, handleStrainSelectionAndSync, isSyncingStrain, syncError }) => (
+  <ThemedView className="space-y-6">
+    {/* Plant Name */}
+    <Controller
+      control={control}
+      name="name"
+      render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+        <ThemedView>
+          <ThemedText variant="heading" className="mb-2 text-base">
+            Plant Name
           </ThemedText>
-        </View>
+          <AnimatedTextInput
+            value={value || ''}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder="My awesome plant"
+            hasError={!!error}
+          />
+          {error && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+          )}
+        </ThemedView>
       )}
-      {errors.image_url && <ThemedText style={{ color: 'red' }}>{errors.image_url.message}</ThemedText>}
-    </ThemedView>
-  );
+    />
 
-  const renderBasicInfoStep = () => (
-    <ThemedView className="space-y-4">
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Plant Name</ThemedText>
-            <TextInput
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              placeholder="My Awesome Plant"
-              style={{
-                borderWidth: 1,
-                borderColor: isDarkMode ? '#555' : '#ccc',
-                padding: 10,
-                borderRadius: 5,
-                color: isDarkMode ? '#fff' : '#000',
-                backgroundColor: isDarkMode ? '#333' : '#fff',
-              }}
-            />
-            {errors.name && <ThemedText style={{ color: 'red' }}>{errors.name.message}</ThemedText>}
-          </>
-        )}
-      />
-      <ThemedText className="mb-1 text-sm font-medium">Strain</ThemedText>
-      <StrainAutocomplete
-        onStrainSelect={handleStrainSelectionAndSync}
-        placeholder="Search and select a strain..."
-      />
-      {errors.strain && <ThemedText style={{ color: 'red' }}>{errors.strain.message}</ThemedText>}
-      {strainSyncMutation.isPending && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, marginBottom: 10 }}>
-          <ActivityIndicator size="small" color={isDarkMode ? '#fff' : '#000'} />
-          <ThemedText style={{ marginLeft: 10 }}>Syncing strain...</ThemedText>
-        </View>
+    {/* Strain Selection */}
+    <Controller
+      control={control}
+      name="strain"
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <ThemedView>
+          <ThemedText variant="heading" className="mb-2 text-base">
+            Strain
+          </ThemedText>
+          <StrainAutocomplete
+            onStrainSelect={handleStrainSelectionAndSync}
+            initialStrainName={value || ''}
+            placeholder="Search for a strain (e.g., OG Kush)"
+          />
+          {isSyncingStrain && (
+            <ThemedView className="mt-2 flex-row items-center">
+              <ActivityIndicator size="small" className="mr-2" />
+              <ThemedText variant="muted">Syncing strain data...</ThemedText>
+            </ThemedView>
+          )}
+          {syncError && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{syncError}</ThemedText>
+          )}
+          {error && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+          )}
+        </ThemedView>
       )}
+    />
 
-      <Controller
-        control={control}
-        name="cannabis_type"
-        render={({ field: { onChange, value } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Cannabis Type (Optional)</ThemedText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
-              {Object.values(CannabisType).map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => onChange(type)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: value === type ? theme.colors.primary[500] : theme.colors.neutral[700],
-                    borderRadius: 20,
-                    margin: 4,
-                  }}
-                >
-                  <ThemedText style={{ color: value === type ? theme.colors.neutral[50] : theme.colors.neutral[50] }}>
-                    {type}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {errors.cannabis_type && <ThemedText style={{ color: 'red' }}>{errors.cannabis_type.message}</ThemedText>}
-          </>
-        )}
-      />
+    {/* Cannabis Type */}
+    <Controller
+      control={control}
+      name="cannabis_type"
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <ThemedView>
+          <ThemedText variant="heading" className="mb-2 text-base">
+            Cannabis Type
+          </ThemedText>
+          <ThemedView className="flex-row space-x-2">
+            {Object.values(CannabisType).map((type) => (
+              <AnimatedSelectionButton
+                key={type}
+                onPress={() => onChange(type)}
+                selected={value === type}>
+                <ThemedText
+                  className={
+                    value === type
+                      ? 'font-medium text-white'
+                      : 'text-neutral-900 dark:text-neutral-100'
+                  }>
+                  {type}
+                </ThemedText>
+              </AnimatedSelectionButton>
+            ))}
+          </ThemedView>
+          {error && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+          )}
+        </ThemedView>
+      )}
+    />
 
-      <Controller
-        control={control}
-        name="growth_stage"
-        render={({ field: { onChange, value } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Growth Stage</ThemedText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
-              {Object.values(GrowthStage).map((stage) => (
-                <TouchableOpacity
-                  key={stage}
-                  onPress={() => onChange(stage)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: value === stage ? theme.colors.primary[500] : theme.colors.neutral[700],
-                    borderRadius: 20,
-                    margin: 4,
-                  }}
-                >
-                  <ThemedText style={{ color: value === stage ? theme.colors.neutral[50] : theme.colors.neutral[50] }}>
-                    {stage}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {errors.growth_stage && <ThemedText style={{ color: 'red' }}>{errors.growth_stage.message}</ThemedText>}
-          </>
-        )}
-      />
-    </ThemedView>
-  );
+    {/* Growth Stage */}
+    <Controller
+      control={control}
+      name="growth_stage"
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <ThemedView>
+          <ThemedText variant="heading" className="mb-2 text-base">
+            Growth Stage
+          </ThemedText>
+          <ThemedView className="flex-row flex-wrap gap-2">
+            {Object.values(GrowthStage).map((stage) => (
+              <AnimatedSelectionButton
+                key={stage}
+                onPress={() => onChange(stage)}
+                selected={value === stage}>
+                <ThemedText
+                  className={
+                    value === stage
+                      ? 'font-medium text-white'
+                      : 'text-neutral-900 dark:text-neutral-100'
+                  }>
+                  {stage}
+                </ThemedText>
+              </AnimatedSelectionButton>
+            ))}
+          </ThemedView>
+          {error && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+          )}
+        </ThemedView>
+      )}
+    />
+  </ThemedView>
+);
 
-  const renderLocationStep = () => (
-    <ThemedView className="space-y-4">
+const LocationStep: React.FC<
+  StepProps & { inputClasses: string; placeholderTextColor: string }
+> = ({ control, setValue, inputClasses, placeholderTextColor }) => {
+  const [customLocation, setCustomLocation] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
+
+  const handleCustomLocationSubmit = () => {
+    if (customLocation.trim()) {
+      setValue('location_description', customLocation, { shouldValidate: true });
+      setShowCustomInput(false);
+    }
+  };
+
+  const predefinedLocations = [
+    'Indoor Grow Tent',
+    'Outdoor Garden',
+    'Greenhouse',
+    'Balcony',
+    'Windowsill',
+    'Basement',
+    'Garage',
+    'Closet',
+  ];
+
+  return (
+    <ThemedView className="space-y-6">
       <Controller
         control={control}
         name="location_description"
-        render={({ field: { onChange, value } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Location Description</ThemedText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', marginBottom: 10 }}>
-              {Object.values(GrowLocation).map((loc) => (
-                <TouchableOpacity
-                  key={loc}
-                  onPress={() => onChange(loc)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: value === loc ? theme.colors.primary[500] : theme.colors.neutral[700],
-                    borderRadius: 20,
-                    margin: 4,
-                  }}
-                >
-                  <ThemedText style={{ color: value === loc ? theme.colors.neutral[50] : theme.colors.neutral[50] }}>
-                    {loc}
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <ThemedView>
+            <ThemedText variant="heading" className="mb-2 text-base">
+              Location
+            </ThemedText>
+
+            {/* Predefined Options */}
+            <ThemedView className="mb-4 grid grid-cols-2 gap-2">
+              {predefinedLocations.map((location) => (
+                <AnimatedSelectionButton
+                  key={location}
+                  onPress={() => onChange(location)}
+                  selected={value === location}>
+                  <ThemedText
+                    className={
+                      value === location
+                        ? 'text-center font-medium text-white'
+                        : 'text-center text-neutral-900 dark:text-neutral-100'
+                    }>
+                    {location}
                   </ThemedText>
-                </TouchableOpacity>
+                </AnimatedSelectionButton>
               ))}
-              <TouchableOpacity
-                onPress={() => setShowLocationModal(true)}
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  backgroundColor: theme.colors.yellow[500], // Example: using yellow for tertiary action
-                  borderRadius: 20,
-                  margin: 4,
-                  flexDirection: 'row',
-                  alignItems: 'center'
-                }}
-              >
-                <OptimizedIcon name="add-circle-outline" size={18} color={theme.colors.neutral[900]} />
-                <ThemedText style={{ color: theme.colors.neutral[900], marginLeft: 5 }}>Other...</ThemedText>
-              </TouchableOpacity>
-            </View>
-            {/* Display current custom location if set */}
-            {![...Object.values(GrowLocation)].includes(value as GrowLocation) && value && (
-                <ThemedText style={{ marginTop: 5, fontStyle: 'italic' }}>Selected: {value}</ThemedText>
+            </ThemedView>
+
+            {/* Custom Location Toggle */}
+            <AnimatedButton
+              onPress={() => setShowCustomInput(!showCustomInput)}
+              variant="tertiary"
+              className="mb-4">
+              <OptimizedIcon
+                name="add"
+                size={16}
+                className="mr-2 text-neutral-900 dark:text-neutral-100"
+              />
+              <ThemedText className="text-neutral-900 dark:text-neutral-100">
+                Custom Location
+              </ThemedText>
+            </AnimatedButton>
+
+            {/* Custom Location Input */}
+            {showCustomInput && (
+              <ThemedView className="flex-row space-x-2">
+                <TextInput
+                  className={`flex-1 ${inputClasses}`}
+                  placeholder="Enter custom location"
+                  placeholderTextColor={placeholderTextColor}
+                  value={customLocation}
+                  onChangeText={setCustomLocation}
+                  onSubmitEditing={handleCustomLocationSubmit}
+                />
+                <AnimatedButton onPress={handleCustomLocationSubmit} variant="primary">
+                  <OptimizedIcon name="checkmark" size={16} className="text-white" />
+                </AnimatedButton>
+              </ThemedView>
             )}
-            {errors.location_description && (
-              <ThemedText style={{ color: 'red' }}>{errors.location_description.message}</ThemedText>
+
+            {error && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
             )}
-          </>
-        )}
-      />
-      <Modal
-        visible={showLocationModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowLocationModal(false)}
-      >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <ThemedView style={{ padding: 20, borderRadius: 10, width: '80%' }}>
-            <ThemedText style={{ fontSize: 18, marginBottom: 15, fontWeight: 'bold' }}>Enter Custom Location</ThemedText>
-            <TextInput
-              placeholder="E.g., My Balcony Spot"
-              value={tempCustomLocation}
-              onChangeText={setTempCustomLocation}
-              style={{
-                borderWidth: 1,
-                borderColor: isDarkMode ? '#555' : '#ccc',
-                padding: 10,
-                borderRadius: 5,
-                color: isDarkMode ? '#fff' : '#000',
-                backgroundColor: isDarkMode ? '#333' : '#fff',
-                marginBottom: 20,
-              }}
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-              <TouchableOpacity onPress={() => setShowLocationModal(false)} style={{ padding: 10, backgroundColor: theme.colors.neutral[700], borderRadius: 5}}>
-                <ThemedText style={{color: theme.colors.neutral[50]}}>Cancel</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  const trimmedLocation = tempCustomLocation.trim();
-                  if (trimmedLocation) {
-                    setValue('location_description', trimmedLocation, { shouldValidate: true });
-                    setShowLocationModal(false);
-                    setTempCustomLocation(''); // Reset for next time
-                  } else {
-                    Alert.alert('Error', 'Custom location cannot be empty.');
-                  }
-                }}
-                style={{ padding: 10, backgroundColor: theme.colors.primary[500], borderRadius: 5}}
-              >
-                <ThemedText style={{color: theme.colors.neutral[50]}}>Save</ThemedText>
-              </TouchableOpacity>
-            </View>
           </ThemedView>
-        </View>
-      </Modal>
-    </ThemedView>
-  );
-
-  const renderLightingStep = () => (
-    <ThemedView className="space-y-4">
-      <Controller
-        control={control}
-        name="light_condition"
-        render={({ field: { onChange, value } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Light Condition (Optional)</ThemedText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
-              {Object.values(LightCondition).map((light) => (
-                <TouchableOpacity
-                  key={light}
-                  onPress={() => onChange(light)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: value === light ? theme.colors.primary[500] : theme.colors.neutral[700],
-                    borderRadius: 20,
-                    margin: 4,
-                  }}
-                >
-                  <ThemedText style={{ color: value === light ? theme.colors.neutral[50] : theme.colors.neutral[50] }}>
-                    {light}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {errors.light_condition && (
-              <ThemedText style={{ color: 'red' }}>{errors.light_condition.message}</ThemedText>
-            )}
-          </>
         )}
       />
     </ThemedView>
   );
+};
 
-  const renderDetailsStep = () => (
-    <ThemedView className="space-y-4">
-      <Controller
-        control={control}
-        name="grow_medium"
-        render={({ field: { onChange, value } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Grow Medium (Optional)</ThemedText>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
-              {Object.values(GrowMedium).map((medium) => (
-                <TouchableOpacity
-                  key={medium}
-                  onPress={() => onChange(medium)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    backgroundColor: value === medium ? theme.colors.primary[500] : theme.colors.neutral[700],
-                    borderRadius: 20,
-                    margin: 4,
-                  }}
-                >
-                  <ThemedText style={{ color: value === medium ? theme.colors.neutral[50] : theme.colors.neutral[50] }}>
-                    {medium}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {errors.grow_medium && <ThemedText style={{ color: 'red' }}>{errors.grow_medium.message}</ThemedText>}
-          </>
-        )}
-      />
-      <Controller
-        control={control}
-        name="notes"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Notes (Optional)</ThemedText>
-            <TextInput
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              placeholder="Nutrients, watering schedule, etc."
-              multiline
-              numberOfLines={4}
-              style={{
-                borderWidth: 1,
-                borderColor: isDarkMode ? '#555' : '#ccc',
-                padding: 10,
-                borderRadius: 5,
-                color: isDarkMode ? '#fff' : '#000',
-                backgroundColor: isDarkMode ? '#333' : '#fff',
-                height: 100, // Explicit height for multiline
-                textAlignVertical: 'top',
-              }}
-            />
-            {errors.notes && <ThemedText style={{ color: 'red' }}>{errors.notes.message}</ThemedText>}
-          </>
-        )}
-      />
-    </ThemedView>
-  );
+const LightingStep: React.FC<StepProps> = ({ control }) => (
+  <ThemedView className="space-y-6">
+    <Controller
+      control={control}
+      name="light_condition"
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <ThemedView>
+          <ThemedText variant="heading" className="mb-2 text-base">
+            Light Conditions
+          </ThemedText>
+          <ThemedView className="space-y-2">
+            {Object.values(LightCondition).map((condition) => (
+              <AnimatedSelectionButton
+                key={condition}
+                onPress={() => onChange(condition)}
+                selected={value === condition}>
+                <ThemedText
+                  className={
+                    value === condition
+                      ? 'font-medium text-white'
+                      : 'text-neutral-900 dark:text-neutral-100'
+                  }>
+                  {condition}
+                </ThemedText>
+              </AnimatedSelectionButton>
+            ))}
+          </ThemedView>
+          {error && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+          )}
+        </ThemedView>
+      )}
+    />
+  </ThemedView>
+);
 
-  const renderDatesStep = () => (
-    <ThemedView className="space-y-4">
+const DetailsStep: React.FC<StepProps> = ({ control }) => (
+  <ThemedView className="space-y-6">
+    {/* Growing Medium */}
+    <Controller
+      control={control}
+      name="grow_medium"
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <ThemedView>
+          <ThemedText variant="heading" className="mb-2 text-base">
+            Growing Medium
+          </ThemedText>
+          <ThemedView className="space-y-2">
+            {Object.values(GrowMedium).map((medium) => (
+              <AnimatedSelectionButton
+                key={medium}
+                onPress={() => onChange(medium)}
+                selected={value === medium}>
+                <ThemedText
+                  className={
+                    value === medium
+                      ? 'font-medium text-white'
+                      : 'text-neutral-900 dark:text-neutral-100'
+                  }>
+                  {medium}
+                </ThemedText>
+              </AnimatedSelectionButton>
+            ))}
+          </ThemedView>
+          {error && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+          )}
+        </ThemedView>
+      )}
+    />
+
+    {/* Notes */}
+    <Controller
+      control={control}
+      name="notes"
+      render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+        <ThemedView>
+          <ThemedText variant="heading" className="mb-2 text-base">
+            Notes (Optional)
+          </ThemedText>
+          <AnimatedTextInput
+            value={value || ''}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder="Add any additional notes about your plant..."
+            multiline
+            hasError={!!error}
+          />
+          {error && (
+            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+          )}
+        </ThemedView>
+      )}
+    />
+  </ThemedView>
+);
+
+const DatesStep: React.FC<StepProps> = ({ control }) => {
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  return (
+    <ThemedView className="space-y-6">
       <Controller
         control={control}
         name="planted_date"
         render={({ field: { onChange, value }, fieldState: { error } }) => (
-          <>
-            <ThemedText className="mb-1 text-sm font-medium">Planted Date</ThemedText>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{
-              borderWidth: 1,
-              borderColor: isDarkMode ? '#555' : '#ccc',
-              padding: 10,
-              borderRadius: 5,
-              backgroundColor: isDarkMode ? '#333' : '#fff',
-            }}>
-              <ThemedText style={{color: isDarkMode ? '#fff' : '#000'}}>{safeFormatDate(value)}</ThemedText>
-            </TouchableOpacity>
+          <ThemedView>
+            <ThemedText variant="heading" className="mb-2 text-base">
+              Planted Date
+            </ThemedText>
+
+            <AnimatedButton
+              onPress={() => setShowDatePicker(true)}
+              variant="secondary"
+              className="justify-start">
+              <OptimizedIcon
+                name="calendar"
+                size={20}
+                className="mr-3 text-neutral-900 dark:text-neutral-100"
+              />
+              <ThemedText className="text-neutral-900 dark:text-neutral-100">
+                {value ? safeFormatDate(value) : 'Select planted date'}
+              </ThemedText>
+            </AnimatedButton>
+
             {showDatePicker && (
               <DateTimePicker
-                value={value && isValid(new Date(value)) ? new Date(value) : new Date()}
+                value={value || new Date()}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(_event: any, selectedDate?: Date) => {
+                display="default"
+                onChange={(event, selectedDate) => {
                   setShowDatePicker(false);
-                  if (selectedDate && isValid(selectedDate)) {
-                    onChange(selectedDate);
-                  }
+                  if (selectedDate) onChange(selectedDate);
                 }}
               />
             )}
-            {error && <ThemedText style={{ color: 'red' }}>{error.message}</ThemedText>}
-          </>
+
+            {error && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+            )}
+          </ThemedView>
         )}
       />
     </ThemedView>
   );
+};
 
-  const renderCurrentStep = () => {
-    switch (currentStepId) {
-      case 'photo':
-        return renderPhotoStep();
-      case 'basicInfo':
-        return renderBasicInfoStep();
-      case 'location':
-        return renderLocationStep();
-      case 'lighting':
-        return renderLightingStep();
-      case 'details':
-        return renderDetailsStep();
-      case 'dates':
-        return renderDatesStep();
-      default:
-        return <ThemedText>Unknown step</ThemedText>;
+export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const progress = useSharedValue(0);
+  const stepTransition = useSharedValue(0);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    getValues,
+    trigger,
+  } = useForm<PlantFormData>({
+    resolver: zodResolver(plantFormSchema),
+    mode: 'onChange',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncingStrain, setIsSyncingStrain] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { database } = useDatabase();
+  const colorScheme = useColorScheme();
+
+  const progressBarStyle = useAnimatedStyle(() => ({
+    width: `${progress.value}%`,
+  }));
+
+  const stepAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: stepTransition.value }],
+    opacity: withSpring(1 - Math.abs(stepTransition.value) / 300, SPRING_CONFIG),
+  }));
+
+  const updateProgress = useCallback(() => {
+    const newProgress = ((currentStepIndex + 1) / FORM_STEPS.length) * 100;
+    progress.value = withSpring(newProgress, SPRING_CONFIG);
+  }, [currentStepIndex, progress]);
+
+  const handleStrainSelectionAndSync = async (selectedRawStrain: RawStrainApiResponse | null) => {
+    if (!selectedRawStrain) {
+      setValue('strain', '', { shouldValidate: true });
+      setSyncError(null);
+      return;
+    }
+
+    setValue('strain', selectedRawStrain.name, { shouldValidate: true });
+    setIsSyncingStrain(true);
+    setSyncError(null);
+
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 15000);
+    const checkAbort = () => {
+      if (abortController.signal.aborted) throw new Error('Operation timed out or was cancelled.');
+    };
+
+    try {
+      if (!user?.id) throw new Error('User not authenticated.');
+      if (!database) throw new Error('Database not available.');
+
+      checkAbort();
+
+      const preparedSupabaseData = prepareDataForSupabase(selectedRawStrain);
+      const supabaseStrainId = await ensureStrainInSupabase(preparedSupabaseData);
+
+      checkAbort();
+
+      if (!supabaseStrainId) {
+        throw new Error('Failed to get a valid strain from Supabase.');
+      }
+
+      const { data: supabaseStrain } = await supabase
+        .from('strains')
+        .select('*')
+        .eq('id', supabaseStrainId)
+        .single();
+
+      if (!supabaseStrain) {
+        throw new Error('Failed to retrieve strain from Supabase after creation.');
+      }
+
+      checkAbort();
+
+      const watermelonStrainId = await ensureStrainInLocalDB(supabaseStrain);
+
+      if (!watermelonStrainId) {
+        throw new Error('Failed to get a valid strain from WatermelonDB.');
+      }
+
+      // Store the strain ID in the form for later use when creating the plant
+      setValue('strain_id', watermelonStrainId, { shouldValidate: false });
+
+      console.log('Strain sync successful for:', selectedRawStrain.name);
+    } catch (error) {
+      const e = error as Error;
+      console.error('[AddPlantForm] Strain Sync Error:', e);
+      const classification = classifyStrainSyncError(e);
+      if (classification.shouldShowToUser) {
+        setSyncError(classification.userMessage || 'An unexpected error occurred.');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setIsSyncingStrain(false);
     }
   };
+
+  const goToNextStep = async () => {
+    const currentStep = FORM_STEPS[currentStepIndex];
+    if (!currentStep) return;
+
+    const currentFields = currentStep.fields;
+    const result = await trigger(currentFields);
+
+    if (result && currentStepIndex < FORM_STEPS.length - 1) {
+      // Animate step transition to next
+      stepTransition.value = withTiming(-300, { duration: 200 }, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnUI(() => {
+            stepTransition.value = 300;
+          })();
+        }
+      });
+
+      // Add haptic feedback for successful step completion
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      // Update step after a brief delay for animation
+      setTimeout(() => {
+        setCurrentStepIndex((prev) => prev + 1);
+        updateProgress();
+        stepTransition.value = withSpring(0, SPRING_CONFIG);
+      }, 100);
+    } else if (!result) {
+      // Add haptic feedback for validation error
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      const firstErrorField = currentFields.find((field) => errors[field]);
+      if (firstErrorField) {
+        Alert.alert(
+          'Incomplete Step',
+          errors[firstErrorField]?.message || 'Please fill out all required fields.'
+        );
+      }
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (currentStepIndex > 0) {
+      // Animate step transition to previous
+      stepTransition.value = withTiming(300, { duration: 200 }, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnUI(() => {
+            stepTransition.value = -300;
+          })();
+        }
+      });
+
+      // Add haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      // Update step after a brief delay for animation
+      setTimeout(() => {
+        setCurrentStepIndex((prev) => prev - 1);
+        updateProgress();
+        stepTransition.value = withSpring(0, SPRING_CONFIG);
+      }, 100);
+    }
+  };
+
+  React.useEffect(() => {
+    updateProgress();
+  }, [updateProgress]);
+
+  const processImage = async (uri: string): Promise<string | null> => {
+    try {
+      const manipulatedImage = await manipulateAsync(
+        uri,
+        [{ resize: { width: 800, height: 800 } }],
+        { compress: 0.8, format: SaveFormat.JPEG, base64: false }
+      );
+      return manipulatedImage.uri;
+    } catch (error) {
+      console.error('Error processing image:', error);
+      Alert.alert('Image Error', 'Could not process the selected image.');
+      return null;
+    }
+  };
+
+  const pickImage = useCallback(async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+    const firstAsset = result.assets[0];
+    if (!firstAsset) return;
+
+    const processedUri = await processImage(firstAsset.uri);
+    if (processedUri) setValue('image_url', processedUri, { shouldValidate: true });
+  }, [setValue]);
+
+  const takePhoto = useCallback(async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+    const firstAsset = result.assets[0];
+    if (!firstAsset) return;
+
+    const processedUri = await processImage(firstAsset.uri);
+    if (processedUri) setValue('image_url', processedUri, { shouldValidate: true });
+  }, [setValue]);
+
+  const uploadImage = async (userId: string): Promise<string | null> => {
+    const imageUri = getValues('image_url');
+    if (!imageUri) return null;
+
+    try {
+      // Image was already processed during selection (pickImage/takePhoto) - use as-is
+      // Check file size before upload to prevent OOM issues
+      const fileInfo = await FileSystem.getInfoAsync(imageUri);
+      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
+        // 10MB limit
+        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
+        return null;
+      }
+
+      // Memory-efficient upload using FileSystem instead of fetch().blob()
+      // This streams the file without loading it entirely into memory
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No valid session for upload');
+      }
+
+      // Get Supabase URL from the client configuration (consistent with lib/supabase.ts)
+      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured');
+      }
+
+      const fileName = `${userId}/plant-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/plant-images/${fileName}`;
+
+      const uploadResult = await FileSystem.uploadAsync(uploadUrl, imageUri, {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (uploadResult.status !== 200) {
+        const errorText = uploadResult.body || 'Unknown upload error';
+        console.error('Upload failed:', errorText);
+        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('plant-images').getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Upload Error', 'Could not upload image. Please try again.');
+      return null;
+    }
+  };
+
+  const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
+    if (!user?.id || !database) {
+      Alert.alert('Error', 'User not authenticated or database not available.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let imageUrl: string | null = null;
+      if (data.image_url) {
+        imageUrl = await uploadImage(user.id);
+      }
+
+      const plantData: PlantFormProps = {
+        userId: user.id,
+        name: data.name,
+        strainId: data.strain_id ?? '',
+        strain: data.strain,
+        plantedDate: data.planted_date.toISOString(),
+        growthStage: data.growth_stage,
+        cannabisType: data.cannabis_type,
+        growMedium: data.grow_medium,
+        lightCondition: data.light_condition,
+        locationDescription: data.location_description,
+        imageUrl: imageUrl ?? undefined,
+        notes: data.notes,
+      };
+
+      await database.write(async () => {
+        const plantsCollection = database.get<PlantModel>('plants');
+        await plantsCollection.create((plant: PlantModel) => {
+          plant.userId = plantData.userId;
+          plant.name = plantData.name;
+          plant.strainId = plantData.strainId;
+          plant.strain = plantData.strain;
+          // Fix: Convert Date to ISO string for WatermelonDB
+          plant.plantedDate = plantData.plantedDate;
+          plant.growthStage = plantData.growthStage;
+          // Fix: Use undefined instead of null for optional fields
+          plant.cannabisType = plantData.cannabisType || undefined;
+          plant.growMedium = plantData.growMedium || undefined;
+          plant.lightCondition = plantData.lightCondition || undefined;
+          plant.locationDescription = plantData.locationDescription || '';
+          plant.imageUrl = plantData.imageUrl ?? undefined;
+          plant.notes = plantData.notes || undefined;
+        });
+      });
+
+      Alert.alert('Success', 'Plant added successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.back();
+            onSuccess?.();
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Error adding plant:', error);
+      Alert.alert('Error', 'Could not add plant. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Memoize common input classes for performance
+  const inputClasses = useMemo(
+    () =>
+      'border border-neutral-300 dark:border-neutral-600 p-3 rounded-lg text-base bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100',
+    []
+  );
+
+  const placeholderTextColor = useMemo(
+    () => (colorScheme === 'dark' ? '#9ca3af' : '#6b7280'),
+    [colorScheme]
+  );
+
+  const renderCurrentStep = () => {
+    const commonProps = { control, setValue, errors, getValues };
+
+    switch (FORM_STEPS[currentStepIndex]?.id) {
+      case 'photo':
+        return <PhotoStep {...commonProps} takePhoto={takePhoto} pickImage={pickImage} />;
+      case 'basicInfo':
+        return (
+          <BasicInfoStep
+            {...commonProps}
+            handleStrainSelectionAndSync={handleStrainSelectionAndSync}
+            isSyncingStrain={isSyncingStrain}
+            syncError={syncError}
+          />
+        );
+      case 'location':
+        return (
+          <LocationStep
+            {...commonProps}
+            inputClasses={inputClasses}
+            placeholderTextColor={placeholderTextColor}
+          />
+        );
+      case 'lighting':
+        return <LightingStep {...commonProps} />;
+      case 'details':
+        return <DetailsStep {...commonProps} />;
+      case 'dates':
+        return <DatesStep {...commonProps} />;
+      default:
+        return null;
+    }
+  };
+
+  const currentStep = FORM_STEPS[currentStepIndex];
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.background }}
-    >
-      <ScrollView
-        contentContainerStyle={{ padding: 20, flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <ThemedView className="mb-4">
-          <ThemedText className="text-2xl font-bold text-center">{currentStepObj.title}</ThemedText>
-          {currentStepObj.description && (
-            <ThemedText className="mt-1 text-center text-muted-foreground dark:text-darkMutedForeground">
-              {currentStepObj.description}
+      className="flex-1">
+      <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        {/* Header */}
+        <ThemedView className="border-b border-neutral-200 bg-white px-4 py-6 dark:border-neutral-700 dark:bg-neutral-800">
+          <ThemedView className="mb-4 flex-row items-center justify-between">
+            <AnimatedButton onPress={() => router.back()} variant="tertiary" className="h-10 w-10">
+              <OptimizedIcon
+                name="close"
+                size={20}
+                className="text-neutral-900 dark:text-neutral-100"
+              />
+            </AnimatedButton>
+
+            <ThemedText variant="heading" className="text-lg">
+              Add Plant
             </ThemedText>
-          )}
+
+            <ThemedView className="w-10" />
+          </ThemedView>
+
+          {/* Progress Bar */}
+          <ThemedView className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+            <Animated.View
+              style={progressBarStyle}
+              className="h-full rounded-full bg-primary-500 dark:bg-primary-400"
+            />
+          </ThemedView>
+
+          <ThemedView className="mt-2 flex-row justify-between">
+            <ThemedText variant="muted" className="text-xs">
+              Step {currentStepIndex + 1} of {FORM_STEPS.length}
+            </ThemedText>
+            <ThemedText variant="muted" className="text-xs">
+              {Math.round(progress.value)}%
+            </ThemedText>
+          </ThemedView>
         </ThemedView>
 
-        {renderCurrentStep()}
-
-        <ThemedView className="mt-6 flex-row justify-between">
-          {currentStepId !== FORM_STEPS[0]?.id && (
-            <TouchableOpacity
-              onPress={goToPreviousStep}
-              className="rounded-lg bg-secondary px-6 py-3 dark:bg-darkSecondary"
-            >
-              <ThemedText className="font-semibold text-secondary-foreground dark:text-darkSecondaryForeground">
-                Back
+        {/* Step Content */}
+        <ScrollView className="flex-1 px-4 py-6" showsVerticalScrollIndicator={false}>
+          <Animated.View style={stepAnimatedStyle}>
+            <ThemedView className="mb-6">
+              <ThemedText variant="heading" className="mb-2 text-xl">
+                {currentStep?.title}
               </ThemedText>
-            </TouchableOpacity>
-          )}
-          {currentStepId === FORM_STEPS[FORM_STEPS.length - 1]?.id ? (
-            <TouchableOpacity
-              onPress={handleSubmit(onSubmit)}
-              disabled={isSubmitting || strainSyncMutation.isPending}
-              className="rounded-lg bg-primary px-6 py-3 dark:bg-darkPrimary"
-            >
-              {isSubmitting || strainSyncMutation.isPending ? (
-                <ActivityIndicator color={theme.colors.neutral[50]} />
-              ) : (
-                <ThemedText className="font-semibold text-primary-foreground dark:text-darkPrimaryForeground">
-                  Submit Plant
-                </ThemedText>
+              {currentStep?.description && (
+                <ThemedText variant="muted">{currentStep.description}</ThemedText>
               )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={goToNextStep}
-              className="rounded-lg bg-primary px-6 py-3 dark:bg-darkPrimary"
-            >
-              <ThemedText className="font-semibold text-primary-foreground dark:text-darkPrimaryForeground">
-                Next
-              </ThemedText>
-            </TouchableOpacity>
-          )}
+            </ThemedView>
+
+            {renderCurrentStep()}
+          </Animated.View>
+        </ScrollView>
+
+        {/* Footer Navigation */}
+        <ThemedView className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">
+          <ThemedView className="flex-row space-x-3">
+            {currentStepIndex > 0 && (
+              <AnimatedButton onPress={goToPreviousStep} variant="secondary" className="flex-1">
+                <OptimizedIcon
+                  name="chevron-back-outline"
+                  size={16}
+                  className="mr-2 text-neutral-900 dark:text-neutral-100"
+                />
+                <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
+                  Back
+                </ThemedText>
+              </AnimatedButton>
+            )}
+
+            {currentStepIndex < FORM_STEPS.length - 1 ? (
+              <AnimatedButton onPress={goToNextStep} variant="primary" className="flex-1">
+                <ThemedText className="mr-2 font-medium text-white">Next</ThemedText>
+                <OptimizedIcon name="chevron-forward-outline" size={16} className="text-white" />
+              </AnimatedButton>
+            ) : (
+              <AnimatedButton
+                onPress={handleSubmit(onSubmit)}
+                variant="primary"
+                className="flex-1"
+                disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <>
+                    <OptimizedIcon name="checkmark" size={16} className="mr-2 text-white" />
+                    <ThemedText className="font-medium text-white">Add Plant</ThemedText>
+                  </>
+                )}
+              </AnimatedButton>
+            )}
+          </ThemedView>
         </ThemedView>
-      </ScrollView>
+      </ThemedView>
     </KeyboardAvoidingView>
   );
 }

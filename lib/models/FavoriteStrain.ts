@@ -1,5 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, date, readonly, text } from '@nozbe/watermelondb/decorators';
+import { date, readonly, text } from '@nozbe/watermelondb/decorators';
 
 /**
  * FavoriteStrain model representing user-strain favorites in the database

@@ -1,12 +1,12 @@
 /**
  * 🎬 Animation Presets and Configurations
- * 
- * Standardized animation configurations extracted from the excellent 
+ *
+ * Standardized animation configurations extracted from the excellent
  * strains screen and PlantCard implementations.
  */
 
-import { WithSpringConfig } from 'react-native-reanimated';
 import { ImpactFeedbackStyle } from 'expo-haptics';
+import { WithSpringConfig } from 'react-native-reanimated';
 
 // 🚀 Spring Animation Configurations
 export const SPRING_CONFIGS = {
@@ -43,19 +43,19 @@ export const SPRING_CONFIGS = {
 export const SCALE_VALUES = {
   // Standard card press (from strains screen)
   cardPress: 0.97,
-  
+
   // Subtle press for small elements
   buttonPress: 0.95,
-  
+
   // Micro-interaction for tap feedback (from PlantCard)
   microPress: 0.98,
-  
+
   // Emphasis for long press (from PlantCard)
   longPress: 1.05,
-  
+
   // Slight bounce for completion states
   bounce: 1.02,
-  
+
   // Default state
   default: 1,
 } as const;
@@ -69,7 +69,7 @@ export const SHADOW_VALUES = {
     elevated: 0.25,
     prominent: 0.3,
   },
-  
+
   // Dark theme shadows
   dark: {
     default: 0.6,
@@ -81,8 +81,8 @@ export const SHADOW_VALUES = {
 
 // 🎨 Rotation Values (micro-interactions from PlantCard)
 export const ROTATION_VALUES = {
-  subtle: 1.5,    // Degrees for subtle rotation
-  none: 0,        // No rotation
+  subtle: 1.5, // Degrees for subtle rotation
+  none: 0, // No rotation
 } as const;
 
 // ⏱️ Duration Values (in milliseconds)
@@ -107,10 +107,10 @@ export const ANIMATION_PRESETS = {
   strainCard: {
     scale: SCALE_VALUES.cardPress,
     spring: SPRING_CONFIGS.smooth,
-    shadowLight: SHADOW_VALUES.light.pressed,
-    shadowDark: SHADOW_VALUES.dark.pressed,
+    shadowLight: SHADOW_VALUES.light.elevated,
+    shadowDark: SHADOW_VALUES.dark.default,
   },
-  
+
   // From PlantCard gesture system
   plantCard: {
     tap: {
@@ -126,14 +126,14 @@ export const ANIMATION_PRESETS = {
       haptic: HAPTIC_TYPES.medium,
     },
   },
-  
+
   // Standard button interactions
   button: {
     scale: SCALE_VALUES.buttonPress,
     spring: SPRING_CONFIGS.quick,
     haptic: HAPTIC_TYPES.light,
   },
-  
+
   // Loading state animations
   loading: {
     scale: 0.9,

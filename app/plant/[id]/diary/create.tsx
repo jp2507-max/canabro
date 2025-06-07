@@ -1,19 +1,13 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { ScrollView } from 'react-native'; // Removed SafeAreaView, added View
-// Removed DiaryEntryForm import
+import { ScrollView } from 'react-native';
 
 import EntryTypeSelector, { DiaryEntryType } from '../../../../components/diary/EntryTypeSelector';
 import ThemedText from '../../../../components/ui/ThemedText';
 import ThemedView from '../../../../components/ui/ThemedView';
-import { useTheme } from '../../../../lib/contexts/ThemeContext';
 
 export default function CreateDiaryEntryScreen() {
   const { id: plantId } = useLocalSearchParams<{ id: string }>();
-
-  const { theme, isDarkMode } = useTheme(); // Added isDarkMode
-
-  // Removed selectedEntryType state and related handlers
 
   const handleNavigateToForm = (type: DiaryEntryType) => {
     // Navigate to a dedicated form screen, passing plantId and type
@@ -24,52 +18,39 @@ export default function CreateDiaryEntryScreen() {
   };
 
   if (!plantId) {
-    // Use ThemedView for error state
     return (
-      <ThemedView
-        className="flex-1 items-center justify-center p-4"
-        lightClassName="bg-neutral-50"
-        darkClassName="bg-neutral-900">
+      <ThemedView className="flex-1 items-center justify-center bg-neutral-50 p-4 dark:bg-neutral-900">
         <Stack.Screen
           options={{
             title: 'Error',
             headerStyle: {
-              backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50],
+              backgroundColor: 'transparent',
             },
-            headerTintColor: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
+            headerShadowVisible: false,
           }}
         />
-        <ThemedText className="text-lg text-status-danger">Error: Plant ID is missing.</ThemedText>
+        <ThemedText className="text-status-danger text-lg">Error: Plant ID is missing.</ThemedText>
       </ThemedView>
     );
   }
 
   return (
-    // Use ThemedView for the main container
-    <ThemedView className="flex-1" lightClassName="bg-neutral-50" darkClassName="bg-neutral-900">
+    <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
       <Stack.Screen
         options={{
-          title: 'Neuer Eintrag', // Static title from image 4
+          title: 'Neuer Eintrag',
           headerStyle: {
-            backgroundColor: isDarkMode ? theme.colors.neutral[900] : theme.colors.neutral[50],
+            backgroundColor: 'transparent',
           },
-          headerTintColor: isDarkMode ? theme.colors.neutral[100] : theme.colors.neutral[900],
           headerShadowVisible: false,
-          // Add back button customization if needed
         }}
       />
-      {/* Use ScrollView directly inside ThemedView */}
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}>
-        {/* Subtitle */}
-        <ThemedText
-          className="mb-6 text-base"
-          lightClassName="text-neutral-600"
-          darkClassName="text-neutral-400">
+        <ThemedText className="mb-6 text-base text-neutral-600 dark:text-neutral-400">
           Wähle eine der folgenden Aktionen aus, um sie in dein Grow-Tagebuch einzutragen
         </ThemedText>
 
-        {/* Render the type selector - it will be modified next */}
         <EntryTypeSelector onSelectType={handleNavigateToForm} />
       </ScrollView>
     </ThemedView>

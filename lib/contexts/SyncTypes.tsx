@@ -1,8 +1,6 @@
 // Common types and interfaces for sync functionality
 // This file helps break circular dependencies between DatabaseProvider and SyncContext
 
-import { Database } from '@nozbe/watermelondb';
-
 // Common validation function used by both contexts
 export function isValidUuid(uuid: string | undefined | null): boolean {
   return typeof uuid === 'string' && uuid.length === 36 && /^[0-9a-f-]{36}$/i.test(uuid);

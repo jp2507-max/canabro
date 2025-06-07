@@ -29,5 +29,11 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 if (!RAPIDAPI_KEY) {
-  console.warn('RapidAPI Key is missing. External strain API calls will fail. Please set EXPO_PUBLIC_RAPIDAPI_KEY in your .env file.');
+  console.warn(
+    'RapidAPI Key is missing. External strain API calls will fail. Please set EXPO_PUBLIC_RAPIDAPI_KEY in your .env file.'
+  );
+  console.warn('Example: EXPO_PUBLIC_RAPIDAPI_KEY=your_key_here');
+  console.warn(
+    'Note: The EXPO_PUBLIC_ prefix is required for client-side access in React Native/Expo.'
+  );
 }

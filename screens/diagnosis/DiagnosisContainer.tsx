@@ -1,10 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useWindowDimensions, Alert } from 'react-native';
-import { useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 
 import DiagnosisView from './DiagnosisView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import { resetDatabase } from '../../lib/database/database';
 import { analyzeImage } from '../../lib/services/diagnosis-service';
 import { DiagnosisResult } from '../../lib/types/diagnosis';
@@ -17,7 +15,6 @@ const INITIAL_STATE = {
 };
 
 export default function DiagnosisContainer() {
-  const { theme } = useTheme();
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const [image, setImage] = useState<string | null>(INITIAL_STATE.image);
@@ -26,44 +23,6 @@ export default function DiagnosisContainer() {
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(
     INITIAL_STATE.diagnosisResult
   );
-
-  // Animation shared values
-  const companionScale = useSharedValue(1);
-  const companionY = useSharedValue(0);
-  const loadingRotation = useSharedValue(0);
-
-  React.useEffect(() => {
-    // Start companion animations only once
-    companionY.value = withRepeat(
-      withTiming(-10, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    );
-    companionScale.value = withRepeat(
-      withTiming(1.05, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    );
-
-    // Cleanup function to stop animations
-    return () => {
-      companionY.value = withTiming(0);
-      companionScale.value = withTiming(1);
-      loadingRotation.value = withTiming(0);
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (isAnalyzing) {
-      loadingRotation.value = withRepeat(
-        withTiming(360, { duration: 1500, easing: Easing.linear }),
-        -1,
-        false
-      );
-    } else {
-      loadingRotation.value = withTiming(0);
-    }
-  }, [isAnalyzing]);
 
   const handleCameraToggle = useCallback(() => {
     setCameraMode((prev) => !prev);
@@ -119,14 +78,10 @@ export default function DiagnosisContainer() {
 
   return (
     <DiagnosisView
-      theme={theme}
       image={image}
       cameraMode={cameraMode}
       isAnalyzing={isAnalyzing}
       diagnosisResult={diagnosisResult}
-      companionScale={companionScale}
-      companionY={companionY}
-      loadingRotation={loadingRotation}
       width={width}
       onCameraToggle={handleCameraToggle}
       onImageCaptured={handleImageCaptured}

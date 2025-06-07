@@ -16,7 +16,7 @@ function ThemedView({
   const variantClasses = {
     default: 'bg-neutral-50 dark:bg-neutral-900',
     card: 'bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700',
-    surface: 'bg-neutral-100 dark:bg-neutral-800', 
+    surface: 'bg-neutral-100 dark:bg-neutral-800',
     elevated: 'bg-white dark:bg-neutral-800 rounded-xl shadow-md',
   };
 

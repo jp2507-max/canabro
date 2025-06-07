@@ -1,9 +1,18 @@
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Pressable } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  withRepeat,
+  Easing,
+} from 'react-native-reanimated';
 
 import { OptimizedIcon, IconName } from './OptimizedIcon';
-import { useTheme } from '../../lib/contexts/ThemeContext';
+import ThemedText from './ThemedText';
 
 interface StorageImageProps {
   url: string | null;
@@ -15,11 +24,20 @@ interface StorageImageProps {
   fallbackIconSize?: number;
   onPress?: () => void;
   accessibilityLabel?: string;
+  enableRetry?: boolean;
+  showProgress?: boolean;
+  enableHaptics?: boolean;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 /**
- * A component for loading images from Supabase Storage with proper error handling
- * and fallback display.
+ * A production-ready component for loading images from Supabase Storage with:
+ * - Smooth fade-in animations using Reanimated v3
+ * - Enhanced loading states with progress indicators
+ * - Error state with retry functionality
+ * - Haptic feedback for interactions
+ * - NativeWind v4 automatic theming
  */
 export default function StorageImage({
   url,
@@ -31,117 +49,238 @@ export default function StorageImage({
   fallbackIconSize = 30,
   onPress,
   accessibilityLabel = 'Image',
+  enableRetry = true,
+  showProgress = true,
+  enableHaptics = true,
 }: StorageImageProps) {
-  const { theme, isDarkMode } = useTheme();
-  // Keep only the corrected useState declarations
-  const [isLoading, setIsLoading] = useState(!!url); // Initialize loading based on initial url presence
+  // State management
+  const [isLoading, setIsLoading] = useState(!!url);
   const [hasError, setHasError] = useState(false);
-  // Keep track of the url prop internally if needed, but base rendering logic on the prop directly
-  const [internalUrl, setInternalUrl] = useState<string | null>(url);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Handle URL changes - reset state
+  // Animation values
+  const imageOpacity = useSharedValue(0);
+  const placeholderOpacity = useSharedValue(1);
+  const errorShake = useSharedValue(0);
+  const loadingRotation = useSharedValue(0);
+  const retryScale = useSharedValue(1);
+
+  // Handle URL changes - reset state and animations
   useEffect(() => {
-    setInternalUrl(url);
     setHasError(false);
-    setIsLoading(!!url); // Reset loading state based on new url prop
-  }, [url]);
+    setIsLoading(!!url);
+    setRetryCount(0);
 
-  // Generate a cache-busting URL if needed
+    // Reset animations
+    imageOpacity.value = 0;
+    placeholderOpacity.value = 1;
+    errorShake.value = 0;
+  }, [url, imageOpacity, placeholderOpacity, errorShake]);
+
+  // Loading rotation animation
+  useEffect(() => {
+    if (isLoading && !hasError) {
+      loadingRotation.value = withRepeat(
+        withTiming(360, { duration: 1000, easing: Easing.linear }),
+        -1,
+        false
+      );
+    }
+  }, [isLoading, hasError, loadingRotation]);
+
+  // Generate cache-busting URL
   const getProcessedUrl = (originalUrl: string | null) => {
     if (!originalUrl) return null;
-
-    // Add a cache-busting parameter if not already present
-    if (!originalUrl.includes('?')) {
-      return `${originalUrl}?t=${Date.now()}`;
-    }
-    return originalUrl;
+    const separator = originalUrl.includes('?') ? '&' : '?';
+    return `${originalUrl}${separator}t=${Date.now()}&retry=${retryCount}`;
   };
 
-  // Placeholder content (loading or error)
-  const renderPlaceholder = () => {
-    if (isLoading && !hasError) {
-      return (
-        <View
-          style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator
-            size="small"
-            color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[600]}
-          />
-        </View>
-      );
-    }
+  // Handle successful image load
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
 
-    if (hasError) {
-      return (
-        <View
-          style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-          <OptimizedIcon
-            name={fallbackIconName}
-            size={fallbackIconSize}
-            color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
-          />
-        </View>
-      );
-    }
-
-    return null;
+    // Fade in image, fade out placeholder
+    imageOpacity.value = withTiming(1, { duration: 300 });
+    placeholderOpacity.value = withTiming(0, { duration: 300 });
   };
 
-  // *** Check the 'url' prop directly ***
-  // If the url prop is falsy (null or undefined), render the fallback immediately.
-  if (!url) {
+  // Handle image error
+  const handleImageError = (error: any) => {
+    console.error(`Error loading image: ${url}`, error);
+    setIsLoading(false);
+    setHasError(true);
+
+    // Error shake animation
+    errorShake.value = withSequence(
+      withTiming(-5, { duration: 50 }),
+      withTiming(5, { duration: 50 }),
+      withTiming(-3, { duration: 50 }),
+      withTiming(3, { duration: 50 }),
+      withTiming(0, { duration: 50 })
+    );
+
+    // Keep placeholder visible
+    placeholderOpacity.value = withTiming(1, { duration: 200 });
+  };
+
+  // Retry loading
+  const handleRetry = () => {
+    if (!enableRetry || retryCount >= 3) return;
+
+    if (enableHaptics) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    // Retry animation
+    retryScale.value = withTiming(0.9, { duration: 100 }, () => {
+      retryScale.value = withTiming(1, { duration: 200 });
+    });
+
+    setRetryCount((prev) => prev + 1);
+    setHasError(false);
+    setIsLoading(true);
+    imageOpacity.value = 0;
+    placeholderOpacity.value = 1;
+  };
+
+  // Animated styles
+  const imageAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: imageOpacity.value,
+  }));
+
+  const placeholderAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: placeholderOpacity.value,
+    transform: [{ translateX: errorShake.value }, { scale: retryScale.value }],
+  }));
+
+  const loadingAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        rotate: `${loadingRotation.value}deg`,
+      },
+    ],
+  }));
+
+  // Render loading indicator
+  const renderLoadingIndicator = () => (
+    <View className="h-full w-full items-center justify-center">
+      <Animated.View style={loadingAnimatedStyle}>
+        <ActivityIndicator size="small" className="text-primary-500" />
+      </Animated.View>
+      {showProgress && retryCount > 0 && (
+        <ThemedText
+          variant="caption"
+          className="mt-2 text-center text-neutral-500 dark:text-neutral-400">
+          Retry {retryCount}/3
+        </ThemedText>
+      )}
+    </View>
+  );
+
+  // Render error state
+  const renderErrorState = () => (
+    <View className="h-full w-full items-center justify-center p-2">
+      <OptimizedIcon
+        name="warning-outline"
+        size={fallbackIconSize}
+        className="text-status-danger mb-2"
+      />
+      {enableRetry && retryCount < 3 ? (
+        <Pressable
+          onPress={handleRetry}
+          className="rounded bg-primary-500 px-2 py-1"
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading image">
+          <ThemedText className="text-xs font-medium text-white">Retry</ThemedText>
+        </Pressable>
+      ) : (
+        <ThemedText
+          variant="caption"
+          className="text-center text-neutral-500 dark:text-neutral-400">
+          Failed to load
+        </ThemedText>
+      )}
+    </View>
+  );
+
+  // Render fallback for no URL
+  const renderFallback = () => (
+    <View className="h-full w-full items-center justify-center">
+      <OptimizedIcon
+        name={fallbackIconName}
+        size={fallbackIconSize}
+        className="text-neutral-600 dark:text-neutral-400"
+      />
+    </View>
+  );
+
+  // Main component render
+  const containerContent = (
+    <View
+      style={{
+        width: width as any,
+        height: height as any,
+        borderRadius,
+      }}
+      className="relative overflow-hidden bg-neutral-200 dark:bg-neutral-800">
+      {/* Image layer */}
+      {url && (
+        <Animated.View
+          style={[{ position: 'absolute', width: '100%', height: '100%' }, imageAnimatedStyle]}>
+          <Image
+            source={{ uri: getProcessedUrl(url) || undefined }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit={contentFit}
+            accessibilityLabel={accessibilityLabel}
+            transition={200}
+            cachePolicy="memory-disk"
+            onLoadStart={() => setIsLoading(true)}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        </Animated.View>
+      )}
+
+      {/* Placeholder/Loading/Error overlay */}
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+          placeholderAnimatedStyle,
+        ]}>
+        {!url
+          ? renderFallback()
+          : isLoading
+            ? renderLoadingIndicator()
+            : hasError
+              ? renderErrorState()
+              : null}
+      </Animated.View>
+    </View>
+  );
+
+  // Wrap in pressable if onPress provided
+  if (onPress) {
     return (
-      <View
-        style={{
-          width: width as any,
-          height: height as any,
-          borderRadius,
-          backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200],
-          overflow: 'hidden',
-          justifyContent: 'center', // Center fallback icon
-          alignItems: 'center', // Center fallback icon
-        }}>          <OptimizedIcon
-            name={fallbackIconName}
-            size={fallbackIconSize}
-            color={isDarkMode ? theme.colors.neutral[600] : theme.colors.neutral[400]}
-          />
-      </View>
+      <AnimatedPressable
+        onPress={() => {
+          if (enableHaptics) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+          onPress();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${accessibilityLabel}, tap to open`}>
+        {containerContent}
+      </AnimatedPressable>
     );
   }
 
-  // If url prop is truthy, proceed to render the Image component
-  return (
-    <View
-      style={{
-        width: width as any, // Type assertion to fix TypeScript error
-        height: height as any, // Type assertion to fix TypeScript error
-        borderRadius,
-        backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[200],
-        overflow: 'hidden',
-      }}>
-      <Image
-        // Use the 'url' prop directly for the source URI after processing
-        source={{ uri: getProcessedUrl(url) || undefined }}
-        style={{ width: '100%', height: '100%' }}
-        contentFit={contentFit}
-        accessibilityLabel={accessibilityLabel}
-        transition={300}
-        cachePolicy="memory-disk"
-        // Reset loading state only if the URL prop is truthy initially
-        onLoadStart={() => setIsLoading(true)}
-        onLoad={() => {
-          setIsLoading(false);
-          setHasError(false);
-        }}
-        onError={(error: any) => {
-          // Log the actual URL prop that failed
-          console.error(`Error loading image: ${url}`, error);
-          setIsLoading(false);
-          setHasError(true);
-        }}
-      />
-      {/* Show placeholder overlay only if loading or error occurred */}
-      {(isLoading || hasError) && renderPlaceholder()}
-    </View>
-  );
+  return containerContent;
 }

@@ -31,7 +31,7 @@ function isBackgroundTaskAvailable(): boolean {
   try {
     // Check if the native module is available
     return (
-      !!BackgroundTask && 
+      !!BackgroundTask &&
       typeof BackgroundTask?.registerTaskAsync === 'function' &&
       Platform.OS !== 'web'
     );

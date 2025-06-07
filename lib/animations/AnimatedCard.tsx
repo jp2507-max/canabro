@@ -1,36 +1,36 @@
 /**
  * 🃏 AnimatedCard Component
- * 
- * A reusable card component that matches the excellent design quality 
+ *
+ * A reusable card component that matches the excellent design quality
  * of the strains screen. Provides consistent styling and animations.
  */
 
 import React from 'react';
 import { View, Pressable, ViewStyle, PressableProps } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { useTheme } from '@/lib/contexts/ThemeContext';
+
 import { useCardAnimation } from './useCardAnimation';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface AnimatedCardProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
-  
+
   // Styling
   className?: string;
   style?: ViewStyle;
-  
+
   // Animation configuration
   enableAnimation?: boolean;
   enableShadowAnimation?: boolean;
   enableHaptics?: boolean;
-  
+
   // Card variants
   variant?: 'default' | 'elevated' | 'outlined' | 'strains-style';
-  
+
   // Size variants
   size?: 'small' | 'medium' | 'large';
-  
+
   // Callbacks
   onPress?: () => void;
 }
@@ -47,8 +47,6 @@ export function AnimatedCard({
   onPress,
   ...pressableProps
 }: AnimatedCardProps) {
-  const { theme, isDarkMode } = useTheme();
-
   // Card animation hook
   const { animatedStyle, handlers } = useCardAnimation({
     enableShadowAnimation,
@@ -56,99 +54,56 @@ export function AnimatedCard({
     onPress,
   });
 
-  // Variant styles based on strains screen patterns
-  const getVariantStyles = (): ViewStyle => {
-    const baseStyle: ViewStyle = {
-      backgroundColor: isDarkMode ? '#18181b' : '#fff',
-      borderRadius: 24,
-      overflow: 'hidden',
-    };
+  // Get variant-specific className
+  const getVariantClassName = (): string => {
+    const baseClasses = 'bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden';
 
     switch (variant) {
       case 'strains-style':
-        return {
-          ...baseStyle,
-          borderRadius: 26,
-          elevation: 8,
-          shadowColor: isDarkMode ? '#000' : '#34d399',
-          shadowOffset: { width: 0, height: 8 },
-          shadowRadius: 16,
-          marginHorizontal: 2,
-        };
-      
+        return `${baseClasses} mx-0.5 shadow-lg shadow-emerald-400/20 dark:shadow-black/40`;
+
       case 'elevated':
-        return {
-          ...baseStyle,
-          elevation: 5,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 8,
-        };
-      
+        return `${baseClasses} shadow-md shadow-black/10 dark:shadow-black/40`;
+
       case 'outlined':
-        return {
-          ...baseStyle,
-          borderWidth: 1,
-          borderColor: isDarkMode ? '#27272a' : '#e5e7eb',
-          elevation: 0,
-          shadowOpacity: 0,
-        };
-      
+        return `${baseClasses} border border-neutral-200 dark:border-neutral-700 shadow-none`;
+
       default:
-        return {
-          ...baseStyle,
-          elevation: 3,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 4,
-        };
+        return `${baseClasses} shadow-sm shadow-black/5 dark:shadow-black/20`;
     }
   };
 
-  // Size-based padding
-  const getSizePadding = () => {
+  // Get size-specific padding className
+  const getSizeClassName = (): string => {
     switch (size) {
       case 'small':
-        return 12;
+        return 'p-3';
       case 'large':
-        return 24;
+        return 'p-6';
       default:
-        return 16;
+        return 'p-4';
     }
   };
 
-  const variantStyles = getVariantStyles();
-  const padding = getSizePadding();
-
-  // Combine all styles
-  const combinedStyle: ViewStyle = {
-    ...variantStyles,
-    ...style,
-  };
+  const variantClassName = getVariantClassName();
+  const sizeClassName = getSizeClassName();
+  const finalClassName = `${variantClassName} ${className}`.trim();
 
   if (!enableAnimation) {
     return (
-      <Pressable
-        style={combinedStyle}
-        className={className}
-        onPress={onPress}
-        {...pressableProps}>
-        <View style={{ padding }}>
-          {children}
-        </View>
+      <Pressable style={style} className={finalClassName} onPress={onPress} {...pressableProps}>
+        <View className={sizeClassName}>{children}</View>
       </Pressable>
     );
   }
 
   return (
     <AnimatedPressable
-      style={[combinedStyle, animatedStyle]}
-      className={className}
+      style={[style, animatedStyle]}
+      className={finalClassName}
       {...handlers}
       {...pressableProps}>
-      <View style={{ padding }}>
-        {children}
-      </View>
+      <View className={sizeClassName}>{children}</View>
     </AnimatedPressable>
   );
 }

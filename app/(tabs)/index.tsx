@@ -10,7 +10,6 @@ import AddPlantModal from '../../components/ui/AddPlantModal';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import HomeHeader from '../../components/ui/HomeHeader';
 import ThemedText from '../../components/ui/ThemedText';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 
@@ -19,7 +18,6 @@ interface HomeScreenProps {
 }
 
 function HomeScreen({ database }: HomeScreenProps) {
-  const { isDarkMode } = useTheme();
   const router = useRouter();
   const { refreshing, handleRefresh } = usePullToRefresh({ showFeedback: true, forceSync: true });
   const [isAddPlantModalVisible, setIsAddPlantModalVisible] = useState(false);
@@ -53,26 +51,26 @@ function HomeScreen({ database }: HomeScreenProps) {
       onPress: handleAddPlant,
       accessibilityLabel: 'Add new plant',
       size: 48,
-      label: 'New Plant'
+      label: 'New Plant',
     },
     {
       iconName: 'pencil-outline',
       onPress: () => handleNavigateToTask('/tasks/add-task-plant'),
       accessibilityLabel: 'Add task to a plant',
       size: 48,
-      label: 'Task for Plant'
+      label: 'Task for Plant',
     },
     {
       iconName: 'layers-outline',
       onPress: () => handleNavigateToTask('/tasks/add-task-all'),
       accessibilityLabel: 'Add task to all plants',
       size: 48,
-      label: 'Task for All'
+      label: 'Task for All',
     },
   ];
 
   return (
-    <SafeAreaView className={`flex-1 ${isDarkMode ? 'bg-neutral-900' : 'bg-neutral-100'}`}>
+    <SafeAreaView className="flex-1 bg-neutral-100 dark:bg-neutral-900">
       <EnhancedPlantList
         database={database}
         isLoading={isLoading}
@@ -86,14 +84,14 @@ function HomeScreen({ database }: HomeScreenProps) {
       {/* Floating Action Button and Menu */}
       {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
       {/* Note: Padding changed from p-4 to p-6 */}
-      <View className="absolute bottom-0 right-0 p-6 z-20 items-end">
+      <View className="absolute bottom-0 right-0 z-20 items-end p-6">
         {isFabMenuOpen && (
-          <View className="mb-4 space-y-3 items-end">
+          <View className="mb-4 items-end space-y-3">
             {fabActions.map((action) => (
               <View key={action.accessibilityLabel} className="flex-row items-center">
                 {action.label && (
-                  <View className="bg-black/70 dark:bg-neutral-700/90 mr-3 px-3 py-1.5 rounded-lg shadow-md">
-                    <ThemedText className="text-white text-xs font-medium">
+                  <View className="mr-3 rounded-lg bg-black/70 px-3 py-1.5 shadow-md dark:bg-neutral-700/90">
+                    <ThemedText className="text-xs font-medium text-white">
                       {action.label}
                     </ThemedText>
                   </View>

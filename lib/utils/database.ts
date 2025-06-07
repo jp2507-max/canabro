@@ -2,10 +2,10 @@
  * Database utility functions
  */
 
-import { Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system';
+import { Alert } from 'react-native';
+
 import database from '../database/database'; // Corrected import path
-import { Plant } from '../models/Plant'; // Import Plant model for proper typing
 
 // Database file path
 const DB_NAME = 'canabro.db';
@@ -31,7 +31,7 @@ export async function resetDatabase(): Promise<void> {
       // Delete the database file
       await FileSystem.deleteAsync(dbPath);
       console.log('Database file deleted successfully. The app will restart.');
-      
+
       // Force reload/restart the app to reinitialize the database
       // This is a hack, but it works for development
       setTimeout(() => {

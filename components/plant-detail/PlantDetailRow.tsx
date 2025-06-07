@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+
 import ThemedText from '../ui/ThemedText';
 
 interface PlantDetailRowProps {
@@ -22,17 +23,12 @@ export function PlantDetailRow({
   }
 
   return (
-    <View className="mb-2.5 flex-row items-center justify-between">
-      <ThemedText
-        className={`text-base ${labelClassName}`}
-        lightClassName="text-neutral-600"
-        darkClassName="text-neutral-300">
+    <View className="mb-3 flex-row items-center justify-between">
+      <ThemedText variant="muted" className={`text-base font-medium ${labelClassName}`}>
         {label}
       </ThemedText>
       <ThemedText
-        className={`text-base font-medium ${valueClassName}`}
-        lightClassName="text-neutral-800"
-        darkClassName="text-neutral-100">
+        className={`text-base font-bold text-neutral-900 dark:text-white ${valueClassName}`}>
         {value}
         {unit}
       </ThemedText>

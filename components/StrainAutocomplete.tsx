@@ -1,12 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard, useColorScheme, ScrollView } from 'react-native';
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { debounce } from 'lodash';
+import { useColorScheme } from 'nativewind';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, TextInput, ActivityIndicator, Keyboard, ScrollView, Pressable } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withRepeat,
+  withSequence,
+  runOnUI,
+  FadeInDown,
+  FadeOutUp,
+  interpolateColor as rInterpolateColor,
+  Easing,
+  cancelAnimation,
+} from 'react-native-reanimated';
 
-import { RawStrainApiResponse } from '../lib/types/weed-db';
+import ThemedText from './ui/ThemedText';
 import { searchStrainsIntelligent } from '../lib/services/strain-search.service';
-import darkTheme from '../lib/theme/dark';
-import { theme as lightTheme } from '../lib/theme';
+import { RawStrainApiResponse } from '../lib/types/weed-db';
 
 interface StrainAutocompleteProps {
   onStrainSelect: (strain: RawStrainApiResponse | null) => void;
@@ -19,11 +34,280 @@ interface StrainAutocompleteProps {
   limit?: number;
 }
 
+// Enhanced loading indicator with optimized animations
+const AnimatedLoadingIndicator: React.FC<{
+  searchTerm: string;
+}> = ({ searchTerm }) => {
+  const { colorScheme } = useColorScheme();
+  const pulseAnimation = useSharedValue(0);
+  const dotAnimation = useSharedValue(0);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: 0.6 + pulseAnimation.value * 0.4,
+    transform: [{ scale: 1 + pulseAnimation.value * 0.1 }],
+  }));
+
+  const dotStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: dotAnimation.value * 20 }],
+  }));
+
+  useEffect(() => {
+    // Continuous pulse for the loading icon
+    pulseAnimation.value = withRepeat(
+      withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+
+    // Animated dots effect
+    dotAnimation.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 0 }),
+        withTiming(1, { duration: 500 }),
+        withTiming(2, { duration: 500 }),
+        withTiming(3, { duration: 500 })
+      ),
+      -1,
+      false
+    );
+
+    return () => {
+      cancelAnimation(pulseAnimation);
+      cancelAnimation(dotAnimation);
+    };
+  }, []);
+
+  return (
+    <Animated.View
+      className="mt-3 flex-row items-center rounded-xl border border-neutral-200 bg-primary-50 p-2 dark:border-neutral-700 dark:bg-primary-900/20"
+      entering={FadeInDown.duration(300).springify()}>
+      <Animated.View style={pulseStyle}>
+        <ActivityIndicator size="small" color={colorScheme === 'dark' ? '#8b5cf6' : '#7c3aed'} />
+      </Animated.View>
+      <View className="ml-3 flex-1">
+        <ThemedText className="text-sm font-medium text-primary-700 dark:text-primary-300">
+          {searchTerm.length <= 3
+            ? 'Searching comprehensive database'
+            : 'Searching your saved strains'}
+        </ThemedText>
+        <Animated.View className="mt-1 flex-row" style={dotStyle}>
+          <ThemedText variant="caption" className="text-primary-600 dark:text-primary-400">
+            Analyzing results...
+          </ThemedText>
+        </Animated.View>
+      </View>
+    </Animated.View>
+  );
+};
+
+// Animated suggestion item with optimized animations
+const AnimatedSuggestionItem: React.FC<{
+  strain: RawStrainApiResponse;
+  onSelect: (strain: RawStrainApiResponse) => void;
+  getSourceLabel: (source?: string) => string;
+  index: number;
+}> = ({ strain, onSelect, getSourceLabel, index }) => {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  const handlePressIn = () => {
+    runOnUI(() => {
+      'worklet';
+      scale.value = withTiming(0.96, { duration: 100 });
+      opacity.value = withTiming(0.8, { duration: 100 });
+    })();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handlePressOut = () => {
+    runOnUI(() => {
+      'worklet';
+      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+      opacity.value = withTiming(1, { duration: 150 });
+    })();
+  };
+
+  const handlePress = () => {
+    onSelect(strain);
+  };
+
+  const getSourceBadgeClass = (source?: string): string => {
+    switch (source) {
+      case 'local':
+        return 'bg-green-100 dark:bg-green-900/30';
+      case 'supabase':
+      case 'cloud':
+        return 'bg-blue-100 dark:bg-blue-900/30';
+      default:
+        return 'bg-neutral-100 dark:bg-neutral-800';
+    }
+  };
+
+  const getSourceTextClass = (source?: string): string => {
+    switch (source) {
+      case 'local':
+        return 'text-green-700 dark:text-green-300';
+      case 'supabase':
+      case 'cloud':
+        return 'text-blue-700 dark:text-blue-300';
+      default:
+        return 'text-neutral-600 dark:text-neutral-300';
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      cancelAnimation(scale);
+      cancelAnimation(opacity);
+    };
+  }, []);
+
+  return (
+    <Pressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={handlePress}
+      accessible
+      accessibilityLabel={`Select strain ${strain.name}${strain.type ? `, ${strain.type} type` : ''}`}
+      accessibilityHint={`From ${getSourceLabel(strain._source).toLowerCase()} source`}
+      accessibilityRole="button">
+      <Animated.View
+        style={animatedStyle}
+        className="flex-row items-center justify-between border-b border-neutral-200 p-3 last:border-b-0 dark:border-neutral-700"
+        entering={FadeInDown.delay(index * 50)
+          .duration(200)
+          .springify()}>
+        <View className="flex-1">
+          <ThemedText className="text-base font-medium">{strain.name}</ThemedText>
+          {strain.type && (
+            <ThemedText variant="caption" className="mt-1 italic">
+              {strain.type}
+            </ThemedText>
+          )}
+        </View>
+        <View className={`rounded-lg px-2 py-1 ${getSourceBadgeClass(strain._source)}`}>
+          <ThemedText className={`text-xs font-medium ${getSourceTextClass(strain._source)}`}>
+            {getSourceLabel(strain._source)}
+          </ThemedText>
+        </View>
+      </Animated.View>
+    </Pressable>
+  );
+};
+
+// Optimized TextInput with focus animations using React Compiler patterns
+const AnimatedTextInput: React.FC<{
+  isFocused: boolean;
+  disabled: boolean;
+  inputStyle: any;
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  onFocus: () => void;
+  onBlur: () => void;
+  label?: string;
+}> = ({
+  isFocused,
+  disabled,
+  inputStyle,
+  placeholder,
+  value,
+  onChangeText,
+  onFocus,
+  onBlur,
+  label,
+}) => {
+  const focusAnimation = useSharedValue(0);
+  const scaleAnimation = useSharedValue(1);
+  const borderAnimation = useSharedValue(0);
+
+  // Animate on focus change with React Compiler patterns
+  useEffect(() => {
+    runOnUI(() => {
+      'worklet';
+      if (isFocused) {
+        focusAnimation.value = withSpring(1, { damping: 15, stiffness: 200 });
+        scaleAnimation.value = withSpring(1.02, { damping: 20, stiffness: 300 });
+        borderAnimation.value = withTiming(1, { duration: 200 });
+      } else {
+        focusAnimation.value = withSpring(0, { damping: 15, stiffness: 200 });
+        scaleAnimation.value = withSpring(1, { damping: 20, stiffness: 300 });
+        borderAnimation.value = withTiming(0, { duration: 200 });
+      }
+    })();
+
+    return () => {
+      cancelAnimation(focusAnimation);
+      cancelAnimation(scaleAnimation);
+      cancelAnimation(borderAnimation);
+    };
+  }, [isFocused]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const borderColor = rInterpolateColor(
+      borderAnimation.value,
+      [0, 1],
+      ['rgb(163, 163, 163)', 'rgb(59, 130, 246)'] // neutral-400 to blue-500
+    );
+
+    const backgroundColor = rInterpolateColor(
+      focusAnimation.value,
+      [0, 1],
+      ['rgb(249, 250, 251)', 'rgb(255, 255, 255)'] // neutral-50 to white
+    );
+
+    return {
+      borderColor,
+      backgroundColor,
+      transform: [{ scale: scaleAnimation.value }],
+      shadowOpacity: focusAnimation.value * 0.1,
+      shadowRadius: focusAnimation.value * 4,
+      shadowOffset: { width: 0, height: focusAnimation.value * 2 },
+      elevation: focusAnimation.value * 4,
+    };
+  });
+
+  const handleFocus = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onFocus();
+  };
+
+  return (
+    <Animated.View style={[animatedStyle, { borderWidth: 1, borderRadius: 8 }]}>
+      <TextInput
+        style={[
+          inputStyle,
+          {
+            padding: 12,
+            fontSize: 16,
+          },
+        ]}
+        className="text-neutral-900 dark:text-neutral-100"
+        placeholder={placeholder}
+        placeholderTextColor="rgb(107, 114, 128)" // neutral-500
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={handleFocus}
+        onBlur={onBlur}
+        editable={!disabled}
+        accessibilityLabel={label || 'Search for cannabis strains'}
+        accessibilityHint="Type to search for strains from your saved collection, cloud database, or external sources"
+        accessibilityRole="search"
+      />
+    </Animated.View>
+  );
+};
+
 export function StrainAutocomplete({
   onStrainSelect,
   initialStrainName = '',
-  label = "Search Strain",
-  placeholder = "Type to search...",
+  label = 'Search Strain',
+  placeholder = 'Type to search...',
   inputStyle = {},
   containerStyle = {},
   disabled = false,
@@ -32,97 +316,19 @@ export function StrainAutocomplete({
   const [searchTerm, setSearchTerm] = useState<string>(initialStrainName);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(searchTerm);
   const [isFocused, setIsFocused] = useState<boolean>(false);
-  const currentColorScheme = useColorScheme();
-  const isDarkMode = currentColorScheme === 'dark';
-  const theme = isDarkMode ? darkTheme : lightTheme;
 
-  const componentStyles = StyleSheet.create({
-    container: {
-      position: 'relative',
-      width: '100%',
-      zIndex: 1,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: theme.colors.neutral[300],
-      padding: 10,
-      borderRadius: 5,
-      fontSize: 16,
-      backgroundColor: theme.colors.neutral[50],
-      color: theme.colors.neutral[900],
-    },
-    focusedInput: {
-      borderColor: theme.colors.primary[500],
-    },
-    suggestionsContainer: {
-      position: 'absolute',
-      top: '100%',
-      left: 0,
-      right: 0,
-      maxHeight: 200,
-      backgroundColor: theme.colors.neutral[100] || '#fff',
-      borderWidth: 1,
-      borderColor: theme.colors.neutral[300],
-      borderRadius: 5,
-      marginTop: 2,
-      zIndex: 1000,
-    },
-    suggestionItem: {
-      padding: 10,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.neutral[200],
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    suggestionText: {
-      fontSize: 16,
-      color: theme.colors.neutral[900],
-      flex: 1,
-    },
-    sourceIndicator: {
-      fontSize: 12,
-      color: theme.colors.neutral[500],
-      fontStyle: 'italic',
-    },
-    sourceLabel: {
-      fontSize: 10,
-      color: theme.colors.neutral[600],
-      backgroundColor: theme.colors.neutral[100],
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 8,
-      overflow: 'hidden',
-      textAlign: 'center',
-      fontWeight: '500',
-    },
-    errorText: {
-      color: theme.colors.status?.danger || '#ff0000',
-      marginTop: 5,
-    },
-    label: {
-      fontSize: 16,
-      marginBottom: 5,
-      color: theme.colors.neutral[900],
-      fontWeight: 'bold',
-    },
-    sourceHeader: {
-      padding: 8,
-      backgroundColor: theme.colors.neutral[50],
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.neutral[200],
-    },
-    sourceHeaderText: {
-      fontSize: 12,
-      color: theme.colors.neutral[600],
-    },
-  });
+  // Container animation for the entire component
+  const containerScale = useSharedValue(1);
+
+  const containerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: containerScale.value }],
+  }));
 
   const debouncedSetSearch = useCallback(
     debounce((text: string) => {
       setDebouncedSearchTerm(text);
     }, 300),
-    [],
+    []
   );
 
   useEffect(() => {
@@ -137,6 +343,17 @@ export function StrainAutocomplete({
     };
   }, [debouncedSetSearch]);
 
+  // Animate container on focus with cleanup
+  useEffect(() => {
+    if (isFocused) {
+      containerScale.value = withSpring(1, { damping: 20, stiffness: 400 });
+    }
+
+    return () => {
+      cancelAnimation(containerScale);
+    };
+  }, [isFocused]);
+
   const {
     data: searchResult,
     isLoading,
@@ -147,32 +364,44 @@ export function StrainAutocomplete({
       if (!debouncedSearchTerm.trim()) {
         return { strains: [], sources: { local: 0, supabase: 0, external: 0 }, hasMore: false };
       }
-      
-      console.log(`[StrainAutocomplete] Searching for "${debouncedSearchTerm}" using intelligent search`);
-      
+
+      console.log(
+        `[StrainAutocomplete] Searching for "${debouncedSearchTerm}" using intelligent search`
+      );
+
       const results = await searchStrainsIntelligent(debouncedSearchTerm, limit);
-      
-      console.log(`[StrainAutocomplete] Found ${results.strains.length} results for "${debouncedSearchTerm}"`, {
-        sources: results.sources,
-        hasMore: results.hasMore
-      });
-      
+
+      console.log(
+        `[StrainAutocomplete] Found ${results.strains.length} results for "${debouncedSearchTerm}"`,
+        {
+          sources: results.sources,
+          hasMore: results.hasMore,
+        }
+      );
+
       return results;
     },
     enabled: !!debouncedSearchTerm.trim() && isFocused,
     gcTime: 1000 * 60 * 5,
     staleTime: 1000 * 60 * 2,
-  });  const strainData = searchResult?.strains || [];
+  });
+
+  const strainData = searchResult?.strains || [];
   const sources = searchResult?.sources || { local: 0, supabase: 0, external: 0 };
   const hasMore = searchResult?.hasMore || false;
 
   const getSourceLabel = (source?: string): string => {
     switch (source) {
-      case 'local': return 'Local';
-      case 'supabase': return 'Supabase';
-      case 'cloud': return 'Cloud';
-      case 'external': return 'External';
-      default: return 'Unknown';
+      case 'local':
+        return 'Local';
+      case 'supabase':
+        return 'Cloud';
+      case 'cloud':
+        return 'Cloud';
+      case 'external':
+        return 'External';
+      default:
+        return 'Unknown';
     }
   };
 
@@ -182,101 +411,113 @@ export function StrainAutocomplete({
     onStrainSelect(strain);
     setIsFocused(false);
     Keyboard.dismiss();
+
+    // Success haptic feedback
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => setIsFocused(false), 100);
   };
 
   return (
-    <View style={[componentStyles.container, containerStyle]}>
-      {label ? <Text style={componentStyles.label}>{label}</Text> : null}
-      <TextInput
-        style={[componentStyles.input, isFocused && componentStyles.focusedInput, inputStyle]}
+    <Animated.View
+      style={[containerStyle, containerAnimatedStyle]}
+      className="relative z-10 w-full">
+      {label ? (
+        <Animated.Text
+          className="mb-2 text-base font-bold text-neutral-900 dark:text-white"
+          entering={FadeInDown.duration(200)}>
+          {label}
+        </Animated.Text>
+      ) : null}
+
+      <AnimatedTextInput
+        isFocused={isFocused}
+        disabled={disabled}
+        inputStyle={inputStyle}
         placeholder={placeholder}
         value={searchTerm}
         onChangeText={setSearchTerm}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => {
-          setTimeout(() => setIsFocused(false), 100);
-        }}
-        editable={!disabled}
-        placeholderTextColor={theme.colors.neutral[400]}
-        accessibilityLabel={label || "Search for cannabis strains"}
-        accessibilityHint="Type to search for strains from your saved collection, cloud database, or external sources"
-        accessibilityRole="search"
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        label={label}
       />
-      
-      {isLoading && isFocused && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
-          <ActivityIndicator size="small" color={theme.colors.primary[500]} />
-          <Text style={{ marginLeft: 8, color: theme.colors.neutral[600] }}>
-            {debouncedSearchTerm.length <= 3 
-              ? "Searching comprehensive strain database..." 
-              : "Searching your saved strains..."}
-          </Text>
-        </View>
-      )}
-      
+
+      {isLoading && isFocused && <AnimatedLoadingIndicator searchTerm={debouncedSearchTerm} />}
+
       {error && isFocused && error.message && (
-        <Text style={componentStyles.errorText}>Error: {error.message}</Text>
+        <Animated.View
+          className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20"
+          entering={FadeInDown.duration(300).springify()}>
+          <ThemedText className="text-sm font-medium text-red-700 dark:text-red-300">
+            Error: {error.message}
+          </ThemedText>
+        </Animated.View>
       )}
-      
+
       {isFocused && !isLoading && !error && strainData && strainData.length > 0 && (
-        <View style={componentStyles.suggestionsContainer}>
+        <Animated.View
+          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-52 rounded-xl bg-white shadow-md dark:bg-neutral-800"
+          entering={FadeInDown.duration(300).springify()}
+          exiting={FadeOutUp.duration(200)}>
           {(sources.local > 0 || sources.supabase > 0 || sources.external > 0) && (
-            <View 
-              style={componentStyles.sourceHeader}              accessibilityRole="text"
-              accessibilityLabel={`Search results: ${sources.local} saved locally, ${sources.supabase} from supabase, ${sources.external} from external sources`}
-            >
-              <Text style={componentStyles.sourceHeaderText}>
+            <Animated.View
+              className="rounded-t-lg border-b border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900"
+              entering={FadeInDown.duration(200)}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`Search results: ${sources.local} saved locally, ${sources.supabase} from cloud, ${sources.external} from external sources`}>
+              <ThemedText variant="caption" className="font-medium">
                 {sources.local > 0 && `${sources.local} saved`}
                 {sources.local > 0 && (sources.supabase > 0 || sources.external > 0) && ' • '}
-                {sources.supabase > 0 && `${sources.supabase} supabase`}
+                {sources.supabase > 0 && `${sources.supabase} cloud`}
                 {sources.supabase > 0 && sources.external > 0 && ' • '}
                 {sources.external > 0 && `${sources.external} external`}
                 {hasMore && ' • Type more for refined results'}
-              </Text>
-            </View>
+              </ThemedText>
+            </Animated.View>
           )}
-          
+
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            style={{ maxHeight: 200 }}
-          >
+            className="max-h-52">
             {strainData.map((item, index) => (
-              <TouchableOpacity
+              <AnimatedSuggestionItem
                 key={item.api_id || `strain-${index}`}
-                style={componentStyles.suggestionItem}
-                onPress={() => handleSelectStrain(item)}                accessibilityLabel={`Select strain ${item.name}${item.type ? `, ${item.type} type` : ''}`}
-                accessibilityHint={`From ${getSourceLabel(item._source).toLowerCase()} source`}
-                accessibilityRole="button"
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={componentStyles.suggestionText}>{item.name}</Text>
-                  {item.type && (
-                    <Text style={[componentStyles.sourceIndicator, { marginTop: 2 }]}>
-                      {item.type}
-                    </Text>
-                  )}
-                </View>                <Text style={componentStyles.sourceLabel}>
-                  {getSourceLabel(item._source)}
-                </Text>
-              </TouchableOpacity>
+                strain={item}
+                onSelect={handleSelectStrain}
+                getSourceLabel={getSourceLabel}
+                index={index}
+              />
             ))}
           </ScrollView>
-        </View>
+        </Animated.View>
       )}
-      
+
       {isFocused &&
         !isLoading &&
         !error &&
         strainData &&
         strainData.length === 0 &&
         debouncedSearchTerm.trim() && (
-          <View style={componentStyles.suggestionsContainer}>
-            <Text style={[componentStyles.suggestionItem, componentStyles.suggestionText]}>
-              No strains found. Try a different spelling or fewer characters.
-            </Text>
-          </View>
+          <Animated.View
+            className="absolute left-0 right-0 top-full z-50 mt-2 rounded-xl bg-white shadow-md dark:bg-neutral-800"
+            entering={FadeInDown.duration(300).springify()}
+            exiting={FadeOutUp.duration(200)}>
+            <View className="p-4">
+              <ThemedText className="mb-1 text-base font-medium">No strains found</ThemedText>
+              <ThemedText variant="muted" className="text-sm">
+                Try a different spelling or fewer characters.
+              </ThemedText>
+            </View>
+          </Animated.View>
         )}
-    </View>
+    </Animated.View>
   );
 }

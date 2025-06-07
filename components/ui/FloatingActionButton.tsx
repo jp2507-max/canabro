@@ -1,5 +1,7 @@
+import * as Haptics from 'expo-haptics';
 import React, { useEffect } from 'react';
 import { Pressable } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,8 +9,6 @@ import Animated, {
   withSequence,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import * as Haptics from 'expo-haptics';
 
 import { OptimizedIcon, type IconName } from './OptimizedIcon';
 
@@ -70,7 +70,7 @@ export function FloatingActionButton({
       rotation.value = withSpring(0, { damping: 20, stiffness: 400 });
       shadowOpacity.value = withSpring(0.25, { damping: 15, stiffness: 400 });
       elevation.value = withSpring(8, { damping: 15, stiffness: 400 });
-      
+
       // Trigger haptic and execute onPress
       runOnJS(triggerHaptic)();
       runOnJS(onPress)();
@@ -126,10 +126,7 @@ export function FloatingActionButton({
   // Animated style with sophisticated shadow and transform effects
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { scale: scale.value },
-        { rotateZ: `${rotation.value}deg` }
-      ],
+      transform: [{ scale: scale.value }, { rotateZ: `${rotation.value}deg` }],
       shadowOpacity: shadowOpacity.value,
       elevation: elevation.value,
     };
@@ -138,7 +135,7 @@ export function FloatingActionButton({
   // Animated icon style for enhanced visual feedback
   const animatedIconStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ scale: iconScale.value }]
+      transform: [{ scale: iconScale.value }],
     };
   });
 
@@ -163,18 +160,13 @@ export function FloatingActionButton({
             shadowRadius: 12,
             // Android elevation for shadow
             elevation: 8,
-          }
+          },
         ]}
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
-        testID={testID}
-      >
+        testID={testID}>
         <Animated.View style={animatedIconStyle}>
-          <OptimizedIcon 
-            name={iconName} 
-            size={size * 0.54} 
-            color="white" 
-          />
+          <OptimizedIcon name={iconName} size={size * 0.54} color="white" />
         </Animated.View>
       </AnimatedPressable>
     </GestureDetector>

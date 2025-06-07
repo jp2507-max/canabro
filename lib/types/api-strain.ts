@@ -18,7 +18,7 @@ export interface ApiStrain {
   terpenes?: string[] | string | null; // Array of terpene names or a single string
   effects?: string[] | string | null; // Array of effect names or a single string
   flavors?: string[] | string | null; // Array of flavor names or a single string
-  
+
   // Additional potentially useful fields from various APIs
   breeder?: string | null;
   origin?: string[] | string | null; // Geographical origins
@@ -28,7 +28,7 @@ export interface ApiStrain {
   heightOutdoor?: string | number | null; // e.g., "150-250cm" or "Tall"
   growDifficulty?: string | null; // e.g., "Easy", "Medium", "Hard"
   harvestTimeOutdoor?: string | null; // e.g., "End of October"
-  
+
   // It's good practice to allow for other potential fields
   [key: string]: any; // Allows for any other properties that might come from the API
 }
@@ -41,9 +41,7 @@ export interface ApiStrain {
  */
 export function isApiStrain(obj: any): obj is ApiStrain {
   return (
-    obj &&
-    typeof obj.api_id === 'string' &&
-    typeof obj.name === 'string'
+    obj && typeof obj.api_id === 'string' && typeof obj.name === 'string'
     // Add more checks for essential fields if necessary
   );
 }

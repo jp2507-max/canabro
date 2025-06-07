@@ -15,7 +15,7 @@ export interface HapticOptions {
 export const triggerLightHaptic = async (options: HapticOptions = {}): Promise<void> => {
   const { enabled = true } = options;
   if (!enabled) return;
-  
+
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   } catch (error) {
@@ -29,7 +29,7 @@ export const triggerLightHaptic = async (options: HapticOptions = {}): Promise<v
 export const triggerMediumHaptic = async (options: HapticOptions = {}): Promise<void> => {
   const { enabled = true } = options;
   if (!enabled) return;
-  
+
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   } catch (error) {
@@ -43,7 +43,7 @@ export const triggerMediumHaptic = async (options: HapticOptions = {}): Promise<
 export const triggerHeavyHaptic = async (options: HapticOptions = {}): Promise<void> => {
   const { enabled = true } = options;
   if (!enabled) return;
-  
+
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   } catch (error) {
@@ -57,7 +57,7 @@ export const triggerHeavyHaptic = async (options: HapticOptions = {}): Promise<v
 export const triggerSuccessHaptic = async (options: HapticOptions = {}): Promise<void> => {
   const { enabled = true } = options;
   if (!enabled) return;
-  
+
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   } catch (error) {
@@ -71,7 +71,7 @@ export const triggerSuccessHaptic = async (options: HapticOptions = {}): Promise
 export const triggerWarningHaptic = async (options: HapticOptions = {}): Promise<void> => {
   const { enabled = true } = options;
   if (!enabled) return;
-  
+
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   } catch (error) {
@@ -85,7 +85,7 @@ export const triggerWarningHaptic = async (options: HapticOptions = {}): Promise
 export const triggerErrorHaptic = async (options: HapticOptions = {}): Promise<void> => {
   const { enabled = true } = options;
   if (!enabled) return;
-  
+
   try {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
   } catch (error) {
@@ -99,7 +99,7 @@ export const triggerErrorHaptic = async (options: HapticOptions = {}): Promise<v
 export const triggerSelectionHaptic = async (options: HapticOptions = {}): Promise<void> => {
   const { enabled = true } = options;
   if (!enabled) return;
-  
+
   try {
     await Haptics.selectionAsync();
   } catch (error) {

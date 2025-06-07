@@ -5,32 +5,11 @@
  */
 
 import { Database } from '@nozbe/watermelondb';
+
 import { isValidUuid } from './data-sanitizer';
 import { loadStrainFromDatabase } from './strain-loader';
-
 // Import types from the strain-loader
 import type { StrainObject } from './strain-loader';
-
-// WatermelonDB model interface - keeping for reference
-// This can be removed later as we now import StrainObject from strain-loader
-interface StrainModel {
-  id: string;
-  name: string;
-  type?: string;
-  genetics?: string;
-  description?: string;
-  thc_content?: number;
-  cbd_content?: number;
-  flowering_time?: number;
-  yield_indoor?: string;
-  yield_outdoor?: string;
-  difficulty?: string;
-  effects?: string[] | string;
-  flavors?: string[] | string;
-  medical_uses?: string[] | string;
-  created_at?: string;
-  updated_at?: string;
-}
 
 interface PlantRecord {
   id: string;
@@ -209,14 +188,10 @@ export async function validatePlantRecord(
 
   // Handle camelCase vs snake_case field names (bidirectional)
   if (validatedRecord.strainId && !validatedRecord.strain_id) {
-    console.log(
-      `[Plant Validation] Converting strainId ${validatedRecord.strainId} to strain_id`
-    );
+    console.log(`[Plant Validation] Converting strainId ${validatedRecord.strainId} to strain_id`);
     validatedRecord.strain_id = validatedRecord.strainId;
   } else if (validatedRecord.strain_id && !validatedRecord.strainId) {
-    console.log(
-      `[Plant Validation] Converting strain_id ${validatedRecord.strain_id} to strainId`
-    );
+    console.log(`[Plant Validation] Converting strain_id ${validatedRecord.strain_id} to strainId`);
     validatedRecord.strainId = validatedRecord.strain_id;
   }
 
@@ -232,7 +207,7 @@ export async function validatePlantRecord(
 
   // Get the most reliable strain ID (prioritize snake_case for DB interactions)
   const effectiveStrainId = validatedRecord.strain_id || validatedRecord.strainId;
-  
+
   // Validate strain UUID format before attempting database queries
   if (effectiveStrainId && !isValidUuid(effectiveStrainId)) {
     throw new Error(`[Plant Validation] Invalid strain UUID: ${effectiveStrainId}`);
@@ -254,7 +229,9 @@ export async function validatePlantRecord(
       let strainObj;
       if (strainCache) {
         if (!strainCache.has(effectiveStrainId)) {
-          console.log(`[Plant Validation] Loading strain ${effectiveStrainId} from database (cache miss)`);
+          console.log(
+            `[Plant Validation] Loading strain ${effectiveStrainId} from database (cache miss)`
+          );
           const strain = await loadStrainFromDatabase(database, effectiveStrainId);
           strainCache.set(effectiveStrainId, strain);
         } else {
@@ -270,7 +247,7 @@ export async function validatePlantRecord(
         console.log(
           `[Plant Validation] Found strain "${strainObj.name}" for ID ${effectiveStrainId}`
         );
-        
+
         // Assign the loaded strain object
         validatedRecord.strainObj = strainObj;
 

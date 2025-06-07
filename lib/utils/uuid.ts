@@ -12,11 +12,6 @@ import { v4 as uuidv4, validate as isValidUuidOriginal } from 'uuid';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
- * Namespace for generating deterministic UUIDs (RFC4122 DNS namespace)
- */
-const UUID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-
-/**
  * Generates a new UUID v4
  * @returns A new randomly generated UUID v4 string
  */

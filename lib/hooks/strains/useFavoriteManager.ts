@@ -1,9 +1,6 @@
-import { Q } from '@nozbe/watermelondb';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '../../contexts/AuthProvider';
-import { database } from '../../models';
-import { FavoriteStrain } from '../../models/FavoriteStrain';
 import {
   addFavoriteStrain,
   removeFavoriteStrain,

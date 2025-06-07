@@ -1,10 +1,20 @@
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Alert, Modal, Pressable } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { isDevelopment, authConfig } from '../lib/config';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { resetDatabase } from '../lib/utils/database';
-import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface DevModeIndicatorProps {
   showFullDetails?: boolean;
@@ -19,23 +29,57 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
   const [modalVisible, setModalVisible] = useState(false);
   const insets = useSafeAreaInsets();
 
+  // Animation values
+  const authButtonScale = useSharedValue(1);
+  const indicatorScale = useSharedValue(1);
+
   const handleReset = async () => {
     // Confirm before resetting
     Alert.alert(
-      "Reset Database",
-      "This will delete your local database to fix schema issues. This action cannot be undone. Are you sure?",
+      'Reset Database',
+      'This will delete your local database to fix schema issues. This action cannot be undone. Are you sure?',
       [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Reset", 
-          style: "destructive",
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
           onPress: async () => {
             await resetDatabase();
-          }
-        }
+          },
+        },
       ]
     );
   };
+
+  // Animated styles
+  const authButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: authButtonScale.value }],
+  }));
+
+  const indicatorAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: indicatorScale.value }],
+  }));
+
+  // Gesture handlers
+  const authButtonGesture = Gesture.Tap()
+    .onBegin(() => {
+      authButtonScale.value = withTiming(0.95, { duration: 100 });
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+    })
+    .onFinalize(() => {
+      authButtonScale.value = withSpring(1, { damping: 15, stiffness: 400 });
+      runOnJS(devBypassAuth)();
+    });
+
+  const indicatorGesture = Gesture.Tap()
+    .onBegin(() => {
+      indicatorScale.value = withTiming(0.9, { duration: 100 });
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+    })
+    .onFinalize(() => {
+      indicatorScale.value = withSpring(1, { damping: 15, stiffness: 400 });
+      runOnJS(setModalVisible)(true);
+    });
 
   // Don't show anything in production mode
   if (!isDevelopment) {
@@ -64,46 +108,37 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
         <Text style={styles.detail}>User ID: {user?.id || 'Not logged in'}</Text>
 
         {!authConfig.forceDevBypass && (
-          <TouchableOpacity style={styles.button} onPress={() => devBypassAuth()}>
-            <Text style={styles.buttonText}>Use Dev Auth</Text>
-          </TouchableOpacity>
+          <GestureDetector gesture={authButtonGesture}>
+            <Animated.View style={[styles.button, authButtonAnimatedStyle]}>
+              <Text style={styles.buttonText}>Use Dev Auth</Text>
+            </Animated.View>
+          </GestureDetector>
         )}
       </View>
 
-      <TouchableOpacity 
-        style={[
-          styles.indicator, 
-          { top: insets.top + 10 }
-        ]}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.indicatorText}>DEV</Text>
-      </TouchableOpacity>
+      <GestureDetector gesture={indicatorGesture}>
+        <Animated.View style={[styles.indicator, { top: insets.top + 10 }, indicatorAnimatedStyle]}>
+          <Text style={styles.indicatorText}>DEV</Text>
+        </Animated.View>
+      </GestureDetector>
 
       <Modal
         animationType="fade"
         transparent
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <BlurView intensity={50} style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Developer Options</Text>
-            
+
             <View style={styles.buttonSection}>
               <Text style={styles.sectionTitle}>Database</Text>
-              <Pressable 
-                style={styles.actionButton}
-                onPress={handleReset}
-              >
+              <Pressable style={styles.actionButton} onPress={handleReset}>
                 <Text style={styles.actionButtonText}>Reset Database (Fix Schema)</Text>
               </Pressable>
             </View>
-            
-            <Pressable 
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
+
+            <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
             </Pressable>
           </View>

@@ -1,9 +1,13 @@
-import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, AccessibilityInfo, ViewStyle } from 'react-native';
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
+import React, { memo } from 'react';
+import { View, Text, Pressable, AccessibilityInfo, ViewStyle } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
+
 import { useButtonAnimation } from '../../lib/animations/useButtonAnimation';
+import { useGestureAnimation } from '../../lib/animations/useGestureAnimation';
 import type { Strain } from '../../lib/types/strains.js';
 
 interface StrainCardProps {
@@ -13,13 +17,25 @@ interface StrainCardProps {
 }
 
 const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) => {
-  const { animatedStyle, handlers } = useButtonAnimation();
+  const { colorScheme } = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
-  const handlePress = () => {
-    // Announce navigation for screen readers
-    AccessibilityInfo.announceForAccessibility(`Opening ${strain.name} details`);
-    router.push(`/catalog/${strain.id}`);
-  };
+  // 🎯 Modern gesture animation for main card
+  const { gesture: cardGesture, animatedStyle } = useGestureAnimation({
+    enableHaptics: true,
+    onTap: () => {
+      // Announce navigation for screen readers
+      AccessibilityInfo.announceForAccessibility(`Opening ${strain.name} details`);
+      router.push(`/catalog/${strain.id}`);
+    },
+  });
+
+  // 🎯 Separate animation for favorite button
+  const { animatedStyle: favoriteAnimatedStyle, handlers: favoriteHandlers } = useButtonAnimation({
+    enableHaptics: true,
+    hapticStyle: 'light',
+    onPress: () => onToggleFavorite?.(strain),
+  });
 
   const getTypeIcon = (type: string) => {
     switch (type?.toLowerCase()) {
@@ -33,6 +49,7 @@ const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) =
         return 'leaf-outline';
     }
   };
+
   const getTypeColor = (type: string) => {
     switch (type?.toLowerCase()) {
       case 'indica':
@@ -49,167 +66,157 @@ const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) =
   const getIconColor = (type: string) => {
     switch (type?.toLowerCase()) {
       case 'indica':
-        return '#9333ea'; // purple-600
+        return isDarkMode ? '#c084fc' : '#9333ea'; // purple-400 : purple-600
       case 'sativa':
-        return '#ea580c'; // orange-600
+        return isDarkMode ? '#fb923c' : '#ea580c'; // orange-400 : orange-600
       case 'hybrid':
-        return '#16a34a'; // green-600
+        return isDarkMode ? '#4ade80' : '#16a34a'; // green-400 : green-600
       default:
-        return '#525252'; // neutral-600
+        return isDarkMode ? '#a3a3a3' : '#525252'; // neutral-400 : neutral-600
     }
   };
+
   const formatEffects = (effects: string[] | undefined) => {
     if (!effects?.length) return 'No effects listed';
     return effects.slice(0, 3).join(' • ');
   };
 
   return (
-    <Animated.View 
-      style={animatedStyle as ViewStyle}
-      className="mx-4 mb-4"
-    >
-      <TouchableOpacity
-        onPress={handlePress}
-        onPressIn={handlers.onPressIn}
-        onPressOut={handlers.onPressOut}
-        className="bg-white dark:bg-neutral-800 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700 shadow-sm"
-        accessible={true}
-        accessibilityRole="button"
-        accessibilityLabel={`${strain.name} strain card`}
-        accessibilityHint={`Double tap to view details for ${strain.name}, a ${strain.type} strain`}
-        testID={`strain-card-${strain.id}`}
-      >
-        {/* Header */}
-        <View className="flex-row items-start justify-between mb-3">
-          <View className="flex-1 mr-3">
-            <Text 
-              className="text-lg font-semibold text-neutral-900 dark:text-white mb-1"
-              numberOfLines={2}
-              accessible={true}
-              accessibilityLabel={`Strain name: ${strain.name}`}
-            >
-              {strain.name}
-            </Text>
+    <Animated.View className="mx-4 mb-4">
+      <GestureDetector gesture={cardGesture}>
+        <Animated.View
+          style={animatedStyle as ViewStyle}
+          className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800"
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={`${strain.name} strain card`}
+          accessibilityHint={`Double tap to view details for ${strain.name}, a ${strain.type} strain`}
+          testID={`strain-card-${strain.id}`}>
+          {/* Header */}
+          <View className="mb-3 flex-row items-start justify-between">
+            <View className="mr-3 flex-1">
+              <Text
+                className="mb-1 text-lg font-semibold text-neutral-900 dark:text-white"
+                numberOfLines={2}
+                accessible
+                accessibilityLabel={`Strain name: ${strain.name}`}>
+                {strain.name}
+              </Text>
               {strain.type && (
-              <View className="flex-row items-center">
-                <Ionicons 
-                  name={getTypeIcon(strain.type)} 
-                  size={16} 
-                  color={getIconColor(strain.type)}
+                <View className="flex-row items-center">
+                  <Ionicons
+                    name={getTypeIcon(strain.type)}
+                    size={16}
+                    color={getIconColor(strain.type)}
+                  />
+                  <Text
+                    className={`ml-2 text-sm font-medium ${getTypeColor(strain.type)}`}
+                    accessible
+                    accessibilityLabel={`Type: ${strain.type}`}>
+                    {strain.type.charAt(0).toUpperCase() + strain.type.slice(1)}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* 🎯 Enhanced Favorite Button with Modern Animation */}
+            <Animated.View style={favoriteAnimatedStyle as ViewStyle}>
+              <Pressable
+                onPressIn={favoriteHandlers.onPressIn}
+                onPressOut={favoriteHandlers.onPressOut}
+                onPress={favoriteHandlers.onPress}
+                className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-700"
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={
+                  strain.is_favorite ? 'Remove from favorites' : 'Add to favorites'
+                }
+                testID={`favorite-button-${strain.id}`}>
+                <Ionicons
+                  name={strain.is_favorite ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={strain.is_favorite ? '#ef4444' : isDarkMode ? '#a3a3a3' : '#525252'}
                 />
-                <Text 
-                  className={`ml-2 text-sm font-medium ${getTypeColor(strain.type)}`}
-                  accessible={true}
-                  accessibilityLabel={`Type: ${strain.type}`}
-                >
-                  {strain.type.charAt(0).toUpperCase() + strain.type.slice(1)}
-                </Text>
-              </View>
-            )}
+              </Pressable>
+            </Animated.View>
           </View>
 
-          {/* Favorite Icon */}
-          <TouchableOpacity
-            onPress={() => onToggleFavorite?.(strain)}
-            className="p-2 rounded-full bg-neutral-100 dark:bg-neutral-700"
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={strain.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
-            testID={`favorite-button-${strain.id}`}
-          >
-            <Ionicons 
-              name={strain.is_favorite ? 'heart' : 'heart-outline'} 
-              size={20} 
-              color={strain.is_favorite ? '#ef4444' : undefined}
-              className="text-neutral-600 dark:text-neutral-400"
-            />
-          </TouchableOpacity>
-        </View>
+          {/* THC/CBD Info */}
+          {(strain.thc_content || strain.cbd_content) && (
+            <View className="mb-3 flex-row justify-between">
+              {strain.thc_content && (
+                <View className="mr-2 flex-1">
+                  <Text
+                    className="mb-1 text-xs text-neutral-500 dark:text-neutral-400"
+                    accessible
+                    accessibilityLabel="THC content">
+                    THC
+                  </Text>
+                  <Text
+                    className="text-sm font-medium text-neutral-900 dark:text-white"
+                    accessible
+                    accessibilityLabel={`${strain.thc_content} percent THC`}>
+                    {strain.thc_content}%
+                  </Text>
+                </View>
+              )}
 
-        {/* THC/CBD Info */}
-        {(strain.thc_content || strain.cbd_content) && (
-          <View className="flex-row justify-between mb-3">
-            {strain.thc_content && (
-              <View className="flex-1 mr-2">
-                <Text 
-                  className="text-xs text-neutral-500 dark:text-neutral-400 mb-1"
-                  accessible={true}
-                  accessibilityLabel="THC content"
-                >
-                  THC
-                </Text>
-                <Text 
-                  className="text-sm font-medium text-neutral-900 dark:text-white"
-                  accessible={true}
-                  accessibilityLabel={`${strain.thc_content} percent THC`}
-                >
-                  {strain.thc_content}%
-                </Text>
-              </View>
-            )}
-            
-            {strain.cbd_content && (
-              <View className="flex-1 ml-2">
-                <Text 
-                  className="text-xs text-neutral-500 dark:text-neutral-400 mb-1"
-                  accessible={true}
-                  accessibilityLabel="CBD content"
-                >
-                  CBD
-                </Text>
-                <Text 
-                  className="text-sm font-medium text-neutral-900 dark:text-white"
-                  accessible={true}
-                  accessibilityLabel={`${strain.cbd_content} percent CBD`}
-                >
-                  {strain.cbd_content}%
-                </Text>
-              </View>
-            )}
+              {strain.cbd_content && (
+                <View className="ml-2 flex-1">
+                  <Text
+                    className="mb-1 text-xs text-neutral-500 dark:text-neutral-400"
+                    accessible
+                    accessibilityLabel="CBD content">
+                    CBD
+                  </Text>
+                  <Text
+                    className="text-sm font-medium text-neutral-900 dark:text-white"
+                    accessible
+                    accessibilityLabel={`${strain.cbd_content} percent CBD`}>
+                    {strain.cbd_content}%
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Effects */}
+          <View className="mb-3">
+            <Text
+              className="mb-1 text-xs text-neutral-500 dark:text-neutral-400"
+              accessible
+              accessibilityLabel="Effects">
+              Effects
+            </Text>
+            <Text
+              className="text-sm text-neutral-700 dark:text-neutral-300"
+              numberOfLines={2}
+              accessible
+              accessibilityLabel={`Effects: ${formatEffects(strain.effects)}`}>
+              {formatEffects(strain.effects)}
+            </Text>
           </View>
-        )}
 
-        {/* Effects */}
-        <View className="mb-3">
-          <Text 
-            className="text-xs text-neutral-500 dark:text-neutral-400 mb-1"
-            accessible={true}
-            accessibilityLabel="Effects"
-          >
-            Effects
-          </Text>
-          <Text 
-            className="text-sm text-neutral-700 dark:text-neutral-300"
-            numberOfLines={2}
-            accessible={true}
-            accessibilityLabel={`Effects: ${formatEffects(strain.effects)}`}
-          >
-            {formatEffects(strain.effects)}
-          </Text>
-        </View>
+          {/* Description */}
+          {strain.description && (
+            <Text
+              className="text-sm leading-5 text-neutral-600 dark:text-neutral-400"
+              numberOfLines={3}
+              accessible
+              accessibilityLabel={`Description: ${strain.description}`}>
+              {strain.description}
+            </Text>
+          )}
 
-        {/* Description */}
-        {strain.description && (
-          <Text 
-            className="text-sm text-neutral-600 dark:text-neutral-400 leading-5"
-            numberOfLines={3}
-            accessible={true}
-            accessibilityLabel={`Description: ${strain.description}`}
-          >
-            {strain.description}
-          </Text>
-        )}        {/* View Details Indicator */}
-        <View className="flex-row items-center justify-end mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
-          <Text className="text-sm text-primary-600 dark:text-primary-400 mr-1">
-            View Details
-          </Text>
-          <Ionicons 
-            name="chevron-forward" 
-            size={16} 
-            color="#10b981"
-          />
-        </View>
-      </TouchableOpacity>
+          {/* View Details Indicator */}
+          <View className="mt-3 flex-row items-center justify-end border-t border-neutral-100 pt-3 dark:border-neutral-700">
+            <Text className="mr-1 text-sm text-primary-600 dark:text-primary-400">
+              View Details
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#10b981" />
+          </View>
+        </Animated.View>
+      </GestureDetector>
     </Animated.View>
   );
 });

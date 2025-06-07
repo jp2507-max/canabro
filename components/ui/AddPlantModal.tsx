@@ -1,5 +1,8 @@
+import { BlurView as ExpoBlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import React, { useEffect } from 'react';
 import { Modal, Platform, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,9 +13,6 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { BlurView as ExpoBlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 
 import { OptimizedIcon } from './OptimizedIcon';
 import ThemedText from './ThemedText';
@@ -27,7 +27,7 @@ interface AddPlantModalProps {
 
 export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProps) {
   const { height: screenHeight } = useWindowDimensions();
-  
+
   // Reanimated v3 shared values for sophisticated modal animations
   const modalTranslateY = useSharedValue(screenHeight);
   const backdropOpacity = useSharedValue(0);
@@ -60,7 +60,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
     modalTranslateY.value = withSpring(0, ENTRANCE_CONFIG);
     backdropOpacity.value = withTiming(1, { duration: 300 });
     blurIntensity.value = withTiming(20, { duration: 400 });
-    
+
     // Staggered content animations for polish
     headerScale.value = withSequence(
       withTiming(1.05, { duration: 200 }),
@@ -96,11 +96,10 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
     });
 
   // Backdrop tap to close gesture
-  const backdropGesture = Gesture.Tap()
-    .onEnd(() => {
-      'worklet';
-      runOnJS(hideModal)();
-    });
+  const backdropGesture = Gesture.Tap().onEnd(() => {
+    'worklet';
+    runOnJS(hideModal)();
+  });
 
   // Swipe down to dismiss gesture
   const swipeGesture = Gesture.Pan()
@@ -129,10 +128,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
   // Animated styles with sophisticated interpolations
   const animatedModalStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { translateY: modalTranslateY.value },
-        { scale: headerScale.value }
-      ],
+      transform: [{ translateY: modalTranslateY.value }, { scale: headerScale.value }],
     };
   });
 
@@ -150,12 +146,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
   const animatedBlurStyle = useAnimatedStyle(() => {
     return {
-      opacity: interpolate(
-        blurIntensity.value,
-        [0, 20],
-        [0, 1],
-        Extrapolation.CLAMP
-      ),
+      opacity: interpolate(blurIntensity.value, [0, 20], [0, 1], Extrapolation.CLAMP),
     };
   });
 
@@ -168,7 +159,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
       headerScale.value = 0.95;
       contentOpacity.value = 0;
       blurIntensity.value = 0;
-      
+
       // Small delay for smooth entrance
       setTimeout(() => {
         showModal();
@@ -194,28 +185,19 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
       animationType="none" // We handle animations manually
       transparent
       onRequestClose={hideModal}
-      statusBarTranslucent={Platform.OS === 'android'}
-    >
+      statusBarTranslucent={Platform.OS === 'android'}>
       {/* Enhanced backdrop with blur effect */}
       <GestureDetector gesture={backdropGesture}>
-        <Animated.View 
-          className="absolute inset-0"
-          style={animatedBackdropStyle}
-        >
-          <Animated.View 
+        <Animated.View className="absolute inset-0" style={animatedBackdropStyle}>
+          <Animated.View
             style={[
               { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-              animatedBlurStyle
-            ]}
-          >
-            <ExpoBlurView
-              intensity={20}
-              style={{ flex: 1 }}
-              tint="systemMaterialDark"
-            />
+              animatedBlurStyle,
+            ]}>
+            <ExpoBlurView intensity={20} style={{ flex: 1 }} tint="systemMaterialDark" />
           </Animated.View>
           {/* Gradient overlay for enhanced depth */}
-          <Animated.View 
+          <Animated.View
             className="absolute inset-0 bg-black/20 dark:bg-black/40"
             style={animatedBackdropStyle}
           />
@@ -224,16 +206,13 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
       {/* Enhanced modal container with gestures */}
       <GestureDetector gesture={swipeGesture}>
-        <Animated.View
-          className="flex-1 justify-end"
-          style={animatedModalStyle}
-        >
-          <ThemedView className="mx-4 mb-8 overflow-hidden rounded-3xl bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl">
+        <Animated.View className="flex-1 justify-end" style={animatedModalStyle}>
+          <ThemedView className="mx-4 mb-8 overflow-hidden rounded-3xl bg-white/95 backdrop-blur-xl dark:bg-neutral-900/95">
             {/* Enhanced header with sophisticated styling */}
             <ThemedView className="border-b border-neutral-200/50 dark:border-neutral-700/50">
               {/* Swipe indicator */}
               <ThemedView className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-              
+
               <ThemedView className="flex-row items-center justify-between p-6 pb-4">
                 <ThemedView className="flex-1">
                   <ThemedText className="text-2xl font-extrabold text-neutral-900 dark:text-white">
@@ -243,18 +222,18 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
                     Start your growing journey
                   </ThemedText>
                 </ThemedView>
-                
-                                 {/* Enhanced close button with gesture feedback */}
-                 <GestureDetector gesture={closeButtonGesture}>
-                   <Animated.View className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800">
-                     <OptimizedIcon
-                       name="close"
-                       size={24}
-                       color="#6b7280"
-                       accessibilityLabel="Close modal"
-                     />
-                   </Animated.View>
-                 </GestureDetector>
+
+                {/* Enhanced close button with gesture feedback */}
+                <GestureDetector gesture={closeButtonGesture}>
+                  <Animated.View className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800">
+                    <OptimizedIcon
+                      name="close"
+                      size={24}
+                      color="#6b7280"
+                      accessibilityLabel="Close modal"
+                    />
+                  </Animated.View>
+                </GestureDetector>
               </ThemedView>
             </ThemedView>
 

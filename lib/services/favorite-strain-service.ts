@@ -5,7 +5,7 @@
  * with robust error handling to prevent 'collections.has is not a function' errors
  */
 
-import { Q, Model, Collection } from '@nozbe/watermelondb';
+import { Q, Collection } from '@nozbe/watermelondb';
 
 import { database } from '../models';
 import { FavoriteStrain } from '../models/FavoriteStrain';
@@ -187,22 +187,22 @@ async function ensureStrainExistsInSupabase(
     // Helper function to parse percentage values
     const parsePercentage = (value?: string | number): number | null => {
       if (value === null || value === undefined || value === 'Unknown') return null;
-      
+
       if (typeof value === 'number') return value;
-      
+
       // Extract numbers from strings like "22%" or "15-20%"
       const match = String(value).match(/(\d+(?:\.\d+)?)/);
       if (match && match[1]) {
         return parseFloat(match[1]);
       }
-      
+
       return null;
     };
 
     // Helper function to extract flowering time in weeks
     const extractFloweringTimeInWeeks = (value?: string): number | null => {
       if (!value) return null;
-      
+
       // Handle ranges like "7-8 weeks"
       const match = value.match(/(\d+)(?:-(\d+))?\s*weeks?/i);
       if (match) {
@@ -211,7 +211,7 @@ async function ensureStrainExistsInSupabase(
         if (match[1]) return parseInt(match[1], 10);
         return null;
       }
-      
+
       return null;
     };
 
@@ -229,9 +229,10 @@ async function ensureStrainExistsInSupabase(
         thc_percentage: parsePercentage(strainData.thc),
         cbd_percentage: parsePercentage(strainData.cbd),
         grow_difficulty: strainData.growDifficulty || null,
-        average_yield: strainData.yieldIndoor && strainData.yieldOutdoor 
-          ? `Indoor: ${strainData.yieldIndoor}, Outdoor: ${strainData.yieldOutdoor}`
-          : (strainData.yieldIndoor || strainData.yieldOutdoor || null),
+        average_yield:
+          strainData.yieldIndoor && strainData.yieldOutdoor
+            ? `Indoor: ${strainData.yieldIndoor}, Outdoor: ${strainData.yieldOutdoor}`
+            : strainData.yieldIndoor || strainData.yieldOutdoor || null,
         flowering_time: extractFloweringTimeInWeeks(strainData.floweringTime),
         image_url: strainData.image || null,
         genetics: strainData.genetics || null,

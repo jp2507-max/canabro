@@ -15,7 +15,7 @@ function ThemedText({
   // Define base classes for each variant using NativeWind dark: prefix
   const variantClasses = {
     default: 'text-neutral-900 dark:text-neutral-100',
-    muted: 'text-neutral-600 dark:text-neutral-400', 
+    muted: 'text-neutral-600 dark:text-neutral-400',
     heading: 'text-neutral-900 dark:text-white font-bold',
     caption: 'text-neutral-500 dark:text-neutral-500 text-sm',
   };

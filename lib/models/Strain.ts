@@ -75,11 +75,13 @@ export class Strain extends Model {
     this.parents = JSON.stringify(parents);
   }
 
-  getOrigin(): string[] { // Assuming origin might also be an array, if not, this can be simplified
+  getOrigin(): string[] {
+    // Assuming origin might also be an array, if not, this can be simplified
     return this.origin ? JSON.parse(this.origin) : [];
   }
 
-  setOrigin(origin: string[]): void { // Assuming origin might also be an array
+  setOrigin(origin: string[]): void {
+    // Assuming origin might also be an array
     this.origin = JSON.stringify(origin);
   }
 }

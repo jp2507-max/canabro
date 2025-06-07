@@ -72,10 +72,14 @@ export default {
       },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        NSCameraUsageDescription: 'This app needs camera access to take photos of your plants for tracking and identification purposes.',
-        NSMicrophoneUsageDescription: 'This app may need microphone access for video recording features.',
-        NSPhotoLibraryUsageDescription: 'This app needs access to your photo library to select existing photos of your plants for tracking and identification purposes.',
-        NSPhotoLibraryAddUsageDescription: 'This app needs permission to save photos of your plants to your photo library.',
+        NSCameraUsageDescription:
+          'This app needs camera access to take photos of your plants for tracking and identification purposes.',
+        NSMicrophoneUsageDescription:
+          'This app may need microphone access for video recording features.',
+        NSPhotoLibraryUsageDescription:
+          'This app needs access to your photo library to select existing photos of your plants for tracking and identification purposes.',
+        NSPhotoLibraryAddUsageDescription:
+          'This app needs permission to save photos of your plants to your photo library.',
         UIBackgroundModes: ['fetch', 'processing'],
       },
       associatedDomains: ['applinks:YOUR_APP_LINK_DOMAIN'],

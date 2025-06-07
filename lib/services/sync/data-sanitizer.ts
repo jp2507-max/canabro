@@ -109,20 +109,30 @@ export function sanitizeRecord(record: any, table: string): any {
       delete cleanedRecord.strainId;
     } else if (record.strainId !== undefined) {
       // Also check the original record (before copy)
-      console.log(`[Plant Sync Fix] Converting original record strainId to strain_id: ${record.strainId}`);
+      console.log(
+        `[Plant Sync Fix] Converting original record strainId to strain_id: ${record.strainId}`
+      );
       cleanedRecord.strain_id = record.strainId;
     } else if (record._raw && record._raw.strainId) {
       // Try to get from _raw property if available (direct WatermelonDB record)
-      console.log(`[Plant Sync Fix] Converting _raw.strainId to strain_id: ${record._raw.strainId}`);
+      console.log(
+        `[Plant Sync Fix] Converting _raw.strainId to strain_id: ${record._raw.strainId}`
+      );
       cleanedRecord.strain_id = record._raw.strainId;
     } else {
       console.log(`[Plant Sync Debug] Plant record has no strainId field: ${cleanedRecord.id}`);
     }
 
     // Check if plant has strain information and ensure strain_id is properly preserved
-    if (cleanedRecord.strain && typeof cleanedRecord.strain === 'string' && !cleanedRecord.strain_id) {
+    if (
+      cleanedRecord.strain &&
+      typeof cleanedRecord.strain === 'string' &&
+      !cleanedRecord.strain_id
+    ) {
       // Log that we're seeing a plant with strain name but no strain_id
-      console.log(`[Plant Sync] Plant ${cleanedRecord.id} has strain name "${cleanedRecord.strain}" but no strain_id`);
+      console.log(
+        `[Plant Sync] Plant ${cleanedRecord.id} has strain name "${cleanedRecord.strain}" but no strain_id`
+      );
     }
 
     // Remove any strain relation objects that shouldn't be sent to Supabase

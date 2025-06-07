@@ -108,27 +108,35 @@ export class Plant extends Model {
         const { getStrainById } = require('../data/strains');
         const strain = getStrainById(this.strainId);
         if (strain) {
-          console.log(`[Plant.setStrainRelation] Found strain for ID ${this.strainId}:`, strain.name);
-          
+          console.log(
+            `[Plant.setStrainRelation] Found strain for ID ${this.strainId}:`,
+            strain.name
+          );
+
           // ENHANCEMENT: Store the strain object directly in a property that will be included in sync
           // This ensures the strain data is available during the sync process
-          this.update(plant => {
+          this.update((plant) => {
             // Store these fields explicitly to ensure they're available during sync
             plant.strain = strain.name; // Ensure strain name is always set
             plant.strainId = strain.id; // Reinforce the ID connection
-            
+
             // Set additional strain properties that might be useful
             if (strain.type) plant.cannabisType = strain.type;
-            
+
             // Log detailed info for debugging
-            console.log('[Plant.setStrainRelation] Updated plant with strain data. Plant will now have:');
+            console.log(
+              '[Plant.setStrainRelation] Updated plant with strain data. Plant will now have:'
+            );
             console.log('- strain:', plant.strain);
             console.log('- strainId:', plant.strainId);
             console.log('- cannabisType:', plant.cannabisType);
           });
-          
+
           // Log for debugging
-          console.log('[Plant.setStrainRelation] Strain data available for sync:', JSON.stringify(strain, null, 2));
+          console.log(
+            '[Plant.setStrainRelation] Strain data available for sync:',
+            JSON.stringify(strain, null, 2)
+          );
         } else {
           console.warn(`[Plant.setStrainRelation] No strain found for ID ${this.strainId}`);
         }
@@ -177,27 +185,27 @@ export class Plant extends Model {
     console.log('========= PLANT-STRAIN RELATION DEBUG =========');
     console.log(`Plant ID: ${this.id}`);
     console.log(`Plant Name: ${this.name}`);
-    
+
     // Check how the properties are stored/accessed in different ways
     console.log(`Direct properties:`);
-    console.log(`- this.strain: ${this.strain}`)
-    console.log(`- this.strainId: ${this.strainId}`)
-    
+    console.log(`- this.strain: ${this.strain}`);
+    console.log(`- this.strainId: ${this.strainId}`);
+
     // Raw access
-    console.log(`\nRaw property access:`)
+    console.log(`\nRaw property access:`);
     try {
       // @ts-ignore - Access raw properties for debugging
-      console.log(`- _raw.strain: ${this._raw?.strain}`)
+      console.log(`- _raw.strain: ${this._raw?.strain}`);
       // @ts-ignore
-      console.log(`- _raw.strain_id: ${this._raw?.strain_id}`)
+      console.log(`- _raw.strain_id: ${this._raw?.strain_id}`);
       // @ts-ignore
-      console.log(`- _raw.strainId: ${this._raw?.strainId}`)
+      console.log(`- _raw.strainId: ${this._raw?.strainId}`);
     } catch (e) {
       console.log('Error accessing _raw properties:', e);
     }
-    
+
     // Check relation
-    console.log(`\nRelation access:`)
+    console.log(`\nRelation access:`);
     try {
       if (this.strainObj) {
         console.log(`- strainObj exists: Yes`);
@@ -205,11 +213,11 @@ export class Plant extends Model {
         console.log(`- strainObj.name: ${this.strainObj.name}`);
       } else {
         console.log(`- strainObj exists: No`);
-        
+
         // Try fetching with the relation API
         const { getStrainById } = require('../data/strains');
         const strain = this.strainId ? getStrainById(this.strainId) : null;
-        
+
         if (strain) {
           console.log(`- Strain found via getStrainById: Yes`);
           console.log(`- Found strain.id: ${strain.id}`);
@@ -221,7 +229,7 @@ export class Plant extends Model {
     } catch (e) {
       console.log('Error checking relation:', e);
     }
-    
+
     console.log('===========================================');
   }
 

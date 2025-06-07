@@ -13,20 +13,20 @@ const IconMapping: Record<string, IconName> = {
   profile: 'person-circle-outline',
   diagnosis: 'camera',
   strains: 'leaf',
-  
+
   // Action icons
   add: 'add',
   edit: 'pencil',
   delete: 'trash',
   save: 'checkmark',
   cancel: 'close',
-  
+
   // Plant related icons
   plant: 'leaf-outline',
   water: 'water-outline',
   fertilizer: 'flask-outline',
   growth: 'stats-chart-outline', // Using stats chart as trending-up is not available
-  
+
   // Camera and media
   camera: 'camera',
   gallery: 'images-outline',
@@ -46,16 +46,16 @@ interface IconProps {
   testID?: string;
 }
 
-export function AppIcon({ 
-  name, 
-  size = 24, 
+export function AppIcon({
+  name,
+  size = 24,
   color = '#000',
   style,
   accessibilityLabel,
-  testID 
+  testID,
 }: IconProps) {
   const optimizedIconName = IconMapping[name];
-  
+
   // Fallback to default if the icon doesn't exist (this shouldn't happen with proper mapping)
   if (!optimizedIconName) {
     console.warn(`AppIcon: Unknown icon name "${name}", falling back to default`);
@@ -70,7 +70,7 @@ export function AppIcon({
       />
     );
   }
-  
+
   return (
     <OptimizedIcon
       name={optimizedIconName}

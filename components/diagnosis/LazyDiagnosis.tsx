@@ -11,7 +11,7 @@ interface LazyDiagnosisProps {
 }
 
 const LoadingFallback = () => (
-  <View className="flex-1 justify-center items-center p-4">
+  <View className="flex-1 items-center justify-center p-4">
     <ActivityIndicator size="large" color="#16a34a" />
     <Text className="mt-2 text-gray-600">Loading AI diagnosis...</Text>
   </View>
@@ -20,11 +20,7 @@ const LoadingFallback = () => (
 export function LazyDiagnosis({ image, onDiagnosisComplete, onError }: LazyDiagnosisProps) {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <DiagnosisAI 
-        image={image}
-        onDiagnosisComplete={onDiagnosisComplete}
-        onError={onError}
-      />
+      <DiagnosisAI image={image} onDiagnosisComplete={onDiagnosisComplete} onError={onError} />
     </Suspense>
   );
 }

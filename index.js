@@ -1,6 +1,6 @@
 /**
  * Main entry point for the app
- * 
+ *
  * Load polyfills first, then initialize React Native
  */
 

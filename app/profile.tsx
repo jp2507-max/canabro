@@ -1,6 +1,15 @@
 import { withObservables } from '@nozbe/watermelondb/react';
 import React, { ComponentType } from 'react';
 import { ActivityIndicator } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withRepeat,
+} from 'react-native-reanimated';
 import { of as of$ } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 
@@ -8,7 +17,6 @@ import ProfileScreenBase from '../components/profile/ProfileScreenBase';
 import ThemedText from '../components/ui/ThemedText';
 import ThemedView from '../components/ui/ThemedView';
 import { useAuth } from '../lib/contexts/AuthProvider';
-import { useTheme } from '../lib/contexts/ThemeContext';
 import { Profile } from '../lib/models/Profile';
 
 // --- Data Fetching HOC ---
@@ -68,26 +76,67 @@ const enhance = withObservables(['userId'], ({ userId }: ProfileContainerProps) 
   }
 });
 
+const LoadingScreen: React.FC = () => {
+  const spinnerOpacity = useSharedValue(0.6);
+  const spinnerScale = useSharedValue(1);
+
+  React.useEffect(() => {
+    // Breathing animation for loading spinner
+    spinnerOpacity.value = withRepeat(
+      withSequence(
+        withSpring(1, { damping: 15, stiffness: 200 }),
+        withSpring(0.6, { damping: 15, stiffness: 200 })
+      ),
+      -1,
+      true
+    );
+
+    spinnerScale.value = withRepeat(
+      withSequence(
+        withSpring(1.1, { damping: 10, stiffness: 150 }),
+        withSpring(1, { damping: 10, stiffness: 150 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedSpinnerStyle = useAnimatedStyle(() => ({
+    opacity: spinnerOpacity.value,
+    transform: [{ scale: spinnerScale.value }],
+  }));
+
+  return (
+    <ThemedView
+      variant="default"
+      className="flex-1 items-center justify-center bg-neutral-50 p-6 dark:bg-neutral-900">
+      <Animated.View entering={FadeIn.duration(800)} style={animatedSpinnerStyle}>
+        <ActivityIndicator
+          size="large"
+          color="rgb(34 197 94)" // primary-500
+        />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(300).duration(600)}>
+        <ThemedText
+          variant="muted"
+          className="mt-4 text-base font-medium text-neutral-600 dark:text-neutral-400"
+          accessibilityRole="text"
+          accessibilityLabel="Loading your profile">
+          Loading your profile...
+        </ThemedText>
+      </Animated.View>
+    </ThemedView>
+  );
+};
+
 const ProfileScreenContainer: React.FC = () => {
   const { user } = useAuth();
-  const { theme, isDarkMode } = useTheme();
   const userId = user?.id;
+
   if (!userId) {
-    return (
-      <ThemedView
-        className="flex-1 items-center justify-center p-4"
-        lightClassName="bg-background"
-        darkClassName="bg-neutral-900">
-        <ActivityIndicator size="large" color={theme.colors.primary[isDarkMode ? 400 : 500]} />
-        <ThemedText
-          className="mt-3 text-base"
-          lightClassName="text-neutral-600"
-          darkClassName="text-neutral-400">
-          Authenticating...
-        </ThemedText>
-      </ThemedView>
-    );
+    return <LoadingScreen />;
   }
+
   const EnhancedProfileScreen = enhance(ProfileScreenBase as ComponentType<any>);
   return <EnhancedProfileScreen userId={userId} />;
 };

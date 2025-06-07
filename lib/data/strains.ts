@@ -15,17 +15,6 @@ export interface Strain {
   growDifficulty?: 'easy' | 'moderate' | 'hard';
 }
 
-interface Effect {
-  id: string;
-  name: string;
-  type: 'positive' | 'negative' | 'medical';
-}
-
-interface Flavor {
-  id: string;
-  name: string;
-}
-
 // Mock database for strain search
 const mockStrains: Strain[] = [
   {

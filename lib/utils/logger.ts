@@ -30,7 +30,8 @@ function logMessage(level: LogLevel, message: string, ...optionalParams: unknown
       break;
     case LogLevel.ERROR:
       console.error(messagePrefix, ...(optionalParams as any[]));
-      break;    default: {
+      break;
+    default: {
       // Exhaustive check – will error at compile-time if a new enum member appears
       const _exhaustive: never = level;
       console.log(messagePrefix, ...(optionalParams as any[]));
@@ -40,10 +41,14 @@ function logMessage(level: LogLevel, message: string, ...optionalParams: unknown
 }
 
 export const log = {
-  debug: (message: string, ...optionalParams: unknown[]) => logMessage(LogLevel.DEBUG, message, ...optionalParams),
-  info: (message: string, ...optionalParams: unknown[]) => logMessage(LogLevel.INFO, message, ...optionalParams),
-  warn: (message: string, ...optionalParams: unknown[]) => logMessage(LogLevel.WARN, message, ...optionalParams),
-  error: (message: string, ...optionalParams: unknown[]) => logMessage(LogLevel.ERROR, message, ...optionalParams),
+  debug: (message: string, ...optionalParams: unknown[]) =>
+    logMessage(LogLevel.DEBUG, message, ...optionalParams),
+  info: (message: string, ...optionalParams: unknown[]) =>
+    logMessage(LogLevel.INFO, message, ...optionalParams),
+  warn: (message: string, ...optionalParams: unknown[]) =>
+    logMessage(LogLevel.WARN, message, ...optionalParams),
+  error: (message: string, ...optionalParams: unknown[]) =>
+    logMessage(LogLevel.ERROR, message, ...optionalParams),
 };
 
 // Example of a more specific logger if needed, e.g., for API calls

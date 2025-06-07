@@ -31,13 +31,13 @@ export function parseOptionalStringArray(value: any): string[] {
     return [];
   }
   if (Array.isArray(value)) {
-    return value.filter(item => typeof item === 'string');
+    return value.filter((item) => typeof item === 'string');
   }
   if (typeof value === 'string') {
     try {
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) {
-        return parsed.filter(item => typeof item === 'string');
+        return parsed.filter((item) => typeof item === 'string');
       }
       return [];
     } catch (error) {
@@ -126,15 +126,17 @@ export function extractFloweringTime(value?: string | number | null): FloweringT
       return result;
     }
   }
-  
+
   // If it's just a number, assume it might be days if large, or weeks if small (heuristic)
   if (typeof value === 'number' && !isNaN(value)) {
-    if (value > 30) { // Arbitrary threshold: if > 30, assume days
-        result.minWeeks = Math.round(value / 7);
-        result.maxWeeks = result.minWeeks;
-    } else { // Assume weeks
-        result.minWeeks = value;
-        result.maxWeeks = value;
+    if (value > 30) {
+      // Arbitrary threshold: if > 30, assume days
+      result.minWeeks = Math.round(value / 7);
+      result.maxWeeks = result.minWeeks;
+    } else {
+      // Assume weeks
+      result.minWeeks = value;
+      result.maxWeeks = value;
     }
     return result;
   }

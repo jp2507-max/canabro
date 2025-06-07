@@ -5,15 +5,16 @@
 
 import React, { useCallback } from 'react';
 import { View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   runOnJS,
   withSpring,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { triggerSelectionHaptic } from '../../lib/utils/haptics';
+
 import ThemedText from './ThemedText';
+import { triggerSelectionHaptic } from '../../lib/utils/haptics';
 
 interface PotencySliderProps {
   label: string;
@@ -49,14 +50,20 @@ export default function PotencySlider({
   enableHaptics = true,
 }: PotencySliderProps) {
   // Convert values to positions
-  const valueToPosition = useCallback((value: number) => {
-    return ((value - min) / (max - min)) * SLIDER_WIDTH;
-  }, [min, max]);
+  const valueToPosition = useCallback(
+    (value: number) => {
+      return ((value - min) / (max - min)) * SLIDER_WIDTH;
+    },
+    [min, max]
+  );
 
-  const positionToValue = useCallback((position: number) => {
-    const value = (position / SLIDER_WIDTH) * (max - min) + min;
-    return Math.round(value / step) * step;
-  }, [min, max, step]);
+  const positionToValue = useCallback(
+    (position: number) => {
+      const value = (position / SLIDER_WIDTH) * (max - min) + min;
+      return Math.round(value / step) * step;
+    },
+    [min, max, step]
+  );
 
   // Shared values for thumb positions
   const minThumbX = useSharedValue(minValue ? valueToPosition(minValue) : 0);
@@ -79,7 +86,10 @@ export default function PotencySlider({
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
-      const newX = Math.max(0, Math.min(minThumbContext.value.startX + event.translationX, maxThumbX.value - THUMB_SIZE));
+      const newX = Math.max(
+        0,
+        Math.min(minThumbContext.value.startX + event.translationX, maxThumbX.value - THUMB_SIZE)
+      );
       minThumbX.value = newX;
     })
     .onEnd(() => {
@@ -96,7 +106,10 @@ export default function PotencySlider({
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
-      const newX = Math.max(minThumbX.value + THUMB_SIZE, Math.min(maxThumbContext.value.startX + event.translationX, SLIDER_WIDTH));
+      const newX = Math.max(
+        minThumbX.value + THUMB_SIZE,
+        Math.min(maxThumbContext.value.startX + event.translationX, SLIDER_WIDTH)
+      );
       maxThumbX.value = newX;
     })
     .onEnd(() => {
@@ -127,26 +140,24 @@ export default function PotencySlider({
     <View className="mb-4">
       {/* Label and Values */}
       <View className="mb-3 flex-row items-center justify-between">
-        <ThemedText className="text-base font-medium">
-          {label}
-        </ThemedText>
+        <ThemedText className="text-base font-medium">{label}</ThemedText>
         <ThemedText variant="muted" className="text-sm">
-          {currentMinValue}{unit} - {currentMaxValue}{unit}
+          {currentMinValue}
+          {unit} - {currentMaxValue}
+          {unit}
         </ThemedText>
       </View>
 
       {/* Slider Container */}
       <View className="h-12 justify-center">
-        <View 
-          className={`h-1 rounded-full ${trackColor}`}
-          style={{ width: SLIDER_WIDTH }}
-        >
+        <View className={`h-1 rounded-full ${trackColor}`} style={{ width: SLIDER_WIDTH }}>
           {/* Active Track */}
-          <Animated.View 
-            className={`absolute h-1 rounded-full ${activeTrackColor}`}            style={[{ height: TRACK_HEIGHT }, activeTrackStyle]}
+          <Animated.View
+            className={`absolute h-1 rounded-full ${activeTrackColor}`}
+            style={[{ height: TRACK_HEIGHT }, activeTrackStyle]}
           />
         </View>
-        
+
         {/* Min Thumb */}
         <GestureDetector gesture={minThumbGesture}>
           <Animated.View
@@ -159,7 +170,7 @@ export default function PotencySlider({
               },
               minThumbStyle,
             ]}
-            accessible={true}
+            accessible
             accessibilityRole="adjustable"
             accessibilityLabel={`Minimum ${label.toLowerCase()} value`}
             accessibilityValue={{
@@ -183,7 +194,7 @@ export default function PotencySlider({
               },
               maxThumbStyle,
             ]}
-            accessible={true}
+            accessible
             accessibilityRole="adjustable"
             accessibilityLabel={`Maximum ${label.toLowerCase()} value`}
             accessibilityValue={{
@@ -192,16 +203,19 @@ export default function PotencySlider({
               now: currentMaxValue,
               text: `${currentMaxValue}${unit}`,
             }}
-          />        </GestureDetector>
+          />{' '}
+        </GestureDetector>
       </View>
-      
+
       {/* Range Labels */}
       <View className="mt-2 flex-row justify-between">
         <ThemedText variant="caption">
-          {min}{unit}
+          {min}
+          {unit}
         </ThemedText>
         <ThemedText variant="caption">
-          {max}{unit}
+          {max}
+          {unit}
         </ThemedText>
       </View>
     </View>

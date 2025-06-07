@@ -1,21 +1,29 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
-import { Text, View, TextInput, ActivityIndicator, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
+import {
+  View,
+  TextInput,
+  ActivityIndicator,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
   withSequence,
   runOnUI,
   FadeIn,
   FadeInDown,
-  SlideInDown,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 
-import ThemedView from '../../components/ui/ThemedView';
 import ThemedText from '../../components/ui/ThemedText';
+import ThemedView from '../../components/ui/ThemedView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
 
@@ -31,7 +39,7 @@ interface RegistrationState {
 }
 
 // Exponential backoff utility
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const getBackoffDelay = (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 30000);
 
 interface AnimatedInputProps {
@@ -46,26 +54,23 @@ interface AnimatedInputProps {
   icon: keyof typeof Ionicons.glyphMap;
 }
 
-function AnimatedInput({ 
-  placeholder, 
-  value, 
-  onChangeText, 
+function AnimatedInput({
+  placeholder,
+  value,
+  onChangeText,
   secureTextEntry = false,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
   editable = true,
   error,
-  icon
+  icon,
 }: AnimatedInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const focusScale = useSharedValue(1);
   const errorShake = useSharedValue(0);
 
   const animatedInputStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: focusScale.value },
-      { translateX: errorShake.value }
-    ],
+    transform: [{ scale: focusScale.value }, { translateX: errorShake.value }],
   }));
 
   const handleFocus = () => {
@@ -95,26 +100,26 @@ function AnimatedInput({
 
   return (
     <View className="mb-4">
-      <Animated.View 
+      <Animated.View
         style={animatedInputStyle}
         className={`
           relative rounded-2xl border-2 transition-all duration-200
-          ${isFocused 
-            ? 'border-primary-500 bg-white dark:bg-neutral-800 shadow-lg' 
-            : error
-              ? 'border-status-danger bg-red-50 dark:bg-red-900/20'
-              : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50'
+          ${
+            isFocused
+              ? 'border-primary-500 bg-white shadow-lg dark:bg-neutral-800'
+              : error
+                ? 'border-status-danger bg-red-50 dark:bg-red-900/20'
+                : 'border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800/50'
           }
-        `}
-      >
+        `}>
         <View className="flex-row items-center px-4 py-4">
-          <Ionicons 
-            name={icon} 
-            size={20} 
+          <Ionicons
+            name={icon}
+            size={20}
             className={`mr-3 ${
-              isFocused 
-                ? 'text-primary-500' 
-                : error 
+              isFocused
+                ? 'text-primary-500'
+                : error
                   ? 'text-status-danger'
                   : 'text-neutral-500 dark:text-neutral-400'
             }`}
@@ -131,19 +136,16 @@ function AnimatedInput({
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
             editable={editable}
-            accessible={true}
+            accessible
             accessibilityLabel={placeholder}
             accessibilityHint={`Enter your ${placeholder.toLowerCase()}`}
           />
         </View>
       </Animated.View>
-      
+
       {error && (
-        <Animated.View 
-          entering={FadeInDown.duration(300)}
-          className="mt-2 flex-row items-center"
-        >
-          <Ionicons name="alert-circle" size={16} className="mr-2 text-status-danger" />
+        <Animated.View entering={FadeInDown.duration(300)} className="mt-2 flex-row items-center">
+          <Ionicons name="alert-circle" size={16} className="text-status-danger mr-2" />
           <ThemedText variant="caption" className="text-status-danger flex-1">
             {error}
           </ThemedText>
@@ -162,13 +164,13 @@ interface AnimatedButtonProps {
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
-function AnimatedButton({ 
-  title, 
-  onPress, 
-  loading = false, 
-  disabled = false, 
+function AnimatedButton({
+  title,
+  onPress,
+  loading = false,
+  disabled = false,
   variant = 'primary',
-  icon 
+  icon,
 }: AnimatedButtonProps) {
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.2);
@@ -183,7 +185,7 @@ function AnimatedButton({
       scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
       shadowOpacity.value = withSpring(0.1, { damping: 15, stiffness: 400 });
     })();
-    
+
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
@@ -235,45 +237,40 @@ function AnimatedButton({
 
   return (
     <AnimatedPressable
-      style={[animatedStyle, {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 8,
-        elevation: 4,
-      }]}
+      style={[
+        animatedStyle,
+        {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 8,
+          elevation: 4,
+        },
+      ]}
       className={`
         mb-4 rounded-2xl px-6 py-4 
         ${getButtonStyles()}
-        ${(disabled || loading) ? 'opacity-70' : ''}
+        ${disabled || loading ? 'opacity-70' : ''}
       `}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled || loading}
-      accessible={true}
+      accessible
       accessibilityLabel={title}
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading }}
-    >
+      accessibilityState={{ disabled: disabled || loading }}>
       <View className="flex-row items-center justify-center">
         {loading ? (
-          <ActivityIndicator 
-            color={variant === 'secondary' ? '#6B7280' : 'white'} 
-            size="small" 
+          <ActivityIndicator
+            color={variant === 'secondary' ? '#6B7280' : 'white'}
+            size="small"
             className="mr-2"
           />
         ) : icon ? (
-          <Ionicons 
-            name={icon} 
-            size={18} 
-            className={`mr-2 ${getIconColor()}`}
-          />
+          <Ionicons name={icon} size={18} className={`mr-2 ${getIconColor()}`} />
         ) : null}
-        
-        <ThemedText 
-          variant="default"
-          className={`font-semibold ${getTextStyles()}`}
-        >
+
+        <ThemedText variant="default" className={`font-semibold ${getTextStyles()}`}>
           {title}
         </ThemedText>
       </View>
@@ -298,22 +295,16 @@ function PasswordStrength({ password }: PasswordStrengthProps) {
 
   const strength = getStrength();
   const strengthText = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'][strength] || 'Very Weak';
-  const strengthColor = [
-    'text-red-500',
-    'text-orange-500', 
-    'text-yellow-500',
-    'text-blue-500',
-    'text-green-500'
-  ][strength] || 'text-red-500';
+  const strengthColor =
+    ['text-red-500', 'text-orange-500', 'text-yellow-500', 'text-blue-500', 'text-green-500'][
+      strength
+    ] || 'text-red-500';
 
   if (!password) return null;
 
   return (
-    <Animated.View 
-      entering={FadeInDown.duration(300)}
-      className="mb-2"
-    >
-      <View className="flex-row items-center justify-between mb-1">
+    <Animated.View entering={FadeInDown.duration(300)} className="mb-2">
+      <View className="mb-1 flex-row items-center justify-between">
         <ThemedText variant="caption">Password Strength</ThemedText>
         <ThemedText variant="caption" className={strengthColor}>
           {strengthText}
@@ -324,8 +315,14 @@ function PasswordStrength({ password }: PasswordStrengthProps) {
           <View
             key={i}
             className={`h-1 flex-1 rounded-full ${
-              i < strength 
-                ? i < 2 ? 'bg-red-500' : i < 3 ? 'bg-yellow-500' : i < 4 ? 'bg-blue-500' : 'bg-green-500'
+              i < strength
+                ? i < 2
+                  ? 'bg-red-500'
+                  : i < 3
+                    ? 'bg-yellow-500'
+                    : i < 4
+                      ? 'bg-blue-500'
+                      : 'bg-green-500'
                 : 'bg-neutral-200 dark:bg-neutral-700'
             }`}
           />
@@ -342,24 +339,30 @@ interface ErrorRecoveryBannerProps {
   isRetrying: boolean;
 }
 
-function ErrorRecoveryBanner({ registrationState, onRetry, onCancel, isRetrying }: ErrorRecoveryBannerProps) {
+function ErrorRecoveryBanner({
+  registrationState,
+  onRetry,
+  onCancel,
+  isRetrying,
+}: ErrorRecoveryBannerProps) {
   if (!registrationState) return null;
 
   return (
-    <Animated.View 
+    <Animated.View
       entering={FadeInDown.duration(400)}
-      className="mb-6 rounded-2xl border-2 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20 p-4"
-    >
+      className="mb-6 rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
       <View className="flex-row items-start">
         <Ionicons name="warning" size={20} className="mr-3 mt-0.5 text-orange-500" />
         <View className="flex-1">
-          <ThemedText variant="default" className="font-semibold text-orange-800 dark:text-orange-200">
+          <ThemedText
+            variant="default"
+            className="font-semibold text-orange-800 dark:text-orange-200">
             Registration Incomplete
           </ThemedText>
           <ThemedText variant="caption" className="mt-1 text-orange-700 dark:text-orange-300">
             Your account was created but profile setup failed. We'll help you complete the process.
           </ThemedText>
-          
+
           <View className="mt-3 flex-row space-x-2">
             <AnimatedButton
               title={isRetrying ? 'Retrying...' : 'Retry Setup'}
@@ -376,7 +379,7 @@ function ErrorRecoveryBanner({ registrationState, onRetry, onCancel, isRetrying 
               disabled={isRetrying}
             />
           </View>
-          
+
           {registrationState.retryCount > 0 && (
             <ThemedText variant="caption" className="mt-2 text-orange-600 dark:text-orange-400">
               Attempt {registrationState.retryCount + 1} of {registrationState.maxRetries}
@@ -393,10 +396,10 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors] = useState<{ 
-    email?: string; 
-    password?: string; 
-    username?: string; 
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    username?: string;
     confirmPassword?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -406,7 +409,7 @@ export default function RegisterScreen() {
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
-    
+
     // Username validation
     if (!username) {
       newErrors.username = 'Username is required';
@@ -415,33 +418,38 @@ export default function RegisterScreen() {
     } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       newErrors.username = 'Username can only contain letters, numbers, and underscores';
     }
-    
+
     // Email validation
     if (!email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-    
+
     // Password validation
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
-    
+
     // Confirm password validation
     if (!confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const createUserProfile = async (userId: string, email: string, username: string, attempt = 0): Promise<boolean> => {
+  const createUserProfile = async (
+    userId: string,
+    email: string,
+    username: string,
+    attempt = 0
+  ): Promise<boolean> => {
     try {
       const { error } = await supabase.from('profiles').insert({
         id: userId,
@@ -457,13 +465,14 @@ export default function RegisterScreen() {
       return true;
     } catch (error) {
       console.error(`Profile creation attempt ${attempt + 1} failed:`, error);
-      
+
       // If we haven't reached max retries, try again with exponential backoff
-      if (attempt < 2) { // 3 total attempts (0, 1, 2)
+      if (attempt < 2) {
+        // 3 total attempts (0, 1, 2)
         await delay(getBackoffDelay(attempt));
         return createUserProfile(userId, email, username, attempt + 1);
       }
-      
+
       return false;
     }
   };
@@ -472,19 +481,19 @@ export default function RegisterScreen() {
     try {
       // Call secure edge function to cleanup failed registration
       const { data, error } = await supabase.functions.invoke('cleanup-failed-registration', {
-        body: { userId }
+        body: { userId },
       });
-      
+
       if (error) {
         console.error('Failed to cleanup registration:', error);
         return false;
       }
-      
+
       // Check if the edge function returned success
       if (data?.success) {
         return true;
       }
-      
+
       console.error('Edge function returned error:', data?.error);
       return false;
     } catch (error) {
@@ -497,7 +506,7 @@ export default function RegisterScreen() {
     if (!registrationState) return;
 
     setIsRetrying(true);
-    
+
     try {
       const success = await createUserProfile(
         registrationState.userId!,
@@ -513,7 +522,7 @@ export default function RegisterScreen() {
       } else {
         // Update retry count
         const newRetryCount = registrationState.retryCount + 1;
-        
+
         if (newRetryCount >= registrationState.maxRetries) {
           // Max retries reached, offer cleanup or support contact
           Alert.alert(
@@ -525,7 +534,7 @@ export default function RegisterScreen() {
                 style: 'destructive',
                 onPress: async () => {
                   const cleanupSuccess = await cleanupFailedRegistration(registrationState.userId!);
-                  
+
                   if (cleanupSuccess) {
                     // Successfully cleaned up, reset form
                     setRegistrationState(null);
@@ -536,28 +545,30 @@ export default function RegisterScreen() {
                     setErrors({});
                   } else {
                     // Cleanup failed, direct to support
-                    setErrors({ 
-                      username: 'Unable to clean up automatically. Please contact support with your email address for manual account cleanup.' 
+                    setErrors({
+                      username:
+                        'Unable to clean up automatically. Please contact support with your email address for manual account cleanup.',
                     });
                   }
-                }
+                },
               },
               {
                 text: 'Contact Support',
                 onPress: () => {
-                  setErrors({ 
-                    username: 'Please contact support with your email address for manual account setup.' 
+                  setErrors({
+                    username:
+                      'Please contact support with your email address for manual account setup.',
                   });
-                }
-              }
+                },
+              },
             ]
           );
         } else {
           setRegistrationState({
             ...registrationState,
-            retryCount: newRetryCount
+            retryCount: newRetryCount,
           });
-          
+
           if (Platform.OS === 'ios') {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           }
@@ -576,26 +587,27 @@ export default function RegisterScreen() {
   const handleCancelRecovery = () => {
     Alert.alert(
       'Cancel Registration',
-      'This will clean up your account and you\'ll need to start over. Are you sure?',
+      "This will clean up your account and you'll need to start over. Are you sure?",
       [
         { text: 'Keep Trying', style: 'cancel' },
-                {
+        {
           text: 'Start Over',
           style: 'destructive',
           onPress: async () => {
             let cleanupSuccess = true; // Default to true if no cleanup needed
-            
+
             if (registrationState?.userId) {
               cleanupSuccess = await cleanupFailedRegistration(registrationState.userId);
-              
+
               if (!cleanupSuccess) {
                 // If cleanup fails, still reset form but show support message
-                setErrors({ 
-                  username: 'Cleanup may have failed. If you encounter issues, please contact support.' 
+                setErrors({
+                  username:
+                    'Cleanup may have failed. If you encounter issues, please contact support.',
                 });
               }
             }
-            
+
             setRegistrationState(null);
             setEmail('');
             setPassword('');
@@ -605,8 +617,8 @@ export default function RegisterScreen() {
             if (cleanupSuccess) {
               setErrors({});
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
@@ -622,7 +634,7 @@ export default function RegisterScreen() {
     setIsLoading(true);
     setErrors({});
     setRegistrationState(null);
-    
+
     try {
       // Register user with Supabase auth
       const { error, data } = await signUp(email, password);
@@ -646,9 +658,9 @@ export default function RegisterScreen() {
             email,
             username,
             retryCount: 0,
-            maxRetries: 3
+            maxRetries: 3,
           });
-          
+
           if (Platform.OS === 'ios') {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           }
@@ -671,23 +683,18 @@ export default function RegisterScreen() {
 
   return (
     <ThemedView variant="default" className="flex-1">
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <ScrollView 
+        className="flex-1">
+        <ScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+          keyboardShouldPersistTaps="handled">
           <View className="flex-1 justify-center px-6 py-8">
             {/* Logo Section */}
-            <Animated.View 
-              entering={FadeIn.duration(800)} 
-              className="mb-8 items-center"
-            >
-              <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 dark:bg-primary-600 shadow-lg">
+            <Animated.View entering={FadeIn.duration(800)} className="mb-8 items-center">
+              <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg dark:bg-primary-600">
                 <Ionicons name="leaf" size={32} className="text-white" />
               </View>
               <ThemedText variant="heading" className="text-4xl font-black tracking-tight">
@@ -763,20 +770,18 @@ export default function RegisterScreen() {
             </Animated.View>
 
             {/* Footer Link */}
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.duration(800).delay(600)}
-              className="mt-6 flex-row justify-center"
-            >
+              className="mt-6 flex-row justify-center">
               <ThemedText variant="muted" className="text-base">
                 Already have an account?{' '}
               </ThemedText>
               <Link href="/(auth)/login" asChild>
-                <Pressable 
+                <Pressable
                   disabled={isLoading || isRetrying}
-                  accessible={true}
+                  accessible
                   accessibilityLabel="Go to login screen"
-                  accessibilityRole="link"
-                >
+                  accessibilityRole="link">
                   <ThemedText className="text-base font-semibold text-primary-500 dark:text-primary-400">
                     Sign In
                   </ThemedText>

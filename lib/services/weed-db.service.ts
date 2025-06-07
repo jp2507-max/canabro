@@ -9,7 +9,6 @@ import {
   StrainFilterParams,
   RawStrainApiResponse,
   ApiResponseArray,
-  ApiResponseSingle,
 } from '../types/weed-db';
 
 // --- Configuration ---
@@ -222,37 +221,37 @@ function mapWeedDbStrain(raw: any): Strain {
   const determineStrainType = (genetic?: string): string | undefined => {
     if (!genetic) return undefined;
     const lowerGenetic = genetic.toLowerCase();
-    
+
     if (lowerGenetic.includes('sativa') && lowerGenetic.includes('indica')) {
       // If it mentions percentages, more precise determination
       if (lowerGenetic.includes('%')) {
         const sativaMatch = lowerGenetic.match(/sativa.*?(\d+)%/i);
         const indicaMatch = lowerGenetic.match(/indica.*?(\d+)%/i);
-        
-        const sativaPercent = sativaMatch ? parseInt(sativaMatch[1], 10) : 0;
-        const indicaPercent = indicaMatch ? parseInt(indicaMatch[1], 10) : 0;
-        
+
+        const sativaPercent = sativaMatch?.[1] ? parseInt(sativaMatch[1], 10) : 0;
+        const indicaPercent = indicaMatch?.[1] ? parseInt(indicaMatch[1], 10) : 0;
+
         if (sativaPercent > indicaPercent) return 'sativa';
         if (indicaPercent > sativaPercent) return 'indica';
         return 'hybrid';
       }
       return 'hybrid';
     }
-    
+
     if (lowerGenetic.includes('sativa')) return 'sativa';
     if (lowerGenetic.includes('indica')) return 'indica';
-    
+
     return 'hybrid'; // Default fallback
   };
-  
+
   // Extract type from multiple sources
   const strainType = raw.type || determineStrainType(raw.genetics) || 'hybrid';
-  
+
   // Format description from array or string
-  const formattedDescription = Array.isArray(raw.description) 
-    ? raw.description.join('\n\n') 
+  const formattedDescription = Array.isArray(raw.description)
+    ? raw.description.join('\n\n')
     : raw.description;
-  
+
   return {
     id: String(raw._id || raw.id),
     name: raw.name,

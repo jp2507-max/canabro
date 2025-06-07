@@ -107,7 +107,7 @@ export interface RawStrainApiResponse {
   // Additional information
   image_url?: string | null; // Preferred field for the primary image URL
   imageUrl?: string | null; // Keep for compatibility if some API responses use this
-  image?: string | null;    // Keep for compatibility if some API responses use this
+  image?: string | null; // Keep for compatibility if some API responses use this
   link?: string | null; // URL to the strain's page on the source API/website
   parents?: string[] | string | null; // Array of parent strain names or a single string
   breeder?: string | null;
@@ -118,7 +118,7 @@ export interface RawStrainApiResponse {
 
   // Allow for any other properties that might come from the API
   // This helps in case the API adds new fields or has inconsistent ones
-  [key: string]: any; 
+  [key: string]: any;
 }
 
 // API response wrapper types

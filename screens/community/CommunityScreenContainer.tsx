@@ -1,12 +1,9 @@
-import { useRouter } from 'expo-router';
-import React, { useCallback, useState, useMemo } from 'react';
-import { RefreshControl, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CommunityScreenView from './CommunityScreenView';
 import type { PostData } from '../../components/community/PostItem';
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 import supabase from '../../lib/supabase';
 
@@ -14,9 +11,7 @@ const PAGE_SIZE = 10;
 
 function CommunityScreenContainer() {
   useProtectedRoute();
-  const { theme, isDarkMode } = useTheme();
   const { user, session } = useAuth();
-  const router = useRouter();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateScreen, setShowCreateScreen] = useState(false);

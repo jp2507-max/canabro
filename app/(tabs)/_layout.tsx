@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 
-import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
+import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 
 export default function TabsLayout() {
   // Protect all tab routes

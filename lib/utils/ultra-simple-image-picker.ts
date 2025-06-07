@@ -46,7 +46,7 @@ export async function takePhoto(): Promise<ImageResult | null> {
       console.log('[UltraSimpleImagePicker] No asset in result');
       return null;
     }
-    
+
     console.log('[UltraSimpleImagePicker] Camera success, returning asset');
     return {
       uri: asset.uri,
@@ -75,7 +75,7 @@ export async function selectFromGallery(): Promise<ImageResult | null> {
     }
 
     console.log('[UltraSimpleImagePicker] Launching image library...');
-    
+
     // Use IDENTICAL options to camera for consistency
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -96,7 +96,7 @@ export async function selectFromGallery(): Promise<ImageResult | null> {
       console.log('[UltraSimpleImagePicker] No asset in result');
       return null;
     }
-    
+
     console.log('[UltraSimpleImagePicker] Gallery success, returning asset');
     return {
       uri: asset.uri,

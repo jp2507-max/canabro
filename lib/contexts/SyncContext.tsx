@@ -11,12 +11,7 @@ import React, {
 // Import from AuthProvider only
 import { useAuth } from './AuthProvider';
 // Import shared types from SyncTypes
-import {
-  isValidUuid,
-  LAST_SYNC_KEY,
-  FIRST_SYNC_COMPLETED_KEY,
-  SyncStateInterface,
-} from './SyncTypes';
+import { LAST_SYNC_KEY, FIRST_SYNC_COMPLETED_KEY, SyncStateInterface } from './SyncTypes';
 import { synchronizeWithServer, getSyncHealth } from '../services/sync-service';
 
 // Don't import from DatabaseProvider - we'll get the database instance as a prop

@@ -1,21 +1,28 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
-import { Text, View, TextInput, ActivityIndicator, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
+import {
+  View,
+  TextInput,
+  ActivityIndicator,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
   withSequence,
   runOnUI,
   FadeIn,
   FadeInDown,
   SlideInDown,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 
-import ThemedView from '../../components/ui/ThemedView';
 import ThemedText from '../../components/ui/ThemedText';
+import ThemedView from '../../components/ui/ThemedView';
 import { isDevelopment, authConfig } from '../../lib/config';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 
@@ -33,26 +40,23 @@ interface AnimatedInputProps {
   icon: keyof typeof Ionicons.glyphMap;
 }
 
-function AnimatedInput({ 
-  placeholder, 
-  value, 
-  onChangeText, 
+function AnimatedInput({
+  placeholder,
+  value,
+  onChangeText,
   secureTextEntry = false,
   keyboardType = 'default',
   autoCapitalize = 'sentences',
   editable = true,
   error,
-  icon
+  icon,
 }: AnimatedInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const focusScale = useSharedValue(1);
   const errorShake = useSharedValue(0);
 
   const animatedInputStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: focusScale.value },
-      { translateX: errorShake.value }
-    ],
+    transform: [{ scale: focusScale.value }, { translateX: errorShake.value }],
   }));
 
   const handleFocus = () => {
@@ -82,26 +86,26 @@ function AnimatedInput({
 
   return (
     <View className="mb-4">
-      <Animated.View 
+      <Animated.View
         style={animatedInputStyle}
         className={`
           relative rounded-2xl border-2 transition-all duration-200
-          ${isFocused 
-            ? 'border-primary-500 bg-white dark:bg-neutral-800 shadow-lg' 
-            : error
-              ? 'border-status-danger bg-red-50 dark:bg-red-900/20'
-              : 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50'
+          ${
+            isFocused
+              ? 'border-primary-500 bg-white shadow-lg dark:bg-neutral-800'
+              : error
+                ? 'border-status-danger bg-red-50 dark:bg-red-900/20'
+                : 'border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800/50'
           }
-        `}
-      >
+        `}>
         <View className="flex-row items-center px-4 py-4">
-          <Ionicons 
-            name={icon} 
-            size={20} 
+          <Ionicons
+            name={icon}
+            size={20}
             className={`mr-3 ${
-              isFocused 
-                ? 'text-primary-500' 
-                : error 
+              isFocused
+                ? 'text-primary-500'
+                : error
                   ? 'text-status-danger'
                   : 'text-neutral-500 dark:text-neutral-400'
             }`}
@@ -118,19 +122,16 @@ function AnimatedInput({
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
             editable={editable}
-            accessible={true}
+            accessible
             accessibilityLabel={placeholder}
             accessibilityHint={`Enter your ${placeholder.toLowerCase()}`}
           />
         </View>
       </Animated.View>
-      
+
       {error && (
-        <Animated.View 
-          entering={FadeInDown.duration(300)}
-          className="mt-2 flex-row items-center"
-        >
-          <Ionicons name="alert-circle" size={16} className="mr-2 text-status-danger" />
+        <Animated.View entering={FadeInDown.duration(300)} className="mt-2 flex-row items-center">
+          <Ionicons name="alert-circle" size={16} className="text-status-danger mr-2" />
           <ThemedText variant="caption" className="text-status-danger flex-1">
             {error}
           </ThemedText>
@@ -149,13 +150,13 @@ interface AnimatedButtonProps {
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
-function AnimatedButton({ 
-  title, 
-  onPress, 
-  loading = false, 
-  disabled = false, 
+function AnimatedButton({
+  title,
+  onPress,
+  loading = false,
+  disabled = false,
   variant = 'primary',
-  icon 
+  icon,
 }: AnimatedButtonProps) {
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.2);
@@ -170,7 +171,7 @@ function AnimatedButton({
       scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
       shadowOpacity.value = withSpring(0.1, { damping: 15, stiffness: 400 });
     })();
-    
+
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
@@ -187,56 +188,50 @@ function AnimatedButton({
 
   return (
     <AnimatedPressable
-      style={[animatedStyle, {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 8,
-        elevation: 4,
-      }]}
+      style={[
+        animatedStyle,
+        {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 8,
+          elevation: 4,
+        },
+      ]}
       className={`
         mb-4 rounded-2xl px-6 py-4 
-        ${isPrimary 
-          ? 'bg-primary-500 dark:bg-primary-600' 
-          : 'bg-neutral-200 dark:bg-neutral-700'
-        }
-        ${(disabled || loading) ? 'opacity-70' : ''}
+        ${isPrimary ? 'bg-primary-500 dark:bg-primary-600' : 'bg-neutral-200 dark:bg-neutral-700'}
+        ${disabled || loading ? 'opacity-70' : ''}
       `}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled || loading}
-      accessible={true}
+      accessible
       accessibilityLabel={title}
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading }}
-    >
+      accessibilityState={{ disabled: disabled || loading }}>
       <View className="flex-row items-center justify-center">
         {loading ? (
-          <ActivityIndicator 
-            color={isPrimary ? 'white' : '#6B7280'} 
-            size="small" 
+          <ActivityIndicator
+            color={isPrimary ? 'white' : '#6B7280'}
+            size="small"
             className="mr-2"
           />
         ) : icon ? (
-          <Ionicons 
-            name={icon} 
-            size={18} 
+          <Ionicons
+            name={icon}
+            size={18}
             className={`mr-2 ${
-              isPrimary 
-                ? 'text-white' 
-                : 'text-neutral-700 dark:text-neutral-300'
+              isPrimary ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'
             }`}
           />
         ) : null}
-        
-        <ThemedText 
+
+        <ThemedText
           variant="default"
           className={`font-semibold ${
-            isPrimary 
-              ? 'text-white' 
-              : 'text-neutral-700 dark:text-neutral-300'
-          }`}
-        >
+            isPrimary ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'
+          }`}>
           {loading ? 'Please wait...' : title}
         </ThemedText>
       </View>
@@ -253,19 +248,19 @@ export default function LoginScreen() {
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
-    
+
     if (!email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-    
+
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -280,7 +275,7 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     setErrors({});
-    
+
     try {
       const { error } = await signIn(email, password);
       if (error) {
@@ -323,17 +318,13 @@ export default function LoginScreen() {
 
   return (
     <ThemedView variant="default" className="flex-1">
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
+        className="flex-1">
         <View className="flex-1 justify-center px-6">
           {/* Logo Section */}
-          <Animated.View 
-            entering={FadeIn.duration(800)} 
-            className="mb-12 items-center"
-          >
-            <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 dark:bg-primary-600 shadow-lg">
+          <Animated.View entering={FadeIn.duration(800)} className="mb-12 items-center">
+            <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg dark:bg-primary-600">
               <Ionicons name="leaf" size={32} className="text-white" />
             </View>
             <ThemedText variant="heading" className="text-4xl font-black tracking-tight">
@@ -346,17 +337,19 @@ export default function LoginScreen() {
 
           {/* Development Mode Banner */}
           {isDevelopment && (
-            <Animated.View 
+            <Animated.View
               entering={SlideInDown.duration(600).delay(200)}
-              className="mb-6 rounded-2xl bg-yellow-100 dark:bg-yellow-900/30 p-4 border border-yellow-200 dark:border-yellow-800"
-            >
+              className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-100 p-4 dark:border-yellow-800 dark:bg-yellow-900/30">
               <View className="flex-row items-center">
-                <Ionicons name="code-working" size={18} className="mr-2 text-yellow-800 dark:text-yellow-200" />
+                <Ionicons
+                  name="code-working"
+                  size={18}
+                  className="mr-2 text-yellow-800 dark:text-yellow-200"
+                />
                 <ThemedText className="flex-1 text-sm font-medium text-yellow-800 dark:text-yellow-200">
                   {authConfig.forceDevBypass
                     ? 'Development mode: Auto-login enabled'
-                    : 'Development mode: Manual login required'
-                  }
+                    : 'Development mode: Manual login required'}
                 </ThemedText>
               </View>
             </Animated.View>
@@ -404,20 +397,18 @@ export default function LoginScreen() {
           </Animated.View>
 
           {/* Footer Link */}
-          <Animated.View 
+          <Animated.View
             entering={FadeInDown.duration(800).delay(600)}
-            className="mt-8 flex-row justify-center"
-          >
+            className="mt-8 flex-row justify-center">
             <ThemedText variant="muted" className="text-base">
               Don't have an account?{' '}
             </ThemedText>
             <Link href="/(auth)/register" asChild>
-              <Pressable 
+              <Pressable
                 disabled={isLoading}
-                accessible={true}
+                accessible
                 accessibilityLabel="Go to registration screen"
-                accessibilityRole="link"
-              >
+                accessibilityRole="link">
                 <ThemedText className="text-base font-semibold text-primary-500 dark:text-primary-400">
                   Sign Up
                 </ThemedText>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import { useDatabase } from '../../contexts/DatabaseProvider'; // Restore context import
 import { Plant as PlantModel } from '../../models/Plant';
@@ -20,6 +20,7 @@ export function usePlant(plantId: string | null) {
     data: remoteData,
     loading: remoteLoading,
     error: remoteError,
+    refetch: refetchRemote,
   } = useSupabaseItem<Plant>({
     table: 'plants',
     matchColumn: 'id',
@@ -43,39 +44,45 @@ export function usePlant(plantId: string | null) {
     `,
   });
 
-  // Restore local database fetch useEffect
-  useEffect(() => {
+  // Local database fetch function
+  const fetchLocalPlant = useCallback(async () => {
     if (!plantId || !database) return;
 
-    const fetchLocalPlant = async () => {
-      try {
-        setLocalLoading(true);
-        setLocalError(null);
+    try {
+      setLocalLoading(true);
+      setLocalError(null);
 
-        const plantsCollection = database.get<PlantModel>('plants'); // Specify model type
-        const plant = await plantsCollection.find(plantId);
+      const plantsCollection = database.get<PlantModel>('plants'); // Specify model type
+      const plant = await plantsCollection.find(plantId);
 
-        if (plant) {
-          setLocalData(plant);
-        } else {
-          setLocalData(null);
-        }
-      } catch (err) {
-        console.error('Error fetching local plant:', err);
-        setLocalError(err instanceof Error ? err : new Error('Failed to fetch local plant'));
+      if (plant) {
+        setLocalData(plant);
+      } else {
         setLocalData(null);
-      } finally {
-        setLocalLoading(false);
       }
-    };
-
-    fetchLocalPlant();
+    } catch (err) {
+      console.error('Error fetching local plant:', err);
+      setLocalError(err instanceof Error ? err : new Error('Failed to fetch local plant'));
+      setLocalData(null);
+    } finally {
+      setLocalLoading(false);
+    }
   }, [plantId, database]);
+
+  // Restore local database fetch useEffect
+  useEffect(() => {
+    fetchLocalPlant();
+  }, [fetchLocalPlant]);
+
+  // Combined refetch function
+  const refetch = useCallback(async () => {
+    await Promise.all([fetchLocalPlant(), refetchRemote()]);
+  }, [fetchLocalPlant, refetchRemote]);
 
   // Restore combined data logic
   const data = localData || remoteData;
   const loading = localLoading || remoteLoading;
   const error = localError || remoteError;
 
-  return { data, loading, error };
+  return { data, loading, error, refetch };
 }

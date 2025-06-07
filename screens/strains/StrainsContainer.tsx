@@ -1,6 +1,5 @@
 import { useRouter } from 'expo-router';
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import StrainsView from './StrainsView';
@@ -10,7 +9,6 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
 import { useAuth } from '@/lib/contexts/AuthProvider';
-import { useTheme } from '@/lib/contexts/ThemeContext';
 import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
 import { useFilteredStrains, usePrefetchStrain } from '@/lib/hooks/strains/useStrainQueries';
 import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';

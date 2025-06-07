@@ -1,7 +1,6 @@
 /**
  * TypeScript declarations for React Query
  */
-import { UseQueryOptions, QueryKey } from '@tanstack/react-query';
 import { WeedDbQueryKeys } from '../services/weed-db.service';
 
 // Create a custom type for your app's query keys
