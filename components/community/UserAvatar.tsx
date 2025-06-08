@@ -49,14 +49,20 @@ export default function UserAvatar({
   const badgeScale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.1);
 
-  const animatedContainerStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    shadowOpacity: shadowOpacity.value,
-  }));
+  const animatedContainerStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      shadowOpacity: shadowOpacity.value,
+    };
+  });
 
-  const animatedBadgeStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: badgeScale.value }],
-  }));
+  const animatedBadgeStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: badgeScale.value }],
+    };
+  });
 
   // 🔄 Reset error state when URI changes
   useEffect(() => {

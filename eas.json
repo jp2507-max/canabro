@@ -17,23 +17,11 @@
     "production": {
       "autoIncrement": true,
       "ios": {
-        "bundleIdentifier": "com.canabro.app",
         "buildConfiguration": "Release",
         "scheme": "canabro"
       },
       "env": {
         "NODE_ENV": "production"
-      }
-    },
-    "production-ios": {
-      "extends": "production",
-      "platform": "ios",
-      "ios": {
-        "bundleIdentifier": "com.canabro.app",
-        "buildConfiguration": "Release",
-        "scheme": "canabro",
-        "simulator": false,
-        "enterpriseProvisioning": "universal"
       }
     }
   },

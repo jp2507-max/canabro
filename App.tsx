@@ -1,16 +1,5 @@
-'use client';
-
-import { StatusBar } from 'expo-status-bar';
-
-import { ScreenContent } from './components/ScreenContent';
-
+import 'react-native-gesture-handler';
 import './global.css';
 
-export default function App() {
-  return (
-    <>
-      <ScreenContent title="Home" path="App.tsx" />
-      <StatusBar style="auto" />
-    </>
-  );
-}
+// Export the default layout - Expo Router will handle the rest
+export { default } from './app/_layout';

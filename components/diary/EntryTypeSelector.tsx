@@ -142,6 +142,7 @@ function EntryOption({
   const shadowOpacity = useSharedValue(0.1);
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const bgColor = rInterpolateColor(
       backgroundColor.value,
       [0, 1],

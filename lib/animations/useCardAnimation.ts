@@ -104,6 +104,7 @@ export function useCardAnimation(config: UseCardAnimationConfig = {}) {
 
   // Animation style
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const style: any = {
       transform: [{ scale: scale.value }],
     };

@@ -69,17 +69,20 @@ const AnimatedControlButton: React.FC<AnimatedControlButtonProps> = ({
       runOnJS(handlePress)();
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    backgroundColor: interpolateColor(
-      pressed.value,
-      [0, 1],
-      disabled
-        ? ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.3)'] // Disabled state - no color change
-        : ['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']
-    ),
-    opacity: disabled ? 0.4 : 1,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor: interpolateColor(
+        pressed.value,
+        [0, 1],
+        disabled
+          ? ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.3)'] // Disabled state - no color change
+          : ['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']
+      ),
+      opacity: disabled ? 0.4 : 1,
+    };
+  });
 
   return (
     <GestureDetector gesture={gesture}>
@@ -120,23 +123,35 @@ export default function DiagnosisScreen() {
   const controlsOpacity = useSharedValue(0);
 
   // Animated styles
-  const imagePreviewStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: imageScale.value }],
-    opacity: imageOpacity.value,
-  }));
+  const imagePreviewStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: imageScale.value }],
+      opacity: imageOpacity.value,
+    };
+  });
 
-  const loadingAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotateZ: `${loadingRotation.value}deg` }],
-  }));
+  const loadingAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ rotateZ: `${loadingRotation.value}deg` }],
+    };
+  });
 
-  const analysisOverlayStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: analysisScale.value }],
-    opacity: interpolate(analysisScale.value, [0.8, 1], [0, 1], Extrapolation.CLAMP),
-  }));
+  const analysisOverlayStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: analysisScale.value }],
+      opacity: interpolate(analysisScale.value, [0.8, 1], [0, 1], Extrapolation.CLAMP),
+    };
+  });
 
-  const controlsStyle = useAnimatedStyle(() => ({
-    opacity: controlsOpacity.value,
-  }));
+  const controlsStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: controlsOpacity.value,
+    };
+  });
 
   // Cleanup on unmount
   useEffect(() => {

@@ -144,9 +144,12 @@ const AnimatedSelectionButton = React.memo<AnimatedSelectionButtonProps>(
   }) => {
     const scale = useSharedValue(1);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-    }));
+    const animatedStyle = useAnimatedStyle(() => {
+      'worklet';
+      return {
+        transform: [{ scale: scale.value }],
+      };
+    });
 
     const gesture = Gesture.Tap()
       .enabled(!disabled)
@@ -204,10 +207,13 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(
     const scale = useSharedValue(1);
     const shadowOpacity = useSharedValue(0.2);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-      shadowOpacity: shadowOpacity.value,
-    }));
+    const animatedStyle = useAnimatedStyle(() => {
+      'worklet';
+      return {
+        transform: [{ scale: scale.value }],
+        shadowOpacity: shadowOpacity.value,
+      };
+    });
 
     const gesture = Gesture.Tap()
       .enabled(!disabled)

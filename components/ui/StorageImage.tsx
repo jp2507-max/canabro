@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   withSequence,
   withRepeat,
+  runOnUI,
   Easing,
 } from 'react-native-reanimated';
 
@@ -71,10 +72,13 @@ export default function StorageImage({
     setIsLoading(!!url);
     setRetryCount(0);
 
-    // Reset animations
-    imageOpacity.value = 0;
-    placeholderOpacity.value = 1;
-    errorShake.value = 0;
+    // Reset animations using worklet to avoid render warnings
+    runOnUI(() => {
+      'worklet';
+      imageOpacity.value = 0;
+      placeholderOpacity.value = 1;
+      errorShake.value = 0;
+    })();
   }, [url, imageOpacity, placeholderOpacity, errorShake]);
 
   // Loading rotation animation
@@ -133,34 +137,51 @@ export default function StorageImage({
     }
 
     // Retry animation
-    retryScale.value = withTiming(0.9, { duration: 100 }, () => {
-      retryScale.value = withTiming(1, { duration: 200 });
+    retryScale.value = withTiming(0.9, { duration: 100 }, (finished) => {
+      'worklet';
+      if (finished) {
+        retryScale.value = withTiming(1, { duration: 200 });
+      }
     });
 
     setRetryCount((prev) => prev + 1);
     setHasError(false);
     setIsLoading(true);
-    imageOpacity.value = 0;
-    placeholderOpacity.value = 1;
+    
+    // Fix: Move shared value mutations to worklet to avoid render warnings
+    runOnUI(() => {
+      'worklet';
+      imageOpacity.value = 0;
+      placeholderOpacity.value = 1;
+    })();
   };
 
   // Animated styles
-  const imageAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: imageOpacity.value,
-  }));
+  const imageAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: imageOpacity.value,
+    };
+  });
 
-  const placeholderAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: placeholderOpacity.value,
-    transform: [{ translateX: errorShake.value }, { scale: retryScale.value }],
-  }));
+  const placeholderAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: placeholderOpacity.value,
+      transform: [{ translateX: errorShake.value }, { scale: retryScale.value }],
+    };
+  });
 
-  const loadingAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        rotate: `${loadingRotation.value}deg`,
-      },
-    ],
-  }));
+  const loadingAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        {
+          rotate: `${loadingRotation.value}deg`,
+        },
+      ],
+    };
+  });
 
   // Render loading indicator
   const renderLoadingIndicator = () => (

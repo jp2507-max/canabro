@@ -22,6 +22,7 @@ import Animated, {
 import ThemedText from './ui/ThemedText';
 import { searchStrainsIntelligent } from '../lib/services/strain-search.service';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
+import { Logger } from '../lib/utils/production-utils';
 
 interface StrainAutocompleteProps {
   onStrainSelect: (strain: RawStrainApiResponse | null) => void;
@@ -42,14 +43,20 @@ const AnimatedLoadingIndicator: React.FC<{
   const pulseAnimation = useSharedValue(0);
   const dotAnimation = useSharedValue(0);
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    opacity: 0.6 + pulseAnimation.value * 0.4,
-    transform: [{ scale: 1 + pulseAnimation.value * 0.1 }],
-  }));
+  const pulseStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: 0.6 + pulseAnimation.value * 0.4,
+      transform: [{ scale: 1 + pulseAnimation.value * 0.1 }],
+    };
+  });
 
-  const dotStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: dotAnimation.value * 20 }],
-  }));
+  const dotStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateX: dotAnimation.value * 20 }],
+    };
+  });
 
   useEffect(() => {
     // Continuous pulse for the loading icon
@@ -110,10 +117,13 @@ const AnimatedSuggestionItem: React.FC<{
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+    };
+  });
 
   const handlePressIn = () => {
     runOnUI(() => {
@@ -249,6 +259,7 @@ const AnimatedTextInput: React.FC<{
   }, [isFocused]);
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const borderColor = rInterpolateColor(
       borderAnimation.value,
       [0, 1],
@@ -320,9 +331,12 @@ export function StrainAutocomplete({
   // Container animation for the entire component
   const containerScale = useSharedValue(1);
 
-  const containerAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: containerScale.value }],
-  }));
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: containerScale.value }],
+    };
+  });
 
   const debouncedSetSearch = useCallback(
     debounce((text: string) => {
@@ -365,13 +379,13 @@ export function StrainAutocomplete({
         return { strains: [], sources: { local: 0, supabase: 0, external: 0 }, hasMore: false };
       }
 
-      console.log(
+      Logger.debug(
         `[StrainAutocomplete] Searching for "${debouncedSearchTerm}" using intelligent search`
       );
 
       const results = await searchStrainsIntelligent(debouncedSearchTerm, limit);
 
-      console.log(
+      Logger.debug(
         `[StrainAutocomplete] Found ${results.strains.length} results for "${debouncedSearchTerm}"`,
         {
           sources: results.sources,
@@ -406,7 +420,7 @@ export function StrainAutocomplete({
   };
 
   const handleSelectStrain = (strain: RawStrainApiResponse): void => {
-    console.log(`[StrainAutocomplete] Strain selected: ${strain.name} (API ID: ${strain.api_id})`);
+    Logger.debug(`[StrainAutocomplete] Strain selected: ${strain.name} (API ID: ${strain.api_id})`);
     setSearchTerm(strain.name);
     onStrainSelect(strain);
     setIsFocused(false);

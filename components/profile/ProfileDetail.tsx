@@ -46,18 +46,21 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
     () =>
       Gesture.Tap()
         .onBegin(() => {
+          'worklet';
           pressProgress.value = withSpring(1, { damping: 15, stiffness: 400 });
           scale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
           shadowOpacity.value = withSpring(0.1);
           elevation.value = withSpring(3);
         })
         .onFinalize(() => {
+          'worklet';
           pressProgress.value = withSpring(0, { damping: 15, stiffness: 400 });
           scale.value = withSpring(1, { damping: 15, stiffness: 400 });
           shadowOpacity.value = withSpring(0.05);
           elevation.value = withSpring(1);
         })
         .onEnd(() => {
+          'worklet';
           if (onPress) {
             runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
             runOnJS(onPress)();
@@ -67,6 +70,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
   );
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = interpolateColor(
       pressProgress.value,
       [0, 1],

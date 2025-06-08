@@ -52,31 +52,41 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
   };
 
   // Animated styles
-  const authButtonAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: authButtonScale.value }],
-  }));
+  const authButtonAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: authButtonScale.value }],
+    };
+  });
 
-  const indicatorAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: indicatorScale.value }],
-  }));
+  const indicatorAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: indicatorScale.value }],
+    };
+  });
 
   // Gesture handlers
   const authButtonGesture = Gesture.Tap()
     .onBegin(() => {
+      'worklet';
       authButtonScale.value = withTiming(0.95, { duration: 100 });
       runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
     })
     .onFinalize(() => {
+      'worklet';
       authButtonScale.value = withSpring(1, { damping: 15, stiffness: 400 });
       runOnJS(devBypassAuth)();
     });
 
   const indicatorGesture = Gesture.Tap()
     .onBegin(() => {
+      'worklet';
       indicatorScale.value = withTiming(0.9, { duration: 100 });
       runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
     })
     .onFinalize(() => {
+      'worklet';
       indicatorScale.value = withSpring(1, { damping: 15, stiffness: 400 });
       runOnJS(setModalVisible)(true);
     });

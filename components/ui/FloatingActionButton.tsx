@@ -125,6 +125,7 @@ export function FloatingActionButton({
 
   // Animated style with sophisticated shadow and transform effects
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ scale: scale.value }, { rotateZ: `${rotation.value}deg` }],
       shadowOpacity: shadowOpacity.value,
@@ -134,6 +135,7 @@ export function FloatingActionButton({
 
   // Animated icon style for enhanced visual feedback
   const animatedIconStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ scale: iconScale.value }],
     };

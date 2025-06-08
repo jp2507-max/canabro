@@ -39,28 +39,43 @@ const DiagnosisResultCard = React.memo(function DiagnosisResultCard({
   const retryButtonScale = useSharedValue(1);
 
   // Animated styles
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value * cardPressScale.value }, { translateY: titleY.value }],
-    opacity: opacity.value,
-  }));
+  const cardStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value * cardPressScale.value }, { translateY: titleY.value }],
+      opacity: opacity.value,
+    };
+  });
 
-  const titleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: titleY.value }],
-    opacity: interpolate(titleY.value, [20, 0], [0, 1], Extrapolation.CLAMP),
-  }));
+  const titleStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: titleY.value }],
+      opacity: interpolate(titleY.value, [20, 0], [0, 1], Extrapolation.CLAMP),
+    };
+  });
 
-  const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: contentY.value }],
-    opacity: interpolate(contentY.value, [30, 0], [0, 1], Extrapolation.CLAMP),
-  }));
+  const contentStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: contentY.value }],
+      opacity: interpolate(contentY.value, [30, 0], [0, 1], Extrapolation.CLAMP),
+    };
+  });
 
-  const confidenceBarStyle = useAnimatedStyle(() => ({
-    width: `${confidenceWidth.value}%`,
-  }));
+  const confidenceBarStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      width: `${confidenceWidth.value}%`,
+    };
+  });
 
-  const retryButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: retryButtonScale.value }],
-  }));
+  const retryButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: retryButtonScale.value }],
+    };
+  });
 
   const confidencePercentage = Math.round(diagnosisResult.confidence * 100);
 

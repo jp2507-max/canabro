@@ -14,7 +14,7 @@ import {
 // --- Configuration ---
 const BASE_URL = 'https://the-weed-db.p.rapidapi.com/api';
 // Use the key from expo-constants extra config
-const API_KEY = Constants.expoConfig?.extra?.rapidApiKey as string | undefined;
+const API_KEY = Constants.expoConfig?.extra?.RAPIDAPI_KEY as string | undefined;
 const API_HOST = 'the-weed-db.p.rapidapi.com';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 

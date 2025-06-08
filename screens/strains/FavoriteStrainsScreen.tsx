@@ -13,6 +13,7 @@ import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
 import { WeedDbService } from '@/lib/services/weed-db.service';
 import { Strain } from '@/lib/types/weed-db';
 import { isObjectId } from '@/lib/utils/strainIdMapping';
+import { Logger } from '@/lib/utils/production-utils';
 import { ensureUuid } from '@/lib/utils/uuid';
 
 /**
@@ -41,7 +42,7 @@ function useFavoriteStrains(
     queryFn: async () => {
       if (!favoriteStrainIds.length) return [];
 
-      console.log(`[DEBUG] Fetching ${favoriteStrainIds.length} favorite strains`);
+      Logger.debug(`[DEBUG] Fetching ${favoriteStrainIds.length} favorite strains`);
 
       // Map of UUID to fetched strain for deduplication
       const strainMap = new Map<string, Strain>();
@@ -65,7 +66,7 @@ function useFavoriteStrains(
                   ? objectId // Use MongoDB ObjectId if available (preferred)
                   : getObjectId(uuid) || uuid; // Try to resolve or fallback to UUID
 
-              console.log(`[DEBUG] Fetching strain ${uuid} with API ID ${apiId}`);
+              Logger.debug(`[DEBUG] Fetching strain ${uuid} with API ID ${apiId}`);
 
               const result = await WeedDbService.getById(apiId);
 

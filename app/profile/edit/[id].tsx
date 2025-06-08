@@ -56,6 +56,7 @@ const AnimatedInput: React.FC<AnimatedInputProps> = React.memo(
     const errorShake = useSharedValue(0);
 
     const animatedStyle = useAnimatedStyle(() => {
+      'worklet';
       const borderColor = interpolateColor(
         focusProgress.value,
         [0, 1],
@@ -158,10 +159,13 @@ const AnimatedSaveButton: React.FC<AnimatedSaveButtonProps> = React.memo(
         }
       });
 
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-      shadowOpacity: shadowOpacity.value,
-    }));
+    const animatedStyle = useAnimatedStyle(() => {
+      'worklet';
+      return {
+        transform: [{ scale: scale.value }],
+        shadowOpacity: shadowOpacity.value,
+      };
+    });
 
     return (
       <GestureDetector gesture={pressGesture}>

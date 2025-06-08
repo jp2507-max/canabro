@@ -105,6 +105,7 @@ const DatabaseResetButton = () => {
 
   // Animated styles
   const buttonAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       buttonProgress.value,
       [0, 1],
@@ -118,10 +119,13 @@ const DatabaseResetButton = () => {
     };
   });
 
-  const modalAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: modalScale.value }],
-    opacity: modalScale.value,
-  }));
+  const modalAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: modalScale.value }],
+      opacity: modalScale.value,
+    };
+  });
 
   // Haptic feedback functions for runOnJS
   const mediumHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -132,12 +136,14 @@ const DatabaseResetButton = () => {
   const buttonGesture = Gesture.Tap()
     .enabled(!isResetting)
     .onBegin(() => {
+      'worklet';
       scale.value = withTiming(SCALE_VALUES.pressed, { duration: 100 });
       shadowOpacity.value = withTiming(0.1, { duration: 100 });
       buttonProgress.value = withTiming(1, { duration: 100 });
       runOnJS(mediumHaptic)();
     })
     .onFinalize(() => {
+      'worklet';
       scale.value = withSpring(SCALE_VALUES.default, SPRING_CONFIG);
       shadowOpacity.value = withSpring(0.3, SPRING_CONFIG);
       buttonProgress.value = withSpring(0, SPRING_CONFIG);
@@ -148,17 +154,21 @@ const DatabaseResetButton = () => {
 
   const confirmGesture = Gesture.Tap()
     .onBegin(() => {
+      'worklet';
       runOnJS(heavyHaptic)();
     })
     .onFinalize(() => {
+      'worklet';
       runOnJS(handleReset)();
     });
 
   const cancelGesture = Gesture.Tap()
     .onBegin(() => {
+      'worklet';
       runOnJS(lightHaptic)();
     })
     .onFinalize(() => {
+      'worklet';
       runOnJS(() => setShowConfirmModal(false))();
     });
 

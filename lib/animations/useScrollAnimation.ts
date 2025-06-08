@@ -104,22 +104,34 @@ export function useScrollAnimation(config: UseScrollAnimationConfig = {}) {
   });
 
   // Pre-built animated styles
-  const parallaxStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: parallaxTranslateY.value }],
-  }));
+  const parallaxStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: parallaxTranslateY.value }],
+    };
+  });
 
-  const fadeStyle = useAnimatedStyle(() => ({
-    opacity: fadeOpacity.value,
-  }));
+  const fadeStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: fadeOpacity.value,
+    };
+  });
 
-  const scaleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scaleValue.value }],
-  }));
+  const scaleStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scaleValue.value }],
+    };
+  });
 
-  const combinedStyle = useAnimatedStyle(() => ({
-    opacity: fadeOpacity.value,
-    transform: [{ translateY: parallaxTranslateY.value }, { scale: scaleValue.value }],
-  }));
+  const combinedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: fadeOpacity.value,
+      transform: [{ translateY: parallaxTranslateY.value }, { scale: scaleValue.value }],
+    };
+  });
 
   return {
     // Scroll handler for ScrollView/FlatList

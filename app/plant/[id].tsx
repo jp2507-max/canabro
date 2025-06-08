@@ -51,10 +51,13 @@ function AnimatedNavButton({
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.3);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    shadowOpacity: shadowOpacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      shadowOpacity: shadowOpacity.value,
+    };
+  });
 
   const tapGesture = Gesture.Tap()
     .onBegin(() => {

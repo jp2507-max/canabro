@@ -64,9 +64,12 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
       handleSyncPress();
     });
 
-  const syncAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: syncButtonScale.value }],
-  }));
+  const syncAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: syncButtonScale.value }],
+    };
+  });
 
   return (
     <ThemedView variant="default" className="flex-1 bg-neutral-50 dark:bg-neutral-900">

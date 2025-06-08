@@ -151,6 +151,7 @@ const AnimatedFavoriteButton = ({
     });
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       pressed.value,
       [0, 1],
@@ -164,9 +165,12 @@ const AnimatedFavoriteButton = ({
     };
   });
 
-  const heartAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
-  }));
+  const heartAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: heartScale.value }],
+    };
+  });
 
   return (
     <GestureDetector gesture={gesture}>

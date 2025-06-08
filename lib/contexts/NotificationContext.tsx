@@ -78,8 +78,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
     // Clean up listeners on unmount
     return () => {
-      Notifications.removeNotificationSubscription(notificationListener);
-      Notifications.removeNotificationSubscription(responseListener);
+      notificationListener.remove();
+      responseListener.remove();
     };
   }, []);
 

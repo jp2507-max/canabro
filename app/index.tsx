@@ -17,13 +17,19 @@ const Index = () => {
 
     if (!loading) {
       console.log('[Index] Auth state loaded.'); // Log condition met
-      if (user) {
-        console.log('[Index] User found. Replacing route with /(tabs)');
-        router.replace('/(tabs)');
-      } else {
-        console.log('[Index] User NOT found. Replacing route with /(auth)/login');
-        router.replace('/(auth)/login');
-      }
+      
+      // Add a small delay to ensure navigation context is ready
+      const timeout = setTimeout(() => {
+        if (user) {
+          console.log('[Index] User found. Replacing route with /(tabs)');
+          router.replace('/(tabs)');
+        } else {
+          console.log('[Index] User NOT found. Replacing route with /(auth)/login');
+          router.replace('/(auth)/login');
+        }
+      }, 100);
+
+      return () => clearTimeout(timeout);
     } else {
       console.log('[Index] Auth state still loading...'); // Log condition not met
     }

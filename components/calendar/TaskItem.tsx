@@ -99,6 +99,7 @@ function TaskItemBase({
     });
 
   const cardAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ scale: scale.value }, { translateY: translateY.value }],
       shadowOpacity: shadowOpacity.value,
@@ -107,6 +108,7 @@ function TaskItemBase({
   });
 
   const completeButtonAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ scale: completionScale.value }],
     };

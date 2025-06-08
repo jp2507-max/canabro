@@ -18,9 +18,12 @@ interface StrainLoadingStateProps {
 const SkeletonCard = memo(() => {
   const opacity = useSharedValue(0.3);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: opacity.value,
+    };
+  });
 
   useEffect(() => {
     opacity.value = withRepeat(withTiming(0.8, { duration: 1200 }), -1, true);

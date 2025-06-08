@@ -88,6 +88,7 @@ export default function CreatePostModal({
 
   // 🎨 Enhanced Animated Styles with Color Interpolation
   const animatedBackdropStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       backdropOpacity.value,
       [0, 1],
@@ -100,28 +101,43 @@ export default function CreatePostModal({
     };
   });
 
-  const animatedModalStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: modalTranslateY.value }, { scale: modalScale.value }],
-    opacity: modalOpacity.value,
-  }));
+  const animatedModalStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: modalTranslateY.value }, { scale: modalScale.value }],
+      opacity: modalOpacity.value,
+    };
+  });
 
-  const animatedBlurStyle = useAnimatedStyle(() => ({
-    opacity: blurIntensity.value,
-  }));
+  const animatedBlurStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: blurIntensity.value,
+    };
+  });
 
-  const animatedShareButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: shareButtonScale.value }],
-    opacity: shareButtonOpacity.value,
-  }));
+  const animatedShareButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: shareButtonScale.value }],
+      opacity: shareButtonOpacity.value,
+    };
+  });
 
-  const animatedQuestionButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: questionButtonScale.value }],
-    opacity: questionButtonOpacity.value,
-  }));
+  const animatedQuestionButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: questionButtonScale.value }],
+      opacity: questionButtonOpacity.value,
+    };
+  });
 
-  const animatedSwipeIndicatorStyle = useAnimatedStyle(() => ({
-    opacity: swipeIndicatorOpacity.value,
-  }));
+  const animatedSwipeIndicatorStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: swipeIndicatorOpacity.value,
+    };
+  });
 
   // 🎯 Enhanced Animation Functions
   const showModal = () => {
@@ -181,7 +197,7 @@ export default function CreatePostModal({
   const panGesture = Gesture.Pan()
     .onStart((event) => {
       'worklet';
-      gestureContext.value = { startY: event.translationY };
+      gestureContext.value.startY = event.translationY;
       isGestureActive.value = true;
     })
     .onUpdate((event) => {

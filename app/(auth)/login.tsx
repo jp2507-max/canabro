@@ -55,9 +55,12 @@ function AnimatedInput({
   const focusScale = useSharedValue(1);
   const errorShake = useSharedValue(0);
 
-  const animatedInputStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: focusScale.value }, { translateX: errorShake.value }],
-  }));
+  const animatedInputStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: focusScale.value }, { translateX: errorShake.value }],
+    };
+  });
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -161,10 +164,13 @@ function AnimatedButton({
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.2);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    shadowOpacity: shadowOpacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      shadowOpacity: shadowOpacity.value,
+    };
+  });
 
   const handlePressIn = () => {
     runOnUI(() => {

@@ -35,13 +35,19 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
   const takePictureScale = useSharedValue(1);
 
   // Animated styles
-  const pickImageStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pickImageScale.value }],
-  }));
+  const pickImageStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: pickImageScale.value }],
+    };
+  });
 
-  const takePictureStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: takePictureScale.value }],
-  }));
+  const takePictureStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: takePictureScale.value }],
+    };
+  });
 
   async function processAndSetImage(uri: string) {
     try {

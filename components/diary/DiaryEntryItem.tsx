@@ -85,6 +85,7 @@ export default function DiaryEntryItem({ entry, onPress }: DiaryEntryItemProps) 
   const backgroundColor = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const bgColor = rInterpolateColor(
       backgroundColor.value,
       [0, 1],

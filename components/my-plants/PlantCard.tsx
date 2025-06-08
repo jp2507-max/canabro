@@ -104,6 +104,7 @@ export function PlantCard({ plant, onPress }: PlantCardProps) {
   const composedGesture = Gesture.Exclusive(longPressGesture, tapGesture);
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ scale: scale.value }, { rotateZ: `${rotation.value}deg` }],
       shadowOpacity: shadowOpacity.value,

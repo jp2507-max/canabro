@@ -7,7 +7,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  runOnUI,
+  runOnJS,
 } from 'react-native-reanimated';
 
 import { OptimizedIcon } from './OptimizedIcon';
@@ -40,10 +40,13 @@ function StepItem({ number, title, description, index }: StepItemProps) {
     return () => clearTimeout(id);
   }, []);
 
-  const stepAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: stepScale.value }],
-    opacity: stepOpacity.value,
-  }));
+  const stepAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: stepScale.value }],
+      opacity: stepOpacity.value,
+    };
+  });
 
   return (
     <Animated.View style={stepAnimatedStyle} className="mb-4 flex-row">
@@ -129,52 +132,59 @@ const DatabaseResetHelper = () => {
   };
 
   // Animated styles
-  const resetButtonAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: resetButtonScale.value }],
-  }));
+  const resetButtonAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: resetButtonScale.value }],
+    };
+  });
 
-  const guidanceButtonAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: guidanceButtonScale.value }],
-  }));
+  const guidanceButtonAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: guidanceButtonScale.value }],
+    };
+  });
 
-  const guidanceContentAnimatedStyle = useAnimatedStyle(() => ({
-    maxHeight: guidanceHeight.value * 400,
-    opacity: guidanceHeight.value,
-  }));
+  const guidanceContentAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      maxHeight: guidanceHeight.value * 400,
+      opacity: guidanceHeight.value,
+    };
+  });
 
-  const iconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${guidanceRotation.value}deg` }],
-  }));
+  const iconAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ rotate: `${guidanceRotation.value}deg` }],
+    };
+  });
 
   // Gesture handlers
   const resetGesture = Gesture.Tap()
     .enabled(!isResetting)
     .onBegin(() => {
-      runOnUI(() => {
-        resetButtonScale.value = withTiming(SCALE_VALUES.pressed, { duration: 100 });
-      })();
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      'worklet';
+      resetButtonScale.value = withTiming(SCALE_VALUES.pressed, { duration: 100 });
     })
     .onFinalize(() => {
-      runOnUI(() => {
-        resetButtonScale.value = withSpring(SCALE_VALUES.default, SPRING_CONFIG);
-      })();
+      'worklet';
+      resetButtonScale.value = withSpring(SCALE_VALUES.default, SPRING_CONFIG);
       if (!isResetting) {
-        handleReset();
+        runOnJS(handleReset)();
       }
     });
 
   const guidanceGesture = Gesture.Tap()
     .onBegin(() => {
-      runOnUI(() => {
-        guidanceButtonScale.value = withTiming(SCALE_VALUES.pressed, { duration: 100 });
-      })();
+      'worklet';
+      guidanceButtonScale.value = withTiming(SCALE_VALUES.pressed, { duration: 100 });
     })
     .onFinalize(() => {
-      runOnUI(() => {
-        guidanceButtonScale.value = withSpring(SCALE_VALUES.default, SPRING_CONFIG);
-      })();
-      toggleGuidance();
+      'worklet';
+      guidanceButtonScale.value = withSpring(SCALE_VALUES.default, SPRING_CONFIG);
+      runOnJS(toggleGuidance)();
     });
 
   const resetSteps = [

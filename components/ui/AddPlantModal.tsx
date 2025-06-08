@@ -127,24 +127,28 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
   // Animated styles with sophisticated interpolations
   const animatedModalStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ translateY: modalTranslateY.value }, { scale: headerScale.value }],
     };
   });
 
   const animatedBackdropStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       opacity: backdropOpacity.value,
     };
   });
 
   const animatedContentStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       opacity: contentOpacity.value,
     };
   });
 
   const animatedBlurStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       opacity: interpolate(blurIntensity.value, [0, 20], [0, 1], Extrapolation.CLAMP),
     };

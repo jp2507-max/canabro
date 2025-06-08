@@ -140,10 +140,13 @@ export function useGestureAnimation(config: UseGestureAnimationConfig = {}) {
   const composedGesture = Gesture.Exclusive(longPressGesture, tapGesture);
 
   // Animated style
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }, { rotateZ: `${rotation.value}deg` }],
-    shadowOpacity: shadowOpacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }, { rotateZ: `${rotation.value}deg` }],
+      shadowOpacity: shadowOpacity.value,
+    };
+  });
 
   // Set up automatic cleanup for animations
   useAnimationCleanup({

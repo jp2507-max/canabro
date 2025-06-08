@@ -305,15 +305,127 @@ const handlePress = () => {
 - **Early adopters**: RC is stable but no stable release announced yet
 - **Meta-scale teams**: RC is production-ready if you follow Rules of React strictly
 
-## 🎯 **Production Checklist**
+## 🚨 **Avoiding Reanimated 3.17+ Warnings (Canabro Project)**
 
-- ✅ Use `.value` syntax for all shared value operations
-- ✅ Migrate from `useAnimatedGestureHandler` to `Gesture` API
-- ✅ Combine NativeWind (static) + Reanimated (dynamic)
-- ✅ Add proper cleanup with `cancelAnimation`
-- ✅ Import `interpolateColor` with alias to avoid recursion
-- ✅ Use `GestureDetector` instead of handler components
-- ✅ Avoid mixing `.value` and `.get()/.set()` patterns
+### **📋 Completed Migration (June 8, 2025)**
+Our Canabro app has been fully migrated to comply with Reanimated 3.17+ best practices. **All 25 animation files** have been updated to prevent warnings.
+
+### **⚠️ Critical Rules to Prevent Regression**
+
+#### **1. Always Use Explicit 'worklet' Directives**
+```tsx
+// ✅ CORRECT - Explicit worklet directive
+const animatedStyle = useAnimatedStyle(() => {
+  'worklet'; // ← ALWAYS ADD THIS
+  return {
+    transform: [{ scale: scale.value }],
+  };
+});
+
+// ❌ CAUSES WARNINGS - Missing worklet directive
+const animatedStyle = useAnimatedStyle(() => {
+  return {
+    transform: [{ scale: scale.value }],
+  };
+});
+```
+
+#### **2. Never Access .value During Component Render**
+```tsx
+// ✅ CORRECT - Access .value only in worklets
+const Component = () => {
+  const scale = useSharedValue(1);
+  
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return { transform: [{ scale: scale.value }] }; // ← OK in worklet
+  });
+  
+  return <Animated.View style={animatedStyle} />;
+};
+
+// ❌ CAUSES WARNINGS - Reading .value during render
+const Component = () => {
+  const scale = useSharedValue(1);
+  console.log(scale.value); // ← NEVER DO THIS
+  
+  return <View style={{ opacity: scale.value }} />; // ← NEVER DO THIS
+};
+```
+
+#### **3. Proper Gesture Handler Patterns**
+```tsx
+// ✅ CORRECT - Worklets in gesture handlers
+const gesture = Gesture.Tap()
+  .onBegin(() => {
+    'worklet'; // ← ALWAYS ADD THIS
+    scale.value = withSpring(0.95);
+  })
+  .onEnd(() => {
+    'worklet'; // ← ALWAYS ADD THIS
+    scale.value = withSpring(1);
+  });
+
+// ❌ CAUSES WARNINGS - Missing worklet directives
+const gesture = Gesture.Tap()
+  .onBegin(() => {
+    scale.value = withSpring(0.95); // ← Missing 'worklet'
+  });
+```
+
+#### **4. Don't Modify Objects After Worklet Assignment**
+```tsx
+// ✅ CORRECT - Create new objects
+const animatedStyle = useAnimatedStyle(() => {
+  'worklet';
+  return {
+    transform: [
+      { scale: scale.value },
+      { translateX: x.value }
+    ],
+  };
+});
+
+// ❌ CAUSES WARNINGS - Modifying existing arrays/objects
+const baseTransform = [{ scale: scale.value }];
+baseTransform.push({ translateX: x.value }); // ← DON'T DO THIS
+```
+
+### **🔍 Code Review Checklist for New Animations**
+Before adding any new animations, ensure:
+
+- [ ] All `useAnimatedStyle` hooks include `'worklet'` directive
+- [ ] All gesture handlers include `'worklet'` directive  
+- [ ] No `.value` access during component render
+- [ ] No modification of objects after worklet assignment
+- [ ] Proper cleanup with `cancelAnimation` on unmount
+- [ ] Test in development mode for any console warnings
+
+### **📁 Files Successfully Updated (Reference)**
+All these files now follow proper patterns - use them as examples:
+- `components/AddPlantForm.tsx` - Complex form animations
+- `components/plant-detail/PlantHeroImage.tsx` - Image interactions
+- `lib/animations/useGestureAnimation.ts` - Advanced gesture patterns
+- `lib/animations/useScrollAnimation.ts` - Scroll-based animations
+
+### **🔧 Quick Fix Template**
+When Reanimated warnings appear, apply this pattern:
+```tsx
+// Add 'worklet' to useAnimatedStyle
+const animatedStyle = useAnimatedStyle(() => {
+  'worklet'; // ← Add this line
+  return {
+    // ...existing style code...
+  };
+});
+
+// Add 'worklet' to gesture handlers
+const gesture = Gesture.Tap()
+  .onBegin(() => {
+    'worklet'; // ← Add this line
+    // ...existing gesture code...
+  });
+```
 
 ---
 

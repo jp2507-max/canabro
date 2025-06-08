@@ -40,32 +40,47 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: Pla
   const iconRotation = useSharedValue(0);
 
   // Animated styles
-  const companionStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: companionY.value },
-      { scale: companionScale.value },
-      { rotate: `${companionRotation.value}deg` },
-    ],
-  }));
+  const companionStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { translateY: companionY.value },
+        { scale: companionScale.value },
+        { rotate: `${companionRotation.value}deg` },
+      ],
+    };
+  });
 
-  const titleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: titleY.value }],
-    opacity: interpolate(titleY.value, [30, 0], [0, 1], Extrapolation.CLAMP),
-  }));
+  const titleStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: titleY.value }],
+      opacity: interpolate(titleY.value, [30, 0], [0, 1], Extrapolation.CLAMP),
+    };
+  });
 
-  const subtitleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: subtitleY.value }],
-    opacity: interpolate(subtitleY.value, [40, 0], [0, 1], Extrapolation.CLAMP),
-  }));
+  const subtitleStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: subtitleY.value }],
+      opacity: interpolate(subtitleY.value, [40, 0], [0, 1], Extrapolation.CLAMP),
+    };
+  });
 
-  const buttonStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: buttonY.value }, { scale: buttonScale.value }],
-    opacity: interpolate(buttonY.value, [50, 0], [0, 1], Extrapolation.CLAMP),
-  }));
+  const buttonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: buttonY.value }, { scale: buttonScale.value }],
+      opacity: interpolate(buttonY.value, [50, 0], [0, 1], Extrapolation.CLAMP),
+    };
+  });
 
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${iconRotation.value}deg` }],
-  }));
+  const iconStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ rotate: `${iconRotation.value}deg` }],
+    };
+  });
 
   // Entrance animations
   useEffect(() => {

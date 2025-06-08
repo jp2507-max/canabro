@@ -65,6 +65,7 @@ const TopicTag = React.memo(
       });
 
     const animatedStyle = useAnimatedStyle(() => {
+      'worklet';
       const backgroundColor = isActive
         ? interpolateColor(
             pressed.value,

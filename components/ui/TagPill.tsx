@@ -40,6 +40,7 @@ export function TagPill({
 
   // Animated styles for press and selection effects
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       selectedProgress.value,
       [0, 1],
@@ -58,6 +59,7 @@ export function TagPill({
   });
 
   const textAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const textColor = rInterpolateColor(
       selectedProgress.value,
       [0, 1],

@@ -39,6 +39,7 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({
   // Press gesture with sophisticated feedback
   const pressGesture = Gesture.Tap()
     .onBegin(() => {
+      'worklet';
       scale.value = withSpring(0.96, {
         damping: 15,
         stiffness: 400,
@@ -47,6 +48,7 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({
       elevation.value = withSpring(4);
     })
     .onFinalize(() => {
+      'worklet';
       scale.value = withSequence(
         withSpring(1.02, { damping: 10, stiffness: 300 }),
         withSpring(1, { damping: 15, stiffness: 400 })
@@ -55,17 +57,21 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({
       elevation.value = withSpring(2);
     })
     .onEnd(() => {
+      'worklet';
       if (onPress) {
         runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
         runOnJS(onPress)();
       }
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    shadowOpacity: shadowOpacity.value,
-    elevation: elevation.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      shadowOpacity: shadowOpacity.value,
+      elevation: elevation.value,
+    };
+  });
 
   const StatContent = (
     <Animated.View

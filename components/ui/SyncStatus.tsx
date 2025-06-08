@@ -146,11 +146,15 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
   };
 
   // Animated styles
-  const containerAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: containerScale.value }],
-  }));
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: containerScale.value }],
+    };
+  });
 
   const statusIndicatorStyle = useAnimatedStyle(() => {
+    'worklet';
     const color = indicatorColor.value;
     const pulseScale = 1 + pulseAnimation.value * 0.3;
     const pulseOpacity = 0.7 + pulseAnimation.value * 0.3;
@@ -162,9 +166,12 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
     };
   });
 
-  const progressAnimatedStyle = useAnimatedStyle(() => ({
-    width: `${progressWidth.value}%`,
-  }));
+  const progressAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      width: `${progressWidth.value}%`,
+    };
+  });
 
   const statusColors = getStatusColors(syncError, isSyncing, health.status);
 

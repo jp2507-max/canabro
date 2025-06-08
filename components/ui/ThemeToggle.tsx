@@ -74,6 +74,7 @@ function ThemeToggle({ showLabel = true, compact = false }: ThemeToggleProps) {
 
   // Animated styles
   const containerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       backgroundProgress.value,
       [0, 1],
@@ -87,6 +88,7 @@ function ThemeToggle({ showLabel = true, compact = false }: ThemeToggleProps) {
   });
 
   const iconContainerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       backgroundProgress.value,
       [0, 1],
@@ -98,9 +100,12 @@ function ThemeToggle({ showLabel = true, compact = false }: ThemeToggleProps) {
     };
   });
 
-  const iconAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${iconRotation.value}deg` }, { scale: iconScale.value }],
-  }));
+  const iconAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ rotate: `${iconRotation.value}deg` }, { scale: iconScale.value }],
+    };
+  });
 
   const textAnimatedStyle = useAnimatedStyle(() => {
     const color = rInterpolateColor(

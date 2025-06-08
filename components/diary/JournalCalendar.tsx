@@ -37,6 +37,7 @@ const AnimatedDateItem = ({
   const backgroundColor = useSharedValue(isSelected ? 1 : 0);
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const bgColor = interpolateColor(
       backgroundColor.value,
       [0, 1],
@@ -50,6 +51,7 @@ const AnimatedDateItem = ({
   });
 
   const textAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const textColor = interpolateColor(
       backgroundColor.value,
       [0, 1],
@@ -234,10 +236,13 @@ const NavigationButton = ({
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0.7);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+    };
+  });
 
   const gesture = Gesture.Tap()
     .onBegin(() => {

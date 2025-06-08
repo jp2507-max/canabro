@@ -108,21 +108,24 @@ const StrainCard = memo(
     const scale = useSharedValue(1);
     const pressed = useSharedValue(false);
 
-    const favoriteAnimation = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-    }));
+    const favoriteAnimation = useAnimatedStyle(() => {
+      'worklet';
+      return {
+        transform: [{ scale: scale.value }],
+      };
+    });
 
     // 🎬 Modern gesture handling
     const tapGesture = Gesture.Tap()
       .onBegin(() => {
         'worklet';
-        scale.set(withSpring(0.95));
-        pressed.set(true);
+        scale.value = withSpring(0.95);
+        pressed.value = true;
       })
       .onFinalize(() => {
         'worklet';
-        scale.set(withSpring(1));
-        pressed.set(false);
+        scale.value = withSpring(1);
+        pressed.value = false;
       })
       .onEnd(() => {
         'worklet';
@@ -392,9 +395,12 @@ const CategoryChip = memo(
     // 🎯 React Compiler Compatible Animation
     const scale = useSharedValue(1);
 
-    const chipAnimatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-    }));
+    const chipAnimatedStyle = useAnimatedStyle(() => {
+      'worklet';
+      return {
+        transform: [{ scale: scale.value }],
+      };
+    });
 
     // 🎬 Modern gesture handling
     const handlePress = useCallback(() => {
@@ -405,11 +411,11 @@ const CategoryChip = memo(
     const tapGesture = Gesture.Tap()
       .onBegin(() => {
         'worklet';
-        scale.set(withSpring(0.96));
+        scale.value = withSpring(0.96);
       })
       .onFinalize(() => {
         'worklet';
-        scale.set(withSpring(1));
+        scale.value = withSpring(1);
       })
       .onEnd(() => {
         'worklet';

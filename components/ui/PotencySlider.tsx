@@ -82,7 +82,7 @@ export default function PotencySlider({
   // Min thumb gesture
   const minThumbGesture = Gesture.Pan()
     .onStart(() => {
-      minThumbContext.value = { startX: minThumbX.value };
+      minThumbContext.value.startX = minThumbX.value;
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
@@ -102,7 +102,7 @@ export default function PotencySlider({
   // Max thumb gesture
   const maxThumbGesture = Gesture.Pan()
     .onStart(() => {
-      maxThumbContext.value = { startX: maxThumbX.value };
+      maxThumbContext.value.startX = maxThumbX.value;
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
@@ -120,18 +120,27 @@ export default function PotencySlider({
     });
 
   // Animated styles
-  const minThumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: minThumbX.value }],
-  }));
+  const minThumbStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateX: minThumbX.value }],
+    };
+  });
 
-  const maxThumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: maxThumbX.value }],
-  }));
+  const maxThumbStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateX: maxThumbX.value }],
+    };
+  });
 
-  const activeTrackStyle = useAnimatedStyle(() => ({
-    left: minThumbX.value,
-    width: maxThumbX.value - minThumbX.value,
-  }));
+  const activeTrackStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      left: minThumbX.value,
+      width: maxThumbX.value - minThumbX.value,
+    };
+  });
 
   const currentMinValue = minValue ?? min;
   const currentMaxValue = maxValue ?? max;

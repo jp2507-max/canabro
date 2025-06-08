@@ -68,11 +68,15 @@ export function PlantHeroImage({
   }, [imageUrl]);
 
   // Animated styles for gesture feedback
-  const imageAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const imageAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
 
   const overlayAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       pressed.value,
       [0, 1],

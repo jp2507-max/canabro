@@ -101,10 +101,13 @@ const LoadingScreen: React.FC = () => {
     );
   }, []);
 
-  const animatedSpinnerStyle = useAnimatedStyle(() => ({
-    opacity: spinnerOpacity.value,
-    transform: [{ scale: spinnerScale.value }],
-  }));
+  const animatedSpinnerStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: spinnerOpacity.value,
+      transform: [{ scale: spinnerScale.value }],
+    };
+  });
 
   return (
     <ThemedView

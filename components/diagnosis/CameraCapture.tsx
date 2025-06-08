@@ -43,37 +43,61 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
   const backButtonScale = useSharedValue(1);
 
   // Animated styles
-  const captureButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: captureScale.value }, { rotate: `${captureRotation.value}deg` }],
-  }));
+  const captureButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: captureScale.value }, { rotate: `${captureRotation.value}deg` }],
+    };
+  });
 
-  const controlsStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(controlsOpacity.value, [0, 1], [0, 1], Extrapolation.CLAMP),
-  }));
+  const controlsStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: interpolate(controlsOpacity.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+    };
+  });
 
-  const permissionStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: permissionScale.value }],
-  }));
+  const permissionStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: permissionScale.value }],
+    };
+  });
 
-  const flashButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: flashButtonScale.value }],
-  }));
+  const flashButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: flashButtonScale.value }],
+    };
+  });
 
-  const galleryButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: galleryButtonScale.value }],
-  }));
+  const galleryButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: galleryButtonScale.value }],
+    };
+  });
 
-  const flipButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: flipButtonScale.value }],
-  }));
+  const flipButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: flipButtonScale.value }],
+    };
+  });
 
-  const permissionButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: permissionButtonScale.value }],
-  }));
+  const permissionButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: permissionButtonScale.value }],
+    };
+  });
 
-  const backButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: backButtonScale.value }],
-  }));
+  const backButtonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: backButtonScale.value }],
+    };
+  });
 
   // Initialize entrance animations
   useEffect(() => {

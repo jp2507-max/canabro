@@ -92,15 +92,21 @@ export function DatabaseErrorHandler({ error, onResolve, onReset }: DatabaseErro
     };
   });
 
-  const errorBoxAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: errorBoxScale.value }],
-    opacity: errorBoxScale.value,
-  }));
+  const errorBoxAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: errorBoxScale.value }],
+      opacity: errorBoxScale.value,
+    };
+  });
 
-  const infoBoxAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: infoBoxScale.value }],
-    opacity: infoBoxScale.value,
-  }));
+  const infoBoxAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: infoBoxScale.value }],
+      opacity: infoBoxScale.value,
+    };
+  });
 
   // Helper functions for JS thread calls
   const mediumHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

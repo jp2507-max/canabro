@@ -76,13 +76,19 @@ function CommunityScreenView({
   const containerOpacity = useSharedValue(0);
   const fabScale = useSharedValue(0);
 
-  const animatedContainerStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
-  }));
+  const animatedContainerStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: containerOpacity.value,
+    };
+  });
 
-  const animatedFabStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: fabScale.value }],
-  }));
+  const animatedFabStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: fabScale.value }],
+    };
+  });
 
   // 🎯 Initialize entrance animations
   useEffect(() => {

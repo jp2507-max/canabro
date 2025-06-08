@@ -104,16 +104,22 @@ export default React.memo(function CommentItem({
   const isOwnComment = currentUserId === comment.user_id;
 
   // 🎬 Enhanced entrance animation with staggered effects
-  const entranceStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+  const entranceStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: translateY.value }],
+    };
+  });
 
   // 🎯 Dynamic shadow and elevation system
-  const shadowStyle = useAnimatedStyle(() => ({
-    elevation: elevationValue.value,
-    shadowOpacity: cardAnimation.sharedValues.shadowOpacity.value * 0.8, // Adjusted for comments
-  }));
+  const shadowStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      elevation: elevationValue.value,
+      shadowOpacity: cardAnimation.sharedValues.shadowOpacity.value * 0.8, // Adjusted for comments
+    };
+  });
 
   // Initialize entrance animations
   useEffect(() => {

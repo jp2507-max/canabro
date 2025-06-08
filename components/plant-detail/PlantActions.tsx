@@ -45,6 +45,7 @@ function ActionItem({
 
   // Animated styles with React Compiler compatibility
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       pressed.value,
       [0, 1],

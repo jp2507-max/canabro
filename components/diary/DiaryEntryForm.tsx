@@ -99,6 +99,7 @@ const AnimatedPressable = ({ children, onPress, disabled, variant = 'primary', .
   const backgroundColor = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const bgColor = interpolateColor(
       backgroundColor.value,
       [0, 1],
@@ -146,6 +147,7 @@ const AnimatedImagePicker = ({ onPress, selectedImageUri, disabled }: any) => {
   const borderColor = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const border = interpolateColor(
       borderColor.value,
       [0, 1],

@@ -29,6 +29,7 @@ import Animated, {
   withTiming,
   interpolateColor,
   runOnUI,
+  runOnJS,
 } from 'react-native-reanimated';
 import { z } from 'zod';
 
@@ -251,9 +252,12 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 }) => {
   const scale = useSharedValue(1);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
 
   // Memoize variant classes for performance
   const variantClasses = useMemo(() => {
@@ -272,29 +276,28 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     }
   }, [variant]);
 
+  // Haptic feedback handler
+  const triggerHaptic = useCallback(() => {
+    const hapticStyle =
+      variant === 'destructive'
+        ? Haptics.ImpactFeedbackStyle.Heavy
+        : variant === 'primary'
+          ? Haptics.ImpactFeedbackStyle.Medium
+          : Haptics.ImpactFeedbackStyle.Light;
+    Haptics.impactAsync(hapticStyle);
+  }, [variant]);
+
   const gesture = Gesture.Tap()
     .enabled(!disabled)
     .onBegin(() => {
-      runOnUI(() => {
-        'worklet';
-        scale.value = withTiming(BUTTON_SCALE_CONFIG.pressed, BUTTON_SCALE_CONFIG.timing);
-      })();
-
-      // Haptic feedback based on variant
-      const hapticStyle =
-        variant === 'destructive'
-          ? Haptics.ImpactFeedbackStyle.Heavy
-          : variant === 'primary'
-            ? Haptics.ImpactFeedbackStyle.Medium
-            : Haptics.ImpactFeedbackStyle.Light;
-      Haptics.impactAsync(hapticStyle);
+      'worklet';
+      scale.value = withTiming(BUTTON_SCALE_CONFIG.pressed, BUTTON_SCALE_CONFIG.timing);
+      runOnJS(triggerHaptic)();
     })
     .onFinalize(() => {
-      runOnUI(() => {
-        'worklet';
-        scale.value = withSpring(BUTTON_SCALE_CONFIG.released, SPRING_CONFIG);
-      })();
-      onPress();
+      'worklet';
+      scale.value = withSpring(BUTTON_SCALE_CONFIG.released, SPRING_CONFIG);
+      runOnJS(onPress)();
     });
 
   return (
@@ -347,18 +350,14 @@ const AnimatedSelectionButton: React.FC<AnimatedSelectionButtonProps> = ({
   const gesture = Gesture.Tap()
     .enabled(!disabled)
     .onBegin(() => {
-      runOnUI(() => {
-        'worklet';
-        scale.value = withTiming(BUTTON_SCALE_CONFIG.pressed, BUTTON_SCALE_CONFIG.timing);
-      })();
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      'worklet';
+      scale.value = withTiming(BUTTON_SCALE_CONFIG.pressed, BUTTON_SCALE_CONFIG.timing);
+      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
     })
     .onFinalize(() => {
-      runOnUI(() => {
-        'worklet';
-        scale.value = withSpring(BUTTON_SCALE_CONFIG.released, SPRING_CONFIG);
-      })();
-      onPress();
+      'worklet';
+      scale.value = withSpring(BUTTON_SCALE_CONFIG.released, SPRING_CONFIG);
+      runOnJS(onPress)();
     });
 
   return (
@@ -396,6 +395,7 @@ const AnimatedTextInput: React.FC<AnimatedTextInputProps> = ({
   const colorScheme = useColorScheme();
 
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const borderColor = interpolateColor(
       focusAnimation.value,
       [0, 1],
@@ -905,14 +905,20 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const { database } = useDatabase();
   const colorScheme = useColorScheme();
 
-  const progressBarStyle = useAnimatedStyle(() => ({
-    width: `${progress.value}%`,
-  }));
+  const progressBarStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      width: `${progress.value}%`,
+    };
+  });
 
-  const stepAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: stepTransition.value }],
-    opacity: withSpring(1 - Math.abs(stepTransition.value) / 300, SPRING_CONFIG),
-  }));
+  const stepAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateX: stepTransition.value }],
+      opacity: withSpring(1 - Math.abs(stepTransition.value) / 300, SPRING_CONFIG),
+    };
+  });
 
   const updateProgress = useCallback(() => {
     const newProgress = ((currentStepIndex + 1) / FORM_STEPS.length) * 100;
@@ -998,9 +1004,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       stepTransition.value = withTiming(-300, { duration: 200 }, (finished) => {
         'worklet';
         if (finished) {
-          runOnUI(() => {
-            stepTransition.value = 300;
-          })();
+          stepTransition.value = 300;
         }
       });
 
@@ -1033,9 +1037,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       stepTransition.value = withTiming(300, { duration: 200 }, (finished) => {
         'worklet';
         if (finished) {
-          runOnUI(() => {
-            stepTransition.value = -300;
-          })();
+          stepTransition.value = -300;
         }
       });
 
@@ -1313,7 +1315,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               Step {currentStepIndex + 1} of {FORM_STEPS.length}
             </ThemedText>
             <ThemedText variant="muted" className="text-xs">
-              {Math.round(progress.value)}%
+              {Math.round(((currentStepIndex + 1) / FORM_STEPS.length) * 100)}%
             </ThemedText>
           </ThemedView>
         </ThemedView>

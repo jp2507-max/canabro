@@ -107,14 +107,17 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
       runOnJS(handlePress)();
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    backgroundColor: interpolateColor(
-      pressed.value,
-      [0, 1],
-      ['transparent', 'rgba(59, 130, 246, 0.1)']
-    ),
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor: interpolateColor(
+        pressed.value,
+        [0, 1],
+        ['transparent', 'rgba(59, 130, 246, 0.1)']
+      ),
+    };
+  });
 
   return (
     <GestureDetector gesture={gesture}>
@@ -473,19 +476,25 @@ export default function CommentModal({
   });
 
   // Modal animated styles
-  const backdropAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }));
+  const backdropAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: backdropOpacity.value,
+    };
+  });
 
-  const modalAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: modalScale.value },
-      {
-        translateY: interpolate(modalOpacity.value, [0, 1], [300, 0]),
-      },
-    ],
-    opacity: modalOpacity.value,
-  }));
+  const modalAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { scale: modalScale.value },
+        {
+          translateY: interpolate(modalOpacity.value, [0, 1], [300, 0]),
+        },
+      ],
+      opacity: modalOpacity.value,
+    };
+  });
 
   return (
     <Modal animationType="none" transparent visible={isVisible} onRequestClose={onClose}>

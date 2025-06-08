@@ -49,6 +49,7 @@ export function StrainSkeletonItem({ index = 0 }: { index?: number }) {
 
   // Enhanced shimmer animated style
   const shimmerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const opacity = 0.3 + shimmerProgress.value * 0.4; // More pronounced shimmer
 
     // Shimmer color interpolation for better dark mode support
@@ -70,6 +71,7 @@ export function StrainSkeletonItem({ index = 0 }: { index?: number }) {
 
   // Dark mode shimmer for better contrast
   const darkShimmerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const opacity = 0.4 + shimmerProgress.value * 0.3;
 
     const shimmerColor = rInterpolateColor(
@@ -89,10 +91,13 @@ export function StrainSkeletonItem({ index = 0 }: { index?: number }) {
   });
 
   // Container entrance animation
-  const containerAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: itemScale.value }],
-    opacity: itemOpacity.value,
-  }));
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: itemScale.value }],
+      opacity: itemOpacity.value,
+    };
+  });
 
   return (
     <Animated.View

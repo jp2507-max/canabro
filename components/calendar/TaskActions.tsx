@@ -72,10 +72,13 @@ const ActionButton = React.memo(
         pressScale.value = withSpring(1, { damping: 15, stiffness: 300 });
       });
 
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value * pressScale.value }, { translateY: translateY.value }],
-      opacity: opacity.value,
-    }));
+    const animatedStyle = useAnimatedStyle(() => {
+      'worklet';
+      return {
+        transform: [{ scale: scale.value * pressScale.value }, { translateY: translateY.value }],
+        opacity: opacity.value,
+      };
+    });
 
     return (
       <GestureDetector gesture={tapGesture}>
@@ -199,13 +202,19 @@ function TaskActions({
     }
   }, [visible, backdropOpacity, modalTranslateY, modalScale, height]);
 
-  const backdropAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }));
+  const backdropAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: backdropOpacity.value,
+    };
+  });
 
-  const modalAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: modalTranslateY.value }, { scale: modalScale.value }],
-  }));
+  const modalAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateY: modalTranslateY.value }, { scale: modalScale.value }],
+    };
+  });
 
   const handlePlantTaskPress = useCallback(() => {
     onClose();

@@ -116,19 +116,29 @@ function ErrorDisplay({ error, errorInfo, onRetry }: ErrorDisplayProps) {
   };
 
   // Animated styles
-  const cardAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: cardScale.value }, { translateX: errorShake.value }],
-  }));
+  const cardAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: cardScale.value }, { translateX: errorShake.value }],
+    };
+  });
 
-  const retryAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: retryScale.value }],
-  }));
+  const retryAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: retryScale.value }],
+    };
+  });
 
-  const detailsToggleAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${detailsToggleRotation.value}deg` }],
-  }));
+  const detailsToggleAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ rotate: `${detailsToggleRotation.value}deg` }],
+    };
+  });
 
   const detailsAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     const backgroundColor = rInterpolateColor(
       detailsHeight.value,
       [0, 1],
