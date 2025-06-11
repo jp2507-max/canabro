@@ -4,7 +4,6 @@ import { Link } from 'expo-router';
 import React, { useState } from 'react';
 import {
   View,
-  TextInput,
   ActivityIndicator,
   Pressable,
   KeyboardAvoidingView,
@@ -26,123 +25,10 @@ import ThemedView from '../../components/ui/ThemedView';
 import { isDevelopment, authConfig } from '../../lib/config';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 
+// Shared strict-mode safe AnimatedInput
+import AnimatedInput from '../../components/ui/AnimatedInput';
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-interface AnimatedInputProps {
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'email-address';
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  editable?: boolean;
-  error?: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}
-
-function AnimatedInput({
-  placeholder,
-  value,
-  onChangeText,
-  secureTextEntry = false,
-  keyboardType = 'default',
-  autoCapitalize = 'sentences',
-  editable = true,
-  error,
-  icon,
-}: AnimatedInputProps) {
-  const [isFocused, setIsFocused] = useState(false);
-  const focusScale = useSharedValue(1);
-  const errorShake = useSharedValue(0);
-
-  const animatedInputStyle = useAnimatedStyle(() => {
-    'worklet';
-    return {
-      transform: [{ scale: focusScale.value }, { translateX: errorShake.value }],
-    };
-  });
-
-  const handleFocus = () => {
-    setIsFocused(true);
-    focusScale.value = withSpring(1.02, { damping: 15, stiffness: 300 });
-    if (Platform.OS === 'ios') {
-      Haptics.selectionAsync();
-    }
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false);
-    focusScale.value = withSpring(1, { damping: 15, stiffness: 300 });
-  };
-
-  // Trigger error animation
-  React.useEffect(() => {
-    if (error) {
-      errorShake.value = withSequence(
-        withSpring(-8, { damping: 10, stiffness: 500 }),
-        withSpring(8, { damping: 10, stiffness: 500 }),
-        withSpring(-4, { damping: 10, stiffness: 500 }),
-        withSpring(0, { damping: 10, stiffness: 500 })
-      );
-    }
-  }, [error]);
-
-  return (
-    <View className="mb-4">
-      <Animated.View
-        style={animatedInputStyle}
-        className={`
-          relative rounded-2xl border-2 transition-all duration-200
-          ${
-            isFocused
-              ? 'border-primary-500 bg-white shadow-lg dark:bg-neutral-800'
-              : error
-                ? 'border-status-danger bg-red-50 dark:bg-red-900/20'
-                : 'border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800/50'
-          }
-        `}>
-        <View className="flex-row items-center px-4 py-4">
-          <Ionicons
-            name={icon}
-            size={20}
-            className={`mr-3 ${
-              isFocused
-                ? 'text-primary-500'
-                : error
-                  ? 'text-status-danger'
-                  : 'text-neutral-500 dark:text-neutral-400'
-            }`}
-          />
-          <TextInput
-            className="flex-1 text-base font-medium text-neutral-900 dark:text-neutral-100"
-            placeholder={placeholder}
-            placeholderTextColor="#9CA3AF"
-            value={value}
-            onChangeText={onChangeText}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            secureTextEntry={secureTextEntry}
-            keyboardType={keyboardType}
-            autoCapitalize={autoCapitalize}
-            editable={editable}
-            accessible
-            accessibilityLabel={placeholder}
-            accessibilityHint={`Enter your ${placeholder.toLowerCase()}`}
-          />
-        </View>
-      </Animated.View>
-
-      {error && (
-        <Animated.View entering={FadeInDown.duration(300)} className="mt-2 flex-row items-center">
-          <Ionicons name="alert-circle" size={16} className="text-status-danger mr-2" />
-          <ThemedText variant="caption" className="text-status-danger flex-1">
-            {error}
-          </ThemedText>
-        </Animated.View>
-      )}
-    </View>
-  );
-}
 
 interface AnimatedButtonProps {
   title: string;
@@ -164,10 +50,16 @@ function AnimatedButton({
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.2);
 
-  const animatedStyle = useAnimatedStyle(() => {
+  const buttonScaleStyle = useAnimatedStyle(() => {
     'worklet';
     return {
       transform: [{ scale: scale.value }],
+    };
+  });
+
+  const buttonShadowStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
       shadowOpacity: shadowOpacity.value,
     };
   });
@@ -195,7 +87,8 @@ function AnimatedButton({
   return (
     <AnimatedPressable
       style={[
-        animatedStyle,
+        buttonScaleStyle,
+        buttonShadowStyle,
         {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
@@ -280,23 +173,25 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
-    setErrors({});
 
     try {
-      const { error } = await signIn(email, password);
-      if (error) {
-        setErrors({ password: error.message });
+      const { error: signInError } = await signIn(email, password);
+      if (signInError) {
+        const key = signInError.message.toLowerCase().includes('email') ? 'email' : 'password';
+        setErrors({ [key]: signInError.message });
         if (Platform.OS === 'ios') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         }
       } else {
+        setErrors({}); // Clear errors on successful login
         if (Platform.OS === 'ios') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
+        // Navigation or other success actions would typically follow here
       }
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ password: 'An unexpected error occurred' });
+      setErrors({ password: 'An unexpected error occurred. Please try again.' });
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }

@@ -916,13 +916,15 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     'worklet';
     return {
       transform: [{ translateX: stepTransition.value }],
-      opacity: withSpring(1 - Math.abs(stepTransition.value) / 300, SPRING_CONFIG),
+      opacity: Math.max(0, 1 - Math.abs(stepTransition.value) / 300),
     };
   });
 
   const updateProgress = useCallback(() => {
     const newProgress = ((currentStepIndex + 1) / FORM_STEPS.length) * 100;
-    progress.value = withSpring(newProgress, SPRING_CONFIG);
+    runOnUI(() => {
+      progress.value = withSpring(newProgress, SPRING_CONFIG);
+    })();
   }, [currentStepIndex, progress]);
 
   const handleStrainSelectionAndSync = async (selectedRawStrain: RawStrainApiResponse | null) => {
