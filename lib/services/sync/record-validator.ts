@@ -10,6 +10,7 @@ import { isValidUuid } from './data-sanitizer';
 import { loadStrainFromDatabase } from './strain-loader';
 // Import types from the strain-loader
 import type { StrainObject } from './strain-loader';
+import { logger } from '../../config/production';
 
 interface PlantRecord {
   id: string;
@@ -114,7 +115,7 @@ export function validateProfileChanges(
       validateRecord(record, table);
       valid.push(record);
     } catch (error) {
-      console.warn(`Invalid record in ${table}:`, error);
+      logger.warn(`Invalid record in ${table}:`, error);
       invalid.push(record);
     }
   }
@@ -179,29 +180,29 @@ export async function validatePlantRecord(
 
   const validatedRecord = { ...plantRecord };
 
-  console.log(
+  logger.log(
     `[Plant Validation] Validating plant "${validatedRecord.name}" (ID: ${validatedRecord.id})`
   );
-  console.log(
+  logger.log(
     `[Plant Validation] Initial strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`
   );
 
   // Handle camelCase vs snake_case field names (bidirectional)
   if (validatedRecord.strainId && !validatedRecord.strain_id) {
-    console.log(`[Plant Validation] Converting strainId ${validatedRecord.strainId} to strain_id`);
+    logger.log(`[Plant Validation] Converting strainId ${validatedRecord.strainId} to strain_id`);
     validatedRecord.strain_id = validatedRecord.strainId;
   } else if (validatedRecord.strain_id && !validatedRecord.strainId) {
-    console.log(`[Plant Validation] Converting strain_id ${validatedRecord.strain_id} to strainId`);
+    logger.log(`[Plant Validation] Converting strain_id ${validatedRecord.strain_id} to strainId`);
     validatedRecord.strainId = validatedRecord.strain_id;
   }
 
   // Handle empty string as null for strain_id
   if (validatedRecord.strain_id === '') {
-    console.log(`[Plant Validation] Converting empty string strain_id to null`);
+    logger.log(`[Plant Validation] Converting empty string strain_id to null`);
     validatedRecord.strain_id = null;
   }
   if (validatedRecord.strainId === '') {
-    console.log(`[Plant Validation] Converting empty string strainId to null`);
+    logger.log(`[Plant Validation] Converting empty string strainId to null`);
     validatedRecord.strainId = null;
   }
 
@@ -221,7 +222,7 @@ export async function validatePlantRecord(
         throw new Error('[Plant Validation] Database not initialized');
       }
 
-      console.log(
+      logger.log(
         `[Plant Validation] Attempting to load strain from WatermelonDB with ID: ${effectiveStrainId}`
       );
 
@@ -229,13 +230,13 @@ export async function validatePlantRecord(
       let strainObj;
       if (strainCache) {
         if (!strainCache.has(effectiveStrainId)) {
-          console.log(
+          logger.log(
             `[Plant Validation] Loading strain ${effectiveStrainId} from database (cache miss)`
           );
           const strain = await loadStrainFromDatabase(database, effectiveStrainId);
           strainCache.set(effectiveStrainId, strain);
         } else {
-          console.log(`[Plant Validation] Using cached strain ${effectiveStrainId} (cache hit)`);
+          logger.log(`[Plant Validation] Using cached strain ${effectiveStrainId} (cache hit)`);
         }
         strainObj = strainCache.get(effectiveStrainId);
       } else {
@@ -244,7 +245,7 @@ export async function validatePlantRecord(
       }
 
       if (strainObj) {
-        console.log(
+        logger.log(
           `[Plant Validation] Found strain "${strainObj.name}" for ID ${effectiveStrainId}`
         );
 
@@ -253,18 +254,18 @@ export async function validatePlantRecord(
 
         // Ensure consistency with the strain name
         if (validatedRecord.strain !== strainObj.name) {
-          console.log(
+          logger.log(
             `[Plant Validation] Updating strain name from "${validatedRecord.strain}" to "${strainObj.name}"`
           );
           validatedRecord.strain = strainObj.name;
         }
       } else {
-        console.warn(
+        logger.warn(
           `[Plant Validation] No strain found in WatermelonDB for ID ${effectiveStrainId}`
         );
       }
     } catch (error) {
-      console.error('[Plant Validation] Error loading strain from WatermelonDB:', error);
+      logger.error('[Plant Validation] Error loading strain from WatermelonDB:', error);
 
       // If we have a strain_id but couldn't load the data, we have a few options:
       // 1. For transient errors (network/timeout), we might want to retry
@@ -279,14 +280,14 @@ export async function validatePlantRecord(
         );
       } else {
         // We have at least a strain name, so we can continue with a warning
-        console.warn(
+        logger.warn(
           '[Plant Validation] Continuing with plant validation using only strain name. Sync may be incomplete.'
         );
       }
     }
   }
 
-  console.log(
+  logger.log(
     `[Plant Validation] Final strain data - strainId: ${validatedRecord.strainId}, strain_id: ${validatedRecord.strain_id}, strain: ${validatedRecord.strain}`
   );
   return validatedRecord;

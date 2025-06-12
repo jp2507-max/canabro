@@ -108,24 +108,26 @@ function CommunityScreenView({
     setShowCreateModal(true);
   };
 
-  const renderItem = useMemo(
-    () =>
-      ({ item, index }: { item: PostData; index: number }) => (
-        <Animated.View
-          entering={FadeInDown.delay(index * 50)
-            .duration(400)
-            .springify()}
-          className="px-4">
-          <PostItem
-            post={item}
-            currentUserId={user?.id}
-            onLike={handleLike}
-            onComment={handleCommentPress}
-            onUserPress={() => {}}
-            liking={likingPostId === item.id}
-          />
-        </Animated.View>
-      ),
+  // 🎯 Performance optimized render functions with React.useCallback
+  const keyExtractor = React.useCallback((item: PostData) => item.id, []);
+
+  const renderItem = React.useCallback(
+    ({ item, index }: { item: PostData; index: number }) => (
+      <Animated.View
+        entering={FadeInDown.delay(index * 50)
+          .duration(400)
+          .springify()}
+        className="px-4">
+        <PostItem
+          post={item}
+          currentUserId={user?.id}
+          onLike={handleLike}
+          onComment={handleCommentPress}
+          onUserPress={() => {}}
+          liking={likingPostId === item.id}
+        />
+      </Animated.View>
+    ),
     [user, handleLike, handleCommentPress, likingPostId]
   );
 
@@ -229,7 +231,7 @@ function CommunityScreenView({
         <>
           <FlatList
             data={posts}
-            keyExtractor={(item) => item.id}
+            keyExtractor={keyExtractor}
             renderItem={renderItem}
             ListEmptyComponent={renderEmptyState}
             onEndReached={handleLoadMore}
@@ -240,6 +242,12 @@ function CommunityScreenView({
             }}
             className="flex-1"
             showsVerticalScrollIndicator={false}
+            // ⚡ Reanimated v3 + FlatList performance optimizations
+            initialNumToRender={8}
+            windowSize={10}
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={100}
+            removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={isRefreshing}
@@ -294,4 +302,4 @@ function CommunityScreenView({
   );
 }
 
-export default CommunityScreenView;
+export default React.memo(CommunityScreenView);

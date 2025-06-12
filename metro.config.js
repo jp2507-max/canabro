@@ -12,6 +12,10 @@ const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
 
+// After header comments, set experimental tree-shaking env vars
+process.env.EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH = process.env.EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH || '1';
+process.env.EXPO_UNSTABLE_TREE_SHAKING = process.env.EXPO_UNSTABLE_TREE_SHAKING || '1';
+
 // Get the default configuration
 // eslint-disable-next-line no-undef
 const config = getDefaultConfig(__dirname, {
@@ -66,24 +70,31 @@ config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'cjs', 'mjs'];
 
 // Configure transformer optimizations for iOS production
+config.transformer = {
+  ...config.transformer,
+  // Always enable experimental import support and inline requires so that
+  // Metro's graph optimizations work during production exports.
+  experimentalImportSupport: true,
+  inlineRequires: true,
+};
+
+// Additional minifier settings only for production builds
 if (process.env.NODE_ENV === 'production') {
   config.transformer = {
     ...config.transformer,
     minifierConfig: {
       mangle: {
-        keep_fnames: false, // Mangle function names for smaller bundles
+        keep_fnames: false,
       },
       output: {
-        comments: false, // Remove comments in production
+        comments: false,
       },
       compress: {
-        drop_console: true, // Remove console.log statements
+        drop_console: true,
         reduce_vars: true,
         dead_code: true,
       },
     },
-    // Enable advanced optimizations for iOS
-    experimentalImportSupport: true,
   };
 }
 

@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useRef } from 'react';
 import { View, TextInput } from 'react-native';
@@ -6,6 +5,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 
 import { useButtonAnimation } from '../../lib/animations/useButtonAnimation';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 interface StrainSearchProps {
   searchQuery: string;
@@ -41,7 +41,7 @@ const StrainSearch = memo<StrainSearchProps>(
         <View className="relative">
           {/* Search Input */}
           <View className="flex-row items-center rounded-xl border border-neutral-200 bg-neutral-100 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
-            <Ionicons
+            <OptimizedIcon
               name="search-outline"
               size={20}
               className="mr-3 text-neutral-500 dark:text-neutral-400"
@@ -73,7 +73,7 @@ const StrainSearch = memo<StrainSearchProps>(
                   accessibilityRole="button"
                   accessibilityLabel="Clear search"
                   testID="clear-search-button">
-                  <Ionicons
+                  <OptimizedIcon
                     name="close"
                     size={16}
                     className="text-neutral-600 dark:text-neutral-300"

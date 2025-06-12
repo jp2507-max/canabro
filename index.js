@@ -18,6 +18,11 @@ import {
 
 // Configure Reanimated logger BEFORE the router is imported
 if (process.env.NODE_ENV !== 'production') {
+  // Emit detailed Reanimated logs + accurate JS stack traces during development.
+  if (__DEV__) {
+    // v3 – simple global flag recognised by Reanimated
+    global.REANIMATED_LOGS = true;
+  }
   configureReanimatedLogger({ level: ReanimatedLogLevel.error, strict: true })
   if (__DEV__) {
     // Surface every strict-mode event in Metro so we can see the exact file/line

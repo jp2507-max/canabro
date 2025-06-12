@@ -21,7 +21,9 @@
         "scheme": "canabro"
       },
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH": "1",
+        "EXPO_UNSTABLE_TREE_SHAKING": "1"
       }
     }
   },

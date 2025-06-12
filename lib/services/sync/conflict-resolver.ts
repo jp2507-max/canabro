@@ -4,6 +4,7 @@
  */
 
 import { Q } from '@nozbe/watermelondb';
+import { logger } from '../../config/production';
 
 /**
  * Get the sync priority for a specific table
@@ -66,7 +67,7 @@ export async function handleTableConflicts(
   }
 
   try {
-    console.log(`[Conflict Resolution] Processing conflicts for table ${table}`);
+    logger.log(`[Conflict Resolution] Processing conflicts for table ${table}`);
 
     // Get collection for this table
     const collection = database.get(table);
@@ -82,7 +83,7 @@ export async function handleTableConflicts(
 
         // Move existing records from created to updated
         if (existingIds.size > 0) {
-          console.log(
+          logger.log(
             `[Conflict Resolution] ${existingIds.size} ${table} records moved from created to updated`
           );
 
@@ -97,7 +98,7 @@ export async function handleTableConflicts(
           result.updated = [...result.updated, ...movedToUpdated];
         }
       } catch (error) {
-        console.warn(`[Conflict Resolution] Error checking existing records for ${table}:`, error);
+        logger.warn(`[Conflict Resolution] Error checking existing records for ${table}:`, error);
       }
     }
 
@@ -127,7 +128,7 @@ export async function handleTableConflicts(
 
     return result;
   } catch (error) {
-    console.error(`[Conflict Resolution] Error resolving conflicts for ${table}:`, error);
+    logger.error(`[Conflict Resolution] Error resolving conflicts for ${table}:`, error);
     // Return original changes if conflict resolution fails
     return {
       created: [...(tableChanges.created || [])],
@@ -153,7 +154,7 @@ async function resolvePlantConflicts(updatedPlants: any[], collection: any): Pro
         localPlant._raw.custom_name !== remotePlant.name &&
         localPlant._raw.custom_name !== remotePlant.strain_name
       ) {
-        console.log(
+        logger.log(
           `[Conflict Resolution] Preserved custom name "${localPlant._raw.custom_name}" for plant ${remotePlant.id}`
         );
         remotePlant.custom_name = localPlant._raw.custom_name;
@@ -165,7 +166,7 @@ async function resolvePlantConflicts(updatedPlants: any[], collection: any): Pro
         remotePlant.notes !== localPlant._raw.notes &&
         localPlant._raw.updated_at > remotePlant.updated_at
       ) {
-        console.log(`[Conflict Resolution] Preserved local notes for plant ${remotePlant.id}`);
+        logger.log(`[Conflict Resolution] Preserved local notes for plant ${remotePlant.id}`);
         remotePlant.notes = localPlant._raw.notes;
       }
 
@@ -178,13 +179,13 @@ async function resolvePlantConflicts(updatedPlants: any[], collection: any): Pro
         localPlant._raw.growth_stage !== remotePlant.growth_stage &&
         localUpdatedAt > remoteUpdatedAt
       ) {
-        console.log(
+        logger.log(
           `[Conflict Resolution] Using local growth stage "${localPlant._raw.growth_stage}" for plant ${remotePlant.id}`
         );
         remotePlant.growth_stage = localPlant._raw.growth_stage;
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         `[Conflict Resolution] Error resolving plant conflict for ID ${remotePlant.id}:`,
         error
       );
@@ -217,7 +218,7 @@ async function resolveEntryConflicts(updatedEntries: any[], collection: any): Pr
         remoteEntry.content !== localEntry._raw.content
       ) {
         // Merge the content
-        console.log(`[Conflict Resolution] Merging content for entry ${remoteEntry.id}`);
+        logger.log(`[Conflict Resolution] Merging content for entry ${remoteEntry.id}`);
 
         remoteEntry.content = `${remoteEntry.content}\n\n--- Merged with local changes (${new Date(localUpdatedAt).toLocaleString()}) ---\n\n${localEntry._raw.content}`;
 
@@ -228,14 +229,14 @@ async function resolveEntryConflicts(updatedEntries: any[], collection: any): Pr
 
           for (const field of fieldsToPreserve) {
             if (localEntry._raw[field] && localEntry._raw[field] !== remoteEntry[field]) {
-              console.log(`[Conflict Resolution] Using local ${field} for entry ${remoteEntry.id}`);
+              logger.log(`[Conflict Resolution] Using local ${field} for entry ${remoteEntry.id}`);
               remoteEntry[field] = localEntry._raw[field];
             }
           }
         }
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         `[Conflict Resolution] Error resolving entry conflict for ID ${remoteEntry.id}:`,
         error
       );
@@ -259,7 +260,7 @@ async function resolveTaskConflicts(updatedTasks: any[], collection: any): Promi
       // If completed status differs, use the most recent one
       if (remoteTask.completed !== localTask._raw.completed) {
         if (localUpdatedAt > remoteUpdatedAt) {
-          console.log(
+          logger.log(
             `[Conflict Resolution] Using local completion status (${localTask._raw.completed}) for task ${remoteTask.id}`
           );
           remoteTask.completed = localTask._raw.completed;
@@ -269,7 +270,7 @@ async function resolveTaskConflicts(updatedTasks: any[], collection: any): Promi
             remoteTask.completed_at = localTask._raw.completed_at;
           }
         } else {
-          console.log(
+          logger.log(
             `[Conflict Resolution] Using remote completion status (${remoteTask.completed}) for task ${remoteTask.id}`
           );
         }
@@ -277,7 +278,7 @@ async function resolveTaskConflicts(updatedTasks: any[], collection: any): Promi
 
       // Always preserve local notes if they differ
       if (localTask._raw.notes && remoteTask.notes !== localTask._raw.notes) {
-        console.log(`[Conflict Resolution] Preserved local notes for task ${remoteTask.id}`);
+        logger.log(`[Conflict Resolution] Preserved local notes for task ${remoteTask.id}`);
 
         // If remote also has notes, merge them
         if (remoteTask.notes && remoteTask.notes.trim()) {
@@ -287,7 +288,7 @@ async function resolveTaskConflicts(updatedTasks: any[], collection: any): Promi
         }
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         `[Conflict Resolution] Error resolving task conflict for ID ${remoteTask.id}:`,
         error
       );
@@ -312,7 +313,7 @@ async function resolveJournalConflicts(updatedJournals: any[], collection: any):
       if (localUpdatedAt > remoteUpdatedAt) {
         // Preserve journal name if modified locally
         if (localJournal._raw.name && localJournal._raw.name !== remoteJournal.name) {
-          console.log(`[Conflict Resolution] Using local name for journal ${remoteJournal.id}`);
+          logger.log(`[Conflict Resolution] Using local name for journal ${remoteJournal.id}`);
           remoteJournal.name = localJournal._raw.name;
         }
 
@@ -321,14 +322,14 @@ async function resolveJournalConflicts(updatedJournals: any[], collection: any):
           localJournal._raw.description &&
           localJournal._raw.description !== remoteJournal.description
         ) {
-          console.log(
+          logger.log(
             `[Conflict Resolution] Using local description for journal ${remoteJournal.id}`
           );
           remoteJournal.description = localJournal._raw.description;
         }
       }
     } catch (error) {
-      console.warn(
+      logger.warn(
         `[Conflict Resolution] Error resolving journal conflict for ID ${remoteJournal.id}:`,
         error
       );

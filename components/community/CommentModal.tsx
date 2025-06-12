@@ -133,7 +133,7 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
   );
 };
 
-export default function CommentModal({
+function CommentModal({
   postId,
   isVisible,
   onClose,
@@ -465,9 +465,18 @@ export default function CommentModal({
     inputRef.current?.focus();
   };
 
+  // 🎯 Performance optimized render functions
+  const keyExtractor = React.useCallback(
+    (item: CommentWithProfile) => String(item.id),
+    []
+  );
+
   // Render a comment item
-  const renderComment = ({ item }: { item: CommentWithProfile }) => (
-    <CommentItem comment={item} currentUserId={user?.id} />
+  const renderComment = React.useCallback(
+    ({ item }: { item: CommentWithProfile }) => (
+      <CommentItem comment={item} currentUserId={user?.id} />
+    ),
+    [user?.id]
   );
 
   // Backdrop gesture
@@ -542,7 +551,7 @@ export default function CommentModal({
                     <FlatList
                       data={comments}
                       renderItem={renderComment}
-                      keyExtractor={(item) => item.id}
+                      keyExtractor={keyExtractor}
                       contentContainerStyle={{ paddingBottom: insets.bottom + 80 }} // Reverted extra padding
                       refreshing={isRefreshing}
                       onRefresh={handleRefresh}
@@ -565,9 +574,12 @@ export default function CommentModal({
                           </AnimatedActionButton>
                         </ThemedView>
                       }
+                      // ⚡ Reanimated v3 compatible performance optimizations
                       initialNumToRender={10}
                       maxToRenderPerBatch={5}
                       windowSize={10}
+                      updateCellsBatchingPeriod={100}
+                      removeClippedSubviews={true}
                     />
                   )}
 
@@ -624,7 +636,7 @@ export default function CommentModal({
                       accessibilityLabel="Attach photo"
                       hapticStyle={Haptics.ImpactFeedbackStyle.Light}>
                       <OptimizedIcon
-                        name="camera-outline"
+                        name="camera"
                         size={18}
                         className="text-neutral-600 dark:text-neutral-300"
                       />
@@ -661,5 +673,7 @@ export default function CommentModal({
     </Modal>
   );
 }
+
+export default React.memo(CommentModal);
 
 // Removed StyleSheet definition

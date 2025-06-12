@@ -10,6 +10,7 @@ import {
   RawStrainApiResponse,
   ApiResponseArray,
 } from '../types/weed-db';
+import { logger } from '../config/production';
 
 // --- Configuration ---
 const BASE_URL = 'https://the-weed-db.p.rapidapi.com/api';
@@ -63,7 +64,7 @@ export const weedDbKeys = {
 
 // Add a check in case the key is missing
 if (!API_KEY) {
-  console.error(
+  logger.error(
     'ERROR: RAPIDAPI_KEY is missing in app.config.js extra section! Please ensure it is configured correctly in app.config.js and potentially loaded from your .env file.'
   );
   // Optionally throw an error to prevent the app from running without a key
@@ -83,16 +84,16 @@ const axiosInstance: AxiosInstance = axios.create({
 // --- Debug Logging ---
 // Log WeedDB requests and responses to help debug connection issues
 axiosInstance.interceptors.request.use((request) => {
-  console.log('WeedDB Request:', request.method, request.url, request.params);
+  logger.log('WeedDB Request:', request.method, request.url, request.params);
   return request;
 });
 axiosInstance.interceptors.response.use(
   (response) => {
-    console.log('WeedDB Response Data:', response.data);
+    logger.log('WeedDB Response Data:', response.data);
     return response;
   },
   (error) => {
-    console.error('WeedDB Response Error:', error);
+    logger.error('WeedDB Response Error:', error);
     return Promise.reject(error);
   }
 );
@@ -115,7 +116,7 @@ async function getFromCache<T>(key: string): Promise<T | null> {
     }
     return entry.data;
   } catch (error) {
-    console.error('Cache read error:', error);
+    logger.error('Cache read error:', error);
     return null;
   }
 }
@@ -125,7 +126,7 @@ async function saveToCache<T>(key: string, data: T): Promise<void> {
     const entry: CacheEntry<T> = { data, timestamp: Date.now() };
     await AsyncStorage.setItem(key, JSON.stringify(entry));
   } catch (error) {
-    console.error('Cache write error:', error);
+    logger.error('Cache write error:', error);
   }
 }
 
@@ -147,7 +148,7 @@ async function requestWithRetry<T>(
       axiosError.response?.status === 429 && // Too Many Requests
       retries > 0
     ) {
-      console.warn(`Rate limit hit. Retrying in ${delayMs / 1000}s... (${retries} retries left)`);
+      logger.warn(`Rate limit hit. Retrying in ${delayMs / 1000}s... (${retries} retries left)`);
       await delay(delayMs);
       // Exponential backoff: double the delay for the next retry
       return requestWithRetry(requestFn, retries - 1, delayMs * 2);
@@ -299,7 +300,7 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
   if (params.search) {
     // The API expects name parameter for search, not search
     formattedParams.name = params.search;
-    console.log(`[DEBUG] Search query formatted as name=${params.search}`);
+    logger.log(`[DEBUG] Search query formatted as name=${params.search}`);
   }
 
   // Add all other parameters
@@ -313,12 +314,12 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
   const cachedData = await getFromCache<Strain[]>(cacheKey);
 
   if (cachedData) {
-    console.log(`[DEBUG] Returning cached data for ${JSON.stringify(formattedParams)}`);
+    logger.log(`[DEBUG] Returning cached data for ${JSON.stringify(formattedParams)}`);
     return { data: cachedData, isFromCache: true };
   }
 
   try {
-    console.log(`[DEBUG] Fetching strains with params:`, formattedParams);
+    logger.log(`[DEBUG] Fetching strains with params:`, formattedParams);
     const response = await requestWithRetry<
       AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>
     >(() =>
@@ -333,22 +334,22 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
         ? (response.data.data as RawStrainApiResponse[])
         : [];
 
-    console.log(`[DEBUG] API returned ${rawStrains.length} raw strains`);
+    logger.log(`[DEBUG] API returned ${rawStrains.length} raw strains`);
 
     // Validate with Zod
     const parsed = StrainArraySchema.safeParse(rawStrains);
     if (!parsed.success) {
-      console.error('Strain API response validation failed:', parsed.error);
+      logger.error('Strain API response validation failed:', parsed.error);
       return { data: [], isFromCache: false, error: 'Invalid API response' };
     }
 
     const mappedStrains: Strain[] = parsed.data.map(mapWeedDbStrain);
-    console.log(`[DEBUG] Mapped ${mappedStrains.length} strains successfully`);
+    logger.log(`[DEBUG] Mapped ${mappedStrains.length} strains successfully`);
 
     await saveToCache(cacheKey, mappedStrains);
     return { data: mappedStrains, isFromCache: false };
   } catch (error) {
-    console.error('Error fetching strains:', error);
+    logger.error('Error fetching strains:', error);
     return {
       data: [],
       isFromCache: false,
@@ -373,19 +374,19 @@ async function fetchStrainById(id: string): Promise<Strain | null> {
         : [];
 
     if (!rawStrains.length) {
-      console.error(`Strain with ID ${id} not found.`);
+      logger.error(`Strain with ID ${id} not found.`);
       return null;
     }
 
     const parsed = StrainSchema.safeParse(rawStrains[0]);
     if (!parsed.success) {
-      console.error('Strain API response validation failed for ID:', id, parsed.error);
+      logger.error('Strain API response validation failed for ID:', id, parsed.error);
       return null;
     }
 
     return mapWeedDbStrain(parsed.data);
   } catch (error) {
-    console.error(`Error fetching strain by ID ${id}:`, error);
+    logger.error(`Error fetching strain by ID ${id}:`, error);
     return null;
   }
 }
@@ -462,7 +463,7 @@ export const WeedDbService = {
    * @returns A list of matching strains with caching information.
    */
   async searchByName(name: string): Promise<CachedResponse<Strain[]>> {
-    console.log(`[DEBUG] WeedDbService.searchByName called with query: "${name}"`);
+    logger.log(`[DEBUG] WeedDbService.searchByName called with query: "${name}"`);
 
     // Empty search shouldn't hit the API, return empty results
     if (!name || name.trim() === '') {
@@ -472,10 +473,10 @@ export const WeedDbService = {
     try {
       // Execute API search with the name parameter
       const searchTerm = name.trim().toLowerCase();
-      console.log(`[DEBUG] Executing API search with term: "${searchTerm}"`);
+      logger.log(`[DEBUG] Executing API search with term: "${searchTerm}"`);
       const result = await fetchStrains({ search: searchTerm });
 
-      console.log(`[DEBUG] API search returned ${result.data.length} results`);
+      logger.log(`[DEBUG] API search returned ${result.data.length} results`);
 
       // If API returned results, use them
       if (result.data.length > 0) {
@@ -483,7 +484,7 @@ export const WeedDbService = {
       }
 
       // No results from API, use simple client-side name search
-      console.log('[DEBUG] Using fallback client-side name search');
+      logger.log('[DEBUG] Using fallback client-side name search');
 
       // Fetch a dataset to search within
       const allStrains = await fetchStrains({ limit: 100 });
@@ -493,7 +494,7 @@ export const WeedDbService = {
         (strain.name || '').toLowerCase().includes(searchTerm)
       );
 
-      console.log(`[DEBUG] Client-side name search found ${filteredStrains.length} results`);
+      logger.log(`[DEBUG] Client-side name search found ${filteredStrains.length} results`);
 
       return {
         data: filteredStrains,
@@ -502,7 +503,7 @@ export const WeedDbService = {
           filteredStrains.length === 0 ? 'No strain names found matching your search' : undefined,
       };
     } catch (error) {
-      console.error(`[ERROR] Search failed for query "${name}":`, error);
+      logger.error(`[ERROR] Search failed for query "${name}":`, error);
       return { data: [], isFromCache: false, error: 'Search failed' };
     }
   },
@@ -513,7 +514,7 @@ export const WeedDbService = {
    * @returns A list of matching strains with caching information.
    */
   async search(query: string): Promise<CachedResponse<Strain[]>> {
-    console.log(`[DEBUG] WeedDbService.search called with query: "${query}"`);
+    logger.log(`[DEBUG] WeedDbService.search called with query: "${query}"`);
     return this.searchByName(query);
   },
 

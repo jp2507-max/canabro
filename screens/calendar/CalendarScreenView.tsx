@@ -10,6 +10,7 @@ import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
+import { logger } from '@/lib/config/production';
 
 interface CalendarScreenViewProps {
   tasks: PlantTask[];
@@ -52,7 +53,7 @@ function CalendarScreenView({
   // Handle task completion
   const handleCompleteTask = useCallback((task: PlantTask) => {
     // Implement task completion logic here
-    console.log('Task completed:', task.id);
+    logger.log('Task completed:', task.id);
   }, []);
 
   // Handle navigation to plant details
@@ -62,6 +63,9 @@ function CalendarScreenView({
     },
     [onNavigateToPlant]
   );
+
+  // 🎯 Performance optimized render functions
+  const keyExtractor = useCallback((item: PlantTask) => item.id, []);
 
   const renderTaskItem = useCallback(
     ({ item }: { item: PlantTask }) => {
@@ -122,7 +126,7 @@ function CalendarScreenView({
         ) : (
           <FlatList
             data={tasks}
-            keyExtractor={(item) => item.id}
+            keyExtractor={keyExtractor}
             renderItem={renderTaskItem}
             ListEmptyComponent={renderEmptyState}
             refreshControl={
@@ -141,6 +145,12 @@ function CalendarScreenView({
             }}
             showsVerticalScrollIndicator={false}
             bounces
+            // ⚡ Performance optimizations for calendar tasks
+            initialNumToRender={10}
+            windowSize={8}
+            maxToRenderPerBatch={6}
+            updateCellsBatchingPeriod={50}
+            removeClippedSubviews={true}
           />
         )}
 

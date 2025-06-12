@@ -15,6 +15,7 @@ import { OptimizedIcon } from '../components/ui/OptimizedIcon';
 import ThemedText from '../components/ui/ThemedText';
 import ThemedView from '../components/ui/ThemedView';
 import { SPRING_CONFIGS } from '../lib/animations/presets';
+import { logger } from '@/lib/config/production';
 
 interface PlantImageSectionProps {
   initialImageUri?: string | null;
@@ -60,7 +61,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
       setImageUri(manipResult.uri);
       onImageChange?.(manipResult.uri);
     } catch (error) {
-      console.error('Error processing image:', error);
+      logger.error('Error processing image:', error);
       Alert.alert('Error', 'Failed to process image');
     } finally {
       setProcessing(false);
@@ -69,9 +70,9 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
 
   async function handleImagePick() {
     try {
-      console.log('[PlantImageSection] Requesting media library permissions...');
+      logger.log('[PlantImageSection] Requesting media library permissions...');
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log('[PlantImageSection] Permission result:', permissionResult);
+      logger.log('[PlantImageSection] Permission result:', permissionResult);
 
       if (!permissionResult.granted) {
         const message = permissionResult.canAskAgain
@@ -81,7 +82,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
         return;
       }
 
-      console.log('[PlantImageSection] Launching image library...');
+      logger.log('[PlantImageSection] Launching image library...');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -90,14 +91,14 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
         selectionLimit: 1,
       });
 
-      console.log('[PlantImageSection] Image picker result:', result);
+      logger.log('[PlantImageSection] Image picker result:', result);
 
       if (!result.canceled && result.assets?.[0]?.uri) {
-        console.log('[PlantImageSection] Image selected, processing...');
+        logger.log('[PlantImageSection] Image selected, processing...');
         await processAndSetImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('[PlantImageSection] Error picking image:', error);
+      logger.error('[PlantImageSection] Error picking image:', error);
       Alert.alert(
         'Gallery Error',
         'Failed to access photo gallery. Please try again or restart the app if the problem persists.'
@@ -121,7 +122,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
         await processAndSetImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error taking picture:', error);
+      logger.error('Error taking picture:', error);
       Alert.alert('Error', 'Failed to take picture');
     }
   }

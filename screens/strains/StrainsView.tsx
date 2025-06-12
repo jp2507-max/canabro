@@ -29,6 +29,7 @@ import { useScrollAnimation, AnimatedCard, useAnimationSequence } from '@/lib/an
 import { StrainEffectType, StrainFlavorType } from '@/lib/types/strain';
 import { Strain as BaseStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
+import { logger } from '@/lib/config/production';
 
 const { width } = Dimensions.get('window');
 
@@ -174,7 +175,7 @@ const StrainCard = memo(
 
     // Safety checks - if item is invalid, don't render anything (must be after hooks)
     if (!item || typeof item !== 'object') {
-      console.log('[DEBUG] StrainCard received invalid item:', item);
+      logger.log('[DEBUG] StrainCard received invalid item:', item);
       return null;
     }
 
@@ -182,7 +183,7 @@ const StrainCard = memo(
     const actualType = determineStrainType();
 
     // Log for debugging
-    console.log(`[DEBUG] StrainCard rendering:`, {
+    logger.log(`[DEBUG] StrainCard rendering:`, {
       name: item.name,
       originalId: item.id || item._id,
       uuid: strainUuid,
@@ -190,7 +191,7 @@ const StrainCard = memo(
     });
 
     // Log type determination for debugging
-    console.log(`[DEBUG] Strain ${item.name} type determined as: ${actualType}`, {
+    logger.log(`[DEBUG] Strain ${item.name} type determined as: ${actualType}`, {
       originalType: item.type,
       genetics: item.genetics,
     });
@@ -350,7 +351,7 @@ const CategoryChips = memo(
     selected?: 'sativa' | 'indica' | 'hybrid';
     onSelect?: (id: 'sativa' | 'indica' | 'hybrid') => void;
   }) => {
-    console.log('[DEBUG] CategoryChips rendering with:', { selected });
+    logger.log('[DEBUG] CategoryChips rendering with:', { selected });
 
     // Defensive check to ensure CATEGORIES_NEW is an array before mapping
     const safeCategories = Array.isArray(CATEGORIES_NEW) ? CATEGORIES_NEW : [];
@@ -510,6 +511,31 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     return strains || [];
   }, [strains]);
 
+  // 🎯 Optimized render functions with useCallback for Reanimated performance
+  const renderStrainItem = useCallback(({ item }: { item: any }) => (
+    <StrainCard
+      item={item}
+      onPress={() => router.push(`/catalog/${item.id}`)}
+      isFavorite={checkIsFavorite(item.id ?? item._id)}
+      onToggleFavorite={onToggleFavorite}
+    />
+  ), [router, onToggleFavorite, favoriteStrainIds]);
+
+  const keyExtractor = useCallback((item: Strain, index: number) => {
+    // Prioritize stable, unique identifiers
+    const id = item.id ?? item._id;
+    if (id && typeof id === 'string') {
+      return id;
+    }
+    
+    // Deterministic fallback with warning in development
+    if (__DEV__) {
+      logger.warn('Using index fallback for strain key', { item, index });
+    }
+    
+    return `strain-${index}`;
+  }, []);
+
   // Function to check if a strain is favorited, accounting for both original ID and UUID
   function checkIsFavorite(strainId: string): boolean {
     if (!strainId) return false;
@@ -553,7 +579,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-black">
         <ThemedView variant="default" className="flex-1 items-center justify-center px-6">
-          <OptimizedIcon name="warning-outline" size={64} className="mb-4 text-danger-500" />
+          <OptimizedIcon name="warning" size={64} className="mb-4 text-danger-500" />
           <ThemedText className="mb-2 text-center text-xl font-bold">
             Failed to load strains
           </ThemedText>
@@ -607,26 +633,22 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
       <Animated.FlatList
         {...scrollAnimation.scrollHandler}
         data={filteredStrains} // Use our memoized value here instead of direct strains
-        keyExtractor={(item, index) =>
-          item.id ??
-          item._id ??
-          // deterministic fallback so the key is stable across renders
-          `fallback-${index}`
-        }
-        renderItem={({ item }) => (
-          <StrainCard
-            item={item}
-            onPress={() => router.push(`/catalog/${item.id}`)}
-            isFavorite={checkIsFavorite(item.id ?? item._id)}
-            onToggleFavorite={onToggleFavorite}
-          />
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderStrainItem}
         contentContainerStyle={{
           paddingHorizontal: 8,
           paddingBottom: 32,
           paddingTop: 4,
         }}
         showsVerticalScrollIndicator={false}
+        // Reanimated v3 + FlatList optimizations - Fixed duplicates
+        initialNumToRender={8}
+        windowSize={10}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={100}
+        removeClippedSubviews={true}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <View className="mt-24 flex-1 items-center justify-center">
             <ThemedText className="text-lg text-neutral-500 dark:text-neutral-400">
@@ -642,13 +664,6 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
           />
         }
         accessibilityLabel="Strains list"
-        // Performance optimizations
-        initialNumToRender={6}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        removeClippedSubviews
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
       />
       <StrainFilterModal
         isVisible={isFilterModalVisible}

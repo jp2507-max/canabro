@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { TextInput, View, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { OptimizedIcon, IconName } from './OptimizedIcon';
 import Animated, {
   FadeInDown,
-  runOnUI,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withSpring,
+  useDerivedValue,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
@@ -24,8 +25,12 @@ export interface AnimatedInputProps {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   editable?: boolean;
   error?: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }
+
+// Spring config used in the shake animation – declared once to prevent
+// re-allocation in every worklet execution.
+const SPRING = { damping: 10, stiffness: 500 } as const;
 
 /**
  * Strict-mode safe AnimatedInput component.
@@ -46,51 +51,60 @@ export default function AnimatedInput({
 }: AnimatedInputProps) {
   // Shared values
   const focusProgress = useSharedValue(0); // 0 = blurred, 1 = focused
-  const errorShake = useSharedValue(0);
+  const shakePhase = useSharedValue(0);
+
+  /* ---------------------------  Trigger shake  --------------------------- */
+  const prevErrorRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!error) {
+      prevErrorRef.current = undefined;
+      return;
+    }
+
+    // Start a new shake only when the *message* actually changes
+    if (prevErrorRef.current === error) return;
+    prevErrorRef.current = error;
+
+    // worklet defined inline for shake animation
+    const triggerShake = () => {
+      'worklet';
+      cancelAnimation(shakePhase);
+      shakePhase.value = 0;
+      shakePhase.value = withSequence(
+        withSpring(-8, SPRING),
+        withSpring(8, SPRING),
+        withSpring(-4, SPRING),
+        withSpring(0, SPRING)
+      );
+    };
+
+    triggerShake();
+  }, [error, shakePhase]);
 
   /* ----------------------------  Callbacks (JS)  --------------------------- */
   const handleFocus = useCallback(() => {
-    runOnUI((fp: typeof focusProgress) => {
-      'worklet';
-      fp.value = 1;
-    })(focusProgress);
+    focusProgress.value = 1; // direct write – UI proxy handles thread hop
     if (Platform.OS === 'ios') Haptics.selectionAsync();
   }, [focusProgress]);
 
   const handleBlur = useCallback(() => {
-    runOnUI((fp: typeof focusProgress) => {
-      'worklet';
-      fp.value = 0;
-    })(focusProgress);
+    focusProgress.value = 0;
   }, [focusProgress]);
 
   /* ----------------------------  Side-Effects  ----------------------------- */
-  useEffect(() => {
-    if (error) {
-      runOnUI((shake: typeof errorShake) => {
-        'worklet';
-        shake.value = withSequence(
-          withSpring(-8, { damping: 10, stiffness: 500 }),
-          withSpring(8, { damping: 10, stiffness: 500 }),
-          withSpring(-4, { damping: 10, stiffness: 500 }),
-          withSpring(0, { damping: 10, stiffness: 500 })
-        );
-      })(errorShake);
-    } else {
-      runOnUI((shake: typeof errorShake) => {
-        'worklet';
-        shake.value = withSpring(0, { damping: 10, stiffness: 500 });
-      })(errorShake);
-    }
-  }, [error, errorShake]);
+  // Removed: Previous runOnUI loop that spawned a new animation each render.
 
   /* -------------------------  Derived / Animated  ------------------------- */
-  const containerStyle = useAnimatedStyle(() => {
-    const scale = 1 + 0.02 * focusProgress.value; // 1 → 1.02
-    return {
-      transform: [{ scale }, { translateX: errorShake.value }],
-    };
-  });
+  // Memoised transform array to avoid creating a new reference every render
+  const transformArray = useDerivedValue(() => [
+    { scale: 1 + 0.02 * focusProgress.value },
+    { translateX: shakePhase.value },
+  ]);
+
+  const containerStyle = useAnimatedStyle(
+    () => ({ transform: transformArray.value }),
+    [] // no JS-side dependencies – memoised
+  );
 
   return (
     <View className="mb-4">
@@ -103,7 +117,7 @@ export default function AnimatedInput({
         }`}
       >
         <View className="flex-row items-center px-4 py-4">
-          <Ionicons
+          <OptimizedIcon
             name={icon}
             size={20}
             className={`mr-3 ${error ? 'text-status-danger' : 'text-neutral-500 dark:text-neutral-400'}`}
@@ -129,7 +143,7 @@ export default function AnimatedInput({
 
       {error && (
         <Animated.View entering={FadeInDown.duration(300)} className="mt-2 flex-row items-center">
-          <Ionicons name="alert-circle" size={16} className="text-status-danger mr-2" />
+          <OptimizedIcon name="alert-circle" size={16} className="text-status-danger mr-2" />
           <ThemedText variant="caption" className="text-status-danger flex-1">
             {error}
           </ThemedText>

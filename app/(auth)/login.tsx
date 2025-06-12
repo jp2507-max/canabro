@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { OptimizedIcon, IconName } from '../../components/ui/OptimizedIcon';
 import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
@@ -36,7 +36,7 @@ interface AnimatedButtonProps {
   loading?: boolean;
   disabled?: boolean;
   variant?: 'primary' | 'secondary';
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: IconName;
 }
 
 function AnimatedButton({
@@ -117,7 +117,7 @@ function AnimatedButton({
             className="mr-2"
           />
         ) : icon ? (
-          <Ionicons
+          <OptimizedIcon
             name={icon}
             size={18}
             className={`mr-2 ${
@@ -190,7 +190,6 @@ export default function LoginScreen() {
         // Navigation or other success actions would typically follow here
       }
     } catch (error) {
-      console.error('Login error:', error);
       setErrors({ password: 'An unexpected error occurred. Please try again.' });
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -226,7 +225,7 @@ export default function LoginScreen() {
           {/* Logo Section */}
           <Animated.View entering={FadeIn.duration(800)} className="mb-12 items-center">
             <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg dark:bg-primary-600">
-              <Ionicons name="leaf" size={32} className="text-white" />
+              <OptimizedIcon name="leaf" size={32} className="text-white" />
             </View>
             <ThemedText variant="heading" className="text-4xl font-black tracking-tight">
               CanaBro
@@ -242,7 +241,7 @@ export default function LoginScreen() {
               entering={SlideInDown.duration(600).delay(200)}
               className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-100 p-4 dark:border-yellow-800 dark:bg-yellow-900/30">
               <View className="flex-row items-center">
-                <Ionicons
+                <OptimizedIcon
                   name="code-working"
                   size={18}
                   className="mr-2 text-yellow-800 dark:text-yellow-200"

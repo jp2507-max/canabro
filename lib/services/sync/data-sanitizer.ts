@@ -4,6 +4,7 @@
  */
 
 import { v4 as uuid } from 'uuid';
+import { logger } from '../../config/production';
 
 /**
  * Format a date for Supabase
@@ -24,36 +25,36 @@ export function formatDateForSupabase(date: Date | number | string | null): stri
 
       // Reject non-date strings immediately
       if (!/^[\d\-/.\\s:]+$/.test(date)) {
-        console.warn(`Invalid date string detected: "${date}" - contains non-date characters`);
+        logger.warn(`Invalid date string detected: "${date}" - contains non-date characters`);
         return null;
       }
 
       // Validate date string format - only accept standard formats
       if (!/^(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2}\.\d{1,2}\.\d{4})/.test(date)) {
-        console.warn(`Invalid date format detected: "${date}" - not a recognized date pattern`);
+        logger.warn(`Invalid date format detected: "${date}" - not a recognized date pattern`);
         return null;
       }
 
       // Try to parse it
       const parsedDate = new Date(date);
       if (isNaN(parsedDate.getTime())) {
-        console.warn(`Could not parse date string: "${date}" - parsing resulted in Invalid Date`);
+        logger.warn(`Could not parse date string: "${date}" - parsing resulted in Invalid Date`);
         return null;
       }
       return parsedDate.toISOString();
     } else if (date instanceof Date) {
       if (isNaN(date.getTime())) {
-        console.warn(`Invalid Date object detected`);
+        logger.warn(`Invalid Date object detected`);
         return null;
       }
       return date.toISOString();
     }
   } catch (error) {
-    console.error(`Error formatting date: ${date}`, error);
+    logger.error(`Error formatting date: ${date}`, error);
     return null;
   }
 
-  console.warn(`Unknown date format: ${typeof date}`, date);
+  logger.warn(`Unknown date format: ${typeof date}`, date);
   return null;
 }
 
@@ -98,29 +99,29 @@ export function sanitizeRecord(record: any, table: string): any {
     if (!uuidRegex.test(cleanedRecord.id)) {
       const originalId = cleanedRecord.id;
       const newId = uuid();
-      console.log(`Converting plant ID from ${originalId} to UUID format: ${newId}`);
+      logger.log(`Converting plant ID from ${originalId} to UUID format: ${newId}`);
       cleanedRecord.id = newId;
     }
 
     // Handle strainId to strain_id conversion for plants table
     if (cleanedRecord.strainId !== undefined) {
-      console.log(`[Plant Sync Fix] Converting strainId to strain_id: ${cleanedRecord.strainId}`);
+      logger.log(`[Plant Sync Fix] Converting strainId to strain_id: ${cleanedRecord.strainId}`);
       cleanedRecord.strain_id = cleanedRecord.strainId;
       delete cleanedRecord.strainId;
     } else if (record.strainId !== undefined) {
       // Also check the original record (before copy)
-      console.log(
+      logger.log(
         `[Plant Sync Fix] Converting original record strainId to strain_id: ${record.strainId}`
       );
       cleanedRecord.strain_id = record.strainId;
     } else if (record._raw && record._raw.strainId) {
       // Try to get from _raw property if available (direct WatermelonDB record)
-      console.log(
+      logger.log(
         `[Plant Sync Fix] Converting _raw.strainId to strain_id: ${record._raw.strainId}`
       );
       cleanedRecord.strain_id = record._raw.strainId;
     } else {
-      console.log(`[Plant Sync Debug] Plant record has no strainId field: ${cleanedRecord.id}`);
+      logger.log(`[Plant Sync Debug] Plant record has no strainId field: ${cleanedRecord.id}`);
     }
 
     // Check if plant has strain information and ensure strain_id is properly preserved
@@ -130,14 +131,14 @@ export function sanitizeRecord(record: any, table: string): any {
       !cleanedRecord.strain_id
     ) {
       // Log that we're seeing a plant with strain name but no strain_id
-      console.log(
+      logger.log(
         `[Plant Sync] Plant ${cleanedRecord.id} has strain name "${cleanedRecord.strain}" but no strain_id`
       );
     }
 
     // Remove any strain relation objects that shouldn't be sent to Supabase
     if (cleanedRecord.strainObj) {
-      console.log(`[Plant Sync] Removing strainObj relation from plant ${cleanedRecord.id}`);
+      logger.log(`[Plant Sync] Removing strainObj relation from plant ${cleanedRecord.id}`);
       delete cleanedRecord.strainObj;
     }
   }
@@ -194,7 +195,7 @@ export function sanitizeRecord(record: any, table: string): any {
         if (formattedDate) {
           cleanedRecord.growing_since = formattedDate;
         } else {
-          console.warn(
+          logger.warn(
             `Invalid growing_since "${cleanedRecord.growing_since}" for profile ${cleanedRecord.id}, removing field`
           );
           delete cleanedRecord.growing_since;
@@ -209,7 +210,7 @@ export function sanitizeRecord(record: any, table: string): any {
         if (formattedDate) {
           cleanedRecord.planted_date = formattedDate;
         } else {
-          console.warn(
+          logger.warn(
             `Invalid planted_date "${cleanedRecord.plantedDate}" for plant ${cleanedRecord.id}, using current date`
           );
           cleanedRecord.planted_date = new Date().toISOString();
@@ -223,7 +224,7 @@ export function sanitizeRecord(record: any, table: string): any {
         if (formattedDate) {
           cleanedRecord.expected_harvest_date = formattedDate;
         } else {
-          console.warn(
+          logger.warn(
             `Invalid expected_harvest_date "${cleanedRecord.expectedHarvestDate}" for plant ${cleanedRecord.id}, removing field`
           );
           delete cleanedRecord.expected_harvest_date; // Don't send invalid optional field
@@ -240,7 +241,7 @@ export function sanitizeRecord(record: any, table: string): any {
         if (formattedDate) {
           cleanedRecord.entry_date = formattedDate;
         } else {
-          console.warn(
+          logger.warn(
             `Invalid entry_date "${cleanedRecord.entryDate}" for entry ${cleanedRecord.id}, using current date`
           );
           cleanedRecord.entry_date = cleanedRecord.created_at || new Date().toISOString();
@@ -259,7 +260,7 @@ export function sanitizeRecord(record: any, table: string): any {
         if (formattedDate) {
           cleanedRecord.due_date = formattedDate;
         } else {
-          console.warn(
+          logger.warn(
             `Invalid due_date "${cleanedRecord.dueDate}" for task ${cleanedRecord.id}, using current date`
           );
           cleanedRecord.due_date = new Date().toISOString();
@@ -309,7 +310,7 @@ export function sanitizeRecord(record: any, table: string): any {
         cleanedRecord[key] = formattedDate;
       } else {
         // If formatting fails, remove the field and log a warning
-        console.warn(
+        logger.warn(
           `Strict date validation: removing invalid date field ${key} with value "${value}" from ${table} record (id: ${cleanedRecord.id}) to avoid sync errors`
         );
         delete cleanedRecord[key];

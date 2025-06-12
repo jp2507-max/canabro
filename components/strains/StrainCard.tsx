@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import React, { memo } from 'react';
@@ -9,6 +8,7 @@ import Animated from 'react-native-reanimated';
 import { useButtonAnimation } from '../../lib/animations/useButtonAnimation';
 import { useGestureAnimation } from '../../lib/animations/useGestureAnimation';
 import type { Strain } from '../../lib/types/strains.js';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
 
 interface StrainCardProps {
   strain: Strain;
@@ -104,7 +104,7 @@ const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) =
               </Text>
               {strain.type && (
                 <View className="flex-row items-center">
-                  <Ionicons
+                  <OptimizedIcon
                     name={getTypeIcon(strain.type)}
                     size={16}
                     color={getIconColor(strain.type)}
@@ -132,7 +132,7 @@ const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) =
                   strain.is_favorite ? 'Remove from favorites' : 'Add to favorites'
                 }
                 testID={`favorite-button-${strain.id}`}>
-                <Ionicons
+                <OptimizedIcon
                   name={strain.is_favorite ? 'heart' : 'heart-outline'}
                   size={20}
                   color={strain.is_favorite ? '#ef4444' : isDarkMode ? '#a3a3a3' : '#525252'}
@@ -213,7 +213,7 @@ const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) =
             <Text className="mr-1 text-sm text-primary-600 dark:text-primary-400">
               View Details
             </Text>
-            <Ionicons name="chevron-forward" size={16} color="#10b981" />
+            <OptimizedIcon name="chevron-forward" size={16} color="#10b981" />
           </View>
         </Animated.View>
       </GestureDetector>

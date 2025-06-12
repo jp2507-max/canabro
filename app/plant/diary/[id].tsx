@@ -33,7 +33,7 @@ interface PlantDiaryScreenProps {
 }
 
 // Base component that receives data from withObservables
-function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
+const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
   const { session } = useAuth();
   const { sync, isSyncing } = useWatermelon();
 
@@ -132,75 +132,81 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
     );
   }
 
-  const renderDiaryEntryItem = ({ item }: { item: DiaryEntry }) => {
-    const entryDate = new Date(item.entryDate);
+  // 🎯 Performance optimized render functions
+  const keyExtractor = React.useCallback((item: DiaryEntry) => item.id, []);
 
-    // Get entry type styling classes based on type
-    const getTypeStyles = (type: string) => {
-      switch (type) {
-        case 'watering':
-          return {
-            iconClasses: 'text-special-watering',
-            tagClasses: 'bg-blue-100 dark:bg-blue-900',
-          };
-        case 'feeding':
-          return {
-            iconClasses: 'text-special-feeding',
-            tagClasses: 'bg-purple-100 dark:bg-purple-900',
-          };
-        case 'pruning':
-          return {
-            iconClasses: 'text-status-success',
-            tagClasses: 'bg-green-100 dark:bg-green-900',
-          };
-        case 'issue':
-          return {
-            iconClasses: 'text-status-danger',
-            tagClasses: 'bg-red-100 dark:bg-red-900',
-          };
-        default:
-          return {
-            iconClasses: 'text-neutral-500',
-            tagClasses: 'bg-neutral-100 dark:bg-neutral-800',
-          };
-      }
-    };
+  const renderDiaryEntryItem = React.useCallback(
+    ({ item }: { item: DiaryEntry }) => {
+      const entryDate = new Date(item.entryDate);
 
-    const typeStyles = getTypeStyles(item.entryType);
+      // Get entry type styling classes based on type
+      const getTypeStyles = (type: string) => {
+        switch (type) {
+          case 'watering':
+            return {
+              iconClasses: 'text-special-watering',
+              tagClasses: 'bg-blue-100 dark:bg-blue-900',
+            };
+          case 'feeding':
+            return {
+              iconClasses: 'text-special-feeding',
+              tagClasses: 'bg-purple-100 dark:bg-purple-900',
+            };
+          case 'pruning':
+            return {
+              iconClasses: 'text-status-success',
+              tagClasses: 'bg-green-100 dark:bg-green-900',
+            };
+          case 'issue':
+            return {
+              iconClasses: 'text-status-danger',
+              tagClasses: 'bg-red-100 dark:bg-red-900',
+            };
+          default:
+            return {
+              iconClasses: 'text-neutral-500',
+              tagClasses: 'bg-neutral-100 dark:bg-neutral-800',
+            };
+        }
+      };
 
-    return (
-      <ThemedView variant="card" className="mb-4">
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1">
-            <ThemedText variant="heading" className="text-lg">
-              {`Entry - ${format(entryDate, 'MMM d, yyyy')}`}
-            </ThemedText>
+      const typeStyles = getTypeStyles(item.entryType);
 
-            <View className="mb-2 mt-1 flex-row items-center">
-              <ThemedText variant="muted" className="mr-2 text-xs">
-                {format(entryDate, 'MMM d, yyyy • h:mm a')}
+      return (
+        <ThemedView variant="card" className="mb-4">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1">
+              <ThemedText variant="heading" className="text-lg">
+                {`Entry - ${format(entryDate, 'MMM d, yyyy')}`}
               </ThemedText>
 
-              <View className={`rounded-full px-2 py-0.5 ${typeStyles.tagClasses}`}>
-                <ThemedText className={`text-xs font-medium capitalize ${typeStyles.iconClasses}`}>
-                  {item.entryType}
+              <View className="mb-2 mt-1 flex-row items-center">
+                <ThemedText variant="muted" className="mr-2 text-xs">
+                  {format(entryDate, 'MMM d, yyyy • h:mm a')}
                 </ThemedText>
+
+                <View className={`rounded-full px-2 py-0.5 ${typeStyles.tagClasses}`}>
+                  <ThemedText className={`text-xs font-medium capitalize ${typeStyles.iconClasses}`}>
+                    {item.entryType}
+                  </ThemedText>
+                </View>
               </View>
             </View>
+
+            <Pressable
+              onPress={() => handleDeleteEntry(item)}
+              className="p-2"
+              accessibilityLabel="Delete diary entry">
+              <OptimizedIcon name="trash-outline" size={18} color="rgb(var(--color-status-danger))" />
+            </Pressable>
           </View>
 
-          <Pressable
-            onPress={() => handleDeleteEntry(item)}
-            className="p-2"
-            accessibilityLabel="Delete diary entry">
-            <OptimizedIcon name="trash-outline" size={18} color="rgb(var(--color-status-danger))" />
-          </Pressable>
-        </View>
-
-        <ThemedText className="mt-1">{item.content}</ThemedText>
-      </ThemedView>
-    );
-  };
+          <ThemedText className="mt-1">{item.content}</ThemedText>
+        </ThemedView>
+      );
+    },
+    [handleDeleteEntry]
+  );
 
   return (
     <>
@@ -234,7 +240,7 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
             <FlatList
               data={sortedEntries}
               renderItem={renderDiaryEntryItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={keyExtractor}
               contentContainerClassName="pb-20"
               refreshControl={
                 <RefreshControl
@@ -259,6 +265,12 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
                   </ThemedText>
                 </ThemedView>
               }
+              // ⚡ Performance optimizations for diary entries
+              initialNumToRender={8}
+              windowSize={10}
+              maxToRenderPerBatch={6}
+              updateCellsBatchingPeriod={100}
+              removeClippedSubviews={true}
             />
 
             {/* Add Entry Button (visible when not adding entry) */}
@@ -363,7 +375,7 @@ function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
       </SafeAreaView>
     </>
   );
-}
+});
 
 // Type selector component for entry form
 function ScrollableEntryTypeSelector({

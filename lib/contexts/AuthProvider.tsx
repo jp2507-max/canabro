@@ -292,6 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Delay navigation to ensure root layout is mounted
       setTimeout(() => {
+        console.trace('🔥 router.replace("/(tabs)")');
         router.replace('/(tabs)');
       }, 100);
       
@@ -341,6 +342,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Navigate to home screen on successful login
       setTimeout(() => {
+        console.trace('🔥 router.replace("/(tabs)")');
         router.replace('/(tabs)');
       }, 100);
 
@@ -370,9 +372,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // If sign up is successful and email confirmation is not required,
       if (data.session) {
+        console.trace('🔥 router.replace("/(tabs)")');
         router.replace('/(tabs)');
       } else {
         // If email confirmation is required, navigate to a confirmation screen
+        console.trace('🔥 router.replace("/(auth)/login")');
         router.replace('/(auth)/login');
       }
 
@@ -387,6 +391,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      console.trace('🔥 router.replace("/(auth)/login")');
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Error signing out:', error);

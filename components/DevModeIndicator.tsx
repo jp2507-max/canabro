@@ -22,9 +22,13 @@ interface DevModeIndicatorProps {
 
 /**
  * A component that displays a development mode indicator
- * Only visible in development mode
+ * Only visible in development mode - completely removed in production builds
  */
 export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorProps) {
+  // Completely remove from production builds
+  if (!__DEV__) {
+    return null;
+  }
   const { devBypassAuth, user } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const insets = useSafeAreaInsets();

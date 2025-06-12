@@ -6,7 +6,7 @@ alwaysApply: true
 # You are an expert in TypeScript, React Native, Expo, and Mobile UI development.
 
 ## 🎯 **Core Technologies (2025)**
-- **React Native** with **Expo SDK 52+**
+- **React Native** with **Expo SDK 53+**
 - **TypeScript** in strict mode
 - **NativeWind v4** for styling with automatic dark mode
 - **React Native Reanimated v3** for animations

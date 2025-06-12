@@ -13,7 +13,7 @@ import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
 import { WeedDbService } from '@/lib/services/weed-db.service';
 import { Strain } from '@/lib/types/weed-db';
 import { isObjectId } from '@/lib/utils/strainIdMapping';
-import { Logger } from '@/lib/utils/production-utils';
+import { logger } from '@/lib/config/production';
 import { ensureUuid } from '@/lib/utils/uuid';
 
 /**
@@ -42,7 +42,7 @@ function useFavoriteStrains(
     queryFn: async () => {
       if (!favoriteStrainIds.length) return [];
 
-      Logger.debug(`[DEBUG] Fetching ${favoriteStrainIds.length} favorite strains`);
+      logger.log(`[DEBUG] Fetching ${favoriteStrainIds.length} favorite strains`);
 
       // Map of UUID to fetched strain for deduplication
       const strainMap = new Map<string, Strain>();
@@ -66,7 +66,7 @@ function useFavoriteStrains(
                   ? objectId // Use MongoDB ObjectId if available (preferred)
                   : getObjectId(uuid) || uuid; // Try to resolve or fallback to UUID
 
-              Logger.debug(`[DEBUG] Fetching strain ${uuid} with API ID ${apiId}`);
+              logger.log(`[DEBUG] Fetching strain ${uuid} with API ID ${apiId}`);
 
               const result = await WeedDbService.getById(apiId);
 
@@ -80,7 +80,7 @@ function useFavoriteStrains(
                 strainMap.set(uuid, enrichedResult);
               }
             } catch (error) {
-              console.error(`Error fetching strain by ID ${uuid}:`, error);
+              logger.error(`Error fetching strain by ID ${uuid}:`, error);
             }
           })
         );
@@ -89,7 +89,7 @@ function useFavoriteStrains(
       // Convert the map to an array
       let filtered = Array.from(strainMap.values());
 
-      console.log(`[DEBUG] Retrieved ${filtered.length} favorite strains before filtering`);
+      logger.log(`[DEBUG] Retrieved ${filtered.length} favorite strains before filtering`);
 
       // Apply search query filter
       if (searchQuery) {
@@ -179,7 +179,7 @@ function useFavoriteStrains(
         );
       }
 
-      console.log(`[DEBUG] Returning ${filtered.length} favorite strains after filtering`);
+      logger.log(`[DEBUG] Returning ${filtered.length} favorite strains after filtering`);
       return filtered;
     },
     enabled: favoriteStrainIds.length > 0,
@@ -312,7 +312,7 @@ export function FavoriteStrainsScreen() {
         }}
         onStrainHover={(strain) => {
           // Handle strain hover if needed
-          console.log('Strain hovered:', strain.name);
+          logger.log('Strain hovered:', strain.name);
         }}
       />
     </ErrorBoundary>

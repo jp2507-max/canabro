@@ -57,8 +57,8 @@ const EmptyPlantList = React.memo(() => {
 
 EmptyPlantList.displayName = 'EmptyPlantList';
 
-// Base component that receives plants as an array
-const PlantListComponent = ({
+// Base component that receives plants as an array - Optimized with React.memo
+const PlantListComponent = React.memo(({
   plants,
   isLoading,
   onCountChange,
@@ -90,6 +90,17 @@ const PlantListComponent = ({
     [handlePress]
   );
 
+  const keyExtractor = React.useCallback((item: WDBPlant) => item.id, []);
+
+  const getItemLayout = React.useCallback(
+    (_data: ArrayLike<WDBPlant> | null | undefined, index: number) => ({
+      length: 120, // Approximate height of PlantCard
+      offset: 120 * index,
+      index,
+    }),
+    []
+  );
+
   if (isLoading) {
     return (
       <View className="mt-10 flex-1 items-center justify-center">
@@ -104,8 +115,9 @@ const PlantListComponent = ({
   return (
     <FlatList
       data={plants}
-      keyExtractor={(item) => item.id}
+      keyExtractor={keyExtractor}
       renderItem={renderPlantCard}
+      getItemLayout={getItemLayout}
       ListEmptyComponent={<EmptyPlantList />}
       ListHeaderComponent={ListHeaderComponent}
       refreshControl={
@@ -119,6 +131,14 @@ const PlantListComponent = ({
           />
         ) : undefined
       }
+      // Reanimated v3 + FlatList optimizations
+      initialNumToRender={10}
+      windowSize={10}
+      maxToRenderPerBatch={5}
+      updateCellsBatchingPeriod={100}
+      removeClippedSubviews={true}
+      // Performance optimizations
+      scrollEventThrottle={16}
       contentContainerStyle={{
         flexGrow: 1,
         paddingTop: ListHeaderComponent ? 0 : 8,
@@ -126,7 +146,9 @@ const PlantListComponent = ({
       }}
     />
   );
-};
+});
+
+PlantListComponent.displayName = 'PlantListComponent';
 
 // Enhanced component with observables (ensure observed columns match WDBPlant fields used)
 const enhance = withObservables([], ({ database }: { database: Database }) => ({

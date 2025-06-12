@@ -204,9 +204,15 @@ function EntryOption({
   );
 }
 
-export default function EntryTypeSelector({ onSelectType }: EntryTypeSelectorProps) {
-  const renderItem = ({ item, index }: { item: EntryTypeOption; index: number }) => (
-    <EntryOption item={item} onSelect={onSelectType} index={index} />
+function EntryTypeSelector({ onSelectType }: EntryTypeSelectorProps) {
+  // 🎯 Performance optimized callbacks
+  const keyExtractor = React.useCallback((item: EntryTypeOption) => item.type, []);
+  
+  const renderItem = React.useCallback(
+    ({ item, index }: { item: EntryTypeOption; index: number }) => (
+      <EntryOption item={item} onSelect={onSelectType} index={index} />
+    ),
+    [onSelectType]
   );
 
   return (
@@ -221,13 +227,18 @@ export default function EntryTypeSelector({ onSelectType }: EntryTypeSelectorPro
       <FlatList
         data={entryTypeOptions}
         renderItem={renderItem}
-        keyExtractor={(item) => item.type}
+        keyExtractor={keyExtractor}
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        // ⚡ Reanimated v3 compatible performance optimizations
         initialNumToRender={5}
         maxToRenderPerBatch={5}
         windowSize={10}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews={true}
       />
     </ThemedView>
   );
 }
+
+export default React.memo(EntryTypeSelector);

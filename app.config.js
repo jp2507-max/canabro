@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 export default {
   expo: {
+    jsEngine: 'hermes',
     name: 'canabro',
     slug: 'canabro',
     version: '1.0.0',
@@ -14,7 +15,15 @@ export default {
       typedRoutes: true,
     },
     plugins: [
-      'expo-router',
+      [
+        'expo-router',
+        {
+          asyncRoutes: {
+            web: true,
+            default: 'development',
+          },
+        },
+      ],
       'expo-font',
       'expo-secure-store',
       'expo-task-manager', // Required for background tasks

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { OptimizedIcon, IconName } from '../../components/ui/OptimizedIcon';
 import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
@@ -50,7 +50,7 @@ interface AnimatedButtonProps {
   loading?: boolean;
   disabled?: boolean;
   variant?: 'primary' | 'secondary' | 'danger';
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: IconName;
 }
 
 function AnimatedButton({
@@ -159,7 +159,7 @@ function AnimatedButton({
             className="mr-2"
           />
         ) : icon ? (
-          <Ionicons name={icon} size={18} className={`mr-2 ${getIconColor()}`} />
+          <OptimizedIcon name={icon} size={18} className={`mr-2 ${getIconColor()}`} />
         ) : null}
 
         <ThemedText variant="default" className={`font-semibold ${getTextStyles()}`}>
@@ -244,7 +244,7 @@ function ErrorRecoveryBanner({
       entering={FadeInDown.duration(400)}
       className="mb-6 rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
       <View className="flex-row items-start">
-        <Ionicons name="warning" size={20} className="mr-3 mt-0.5 text-orange-500" />
+        <OptimizedIcon name="warning" size={20} className="mr-3 mt-0.5 text-orange-500" />
         <View className="flex-1">
           <ThemedText
             variant="default"
@@ -587,7 +587,7 @@ export default function RegisterScreen() {
             {/* Logo Section */}
             <Animated.View entering={FadeIn.duration(800)} className="mb-8 items-center">
               <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg dark:bg-primary-600">
-                <Ionicons name="leaf" size={32} className="text-white" />
+                <OptimizedIcon name="leaf" size={32} className="text-white" />
               </View>
               <ThemedText variant="heading" className="text-4xl font-black tracking-tight">
                 CanaBro
