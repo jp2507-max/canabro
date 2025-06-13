@@ -5,7 +5,6 @@
  * Optimized for buttons, FABs, and interactive elements.
  */
 
-import * as Haptics from 'expo-haptics';
 import { ViewStyle } from 'react-native';
 import {
   useSharedValue,
@@ -18,6 +17,11 @@ import {
 
 import { ANIMATION_PRESETS, SPRING_CONFIGS } from './presets';
 import { useAnimationCleanup } from './useAnimationCleanup';
+import { 
+  triggerLightHapticSync,
+  triggerMediumHapticSync,
+  triggerHeavyHapticSync 
+} from '../utils/haptics';
 
 interface UseButtonAnimationConfig {
   // Scale values
@@ -73,13 +77,17 @@ export function useButtonAnimation(
   const triggerHaptics = () => {
     if (!enableHaptics) return;
 
-    const hapticMap = {
-      light: Haptics.ImpactFeedbackStyle.Light,
-      medium: Haptics.ImpactFeedbackStyle.Medium,
-      heavy: Haptics.ImpactFeedbackStyle.Heavy,
-    };
-
-    Haptics.impactAsync(hapticMap[hapticStyle]);
+    switch (hapticStyle) {
+      case 'light':
+        triggerLightHapticSync();
+        break;
+      case 'medium':
+        triggerMediumHapticSync();
+        break;
+      case 'heavy':
+        triggerHeavyHapticSync();
+        break;
+    }
   };
 
   // Animated style

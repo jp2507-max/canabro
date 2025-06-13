@@ -1,6 +1,5 @@
 import { Database } from '@nozbe/watermelondb';
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
-import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback } from 'react';
 import { ScrollView, Alert, ActivityIndicator, View, Dimensions } from 'react-native';
@@ -19,6 +18,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Modern animation imports
+import { triggerLightHapticSync, triggerSuccessHaptic, triggerErrorHaptic } from '../../lib/utils/haptics';
 
 // Sub-components
 import { PlantActions } from '../../components/plant-detail/PlantActions';
@@ -66,7 +66,7 @@ function AnimatedNavButton({
       shadowOpacity.value = withTiming(0.1, { duration: 150 });
 
       // Haptic feedback
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
     })
     .onEnd(() => {
       'worklet';
@@ -111,11 +111,11 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
                 await plant.markAsDeleted();
               });
               sync();
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              triggerSuccessHaptic();
               router.back();
             } catch (error) {
               console.error('Error deleting plant:', error);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              triggerErrorHaptic();
               Alert.alert('Error', 'Failed to delete plant');
             }
           },
@@ -291,7 +291,7 @@ export default function PlantDetailsWrapper() {
         <SafeAreaView className="flex-1 items-center justify-center p-6">
           <Animated.View entering={FadeIn.duration(800)} className="items-center">
             <View className="mb-6 rounded-full bg-amber-100 p-6 dark:bg-amber-900/30">
-              <OptimizedIcon name="help-circle-outline" size={48} color="#f59e0b" />
+              <OptimizedIcon name="help-circle" size={48} color="#f59e0b" />
             </View>
             <Animated.View entering={FadeInUp.delay(200).duration(600)}>
               <ThemedText variant="heading" className="mb-2 text-center text-xl font-bold">

@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
@@ -16,6 +15,7 @@ import ThemedText from '../components/ui/ThemedText';
 import ThemedView from '../components/ui/ThemedView';
 import { SPRING_CONFIGS } from '../lib/animations/presets';
 import { logger } from '@/lib/config/production';
+import { triggerLightHapticSync } from '@/lib/utils/haptics';
 
 interface PlantImageSectionProps {
   initialImageUri?: string | null;
@@ -138,7 +138,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
       pickImageScale.value = withSpring(1, SPRING_CONFIGS.smooth);
     })
     .onEnd(() => {
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
       runOnJS(handleImagePick)();
     });
 
@@ -152,7 +152,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
       takePictureScale.value = withSpring(1, SPRING_CONFIGS.smooth);
     })
     .onEnd(() => {
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
       runOnJS(handleTakePicture)();
     });
 

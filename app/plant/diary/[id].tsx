@@ -20,11 +20,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { OptimizedIcon } from '../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
+import { EnhancedTextInput } from '../../../components/ui/EnhancedTextInput';
+import { KeyboardToolbar } from '../../../components/ui/KeyboardToolbar';
 // import { isExpoGo } from '../../../lib/config'; // isExpoGo is unused
 import { useAuth } from '../../../lib/contexts/AuthProvider';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
+import { useEnhancedKeyboard } from '../../../lib/hooks/useEnhancedKeyboard';
 import { DiaryEntry } from '../../../lib/models/DiaryEntry';
 import { Plant } from '../../../lib/models/Plant';
+import { triggerLightHaptic } from '../../../lib/utils/haptics';
 
 // Simplified interfaces for props
 interface PlantDiaryScreenProps {
@@ -47,6 +51,45 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const contentInputRef = useRef<TextInput>(null);
+
+  // Enhanced keyboard handling for diary form
+  const titleInputRef = useRef<TextInput>(null);
+  const inputRefs = [titleInputRef, contentInputRef];
+  const totalInputs = 2;
+
+  const {
+    isKeyboardVisible,
+    keyboardHeight,
+    currentIndex,
+    goToNextInput,
+    goToPreviousInput,
+    dismissKeyboard,
+    canGoNext,
+    canGoPrevious,
+    setCurrentIndex,
+  } = useEnhancedKeyboard(inputRefs, totalInputs);
+
+  // Get field name for keyboard toolbar
+  const getFieldName = (index: number): string => {
+    if (index === 0) return 'Title';
+    if (index === 1) return 'Content';
+    return `Field ${index + 1}`;
+  };
+
+  // Enhanced input focus management
+  const handleInputFocus = (index: number) => {
+    setCurrentIndex(index);
+    triggerLightHaptic();
+  };
+
+  // Enhanced input submit handling
+  const handleSubmitEditing = (index: number) => {
+    if (index < inputRefs.length - 1) {
+      goToNextInput();
+    } else {
+      dismissKeyboard();
+    }
+  };
 
   // Sort entries by date - newest first
   const sortedEntries = [...diaryEntries].sort((a, b) => {
@@ -76,6 +119,7 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
         const entriesCollection = plant.database.get<DiaryEntry>('diary_entries');
         await entriesCollection.create((entry) => {
           entry.plantId = plant.id;
+          entry.title = entryTitle.trim(); // ← persist title
           entry.content = entryContent.trim();
           entry.entryType = entryType;
           entry.entryDate = new Date().toISOString();
@@ -197,7 +241,7 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
               onPress={() => handleDeleteEntry(item)}
               className="p-2"
               accessibilityLabel="Delete diary entry">
-              <OptimizedIcon name="trash-outline" size={18} color="rgb(var(--color-status-danger))" />
+              <OptimizedIcon name="trash" size={18} color="rgb(var(--color-status-danger))" />
             </Pressable>
           </View>
 
@@ -327,23 +371,30 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
 
                 {/* Entry Form */}
                 <ThemedView className="mb-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
-                  <TextInput
+                  <EnhancedTextInput
+                    ref={titleInputRef}
                     placeholder="Title (optional)"
-                    placeholderTextColor="rgb(var(--color-neutral-400))"
                     value={entryTitle}
                     onChangeText={setEntryTitle}
-                    className="mb-1 text-base font-medium text-neutral-900 dark:text-neutral-100"
+                    onFocus={() => handleInputFocus(0)}
+                    onSubmitEditing={() => handleSubmitEditing(0)}
+                    returnKeyType="next"
+                    className="mb-1 text-base font-medium"
+                    maxLength={100}
                   />
-                  <TextInput
+                  <EnhancedTextInput
                     ref={contentInputRef}
                     placeholder="What's happening with your plant today?"
-                    placeholderTextColor="rgb(var(--color-neutral-400))"
                     value={entryContent}
                     onChangeText={setEntryContent}
+                    onFocus={() => handleInputFocus(1)}
+                    onSubmitEditing={() => handleSubmitEditing(1)}
                     multiline
                     numberOfLines={4}
-                    className="min-h-[100px] text-base text-neutral-900 dark:text-neutral-100"
+                    className="min-h-[100px] text-base"
                     textAlignVertical="top"
+                    returnKeyType="done"
+                    maxLength={500}
                   />
                 </ThemedView>
 
@@ -372,6 +423,22 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
             )}
           </ThemedView>
         </KeyboardAvoidingView>
+
+        {/* Enhanced Keyboard Toolbar - only show when adding entry */}
+        {isAddingEntry && (
+          <KeyboardToolbar
+            isVisible={isKeyboardVisible}
+            keyboardHeight={keyboardHeight}
+            onPrevious={goToPreviousInput}
+            onNext={goToNextInput}
+            onDone={dismissKeyboard}
+            canGoPrevious={canGoPrevious}
+            canGoNext={canGoNext}
+            currentField={getFieldName(currentIndex)}
+            totalFields={totalInputs}
+            currentIndex={currentIndex}
+          />
+        )}
       </SafeAreaView>
     </>
   );

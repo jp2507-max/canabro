@@ -17,6 +17,16 @@ export enum NotificationType {
 
 // Initialize notifications
 export async function initializeNotifications() {
+  // Skip push notifications in development to avoid blobId errors
+  if (__DEV__) {
+    console.log('Skipping notification initialization in development mode');
+    if (Platform.OS === 'android') {
+      // Still setup channels for local notifications
+      await setupNotificationChannels();
+    }
+    return null;
+  }
+
   if (Platform.OS === 'android') {
     await setupNotificationChannels();
   }
@@ -66,6 +76,12 @@ export const registerNotificationChannels = setupNotificationChannels;
 
 // Register for push notifications
 export async function registerForPushNotificationsAsync() {
+  // Skip push notifications in development to avoid blobId errors
+  if (__DEV__) {
+    console.log('Skipping push token registration in development mode');
+    return null;
+  }
+
   let token;
 
   if (Platform.OS === 'android') {

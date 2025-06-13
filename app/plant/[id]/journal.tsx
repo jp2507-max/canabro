@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import * as Localization from 'expo-localization';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -18,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DiaryEntryItem from '../../../components/diary/DiaryEntryItem';
 import JournalCalendar from '../../../components/diary/JournalCalendar';
+import { triggerLightHapticSync, triggerMediumHapticSync, triggerMediumHaptic, triggerLightHaptic } from '../../../lib/utils/haptics';
 import { OptimizedIcon } from '../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
@@ -27,9 +27,20 @@ import { DiaryEntry } from '../../../lib/types/diary';
 
 const AnimatedPressable = Animated.createAnimatedComponent(View);
 
-// Helper function to format date
+// Helper function to format date with validation
 const formatDate = (date: Date): string => {
-  return date.toLocaleDateString(Localization.locale, { day: '2-digit', month: 'short' });
+  // Validate that the date is valid
+  if (!date || isNaN(date.getTime())) {
+    console.warn('[PlantJournalScreen] Invalid date passed to formatDate:', date);
+    return 'Invalid Date';
+  }
+  
+  try {
+    return date.toLocaleDateString(Localization.locale, { day: '2-digit', month: 'short' });
+  } catch (error) {
+    console.error('[PlantJournalScreen] Error formatting date:', error);
+    return 'Invalid Date';
+  }
 };
 
 // Helper function to group entries by date string 'YYYY-MM-DD'
@@ -41,7 +52,25 @@ const groupEntriesByDate = (entries: DiaryEntry[]) => {
       }
 
       const entryDate = new Date(entry.created_at);
-      const dateKey = entryDate.toISOString().split('T')[0];
+      
+             // Validate the created date before proceeding
+       if (isNaN(entryDate.getTime())) {
+         console.warn('[PlantJournalScreen] Invalid created_at date for entry:', entry.id, entry.created_at);
+         return acc;
+       }
+
+       let dateKey: string;
+       try {
+         const isoString = entryDate.toISOString().split('T')[0];
+         if (!isoString) {
+           console.warn('[PlantJournalScreen] Empty date key for entry:', entry.id);
+           return acc;
+         }
+         dateKey = isoString;
+       } catch (error) {
+         console.error('[PlantJournalScreen] Error converting date to ISO string:', error);
+         return acc;
+       }
 
       if (!dateKey) {
         return acc;
@@ -54,8 +83,17 @@ const groupEntriesByDate = (entries: DiaryEntry[]) => {
       acc[dateKey]!.push(entry);
 
       acc[dateKey]!.sort(
-        (a: DiaryEntry, b: DiaryEntry) =>
-          new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        (a: DiaryEntry, b: DiaryEntry) => {
+          const dateA = new Date(a.created_at || '');
+          const dateB = new Date(b.created_at || '');
+          
+          // Handle invalid dates in sorting
+          if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+          if (isNaN(dateA.getTime())) return 1;
+          if (isNaN(dateB.getTime())) return -1;
+          
+          return dateB.getTime() - dateA.getTime();
+        }
       );
 
       return acc;
@@ -83,7 +121,7 @@ function AnimatedHeaderButton({
   const gesture = Gesture.Tap()
     .onStart(() => {
       scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
     })
     .onEnd(() => {
       scale.value = withSpring(1, { damping: 15, stiffness: 300 });
@@ -139,7 +177,7 @@ export default function PlantJournalScreen() {
   // Handle refresh - properly wire to actual loading states
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerMediumHaptic();
 
     try {
       // Execute both refetch functions in parallel
@@ -165,17 +203,17 @@ export default function PlantJournalScreen() {
   }
 
   const handleAddNewEntry = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerMediumHaptic();
     router.push(`/plant/${routePlantId}/diary/create`);
   };
 
   const handleGoToSettings = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerLightHaptic();
     console.log('Navigate to plant settings');
   };
 
   const handleExport = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerLightHaptic();
     console.log('Export journal');
   };
 
@@ -205,7 +243,7 @@ export default function PlantJournalScreen() {
           }}
         />
         <Animated.View entering={FadeIn.duration(600)} className="items-center">
-          <OptimizedIcon name="help-circle-outline" size={48} color="#ef4444" />
+          <OptimizedIcon name="help-circle" size={48} color="#ef4444" />
           <ThemedText variant="default" className="text-status-danger text-center text-lg">
             Error loading plant data.
           </ThemedText>
@@ -286,7 +324,7 @@ export default function PlantJournalScreen() {
             <Animated.View
               entering={FadeIn.delay(400).duration(600)}
               className="flex-1 items-center justify-center py-20">
-              <OptimizedIcon name="help-circle-outline" size={40} color="#ef4444" />
+              <OptimizedIcon name="help-circle" size={40} color="#ef4444" />
               <ThemedText className="text-status-danger text-center">
                 Error loading entries.
               </ThemedText>
@@ -311,7 +349,7 @@ export default function PlantJournalScreen() {
               <GestureDetector
                 gesture={Gesture.Tap()
                   .onStart(() => {
-                    runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+                    runOnJS(triggerMediumHapticSync)();
                   })
                   .onEnd(() => {
                     runOnJS(handleAddNewEntry)();
@@ -320,7 +358,7 @@ export default function PlantJournalScreen() {
                   className="flex-row items-center rounded-2xl bg-primary-500 px-8 py-4 shadow-lg dark:bg-primary-600"
                   accessibilityRole="button"
                   accessibilityLabel="Add first journal entry">
-                  <OptimizedIcon name="add-circle-outline" size={20} color="white" />
+                  <OptimizedIcon name="add-outline" size={20} color="white" />
                   <ThemedText className="ml-2 text-base font-bold text-white">
                     Add First Entry
                   </ThemedText>
@@ -363,7 +401,7 @@ export default function PlantJournalScreen() {
                     <GestureDetector
                       gesture={Gesture.Tap()
                         .onStart(() => {
-                          runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+                          runOnJS(triggerLightHapticSync)();
                         })
                         .onEnd(() => {
                           runOnJS(handleAddNewEntry)();
@@ -402,7 +440,7 @@ export default function PlantJournalScreen() {
               gesture={Gesture.Tap()
                 .onStart(() => {
                   fabScale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
-                  runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+                  runOnJS(triggerMediumHapticSync)();
                 })
                 .onEnd(() => {
                   fabScale.value = withSpring(1, { damping: 15, stiffness: 300 });

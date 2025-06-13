@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   ScrollView,
@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useTheme } from '../../lib/contexts/ThemeContext';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
+import { Plant } from '../../lib/models/Plant';
+import { useTheme } from '../../lib/contexts/ThemeContext';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 
@@ -47,278 +48,244 @@ const TASK_TYPES = [
 ];
 
 export default function AddTaskToAllPlantsScreen() {
-  const { theme, isDarkMode } = useTheme();
+  const { isDark } = useTheme();
   const router = useRouter();
   const { database } = useWatermelon();
 
   const [selectedTaskType, setSelectedTaskType] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDescription, setTaskDescription] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
-  // Handle adding tasks to all plants
-  const handleAddTaskToAllPlants = async () => {
-    if (!selectedTaskType || !taskTitle) {
-      Alert.alert('Required Fields', 'Please select a task type and enter a title');
+  const handleAddTaskToAllPlants = useCallback(async () => {
+    if (!selectedTaskType) {
+      Alert.alert('Error', 'Please select a task type');
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
+      setIsCreating(true);
+
       // Get all plants
       const plantsCollection = database.get('plants');
       const allPlants = await plantsCollection.query().fetch();
 
       if (allPlants.length === 0) {
-        Alert.alert('No Plants', 'You need to add plants before creating tasks for them');
-        setIsSubmitting(false);
+        Alert.alert('No Plants', 'No plants found to add tasks to');
         return;
       }
 
-      // Create tasks for all plants
       await database.write(async () => {
         const tasksCollection = database.get('plant_tasks');
-        const taskCreationPromises = allPlants.map((plant: any) =>
-          tasksCollection.create((task: PlantTask) => {
-            task.taskId = `task-${Date.now()}-${plant.id}`;
+        
+        // Create a task for each plant
+        const taskPromises = allPlants.map((plant: any) =>
+          tasksCollection.create((task: any) => {
             task.plantId = plant.id;
-            task.title = taskTitle;
-            task.description = taskDescription;
             task.taskType = selectedTaskType;
-            task.dueDate = dueDate.toISOString();
-            task.status = 'pending';
-            // Generate a user ID (should be from auth context in real app)
-            task.userId = 'current-user';
+            task.dueDate = dueDate;
+            task.notes = notes;
+            task.isCompleted = false;
+            task.createdAt = new Date();
           })
         );
 
-        await Promise.all(taskCreationPromises);
+        await Promise.all(taskPromises);
       });
 
-      Alert.alert('Success', `Task added to all ${allPlants.length} plants`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      Alert.alert(
+        'Success',
+        `Task added to ${allPlants.length} plant${allPlants.length === 1 ? '' : 's'}!`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.back();
+            },
+          },
+        ]
+      );
     } catch (error) {
-      console.error('Error adding tasks:', error);
-      Alert.alert('Error', 'Failed to add tasks');
+      console.error('Error creating tasks:', error);
+      Alert.alert('Error', 'Failed to create tasks');
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
-  };
+  }, [selectedTaskType, dueDate, notes, database, router]);
 
-  // Function to format date for display
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('de-DE', {
+  // Handle date picker change
+  const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setDueDate(selectedDate);
+    }
+  }, []);
+
+  // Format date for display
+  const formatDate = useCallback((date: Date): string => {
+    return date.toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
-  };
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-black">
-      <ThemedView className="flex-1 px-4">
+      <ThemedView className="flex-1">
         {/* Header */}
-        <View className="flex-row items-center justify-between py-4">
+        <View className="flex-row items-center px-4 py-3">
           <TouchableOpacity
             onPress={() => router.back()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            className="mr-3 rounded-full p-2"
+            accessibilityRole="button"
+            accessibilityLabel="Go back">
             <Ionicons
               name="arrow-back"
               size={24}
-              color={isDarkMode ? theme.colors.neutral[300] : theme.colors.neutral[700]}
+              className="text-neutral-700 dark:text-neutral-300"
             />
           </TouchableOpacity>
-          <ThemedText
-            className="text-xl font-bold"
-            lightClassName="text-neutral-800"
-            darkClassName="text-white">
+          <ThemedText className="flex-1 text-xl font-bold">
             Add Task to All Plants
           </ThemedText>
-          <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          {/* Task Type Section */}
+        <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+          {/* Task Type Selection */}
           <View className="mb-6">
-            <ThemedText
-              className="mb-2 text-base font-medium"
-              lightClassName="text-neutral-700"
-              darkClassName="text-neutral-300">
+            <ThemedText className="mb-3 text-lg font-semibold">
               Task Type
             </ThemedText>
-
-            <View className="flex-row flex-wrap">
-              {TASK_TYPES.map((type) => (
+            <View className="space-y-2">
+              {TASK_TYPES.map((taskType) => (
                 <TouchableOpacity
-                  key={type.id}
-                  className={`mb-2 mr-2 flex-row items-center rounded-full px-4 py-2 ${
-                    selectedTaskType === type.id
-                      ? ''
-                      : isDarkMode
-                        ? 'bg-neutral-800'
-                        : 'bg-neutral-200'
+                  key={taskType.id}
+                  className={`rounded-xl border-2 p-4 ${
+                    selectedTaskType === taskType.id
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950'
+                      : isDark
+                        ? 'border-neutral-700 bg-neutral-800'
+                        : 'border-neutral-200 bg-white'
                   }`}
-                  style={{
-                    backgroundColor: selectedTaskType === type.id ? type.color : undefined,
-                  }}
-                  onPress={() => setSelectedTaskType(type.id)}>
-                  <Ionicons
-                    name={type.icon as any}
-                    size={16}
-                    color={
-                      selectedTaskType === type.id
-                        ? 'white'
-                        : isDarkMode
-                          ? theme.colors.neutral[300]
-                          : theme.colors.neutral[700]
-                    }
-                    style={{ marginRight: 6 }}
-                  />
-                  <ThemedText
-                    className="text-sm"
-                    lightClassName={
-                      selectedTaskType === type.id ? 'text-white' : 'text-neutral-700'
-                    }
-                    darkClassName={
-                      selectedTaskType === type.id ? 'text-white' : 'text-neutral-300'
-                    }>
-                    {type.name}
-                  </ThemedText>
+                  onPress={() => setSelectedTaskType(taskType.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select task type ${taskType.name}`}
+                  accessibilityState={{ selected: selectedTaskType === taskType.id }}>
+                  <View className="flex-row items-center">
+                    <View
+                      className="mr-3 h-10 w-10 items-center justify-center rounded-full"
+                      style={{ backgroundColor: taskType.color + '20' }}>
+                      <Ionicons
+                        name={taskType.icon as any}
+                        size={20}
+                        style={{ color: taskType.color }}
+                      />
+                    </View>
+                    <ThemedText className="flex-1 text-base font-medium">
+                      {taskType.name}
+                    </ThemedText>
+                    {selectedTaskType === taskType.id && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={24}
+                        className="text-primary-500"
+                      />
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Task Details Form */}
+          {/* Due Date Selection */}
           <View className="mb-6">
-            <ThemedText
-              className="mb-2 text-base font-medium"
-              lightClassName="text-neutral-700"
-              darkClassName="text-neutral-300">
-              Task Details
+            <ThemedText className="mb-3 text-lg font-semibold">
+              Due Date
             </ThemedText>
-
-            {/* Task Title Input */}
-            <View
-              className="mb-4 rounded-xl px-4 py-3"
-              style={{
-                backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100],
-              }}>
-              <ThemedText
-                className="mb-1 text-xs"
-                lightClassName="text-neutral-500"
-                darkClassName="text-neutral-400">
-                Title
-              </ThemedText>
-              <TextInput
-                value={taskTitle}
-                onChangeText={setTaskTitle}
-                placeholder="Enter task title"
-                placeholderTextColor={
-                  isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                }
-                className="text-base"
-                style={{
-                  color: isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[800],
-                }}
-              />
-            </View>
-
-            {/* Task Description Input */}
-            <View
-              className="mb-4 rounded-xl px-4 py-3"
-              style={{
-                backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100],
-              }}>
-              <ThemedText
-                className="mb-1 text-xs"
-                lightClassName="text-neutral-500"
-                darkClassName="text-neutral-400">
-                Description (Optional)
-              </ThemedText>
-              <TextInput
-                value={taskDescription}
-                onChangeText={setTaskDescription}
-                placeholder="Enter task description"
-                placeholderTextColor={
-                  isDarkMode ? theme.colors.neutral[500] : theme.colors.neutral[400]
-                }
-                className="text-base"
-                multiline
-                numberOfLines={3}
-                style={{
-                  color: isDarkMode ? theme.colors.neutral[200] : theme.colors.neutral[800],
-                  textAlignVertical: 'top',
-                }}
-              />
-            </View>
-
-            {/* Due Date Selector */}
             <TouchableOpacity
+              className={`rounded-xl border-2 p-4 ${
+                isDark
+                  ? 'border-neutral-700 bg-neutral-800'
+                  : 'border-neutral-200 bg-white'
+              }`}
               onPress={() => setShowDatePicker(true)}
-              className="flex-row items-center justify-between rounded-xl px-4 py-3"
-              style={{
-                backgroundColor: isDarkMode ? theme.colors.neutral[800] : theme.colors.neutral[100],
-              }}>
-              <View>
-                <ThemedText
-                  className="mb-1 text-xs"
-                  lightClassName="text-neutral-500"
-                  darkClassName="text-neutral-400">
-                  Due Date
-                </ThemedText>
-                <ThemedText
-                  className="text-base"
-                  lightClassName="text-neutral-800"
-                  darkClassName="text-neutral-200">
+              accessibilityRole="button"
+              accessibilityLabel={`Select due date, currently ${formatDate(dueDate)}`}>
+              <View className="flex-row items-center">
+                <Ionicons
+                  name="calendar-outline"
+                  size={24}
+                  className="mr-3 text-neutral-500 dark:text-neutral-400"
+                />
+                <ThemedText className="flex-1 text-base">
                   {formatDate(dueDate)}
                 </ThemedText>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  className="text-neutral-400 dark:text-neutral-500"
+                />
               </View>
-              <Ionicons
-                name="calendar-outline"
-                size={20}
-                color={isDarkMode ? theme.colors.neutral[400] : theme.colors.neutral[500]}
-              />
             </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={dueDate}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  const currentDate = selectedDate || dueDate;
-                  setShowDatePicker(false);
-                  setDueDate(currentDate);
-                }}
-              />
-            )}
           </View>
-        </ScrollView>
 
-        {/* Bottom Action Button */}
-        <View className="py-4">
+          {/* Notes */}
+          <View className="mb-6">
+            <ThemedText className="mb-3 text-lg font-semibold">
+              Notes (Optional)
+            </ThemedText>
+            <TextInput
+              className={`rounded-xl border-2 p-4 text-base ${
+                isDark
+                  ? 'border-neutral-700 bg-neutral-800 text-white'
+                  : 'border-neutral-200 bg-white text-black'
+              }`}
+              placeholder="Add any notes for this task..."
+              placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              accessibilityLabel="Task notes"
+              accessibilityHint="Optional notes for the task"
+            />
+          </View>
+
+          {/* Add Task Button */}
           <TouchableOpacity
-            className="items-center justify-center rounded-full py-3"
-            style={{ backgroundColor: theme.colors.primary[500] }}
+            className={`mb-8 rounded-xl bg-primary-500 py-4 ${
+              !selectedTaskType || isCreating ? 'opacity-50' : ''
+            }`}
             onPress={handleAddTaskToAllPlants}
-            disabled={isSubmitting}>
-            {isSubmitting ? (
-              <ActivityIndicator color="white" />
+            disabled={!selectedTaskType || isCreating}
+            accessibilityRole="button"
+            accessibilityLabel="Add task to all plants"
+            accessibilityState={{
+              disabled: !selectedTaskType || isCreating,
+            }}>
+            {isCreating ? (
+              <ActivityIndicator size="small" color="white" />
             ) : (
-              <ThemedText
-                className="text-base font-medium"
-                lightClassName="text-white"
-                darkClassName="text-white">
+              <ThemedText className="text-center text-lg font-semibold text-white">
                 Add Task to All Plants
               </ThemedText>
             )}
           </TouchableOpacity>
-        </View>
+        </ScrollView>
+
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={dueDate}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+            minimumDate={new Date()}
+          />
+        )}
       </ThemedView>
     </SafeAreaView>
   );

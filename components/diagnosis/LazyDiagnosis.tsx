@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 
 // Lazy load TensorFlow.js only when needed for diagnosis features
-const DiagnosisAI = lazy(() => import('./DiagnosisAICore.tsx'));
+const DiagnosisAI = lazy(() => import('./DiagnosisAICore'));
 
 interface LazyDiagnosisProps {
   image?: string;

@@ -53,20 +53,43 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
 
-  // Request notification permissions and set up listeners
+  // ---------------------------------------------------------------------------
+  // Mount / unmount lifecycle
+  // ---------------------------------------------------------------------------
   useEffect(() => {
+    /**
+     * Local flag that tracks whether this particular component instance is
+     * still mounted. React 18 Strict-Mode mounts → unmounts → re-mounts every
+     * component once in development. When async work started during the first
+     * mount resolves after the unmount, calling setState() would trigger the
+     * "state update on an unmounted component" warning we're seeing. Guarding
+     * with a scoped boolean prevents that without relying on the ref pattern
+     * the React team plans to deprecate.
+     */
+    let isMounted = true;
+
     // Register notification channels (Android only)
     registerNotificationChannels();
 
-    // Request permission and get token
-    requestPermissions();
+    // Request permission and get token. Wrap in IIFE so we can await and guard
+    // the async state updates.
+    (async () => {
+      const granted = await requestPermissions();
+      if (isMounted && granted) {
+        // requestPermissions internally sets state, but we keep the guard here
+        // as an extra safety net in case its implementation ever changes.
+      }
+    })();
 
     // Set up notification listeners
-    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
-      setNotification(notification);
+    const notificationListener = Notifications.addNotificationReceivedListener((notif) => {
+      if (isMounted) {
+        setNotification(notif);
+      }
     });
 
     const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+      if (!isMounted) return;
       const { notification } = response;
       const data = notification.request.content.data;
 
@@ -78,6 +101,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
     // Clean up listeners on unmount
     return () => {
+      isMounted = false;
       notificationListener.remove();
       responseListener.remove();
     };
@@ -86,6 +110,13 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Request notification permissions
   const requestPermissions = async () => {
     try {
+      // Skip push notifications in development to avoid unnecessary API calls
+      if (__DEV__) {
+        console.log('Skipping push notifications in development mode');
+        setIsNotificationsEnabled(true); // Still allow local notifications
+        return true;
+      }
+
       const token = await registerForPushNotificationsAsync();
 
       if (token) {

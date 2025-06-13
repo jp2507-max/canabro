@@ -6,12 +6,19 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "cache": {
+        "disabled": false,
+        "paths": ["./ios/Podfile.lock", "node_modules"]
+      },
+      "env": {
+        "NODE_ENV": "development"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "ios": {
-        "simulator": true
+      "cache": {
+        "disabled": false
       }
     },
     "production": {

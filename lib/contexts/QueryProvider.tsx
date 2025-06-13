@@ -28,29 +28,6 @@ const asyncStoragePersister = createAsyncStoragePersister({
   },
 });
 
-/**
- * A hook that syncs React Query's focus state with the app state
- */
-function useAppState(onChange: (status: AppStateStatus) => void) {
-  React.useEffect(() => {
-    const subscription = AppState.addEventListener('change', onChange);
-    return () => {
-      subscription.remove();
-    };
-  }, [onChange]);
-}
-
-/**
- * A hook that syncs React Query's online state with the device's network state
- */
-function useOnlineManager() {
-  React.useEffect(() => {
-    return NetInfo.addEventListener((state) => {
-      onlineManager.setOnline(!!state.isConnected);
-    });
-  }, []);
-}
-
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
     () =>
@@ -74,15 +51,41 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       })
   );
 
-  // Handle app state changes
-  useAppState((status: AppStateStatus) => {
-    if (Platform.OS !== 'web') {
-      focusManager.setFocused(status === 'active');
-    }
-  });
+  // ---------------------------------------------------------------------------
+  // Mount-guarded effects to prevent React 18 Strict Mode state update warnings
+  // ---------------------------------------------------------------------------
+  
+  // Handle app state changes with mount guard
+  React.useEffect(() => {
+    let isMounted = true;
+    
+    const subscription = AppState.addEventListener('change', (status: AppStateStatus) => {
+      if (isMounted && Platform.OS !== 'web') {
+        focusManager.setFocused(status === 'active');
+      }
+    });
+    
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, []);
 
-  // Handle online state
-  useOnlineManager();
+  // Handle online state with mount guard
+  React.useEffect(() => {
+    let isMounted = true;
+    
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (isMounted) {
+        onlineManager.setOnline(!!state.isConnected);
+      }
+    });
+    
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <PersistQueryClientProvider

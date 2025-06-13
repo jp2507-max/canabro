@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React, { useEffect } from 'react';
 import { Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -11,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { OptimizedIcon, type IconName } from './OptimizedIcon';
+import { triggerMediumHapticSync } from '../../lib/utils/haptics';
 
 interface FloatingActionButtonProps {
   onPress: () => void;
@@ -40,9 +40,15 @@ export function FloatingActionButton({
   const elevation = useSharedValue(8);
   const iconScale = useSharedValue(1);
 
-  // Trigger haptic feedback
-  const triggerHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  // Enhanced press handlers with haptic feedback
+  const handlePress = () => {
+    triggerMediumHapticSync();
+    onPress();
+  };
+
+  const handleLongPress = () => {
+    triggerMediumHapticSync();
+    onLongPress?.();
   };
 
   // Enhanced tap gesture with sophisticated spring animations
@@ -58,7 +64,7 @@ export function FloatingActionButton({
     })
     .onEnd(() => {
       'worklet';
-      // Sophisticated bounce back with haptic feedback
+      // Sophisticated bounce back without haptic feedback in worklet
       scale.value = withSequence(
         withSpring(1.08, { damping: 10, stiffness: 400 }),
         withSpring(1, { damping: 15, stiffness: 400 })
@@ -71,9 +77,8 @@ export function FloatingActionButton({
       shadowOpacity.value = withSpring(0.25, { damping: 15, stiffness: 400 });
       elevation.value = withSpring(8, { damping: 15, stiffness: 400 });
 
-      // Trigger haptic and execute onPress
-      runOnJS(triggerHaptic)();
-      runOnJS(onPress)();
+      // Execute onPress - haptic feedback handled in handlePress
+      runOnJS(handlePress)();
     })
     .onFinalize(() => {
       'worklet';
@@ -90,8 +95,7 @@ export function FloatingActionButton({
     .minDuration(350)
     .onBegin(() => {
       'worklet';
-      // Strong haptic and enhanced visual feedback
-      runOnJS(triggerHaptic)();
+      // Enhanced visual feedback without haptic in worklet
       scale.value = withSpring(1.15, { damping: 8, stiffness: 300 });
       iconScale.value = withSpring(1.25, { damping: 8, stiffness: 300 });
       shadowOpacity.value = withSpring(0.6, { damping: 8, stiffness: 300 });
@@ -100,10 +104,8 @@ export function FloatingActionButton({
     })
     .onEnd(() => {
       'worklet';
-      // Execute long press and restore state
-      if (onLongPress) {
-        runOnJS(onLongPress)();
-      }
+      // Execute long press - haptic feedback handled in handleLongPress
+      runOnJS(handleLongPress)();
       scale.value = withSpring(1, { damping: 15, stiffness: 400 });
       iconScale.value = withSpring(1, { damping: 15, stiffness: 400 });
       shadowOpacity.value = withSpring(0.25, { damping: 15, stiffness: 400 });

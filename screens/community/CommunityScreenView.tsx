@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+
 import React, { useMemo, useEffect } from 'react';
 import { FlatList, View, RefreshControl } from 'react-native';
 import Animated, {
@@ -20,6 +20,7 @@ import type { PostData } from '../../components/community/PostItem';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import ThemedText from '../../components/ui/ThemedText';
+import { triggerMediumHapticSync } from '../../lib/utils/haptics';
 
 interface CommunityScreenViewProps {
   posts: PostData[];
@@ -103,10 +104,11 @@ function CommunityScreenView({
   }, []);
 
   // 🎯 Enhanced FAB press handler with haptic feedback
-  const handleFabPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const handleFabPress = React.useCallback(() => {
+    // Handle haptic feedback safely
+    triggerMediumHapticSync();
     setShowCreateModal(true);
-  };
+  }, [setShowCreateModal]);
 
   // 🎯 Performance optimized render functions with React.useCallback
   const keyExtractor = React.useCallback((item: PostData) => item.id, []);

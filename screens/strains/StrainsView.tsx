@@ -1,5 +1,4 @@
 // React & React Native Core
-import * as Haptics from 'expo-haptics';
 import { Image as ExpoImage } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import React, { memo, useMemo, useCallback } from 'react';
@@ -12,6 +11,8 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { triggerMediumHapticSync } from '../../lib/utils/haptics';
 
 // Local Components
 import placeholderImageSource from '../../assets/images/placeholder.png';
@@ -131,7 +132,7 @@ const StrainCard = memo(
       .onEnd(() => {
         'worklet';
         const handleToggle = () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          triggerMediumHapticSync();
 
           // Extract the ID from item and pass it to onToggleFavorite
           const id = item?.id ?? item?._id;
@@ -405,7 +406,7 @@ const CategoryChip = memo(
 
     // 🎬 Modern gesture handling
     const handlePress = useCallback(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerMediumHapticSync();
       onPress();
     }, [onPress]);
 
@@ -500,11 +501,6 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   // 🎭 Animation sequence for loading states
   useAnimationSequence();
 
-  // 🎯 Haptic feedback functions (worklet-safe)
-  const triggerMediumHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  }, []);
-
   // Define memoized values at the top level - not inside conditional blocks
   const filteredStrains = useMemo(() => {
     // Instead of placing useMemo inside a conditional, we handle the conditional inside useMemo
@@ -590,7 +586,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
             gesture={Gesture.Tap()
               .onBegin(() => {
                 'worklet';
-                runOnJS(triggerMediumHaptic)();
+                runOnJS(triggerMediumHapticSync)();
               })
               .onEnd(() => {
                 'worklet';

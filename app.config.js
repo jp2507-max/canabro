@@ -15,13 +15,11 @@ export default {
       typedRoutes: true,
     },
     plugins: [
+      'react-native-bottom-tabs',
       [
         'expo-router',
         {
-          asyncRoutes: {
-            web: true,
-            default: 'development',
-          },
+          asyncRoutes: false, // Completely disable lazy loading to prevent bundling delays
         },
       ],
       'expo-font',

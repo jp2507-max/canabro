@@ -1,6 +1,5 @@
 import { Database } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
-import * as Haptics from 'expo-haptics';
 import React, { useCallback } from 'react';
 import { Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -17,6 +16,7 @@ import { PlantTask } from '../../lib/models/PlantTask';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { triggerLightHapticSync, triggerSuccessHaptic } from '@/lib/utils/haptics';
 
 // Reanimated AnimatedPressable
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -55,7 +55,7 @@ function TaskItemBase({
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerSuccessHaptic();
       onComplete(task);
     }
   }, [onComplete, task]);
@@ -69,7 +69,7 @@ function TaskItemBase({
       elevation.value = withTiming(4, { duration: 150 });
       translateY.value = withTiming(-1, { duration: 150 });
 
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
     })
     .onEnd(() => {
       'worklet';

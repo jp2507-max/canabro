@@ -12,9 +12,11 @@ const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
 
-// After header comments, set experimental tree-shaking env vars
-process.env.EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH = process.env.EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH || '1';
-process.env.EXPO_UNSTABLE_TREE_SHAKING = process.env.EXPO_UNSTABLE_TREE_SHAKING || '1';
+// After header comments, set experimental tree-shaking env vars only for production
+if (process.env.NODE_ENV === 'production') {
+  process.env.EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH = process.env.EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH || '1';
+  process.env.EXPO_UNSTABLE_TREE_SHAKING = process.env.EXPO_UNSTABLE_TREE_SHAKING || '1';
+}
 
 // Get the default configuration
 // eslint-disable-next-line no-undef
@@ -39,6 +41,10 @@ imageAssetExts.forEach((ext) => assetExtsSet.add(ext));
 // Assign the updated array back to the config
 config.resolver.assetExts = Array.from(assetExtsSet);
 
+// Disable experimental package.exports resolution to avoid third-party polyfills (e.g. react-native-fetch-api)
+// from slipping into the bundle and conflicting with Expo's networking stack.
+config.resolver.unstable_enablePackageExports = false;
+
 // Configure Node.js polyfills - now centralized in lib/polyfills/index.js
 config.resolver.extraNodeModules = {
   // Core Node.js modules - using official polyfills where available
@@ -48,7 +54,11 @@ config.resolver.extraNodeModules = {
   querystring: path.resolve(__dirname, 'node_modules/querystring-es3'),
   fs: path.resolve(__dirname, 'node_modules/react-native-fs'),
   crypto: path.resolve(__dirname, 'node_modules/react-native-crypto'),
-  http: path.resolve(__dirname, 'node_modules/@tradle/react-native-http'),
+  // Removed custom "http" polyfill because it overrides Expo's built-in networking APIs and breaks
+  // expo-notifications with errors like "Invalid responseType: blob" and "blobId undefined".
+  // If you still need Node's http in rare cases, install a pure JS replacement like "stream-http"
+  // and alias it here instead, but avoid any implementation that monkey-patches XMLHttpRequest.
+  // http: path.resolve(__dirname, 'node_modules/@tradle/react-native-http'),
   https: path.resolve(__dirname, 'node_modules/https-browserify'),
   os: path.resolve(__dirname, 'node_modules/os-browserify/browser'),
   tls: path.resolve(__dirname, 'node_modules/react-native-tcp'),
@@ -69,13 +79,14 @@ config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 // iOS Bundle size optimization settings
 config.resolver.sourceExts = [...(config.resolver.sourceExts || []), 'cjs', 'mjs'];
 
-// Configure transformer optimizations for iOS production
+// Configure transformer optimizations for better performance
 config.transformer = {
   ...config.transformer,
-  // Always enable experimental import support and inline requires so that
-  // Metro's graph optimizations work during production exports.
+  // Enable experimental import support and inline requires for better bundle optimization
   experimentalImportSupport: true,
   inlineRequires: true,
+  // Enable eager loading to reduce bundle splits
+  unstable_allowRequireContext: true,
 };
 
 // Additional minifier settings only for production builds

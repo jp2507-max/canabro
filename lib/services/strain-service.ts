@@ -10,8 +10,8 @@ export function adaptStrainFromDB(dbStrain: any): Strain {
     api_id: dbStrain.api_id, // Add this line
     name: dbStrain.name,
     species: dbStrain.species,
-    thc_content: dbStrain.thc_content,
-    cbd_content: dbStrain.cbd_content,
+    thc: dbStrain.thc_content,
+    cbd: dbStrain.cbd_content,
     description: dbStrain.description,
     effects: dbStrain.effects || [],
     flavors: dbStrain.flavors || [],

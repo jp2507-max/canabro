@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -12,6 +11,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
 import { DiaryEntryType } from './EntryTypeSelector';
 import { DiaryEntry } from '../../lib/types/diary';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
@@ -110,7 +110,7 @@ export default function DiaryEntryItem({ entry, onPress }: DiaryEntryItemProps) 
             shadowOpacity.value = withSpring(0.2, { damping: 15, stiffness: 300 }); // iOS
             elevation.value = withSpring(8, { damping: 15, stiffness: 300 }); // Android
             backgroundColor.value = withSpring(1, { damping: 15, stiffness: 300 });
-            runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+            runOnJS(triggerLightHapticSync)();
           }
         })
         .onEnd(() => {
@@ -125,12 +125,24 @@ export default function DiaryEntryItem({ entry, onPress }: DiaryEntryItemProps) 
     [onPress]
   );
 
-  // Format date
+  // Format date with proper validation
   let formattedDate = 'Invalid Date';
   try {
-    formattedDate = dayjs(entry.entry_date).format('MMM D, YYYY');
+    if (!entry.entry_date) {
+      console.warn('[DiaryEntryItem] Missing entry_date for entry:', entry.id);
+      formattedDate = 'No Date';
+    } else {
+      const parsedDate = dayjs(entry.entry_date);
+      if (!parsedDate.isValid()) {
+        console.warn('[DiaryEntryItem] Invalid entry_date for entry:', entry.id, entry.entry_date);
+        formattedDate = 'Invalid Date';
+      } else {
+        formattedDate = parsedDate.format('MMM D, YYYY');
+      }
+    }
   } catch (error) {
-    console.error('Error formatting date:', entry.entry_date, error);
+    console.error('[DiaryEntryItem] Error formatting date:', entry.entry_date, error);
+    formattedDate = 'Invalid Date';
   }
 
   return (

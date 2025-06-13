@@ -7,6 +7,9 @@ import useWatermelon from './useWatermelon';
 // Authentication hooks
 export * from './useProtectedRoute';
 
+// Keyboard and UI hooks
+export * from './useEnhancedKeyboard';
+
 // Database hooks
 export * from './useDatabase';
 export { useWatermelon };

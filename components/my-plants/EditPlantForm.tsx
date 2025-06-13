@@ -9,7 +9,7 @@ import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import {
   TextInput,
@@ -37,10 +37,13 @@ import {
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { EnhancedTextInput } from '../ui/EnhancedTextInput';
+import { KeyboardToolbar } from '../ui/KeyboardToolbar';
 
 import { useButtonAnimation } from '@/lib/animations';
 import { searchStrainsByName } from '@/lib/data/strains';
 import { useDatabase } from '@/lib/hooks/useDatabase';
+import { useEnhancedKeyboard } from '@/lib/hooks/useEnhancedKeyboard';
 import { Plant } from '@/lib/models/Plant';
 import { findOrCreateLocalStrain } from '@/lib/services/strain-sync-service';
 import { WeedDbService } from '@/lib/services/weed-db.service';
@@ -242,6 +245,32 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     enableHaptics: true,
     hapticStyle: 'light',
   });
+
+  // Enhanced keyboard handling setup - single source of truth for field configuration
+  const keyboardFields = useMemo(() => [
+    { name: 'name', ref: useRef<TextInput>(null) },
+    { name: 'location_description', ref: useRef<TextInput>(null) },
+    { name: 'notes', ref: useRef<TextInput>(null) },
+  ], []);
+
+  const inputRefs = useMemo(() => keyboardFields.map(field => field.ref), [keyboardFields]);
+  const fieldNames = useMemo(() => keyboardFields.map(field => field.name), [keyboardFields]);
+
+  const {
+    isKeyboardVisible,
+    keyboardHeight,
+    currentIndex,
+    goToNextInput,
+    goToPreviousInput,
+    dismissKeyboard,
+    canGoNext,
+    canGoPrevious,
+    setCurrentIndex,
+  } = useEnhancedKeyboard(inputRefs, inputRefs.length);
+  
+  const getCurrentFieldName = () => {
+    return fieldNames[currentIndex] || 'Unknown Field';
+  };
   // Populate form with plant data on mount and when plant prop changes
   useEffect(() => {
     reset({
@@ -933,23 +962,43 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
   const renderTextInput = (
     fieldName: keyof PlantFormData,
     placeholder: string,
-    keyboardType?: 'default' | 'numeric' | 'email-address'
-  ) => (
-    <Controller
-      control={control}
-      name={fieldName}
-      render={({ field: { onChange, onBlur, value } }) => (
-        <TextInput
-          className="mb-1 rounded-lg border border-neutral-300 px-4 py-3 text-base text-neutral-800 placeholder:text-neutral-500 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder:text-neutral-400"
-          placeholder={placeholder}
-          onBlur={onBlur}
-          onChangeText={onChange}
-          value={value?.toString() || ''}
-          keyboardType={keyboardType}
-        />
-      )}
-    />
-  );
+    keyboardType?: 'default' | 'numeric' | 'email-address',
+    multiline: boolean = false,
+    maxLength?: number
+  ) => {
+    // Get the input index for keyboard navigation
+    const inputIndex = fieldNames.indexOf(fieldName as string);
+    const inputRef = inputIndex >= 0 ? inputRefs[inputIndex] : useRef<TextInput>(null);
+    
+    return (
+      <Controller
+        control={control}
+        name={fieldName}
+        render={({ field: { onChange, onBlur, value } }) => (
+          <EnhancedTextInput
+            ref={inputRef}
+            placeholder={placeholder}
+            value={value?.toString() || ''}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            onFocus={() => inputIndex >= 0 && setCurrentIndex(inputIndex)}
+            onSubmitEditing={() => {
+              if (!multiline) {
+                goToNextInput();
+              }
+            }}
+            keyboardType={keyboardType}
+            multiline={multiline}
+            maxLength={maxLength}
+            showCharacterCount={!!maxLength}
+            error={errors[fieldName]?.message}
+            returnKeyType={multiline ? 'default' : 'next'}
+            blurOnSubmit={multiline}
+          />
+        )}
+      />
+    );
+  };
 
   const renderEnumPicker = (fieldName: keyof PlantFormData, enumObject: any, title: string) => {
     const formatLabel = (str: string) =>
@@ -1137,7 +1186,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
           Plant Name*
         </ThemedText>
-        {renderTextInput('name', 'e.g., Bruce Banner')}
+        {renderTextInput('name', 'e.g., Bruce Banner', 'default', false, 50)}
 
         {/* Strain Autocomplete */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
@@ -1199,8 +1248,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                         selectedStrain.type?.toLowerCase().includes('indica')
                           ? 'moon-outline'
                           : selectedStrain.type?.toLowerCase().includes('sativa')
-                            ? 'sunny-outline'
-                            : 'leaf-outline'
+                            ? 'sun'
+                            : 'leaf'
                       }
                       size={16}
                       className="mr-1.5 text-primary-500"
@@ -1307,27 +1356,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
           Notes
         </ThemedText>
-        <Controller
-          control={control}
-          name="notes"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              className="mb-1 rounded-lg border border-neutral-300 px-4 py-3 text-base text-neutral-800 placeholder:text-neutral-500 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder:text-neutral-400"
-              style={{ height: 100, textAlignVertical: 'top' }}
-              placeholder="Additional notes about your plant..."
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value || ''}
-              multiline
-              numberOfLines={4}
-            />
-          )}
-        />
-        {errors.notes && (
-          <ThemedText className="text-status-danger mt-1 text-xs">
-            {errors.notes.message}
-          </ThemedText>
-        )}
+        {renderTextInput('notes', 'Additional notes about your plant...', 'default', true, 500)}
 
         <AnimatedSubmitButton
           onPress={handleSubmit(onSubmit)}
@@ -1335,6 +1364,18 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           label="Update Plant"
         />
       </ThemedView>
+
+      {/* Enhanced Keyboard Toolbar */}
+      <KeyboardToolbar
+        isVisible={isKeyboardVisible}
+        keyboardHeight={keyboardHeight}
+        onNext={goToNextInput}
+        onPrevious={goToPreviousInput}
+        onDone={dismissKeyboard}
+        canGoNext={canGoNext}
+        canGoPrevious={canGoPrevious}
+        currentField={getCurrentFieldName()}
+      />
     </KeyboardAvoidingView>
   );
 }

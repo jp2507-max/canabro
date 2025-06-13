@@ -82,7 +82,6 @@ export default function DiagnosisContainer() {
       cameraMode={cameraMode}
       isAnalyzing={isAnalyzing}
       diagnosisResult={diagnosisResult}
-      width={width}
       onCameraToggle={handleCameraToggle}
       onImageCaptured={handleImageCaptured}
       onAnalyzeImage={handleAnalyzeImage}

@@ -1,5 +1,4 @@
 import { format, addDays, isToday, isYesterday, isTomorrow } from 'date-fns';
-import * as Haptics from 'expo-haptics';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { ScrollView, Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -14,6 +13,7 @@ import Animated, {
 
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
 
 // Reanimated AnimatedPressable
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -47,11 +47,23 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
 
   // Get display label for special dates
   const getDateLabel = useCallback(() => {
+    // Validate date before using it
+    if (!date || typeof date.getTime !== 'function' || isNaN(date.getTime())) {
+      console.warn('[DateSelector] Invalid date in getDateLabel:', date);
+      return 'Invalid';
+    }
+    
     if (isCurrentToday) return 'Today';
     if (isCurrentYesterday) return 'Yesterday';
     if (isCurrentTomorrow) return 'Tomorrow';
-    return format(date, 'E');
-  }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow]);
+    
+    try {
+      return format(date, 'E');
+    } catch (error) {
+      console.error('[DateSelector] Error formatting date label:', error);
+      return 'Invalid';
+    }
+  }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow, date]);
 
   // Modern gesture handling
   const tapGesture = Gesture.Tap()
@@ -61,7 +73,7 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
       shadowOpacity.value = withTiming(0.15, { duration: 150 });
       elevation.value = withTiming(2, { duration: 150 });
 
-      runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light))();
+      runOnJS(triggerLightHapticSync)();
     })
     .onEnd(() => {
       'worklet';
@@ -102,7 +114,9 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
           },
         ]}
         accessibilityRole="button"
-        accessibilityLabel={`Select date ${format(date, 'PPP')}`}
+        accessibilityLabel={`Select date ${
+          !date || typeof date.getTime !== 'function' || isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'PPP')
+        }`}
         accessibilityState={{ selected: isSelected }}
         accessibilityHint={isSelected ? 'Currently selected date' : 'Tap to select this date'}>
         <ThemedText
@@ -123,7 +137,7 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
                 ? 'text-primary-700 dark:text-primary-300'
                 : 'text-neutral-800 dark:text-neutral-200'
           }`}>
-          {format(date, 'd')}
+          {!date || typeof date.getTime !== 'function' || isNaN(date.getTime()) ? '?' : format(date, 'd')}
         </ThemedText>
       </AnimatedPressable>
     </GestureDetector>
@@ -160,9 +174,23 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
         snapToInterval={80} // Snap to each date item (64px width + 16px margin)
         snapToAlignment="start">
         {dates.map((date, index) => {
-          const dateString = format(date, 'yyyy-MM-dd');
-          const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
-          const isSelected = dateString === selectedDateString;
+          // Validate dates before formatting to avoid RangeError
+          let dateString = 'invalid';
+          let selectedDateString = 'invalid';
+          let isSelected = false;
+          
+          try {
+            if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
+              dateString = format(date, 'yyyy-MM-dd');
+            }
+            if (selectedDate && typeof selectedDate.getTime === 'function' && !isNaN(selectedDate.getTime())) {
+              selectedDateString = format(selectedDate, 'yyyy-MM-dd');
+            }
+            isSelected = dateString === selectedDateString && dateString !== 'invalid';
+          } catch (error) {
+            console.error('[DateSelector] Error formatting dates for comparison:', error);
+            isSelected = false;
+          }
 
           return (
             <DateItem

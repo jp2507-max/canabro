@@ -6,7 +6,7 @@
 - **NativeWind v4** for styling with automatic dark mode
 - **React Native Reanimated v3** for animations
 - **TanStack Query v5** (@tanstack/react-query) for data fetching
-- **Expo Router v4+** for navigation
+- **Expo Router v5** for navigation
 - **Supabase** for backend services
 - **WatermelonDB** for local database
 - **React 19** with React Compiler compatibility
@@ -41,7 +41,7 @@
 - Implement optimistic updates and error boundaries
 
 ## 🧭 **Navigation & Routing**
-- Use **Expo Router v4+** with file-based routing
+- Use **Expo Router v5** with file-based routing
 - Implement deep linking and universal links
 - Use dynamic routes and route parameters
 - Handle navigation state and URL parameters

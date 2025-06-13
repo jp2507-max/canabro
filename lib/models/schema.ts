@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 22, // Incremented from 21
+  version: 23, // Incremented from 22 to add title column to diary_entries
   tables: [
     tableSchema({
       name: 'profiles',
@@ -101,6 +101,7 @@ export default appSchema({
       name: 'diary_entries',
       columns: [
         { name: 'plant_id', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string', isOptional: true }, // Added missing title column
         { name: 'entry_date', type: 'string' }, // Added entry_date to match model
         { name: 'entry_type', type: 'string' },
         { name: 'content', type: 'string' },

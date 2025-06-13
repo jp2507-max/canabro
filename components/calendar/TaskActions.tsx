@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect } from 'react';
 import { Modal, Pressable, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -13,6 +12,7 @@ import Animated, {
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { triggerSelectionHapticSync, triggerMediumHaptic, triggerSelectionHaptic } from '@/lib/utils/haptics';
 
 // Reanimated AnimatedPressable
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -53,7 +53,7 @@ const ActionButton = React.memo(
     }, [scale, opacity, translateY, delay]);
 
     const handlePress = useCallback(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      triggerMediumHaptic();
       onPress();
     }, [onPress]);
 
@@ -115,7 +115,7 @@ const ActionButton = React.memo(
           </ThemedView>
 
           {/* Arrow Icon */}
-          <OptimizedIcon name="chevron-forward-outline" size={20} color="#6b7280" />
+          <OptimizedIcon name="chevron-forward" size={20} color="#6b7280" />
         </AnimatedPressable>
       </GestureDetector>
     );
@@ -138,7 +138,7 @@ function TaskActions({
   const modalScale = useSharedValue(0.9);
 
   const handleClosePress = useCallback(() => {
-    Haptics.selectionAsync();
+    triggerSelectionHaptic();
     // animate out, then close
     modalTranslateY.value = withTiming(height, { duration: 300 });
     backdropOpacity.value = withTiming(0, { duration: 300 });
@@ -153,7 +153,7 @@ function TaskActions({
   const backdropTapGesture = Gesture.Tap().onEnd(() => {
     'worklet';
     // Provide haptic feedback
-    runOnJS(Haptics.selectionAsync)();
+    runOnJS(triggerSelectionHapticSync)();
     // Animate modal close
     modalTranslateY.value = withTiming(height, { duration: 300 });
     backdropOpacity.value = withTiming(0, { duration: 300 });

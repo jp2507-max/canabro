@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Pressable, View, Text } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -17,6 +16,7 @@ import Animated, {
 import UserAvatar from './UserAvatar';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import StorageImage from '../ui/StorageImage';
+import { triggerLightHaptic, triggerMediumHaptic, triggerLightHapticSync, triggerMediumHapticSync } from '../../lib/utils/haptics';
 
 dayjs.extend(relativeTime);
 
@@ -158,25 +158,30 @@ const PostItem: React.FC<PostItemProps> = React.memo(
     const avatarUri = useMemo(
       () => post.profiles?.avatar_url || 'https://via.placeholder.com/48',
       [post.profiles?.avatar_url]
-    );
-
-    // 🎯 Enhanced event handlers with sophisticated haptic feedback
-    const handleUserPress = useCallback(() => {
+    );    // 🎯 Enhanced event handlers with sophisticated haptic feedback
+    const handleUserPress = useCallback(async () => {
       const profileId = post.profiles?.id;
       if (profileId) {
         onUserPress(profileId);
       }
     }, [post.profiles?.id, onUserPress]);
 
-    const handleLike = useCallback(() => {
+    const handleLike = useCallback(async () => {
+      if (isLiked) {
+        await triggerLightHaptic();
+      } else {
+        await triggerMediumHaptic();
+      }
       onLike(post.id, isLiked);
     }, [post.id, isLiked, onLike]);
 
-    const handleComment = useCallback(() => {
+    const handleComment = useCallback(async () => {
+      await triggerLightHaptic();
       onComment(post.id);
     }, [post.id, onComment]);
 
-    const handleImagePress = useCallback(() => {
+    const handleImagePress = useCallback(async () => {
+      await triggerLightHaptic();
       const imageUrl = post.image_url;
       if (imageUrl && onImagePress) {
         onImagePress(imageUrl);
@@ -190,14 +195,12 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         scale.value = withSpring(SCALE_VALUES.cardPress, ANIMATION_CONFIG.card);
         shadowOpacity.value = withSpring(0.25, ANIMATION_CONFIG.quick);
         cardBorderRadius.value = withSpring(28, ANIMATION_CONFIG.quick);
-      })
-      .onEnd(() => {
-        'worklet';
+      })      .onEnd(() => {        'worklet';
         scale.value = withSpring(1, ANIMATION_CONFIG.card);
         shadowOpacity.value = withSpring(0.15, ANIMATION_CONFIG.quick);
         cardBorderRadius.value = withSpring(24, ANIMATION_CONFIG.quick);
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
-        handleUserPress();
+        runOnJS(triggerLightHapticSync)();
+        runOnJS(handleUserPress)();
       });
 
     const likeGesture = Gesture.Tap()
@@ -213,14 +216,11 @@ const PostItem: React.FC<PostItemProps> = React.memo(
           withSpring(isLiked ? SCALE_VALUES.likeActive : 1, ANIMATION_CONFIG.like),
           withSpring(1, { damping: 12, stiffness: 400 })
         );
-        shadowOpacity.value = withSpring(0.15);
-
-        if (isLiked) {
-          runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
-        } else {
-          runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+        shadowOpacity.value = withSpring(0.15);        if (isLiked) {
+          runOnJS(triggerLightHapticSync)();        } else {
+          runOnJS(triggerMediumHapticSync)();
         }
-        handleLike();
+        runOnJS(handleLike)();
       })
       .enabled(!liking);
 
@@ -228,12 +228,10 @@ const PostItem: React.FC<PostItemProps> = React.memo(
       .onBegin(() => {
         'worklet';
         commentIconScale.value = withSpring(SCALE_VALUES.buttonPress, ANIMATION_CONFIG.button);
-      })
-      .onEnd(() => {
-        'worklet';
+      })      .onEnd(() => {        'worklet';
         commentIconScale.value = withSpring(1, ANIMATION_CONFIG.button);
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
-        handleComment();
+        runOnJS(triggerLightHapticSync)();
+        runOnJS(handleComment)();
       });
 
     const imageGesture = Gesture.Tap()
@@ -241,13 +239,11 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         'worklet';
         scale.value = withSpring(SCALE_VALUES.imagePress, ANIMATION_CONFIG.image);
         shadowOpacity.value = withSpring(0.25);
-      })
-      .onEnd(() => {
-        'worklet';
+      })      .onEnd(() => {        'worklet';
         scale.value = withSpring(1, ANIMATION_CONFIG.image);
         shadowOpacity.value = withSpring(0.15);
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
-        handleImagePress();
+        runOnJS(triggerLightHapticSync)();
+        runOnJS(handleImagePress)();
       });
 
     return (

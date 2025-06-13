@@ -12,6 +12,7 @@ export class DiaryEntry extends Model {
 
   @text('entry_id') entryId!: string;
   @text('plant_id') plantId!: string;
+  @text('title') title?: string; // Added missing title field
   @text('entry_date') entryDate!: string;
   @text('entry_type') entryType!: string;
   @text('content') content!: string;

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { debounce } from 'lodash';
 import { useColorScheme } from 'nativewind';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { View, TextInput, ActivityIndicator, Keyboard, ScrollView, Pressable } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -20,6 +20,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import ThemedText from './ui/ThemedText';
+import { EnhancedTextInput } from './ui/EnhancedTextInput';
+import { KeyboardToolbar } from './ui/KeyboardToolbar';
+import { useEnhancedKeyboard } from '../lib/hooks/useEnhancedKeyboard';
 import { searchStrainsIntelligent } from '../lib/services/strain-search.service';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
 import { Logger } from '../lib/utils/production-utils';
@@ -33,6 +36,16 @@ interface StrainAutocompleteProps {
   containerStyle?: any;
   disabled?: boolean;
   limit?: number;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  onSubmitEditing?: () => void;
+  returnKeyType?: 'search' | 'next' | 'done' | 'go' | 'send';
+}
+
+// Ref interface for focus control
+export interface StrainAutocompleteRef {
+  focus: () => void;
+  blur: () => void;
 }
 
 // Enhanced loading indicator with optimized animations
@@ -210,111 +223,7 @@ const AnimatedSuggestionItem: React.FC<{
   );
 };
 
-// Optimized TextInput with focus animations using React Compiler patterns
-const AnimatedTextInput: React.FC<{
-  isFocused: boolean;
-  disabled: boolean;
-  inputStyle: any;
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  onFocus: () => void;
-  onBlur: () => void;
-  label?: string;
-}> = ({
-  isFocused,
-  disabled,
-  inputStyle,
-  placeholder,
-  value,
-  onChangeText,
-  onFocus,
-  onBlur,
-  label,
-}) => {
-  const focusAnimation = useSharedValue(0);
-  const scaleAnimation = useSharedValue(1);
-  const borderAnimation = useSharedValue(0);
-
-  // Animate on focus change with React Compiler patterns
-  useEffect(() => {
-    runOnUI(() => {
-      'worklet';
-      if (isFocused) {
-        focusAnimation.value = withSpring(1, { damping: 15, stiffness: 200 });
-        scaleAnimation.value = withSpring(1.02, { damping: 20, stiffness: 300 });
-        borderAnimation.value = withTiming(1, { duration: 200 });
-      } else {
-        focusAnimation.value = withSpring(0, { damping: 15, stiffness: 200 });
-        scaleAnimation.value = withSpring(1, { damping: 20, stiffness: 300 });
-        borderAnimation.value = withTiming(0, { duration: 200 });
-      }
-    })();
-
-    return () => {
-      cancelAnimation(focusAnimation);
-      cancelAnimation(scaleAnimation);
-      cancelAnimation(borderAnimation);
-    };
-  }, [isFocused]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    'worklet';
-    const borderColor = rInterpolateColor(
-      borderAnimation.value,
-      [0, 1],
-      ['rgb(163, 163, 163)', 'rgb(59, 130, 246)'] // neutral-400 to blue-500
-    );
-
-    const backgroundColor = rInterpolateColor(
-      focusAnimation.value,
-      [0, 1],
-      ['rgb(249, 250, 251)', 'rgb(255, 255, 255)'] // neutral-50 to white
-    );
-
-    return {
-      borderColor,
-      backgroundColor,
-      transform: [{ scale: scaleAnimation.value }],
-      shadowOpacity: focusAnimation.value * 0.1,
-      shadowRadius: focusAnimation.value * 4,
-      shadowOffset: { width: 0, height: focusAnimation.value * 2 },
-      elevation: focusAnimation.value * 4,
-    };
-  });
-
-  const handleFocus = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onFocus();
-  };
-
-  return (
-    <Animated.View style={[animatedStyle, { borderWidth: 1, borderRadius: 8 }]}>
-      <TextInput
-        style={[
-          inputStyle,
-          {
-            padding: 12,
-            fontSize: 16,
-          },
-        ]}
-        className="text-neutral-900 dark:text-neutral-100"
-        placeholder={placeholder}
-        placeholderTextColor="rgb(107, 114, 128)" // neutral-500
-        value={value}
-        onChangeText={onChangeText}
-        onFocus={handleFocus}
-        onBlur={onBlur}
-        editable={!disabled}
-        accessibilityLabel={label || 'Search for cannabis strains'}
-        accessibilityHint="Type to search for strains from your saved collection, cloud database, or external sources"
-        accessibilityRole="search"
-      />
-    </Animated.View>
-  );
-};
-
-export function StrainAutocomplete({
+export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutocompleteProps>(({
   onStrainSelect,
   initialStrainName = '',
   label = 'Search Strain',
@@ -323,10 +232,33 @@ export function StrainAutocomplete({
   containerStyle = {},
   disabled = false,
   limit = 10,
-}: StrainAutocompleteProps): React.JSX.Element {
+  onFocus,
+  onBlur,
+  onSubmitEditing,
+  returnKeyType = 'search',
+}, ref): React.JSX.Element => {
   const [searchTerm, setSearchTerm] = useState<string>(initialStrainName);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(searchTerm);
   const [isFocused, setIsFocused] = useState<boolean>(false);
+
+  // Enhanced keyboard handling for single search input
+  const searchInputRef = useRef<TextInput>(null);
+
+  // Expose focus methods to parent component
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      searchInputRef.current?.focus();
+    },
+    blur: () => {
+      searchInputRef.current?.blur();
+    }
+  }), []);
+
+  const {
+    isKeyboardVisible,
+    dismissKeyboard,
+    setActiveInputIndex,
+  } = useEnhancedKeyboard([searchInputRef], 1);
 
   // Container animation for the entire component
   const containerScale = useSharedValue(1);
@@ -432,10 +364,25 @@ export function StrainAutocomplete({
 
   const handleFocus = () => {
     setIsFocused(true);
+    setActiveInputIndex(0);
+    onFocus?.();
   };
 
   const handleBlur = () => {
-    setTimeout(() => setIsFocused(false), 100);
+    setTimeout(() => {
+      setIsFocused(false);
+      setActiveInputIndex(null);
+      onBlur?.();
+    }, 100);
+  };
+
+  const handleKeyboardDone = () => {
+    if (onSubmitEditing) {
+      onSubmitEditing();
+    } else {
+      dismissKeyboard();
+      searchInputRef.current?.blur();
+    }
   };
 
   return (
@@ -450,17 +397,33 @@ export function StrainAutocomplete({
         </Animated.Text>
       ) : null}
 
-      <AnimatedTextInput
-        isFocused={isFocused}
-        disabled={disabled}
-        inputStyle={inputStyle}
+      <EnhancedTextInput
+        ref={searchInputRef}
         placeholder={placeholder}
         value={searchTerm}
         onChangeText={setSearchTerm}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        label={label}
+        disabled={disabled}
+        index={0}
+        showCharacterCount={true}
+        maxLength={50}
+        accessibilityLabel={label || 'Search for cannabis strains'}
+        accessibilityHint="Type to search for strains from your saved collection, cloud database, or external sources"
+        style={inputStyle}
+        returnKeyType={returnKeyType}
+        onSubmitEditing={handleKeyboardDone}
       />
+
+      {isKeyboardVisible && (
+        <KeyboardToolbar
+          isVisible={isKeyboardVisible}
+          currentField="Search"
+          onDone={handleKeyboardDone}
+          canGoNext={false}
+          canGoPrevious={false}
+        />
+      )}
 
       {isLoading && isFocused && <AnimatedLoadingIndicator searchTerm={debouncedSearchTerm} />}
 
@@ -534,4 +497,6 @@ export function StrainAutocomplete({
         )}
     </Animated.View>
   );
-}
+});
+
+export default StrainAutocomplete;

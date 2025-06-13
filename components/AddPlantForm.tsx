@@ -5,11 +5,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, isValid } from 'date-fns';
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
-import * as Haptics from 'expo-haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import {
   TextInput,
@@ -33,12 +32,22 @@ import Animated, {
 } from 'react-native-reanimated';
 import { z } from 'zod';
 
-import { StrainAutocomplete } from './StrainAutocomplete';
+import { StrainAutocomplete, StrainAutocompleteRef } from './StrainAutocomplete';
 import { OptimizedIcon } from './ui/OptimizedIcon';
+import { EnhancedTextInput } from './ui/EnhancedTextInput';
+import { KeyboardToolbar } from './ui/KeyboardToolbar';
 import ThemedText from './ui/ThemedText';
 import ThemedView from './ui/ThemedView';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { useDatabase } from '../lib/contexts/DatabaseProvider';
+import { useEnhancedKeyboard } from '../lib/hooks/useEnhancedKeyboard';
+import { 
+  triggerLightHaptic, 
+  triggerMediumHaptic, 
+  triggerHeavyHaptic,
+  triggerLightHapticSync,
+  triggerErrorHaptic 
+} from '../lib/utils/haptics';
 import { Plant as PlantModel } from '../lib/models/Plant';
 import {
   ensureStrainInLocalDB,
@@ -278,13 +287,13 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
 
   // Haptic feedback handler
   const triggerHaptic = useCallback(() => {
-    const hapticStyle =
+    const hapticFunction =
       variant === 'destructive'
-        ? Haptics.ImpactFeedbackStyle.Heavy
+        ? triggerHeavyHaptic
         : variant === 'primary'
-          ? Haptics.ImpactFeedbackStyle.Medium
-          : Haptics.ImpactFeedbackStyle.Light;
-    Haptics.impactAsync(hapticStyle);
+          ? triggerMediumHaptic
+          : triggerLightHaptic;
+    hapticFunction();
   }, [variant]);
 
   const gesture = Gesture.Tap()
@@ -352,7 +361,7 @@ const AnimatedSelectionButton: React.FC<AnimatedSelectionButtonProps> = ({
     .onBegin(() => {
       'worklet';
       scale.value = withTiming(BUTTON_SCALE_CONFIG.pressed, BUTTON_SCALE_CONFIG.timing);
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
     })
     .onFinalize(() => {
       'worklet';
@@ -366,82 +375,6 @@ const AnimatedSelectionButton: React.FC<AnimatedSelectionButtonProps> = ({
         {children}
       </Animated.View>
     </GestureDetector>
-  );
-};
-
-interface AnimatedTextInputProps {
-  value: string;
-  onChangeText: (text: string) => void;
-  onBlur?: () => void;
-  onFocus?: () => void;
-  placeholder?: string;
-  multiline?: boolean;
-  className?: string;
-  hasError?: boolean;
-}
-
-const AnimatedTextInput: React.FC<AnimatedTextInputProps> = ({
-  value,
-  onChangeText,
-  onBlur,
-  onFocus,
-  placeholder,
-  multiline = false,
-  className = '',
-  hasError = false,
-}) => {
-  const focusAnimation = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const colorScheme = useColorScheme();
-
-  const animatedStyle = useAnimatedStyle(() => {
-    'worklet';
-    const borderColor = interpolateColor(
-      focusAnimation.value,
-      [0, 1],
-      hasError
-        ? ['#ef4444', '#ef4444'] // Keep error color
-        : ['#d1d5db', '#3b82f6'] // neutral to blue
-    );
-
-    return {
-      borderColor,
-      transform: [{ scale: scale.value }],
-    };
-  });
-
-  const handleFocus = () => {
-    focusAnimation.value = withSpring(1, SPRING_CONFIG);
-    scale.value = withSpring(1.02, SPRING_CONFIG);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onFocus?.();
-  };
-
-  const handleBlur = () => {
-    focusAnimation.value = withSpring(0, SPRING_CONFIG);
-    scale.value = withSpring(1, SPRING_CONFIG);
-    onBlur?.();
-  };
-
-  const placeholderTextColor = colorScheme === 'dark' ? '#9ca3af' : '#6b7280';
-  const baseClasses = `border rounded-lg p-3 text-base bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 ${
-    hasError ? 'border-status-danger' : 'border-neutral-300 dark:border-neutral-600'
-  } ${multiline ? 'min-h-[100px]' : ''}`;
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <TextInput
-        className={`${baseClasses} ${className}`}
-        placeholder={placeholder}
-        placeholderTextColor={placeholderTextColor}
-        value={value}
-        onChangeText={onChangeText}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        multiline={multiline}
-        textAlignVertical={multiline ? 'top' : 'center'}
-      />
-    </Animated.View>
   );
 };
 
@@ -516,140 +449,204 @@ const BasicInfoStep: React.FC<
     handleStrainSelectionAndSync: (strain: any) => Promise<void>;
     isSyncingStrain: boolean;
     syncError: string | null;
+    inputRefs?: any[];
+    currentInputIndex?: number;
+    onInputFocus?: (index: number) => void;
+    goToNextStep?: () => void;
   }
-> = ({ control, handleStrainSelectionAndSync, isSyncingStrain, syncError }) => (
-  <ThemedView className="space-y-6">
-    {/* Plant Name */}
-    <Controller
-      control={control}
-      name="name"
-      render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
-        <ThemedView>
-          <ThemedText variant="heading" className="mb-2 text-base">
-            Plant Name
-          </ThemedText>
-          <AnimatedTextInput
+> = ({ 
+  control, 
+  handleStrainSelectionAndSync, 
+  isSyncingStrain, 
+  syncError, 
+  inputRefs = [],
+  currentInputIndex = 0,
+  onInputFocus,
+  goToNextStep
+}) => {
+
+  // Create refs for this step's inputs
+  const nameInputRef = useRef<TextInput>(null);
+  const strainInputRef = useRef<StrainAutocompleteRef>(null);
+  
+  // Register refs with parent component
+  React.useEffect(() => {
+    if (inputRefs[0] && nameInputRef.current) {
+      inputRefs[0].current = nameInputRef.current;
+    }
+    if (inputRefs[1] && strainInputRef.current) {
+      inputRefs[1].current = strainInputRef.current;
+    }
+  }, [inputRefs]);
+
+  return (
+    <ThemedView className="space-y-6">
+      {/* Plant Name */}
+      <Controller
+        control={control}
+        name="name"
+        render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+          <EnhancedTextInput
+            ref={nameInputRef}
+            label="Plant Name"
             value={value || ''}
             onChangeText={onChange}
             onBlur={onBlur}
+            onFocus={() => onInputFocus?.(0)}
             placeholder="My awesome plant"
-            hasError={!!error}
+            error={error?.message}
+            leftIcon="flower-tulip-outline"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              // Focus next available input
+              if (inputRefs[1]?.current?.focus) {
+                inputRefs[1].current.focus();
+              }
+            }}
           />
-          {error && (
-            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
-          )}
-        </ThemedView>
-      )}
-    />
+        )}
+      />
 
-    {/* Strain Selection */}
-    <Controller
-      control={control}
-      name="strain"
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <ThemedView>
-          <ThemedText variant="heading" className="mb-2 text-base">
-            Strain
-          </ThemedText>
-          <StrainAutocomplete
-            onStrainSelect={handleStrainSelectionAndSync}
-            initialStrainName={value || ''}
-            placeholder="Search for a strain (e.g., OG Kush)"
-          />
-          {isSyncingStrain && (
-            <ThemedView className="mt-2 flex-row items-center">
-              <ActivityIndicator size="small" className="mr-2" />
-              <ThemedText variant="muted">Syncing strain data...</ThemedText>
+      {/* Strain Selection */}
+      <Controller
+        control={control}
+        name="strain"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <ThemedView>
+            <ThemedText variant="heading" className="mb-2 text-base">
+              Strain
+            </ThemedText>
+            <StrainAutocomplete
+              ref={strainInputRef}
+              onStrainSelect={handleStrainSelectionAndSync}
+              initialStrainName={value || ''}
+              placeholder="Search for a strain (e.g., OG Kush)"
+              onFocus={() => onInputFocus?.(1)}
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                // Move to next step since this is the last focusable input
+                goToNextStep?.();
+              }}
+            />
+            {isSyncingStrain && (
+              <ThemedView className="mt-2 flex-row items-center">
+                <ActivityIndicator size="small" className="mr-2" />
+                <ThemedText variant="muted">Syncing strain data...</ThemedText>
+              </ThemedView>
+            )}
+            {syncError && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{syncError}</ThemedText>
+            )}
+            {error && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+            )}
+          </ThemedView>
+        )}
+      />
+
+      {/* Cannabis Type */}
+      <Controller
+        control={control}
+        name="cannabis_type"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <ThemedView>
+            <ThemedText variant="heading" className="mb-2 text-base">
+              Cannabis Type
+            </ThemedText>
+            <ThemedView className="flex-row space-x-2">
+              {Object.values(CannabisType).map((type) => (
+                <AnimatedSelectionButton
+                  key={type}
+                  onPress={() => onChange(type)}
+                  selected={value === type}>
+                  <ThemedText
+                    className={
+                      value === type
+                        ? 'font-medium text-white'
+                        : 'text-neutral-900 dark:text-neutral-100'
+                    }>
+                    {type}
+                  </ThemedText>
+                </AnimatedSelectionButton>
+              ))}
             </ThemedView>
-          )}
-          {syncError && (
-            <ThemedText className="text-status-danger mt-1 text-xs">{syncError}</ThemedText>
-          )}
-          {error && (
-            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
-          )}
-        </ThemedView>
-      )}
-    />
-
-    {/* Cannabis Type */}
-    <Controller
-      control={control}
-      name="cannabis_type"
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <ThemedView>
-          <ThemedText variant="heading" className="mb-2 text-base">
-            Cannabis Type
-          </ThemedText>
-          <ThemedView className="flex-row space-x-2">
-            {Object.values(CannabisType).map((type) => (
-              <AnimatedSelectionButton
-                key={type}
-                onPress={() => onChange(type)}
-                selected={value === type}>
-                <ThemedText
-                  className={
-                    value === type
-                      ? 'font-medium text-white'
-                      : 'text-neutral-900 dark:text-neutral-100'
-                  }>
-                  {type}
-                </ThemedText>
-              </AnimatedSelectionButton>
-            ))}
+            {error && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+            )}
           </ThemedView>
-          {error && (
-            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
-          )}
-        </ThemedView>
-      )}
-    />
+        )}
+      />
 
-    {/* Growth Stage */}
-    <Controller
-      control={control}
-      name="growth_stage"
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <ThemedView>
-          <ThemedText variant="heading" className="mb-2 text-base">
-            Growth Stage
-          </ThemedText>
-          <ThemedView className="flex-row flex-wrap gap-2">
-            {Object.values(GrowthStage).map((stage) => (
-              <AnimatedSelectionButton
-                key={stage}
-                onPress={() => onChange(stage)}
-                selected={value === stage}>
-                <ThemedText
-                  className={
-                    value === stage
-                      ? 'font-medium text-white'
-                      : 'text-neutral-900 dark:text-neutral-100'
-                  }>
-                  {stage}
-                </ThemedText>
-              </AnimatedSelectionButton>
-            ))}
+      {/* Growth Stage */}
+      <Controller
+        control={control}
+        name="growth_stage"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <ThemedView>
+            <ThemedText variant="heading" className="mb-2 text-base">
+              Growth Stage
+            </ThemedText>
+            <ThemedView className="flex-row flex-wrap gap-2">
+              {Object.values(GrowthStage).map((stage) => (
+                <AnimatedSelectionButton
+                  key={stage}
+                  onPress={() => onChange(stage)}
+                  selected={value === stage}>
+                  <ThemedText
+                    className={
+                      value === stage
+                        ? 'font-medium text-white'
+                        : 'text-neutral-900 dark:text-neutral-100'
+                    }>
+                    {stage}
+                  </ThemedText>
+                </AnimatedSelectionButton>
+              ))}
+            </ThemedView>
+            {error && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+            )}
           </ThemedView>
-          {error && (
-            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
-          )}
-        </ThemedView>
-      )}
-    />
-  </ThemedView>
-);
+        )}
+      />
+    </ThemedView>
+  );
+};
 
 const LocationStep: React.FC<
-  StepProps & { inputClasses: string; placeholderTextColor: string }
-> = ({ control, setValue, inputClasses, placeholderTextColor }) => {
+  StepProps & { 
+    inputClasses: string; 
+    placeholderTextColor: string;
+    inputRefs?: any[];
+    currentInputIndex?: number;
+    onInputFocus?: (index: number) => void;
+  }
+> = ({ 
+  control, 
+  setValue, 
+  inputClasses, 
+  placeholderTextColor,
+  inputRefs = [],
+  currentInputIndex = 0,
+  onInputFocus 
+}) => {
   const [customLocation, setCustomLocation] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  
+  const customLocationRef = useRef<TextInput>(null);
+
+  // Register refs with parent component
+  React.useEffect(() => {
+    if (inputRefs[0] && customLocationRef.current) {
+      inputRefs[0].current = customLocationRef.current;
+    }
+  }, [inputRefs, showCustomInput]);
 
   const handleCustomLocationSubmit = () => {
     if (customLocation.trim()) {
       setValue('location_description', customLocation, { shouldValidate: true });
       setShowCustomInput(false);
+      triggerLightHaptic();
     }
   };
 
@@ -680,7 +677,10 @@ const LocationStep: React.FC<
               {predefinedLocations.map((location) => (
                 <AnimatedSelectionButton
                   key={location}
-                  onPress={() => onChange(location)}
+                  onPress={() => {
+                    onChange(location);
+                    triggerLightHaptic();
+                  }}
                   selected={value === location}>
                   <ThemedText
                     className={
@@ -696,7 +696,10 @@ const LocationStep: React.FC<
 
             {/* Custom Location Toggle */}
             <AnimatedButton
-              onPress={() => setShowCustomInput(!showCustomInput)}
+              onPress={() => {
+                setShowCustomInput(!showCustomInput);
+                triggerLightHaptic();
+              }}
               variant="tertiary"
               className="mb-4">
               <OptimizedIcon
@@ -709,18 +712,24 @@ const LocationStep: React.FC<
               </ThemedText>
             </AnimatedButton>
 
-            {/* Custom Location Input */}
+            {/* Enhanced Custom Location Input */}
             {showCustomInput && (
               <ThemedView className="flex-row space-x-2">
-                <TextInput
-                  className={`flex-1 ${inputClasses}`}
-                  placeholder="Enter custom location"
-                  placeholderTextColor={placeholderTextColor}
+                <EnhancedTextInput
+                  ref={customLocationRef}
                   value={customLocation}
                   onChangeText={setCustomLocation}
+                  onFocus={() => onInputFocus?.(0)}
+                  placeholder="Enter custom location"
+                  leftIcon="location-outline"
+                  returnKeyType="done"
                   onSubmitEditing={handleCustomLocationSubmit}
+                  className="flex-1"
                 />
-                <AnimatedButton onPress={handleCustomLocationSubmit} variant="primary">
+                <AnimatedButton 
+                  onPress={handleCustomLocationSubmit} 
+                  variant="primary"
+                  className="h-12 w-12 rounded-lg">
                   <OptimizedIcon name="checkmark" size={16} className="text-white" />
                 </AnimatedButton>
               </ThemedView>
@@ -772,66 +781,91 @@ const LightingStep: React.FC<StepProps> = ({ control }) => (
   </ThemedView>
 );
 
-const DetailsStep: React.FC<StepProps> = ({ control }) => (
-  <ThemedView className="space-y-6">
-    {/* Growing Medium */}
-    <Controller
-      control={control}
-      name="grow_medium"
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <ThemedView>
-          <ThemedText variant="heading" className="mb-2 text-base">
-            Growing Medium
-          </ThemedText>
-          <ThemedView className="space-y-2">
-            {Object.values(GrowMedium).map((medium) => (
-              <AnimatedSelectionButton
-                key={medium}
-                onPress={() => onChange(medium)}
-                selected={value === medium}>
-                <ThemedText
-                  className={
-                    value === medium
-                      ? 'font-medium text-white'
-                      : 'text-neutral-900 dark:text-neutral-100'
-                  }>
-                  {medium}
-                </ThemedText>
-              </AnimatedSelectionButton>
-            ))}
-          </ThemedView>
-          {error && (
-            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
-          )}
-        </ThemedView>
-      )}
-    />
+const DetailsStep: React.FC<
+  StepProps & {
+    inputRefs?: any[];
+    currentInputIndex?: number;
+    onInputFocus?: (index: number) => void;
+  }
+> = ({ 
+  control,
+  inputRefs = [],
+  currentInputIndex = 0,
+  onInputFocus 
+}) => {
+  
+  const notesInputRef = useRef<TextInput>(null);
 
-    {/* Notes */}
-    <Controller
-      control={control}
-      name="notes"
-      render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
-        <ThemedView>
-          <ThemedText variant="heading" className="mb-2 text-base">
-            Notes (Optional)
-          </ThemedText>
-          <AnimatedTextInput
+  // Register refs with parent component
+  React.useEffect(() => {
+    if (inputRefs[0] && notesInputRef.current) {
+      inputRefs[0].current = notesInputRef.current;
+    }
+  }, [inputRefs]);
+
+  return (
+    <ThemedView className="space-y-6">
+      {/* Growing Medium */}
+      <Controller
+        control={control}
+        name="grow_medium"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <ThemedView>
+            <ThemedText variant="heading" className="mb-2 text-base">
+              Growing Medium
+            </ThemedText>
+            <ThemedView className="space-y-2">
+              {Object.values(GrowMedium).map((medium) => (
+                <AnimatedSelectionButton
+                  key={medium}
+                  onPress={() => {
+                    onChange(medium);
+                    triggerLightHaptic();
+                  }}
+                  selected={value === medium}>
+                  <ThemedText
+                    className={
+                      value === medium
+                        ? 'font-medium text-white'
+                        : 'text-neutral-900 dark:text-neutral-100'
+                    }>
+                    {medium}
+                  </ThemedText>
+                </AnimatedSelectionButton>
+              ))}
+            </ThemedView>
+            {error && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+            )}
+          </ThemedView>
+        )}
+      />
+
+      {/* Enhanced Notes */}
+      <Controller
+        control={control}
+        name="notes"
+        render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+          <EnhancedTextInput
+            ref={notesInputRef}
+            label="Notes (Optional)"
             value={value || ''}
             onChangeText={onChange}
             onBlur={onBlur}
+            onFocus={() => onInputFocus?.(0)}
             placeholder="Add any additional notes about your plant..."
             multiline
-            hasError={!!error}
+            error={error?.message}
+            leftIcon="document-text-outline"
+            showCharacterCount
+            maxLength={500}
+            returnKeyType="done"
           />
-          {error && (
-            <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
-          )}
-        </ThemedView>
-      )}
-    />
-  </ThemedView>
-);
+        )}
+      />
+    </ThemedView>
+  );
+};
 
 const DatesStep: React.FC<StepProps> = ({ control }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -887,6 +921,23 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const progress = useSharedValue(0);
   const stepTransition = useSharedValue(0);
+  
+  // Enhanced keyboard handling
+  const inputRefs = useRef<any[]>([]);
+  const [fieldNames, setFieldNames] = useState<string[]>([]);
+  
+  const {
+    isKeyboardVisible,
+    keyboardHeight,
+    currentIndex,
+    goToNextInput,
+    goToPreviousInput,
+    dismissKeyboard,
+    canGoNext,
+    canGoPrevious,
+    setActiveInputIndex
+  } = useEnhancedKeyboard(inputRefs.current, fieldNames.length);
+
   const {
     control,
     handleSubmit,
@@ -1011,7 +1062,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       });
 
       // Add haptic feedback for successful step completion
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerLightHaptic();
 
       // Update step after a brief delay for animation
       setTimeout(() => {
@@ -1021,7 +1072,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       }, 100);
     } else if (!result) {
       // Add haptic feedback for validation error
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerErrorHaptic();
 
       const firstErrorField = currentFields.find((field) => errors[field]);
       if (firstErrorField) {
@@ -1044,7 +1095,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       });
 
       // Add haptic feedback
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerLightHaptic();
 
       // Update step after a brief delay for animation
       setTimeout(() => {
@@ -1247,6 +1298,54 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const renderCurrentStep = () => {
     const commonProps = { control, setValue, errors, getValues };
+    
+    // Create stable input refs with useMemo to maintain focus history
+    const stepInputRefs = useMemo(() => {
+      const currentStepId = FORM_STEPS[currentStepIndex]?.id;
+      
+      switch (currentStepId) {
+        case 'basicInfo':
+          return [React.createRef(), React.createRef()]; // Plant Name + Strain
+        case 'location':
+        case 'details':
+          return [React.createRef()];
+        default:
+          return [];
+      }
+    }, [currentStepIndex]);
+    
+    // Setup field names and refs based on current step
+    React.useEffect(() => {
+      const currentStepId = FORM_STEPS[currentStepIndex]?.id;
+      let stepFieldNames: string[] = [];
+      
+      switch (currentStepId) {
+        case 'basicInfo':
+          stepFieldNames = ['Plant Name', 'Strain'];
+          break;
+        case 'location':
+          stepFieldNames = ['Custom Location'];
+          break;
+        case 'details':
+          stepFieldNames = ['Notes'];
+          break;
+        default:
+          stepFieldNames = [];
+      }
+      
+      setFieldNames(stepFieldNames);
+      inputRefs.current = stepInputRefs;
+    }, [currentStepIndex, stepInputRefs]);
+
+    // Enhanced props for keyboard navigation
+    const enhancedProps = {
+      ...commonProps,
+      inputRefs: inputRefs.current,
+      currentInputIndex: currentIndex,
+      onInputFocus: (index: number) => {
+        setActiveInputIndex(index);
+      }
+    };
 
     switch (FORM_STEPS[currentStepIndex]?.id) {
       case 'photo':
@@ -1254,16 +1353,17 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       case 'basicInfo':
         return (
           <BasicInfoStep
-            {...commonProps}
+            {...enhancedProps}
             handleStrainSelectionAndSync={handleStrainSelectionAndSync}
             isSyncingStrain={isSyncingStrain}
             syncError={syncError}
+            goToNextStep={goToNextStep}
           />
         );
       case 'location':
         return (
           <LocationStep
-            {...commonProps}
+            {...enhancedProps}
             inputClasses={inputClasses}
             placeholderTextColor={placeholderTextColor}
           />
@@ -1271,7 +1371,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       case 'lighting':
         return <LightingStep {...commonProps} />;
       case 'details':
-        return <DetailsStep {...commonProps} />;
+        return <DetailsStep {...enhancedProps} />;
       case 'dates':
         return <DatesStep {...commonProps} />;
       default:
@@ -1338,13 +1438,27 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           </Animated.View>
         </ScrollView>
 
+        {/* Enhanced Keyboard Toolbar */}
+        <KeyboardToolbar
+          isVisible={isKeyboardVisible}
+          keyboardHeight={keyboardHeight}
+          onPrevious={goToPreviousInput}
+          onNext={goToNextInput}
+          onDone={dismissKeyboard}
+          canGoPrevious={canGoPrevious}
+          canGoNext={canGoNext}
+          currentField={fieldNames[currentIndex]}
+          totalFields={fieldNames.length}
+          currentIndex={currentIndex}
+        />
+
         {/* Footer Navigation */}
         <ThemedView className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">
           <ThemedView className="flex-row space-x-3">
             {currentStepIndex > 0 && (
               <AnimatedButton onPress={goToPreviousStep} variant="secondary" className="flex-1">
                 <OptimizedIcon
-                  name="chevron-back-outline"
+                  name="chevron-back"
                   size={16}
                   className="mr-2 text-neutral-900 dark:text-neutral-100"
                 />
@@ -1357,7 +1471,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             {currentStepIndex < FORM_STEPS.length - 1 ? (
               <AnimatedButton onPress={goToNextStep} variant="primary" className="flex-1">
                 <ThemedText className="mr-2 font-medium text-white">Next</ThemedText>
-                <OptimizedIcon name="chevron-forward-outline" size={16} className="text-white" />
+                <OptimizedIcon name="chevron-forward" size={16} className="text-white" />
               </AnimatedButton>
             ) : (
               <AnimatedButton

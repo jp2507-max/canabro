@@ -112,8 +112,16 @@ export default function DiagnosisScreen() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
 
-  // Ref to track component mount status
-  const isMountedRef = useRef(true);
+  // Strict-mode safe mount flag
+  const isMounted = useRef(true);
+
+  // Ensure the flag resets correctly on unmount for each mount cycle
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Animation values
   const imageScale = useSharedValue(0.9);
@@ -156,7 +164,7 @@ export default function DiagnosisScreen() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      isMountedRef.current = false;
+      isMounted.current = false;
       // Cancel all running animations
       cancelAnimation(loadingRotation);
       cancelAnimation(analysisScale);
@@ -177,11 +185,11 @@ export default function DiagnosisScreen() {
   }, [image, isAnalyzing]);
 
   useEffect(() => {
-    if (isAnalyzing && isMountedRef.current) {
+    if (isAnalyzing && isMounted.current) {
       // Loading animation with proper cleanup
       const startRotationLoop = () => {
         loadingRotation.value = withTiming(360, { duration: 2000 }, (finished) => {
-          if (finished && isAnalyzing && isMountedRef.current) {
+          if (finished && isAnalyzing && isMounted.current) {
             loadingRotation.value = 0;
             startRotationLoop();
           }
@@ -218,19 +226,19 @@ export default function DiagnosisScreen() {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         const result = await analyzeImage(imageUri, user.id);
 
-        if (isMountedRef.current) {
+        if (isMounted.current) {
           setDiagnosisResult(result);
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } catch (error) {
         console.error('Error analyzing image:', error);
 
-        if (isMountedRef.current) {
+        if (isMounted.current) {
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           Alert.alert('Analysis Failed', 'Please try again with a clearer image of your plant.');
         }
       } finally {
-        if (isMountedRef.current) {
+        if (isMounted.current) {
           setIsAnalyzing(false);
         }
       }

@@ -1,7 +1,7 @@
 import { parseISO, isValid } from 'date-fns';
-import * as Haptics from 'expo-haptics';
+import { triggerMediumHapticSync, triggerSuccessHaptic, triggerErrorHaptic } from '@/lib/utils/haptics';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ScrollView,
   TextInput,
@@ -24,113 +24,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { EnhancedTextInput } from '../../../components/ui/EnhancedTextInput';
+import { KeyboardToolbar } from '../../../components/ui/KeyboardToolbar';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
 import { useDatabase } from '../../../lib/hooks/useDatabase';
+import { useEnhancedKeyboard } from '../../../lib/hooks/useEnhancedKeyboard';
 import { Profile } from '../../../lib/models/Profile';
 
-// Animated Input Component
-interface AnimatedInputProps {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder?: string;
-  multiline?: boolean;
-  numberOfLines?: number;
-  index?: number;
-  error?: string;
-}
-
-const AnimatedInput: React.FC<AnimatedInputProps> = React.memo(
-  ({
-    label,
-    value,
-    onChangeText,
-    placeholder,
-    multiline = false,
-    numberOfLines = 1,
-    index = 0,
-    error,
-  }) => {
-    const focusProgress = useSharedValue(0);
-    const errorShake = useSharedValue(0);
-
-    const animatedStyle = useAnimatedStyle(() => {
-      'worklet';
-      const borderColor = interpolateColor(
-        focusProgress.value,
-        [0, 1],
-        ['rgb(212 212 212)', 'rgb(34 197 94)'] // neutral-300 to primary-500
-      );
-
-      return {
-        borderColor,
-        transform: [{ translateX: errorShake.value }],
-      };
-    });
-
-    const handleFocus = () => {
-      focusProgress.value = withSpring(1, { damping: 15, stiffness: 400 });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    };
-
-    const handleBlur = () => {
-      focusProgress.value = withSpring(0, { damping: 15, stiffness: 400 });
-    };
-
-    useEffect(() => {
-      if (error) {
-        errorShake.value = withSequence(
-          withSpring(-10, { damping: 10, stiffness: 1000 }),
-          withSpring(10, { damping: 10, stiffness: 1000 }),
-          withSpring(-5, { damping: 10, stiffness: 1000 }),
-          withSpring(0, { damping: 10, stiffness: 1000 })
-        );
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-    }, [error]);
-
-    return (
-      <Animated.View entering={FadeInDown.delay(index * 100).duration(600)} className="mb-6">
-        <ThemedText
-          variant="caption"
-          className="mb-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-          {label}
-        </ThemedText>
-        <Animated.View style={animatedStyle}>
-          <TextInput
-            value={value}
-            onChangeText={onChangeText}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            placeholder={placeholder}
-            placeholderTextColor="rgb(156 163 175)" // neutral-400
-            multiline={multiline}
-            numberOfLines={multiline ? numberOfLines : 1}
-            style={{
-              textAlignVertical: multiline ? 'top' : 'center',
-            }}
-            className={`
-            rounded-2xl border-2 p-4 text-base font-medium
-            ${multiline ? 'h-24' : 'h-14'}
-            bg-white text-neutral-900 
-            dark:bg-neutral-800 dark:text-neutral-100
-          `}
-            accessibilityLabel={`${label} input field`}
-            accessibilityHint={placeholder}
-          />
-        </Animated.View>
-        {error && (
-          <Animated.View entering={FadeIn.duration(300)}>
-            <ThemedText variant="muted" className="mt-2 text-sm text-red-500 dark:text-red-400">
-              {error}
-            </ThemedText>
-          </Animated.View>
-        )}
-      </Animated.View>
-    );
-  }
-);
+// Enhanced Profile Edit Component with Keyboard Management
 
 // Animated Save Button Component
 interface AnimatedSaveButtonProps {
@@ -154,7 +56,7 @@ const AnimatedSaveButton: React.FC<AnimatedSaveButtonProps> = React.memo(
       })
       .onEnd(() => {
         if (!isLoading) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          triggerMediumHapticSync();
           onPress();
         }
       });
@@ -209,6 +111,44 @@ export default function EditProfileScreen() {
   const [experienceLevel, setExperienceLevel] = useState('');
   const [preferredGrowMethod, setPreferredGrowMethod] = useState('');
   const [growingSince, setGrowingSince] = useState<string>('');
+
+  // Enhanced keyboard management for 7 form fields
+  const usernameRef = useRef<TextInput>(null);
+  const displayNameRef = useRef<TextInput>(null);
+  const bioRef = useRef<TextInput>(null);
+  const locationRef = useRef<TextInput>(null);
+  const experienceLevelRef = useRef<TextInput>(null);
+  const preferredGrowMethodRef = useRef<TextInput>(null);
+  const growingSinceRef = useRef<TextInput>(null);
+
+  const inputRefs = [
+    usernameRef,
+    displayNameRef,
+    bioRef,
+    locationRef,
+    experienceLevelRef,
+    preferredGrowMethodRef,
+    growingSinceRef,
+  ];
+
+  const {
+    isKeyboardVisible,
+    activeInputIndex,
+    dismissKeyboard,
+    goToNextInput,
+    goToPreviousInput,
+  } = useEnhancedKeyboard(inputRefs, 7);
+
+  // Field labels for keyboard toolbar
+  const fieldLabels = [
+    'Username',
+    'Display Name', 
+    'Bio',
+    'Location',
+    'Experience Level',
+    'Grow Method',
+    'Growing Since',
+  ];
 
   // Validation function
   const validateForm = () => {
@@ -289,7 +229,7 @@ export default function EditProfileScreen() {
 
   const handleSave = useCallback(async () => {
     if (!validateForm()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerErrorHaptic();
       return;
     }
 
@@ -329,12 +269,12 @@ export default function EditProfileScreen() {
         });
       });
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerSuccessHaptic();
       Alert.alert('Success', 'Profile updated successfully!');
       router.back();
     } catch (error) {
       console.error('Error updating profile:', error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerErrorHaptic();
       Alert.alert(
         'Error',
         `Failed to update profile. ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -396,70 +336,132 @@ export default function EditProfileScreen() {
           }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <AnimatedInput
+          <EnhancedTextInput
+            ref={usernameRef}
             label="Username"
             value={username}
             onChangeText={setUsername}
             placeholder="Your public username"
             index={0}
+            showCharacterCount={true}
+            maxLength={30}
             error={errors.username}
+            accessibilityLabel="Username input field"
+            accessibilityHint="Enter your public username"
+            returnKeyType="next"
+            onSubmitEditing={() => goToNextInput()}
           />
 
-          <AnimatedInput
+          <EnhancedTextInput
+            ref={displayNameRef}
             label="Display Name"
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Your display name (optional)"
             index={1}
+            showCharacterCount={true}
+            maxLength={50}
+            accessibilityLabel="Display name input field"
+            accessibilityHint="Enter your display name (optional)"
+            returnKeyType="next"
+            onSubmitEditing={() => goToNextInput()}
           />
 
-          <AnimatedInput
+          <EnhancedTextInput
+            ref={bioRef}
             label="Bio"
             value={bio}
             onChangeText={setBio}
             placeholder="Tell us about yourself"
-            multiline
-            numberOfLines={4}
             index={2}
+            multiline={true}
+            numberOfLines={4}
+            showCharacterCount={true}
+            maxLength={500}
             error={errors.bio}
+            accessibilityLabel="Bio input field"
+            accessibilityHint="Tell us about yourself"
+            returnKeyType="next"
+            onSubmitEditing={() => goToNextInput()}
           />
 
-          <AnimatedInput
+          <EnhancedTextInput
+            ref={locationRef}
             label="Location"
             value={location}
             onChangeText={setLocation}
             placeholder="City, Country (optional)"
             index={3}
+            showCharacterCount={true}
+            maxLength={100}
+            accessibilityLabel="Location input field"
+            accessibilityHint="Enter your location (optional)"
+            returnKeyType="next"
+            onSubmitEditing={() => goToNextInput()}
           />
 
-          <AnimatedInput
+          <EnhancedTextInput
+            ref={experienceLevelRef}
             label="Experience Level"
             value={experienceLevel}
             onChangeText={setExperienceLevel}
             placeholder="e.g., Beginner, Intermediate, Expert"
             index={4}
+            showCharacterCount={true}
+            maxLength={50}
+            accessibilityLabel="Experience level input field"
+            accessibilityHint="Enter your growing experience level"
+            returnKeyType="next"
+            onSubmitEditing={() => goToNextInput()}
           />
 
-          <AnimatedInput
+          <EnhancedTextInput
+            ref={preferredGrowMethodRef}
             label="Preferred Grow Method"
             value={preferredGrowMethod}
             onChangeText={setPreferredGrowMethod}
             placeholder="e.g., Soil, Hydroponics, Coco"
             index={5}
+            showCharacterCount={true}
+            maxLength={50}
+            accessibilityLabel="Preferred grow method input field"
+            accessibilityHint="Enter your preferred growing method"
+            returnKeyType="next"
+            onSubmitEditing={() => goToNextInput()}
           />
 
-          <AnimatedInput
+          <EnhancedTextInput
+            ref={growingSinceRef}
             label="Growing Since"
             value={growingSince}
             onChangeText={setGrowingSince}
             placeholder="YYYY-MM-DD"
             index={6}
+            showCharacterCount={true}
+            maxLength={10}
             error={errors.growingSince}
+            accessibilityLabel="Growing since date input field"
+            accessibilityHint="Enter the date you started growing (YYYY-MM-DD format)"
+            returnKeyType="done"
+            onSubmitEditing={() => dismissKeyboard()}
           />
 
           <AnimatedSaveButton onPress={handleSave} isLoading={isSaving} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Enhanced Keyboard Toolbar */}
+      {isKeyboardVisible && (
+        <KeyboardToolbar
+          isVisible={isKeyboardVisible}
+          currentField={fieldLabels[activeInputIndex ?? 0] || 'Field'}
+          onPrevious={() => goToPreviousInput()}
+          onNext={() => goToNextInput()}
+          onDone={() => dismissKeyboard()}
+          canGoPrevious={(activeInputIndex ?? 0) > 0}
+          canGoNext={(activeInputIndex ?? 0) < inputRefs.length - 1}
+        />
+      )}
     </SafeAreaView>
   );
 }

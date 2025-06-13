@@ -3,6 +3,8 @@ import { Text, TextProps } from 'react-native';
 
 interface ThemedTextProps extends TextProps {
   variant?: 'default' | 'muted' | 'heading' | 'caption';
+  lightClassName?: string;
+  darkClassName?: string;
 }
 
 function ThemedText({

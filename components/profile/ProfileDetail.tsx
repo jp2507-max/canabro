@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -13,6 +12,7 @@ import Animated, {
 
 import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
+import { triggerLightHapticSync } from '@/lib/utils/haptics';
 
 /**
  * Displays a labeled profile detail with optional icon and value(s).
@@ -62,7 +62,7 @@ const ProfileDetail: React.FC<ProfileDetailProps> = React.memo(function ProfileD
         .onEnd(() => {
           'worklet';
           if (onPress) {
-            runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+            runOnJS(triggerLightHapticSync)();
             runOnJS(onPress)();
           }
         }),

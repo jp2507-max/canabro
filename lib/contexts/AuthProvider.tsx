@@ -1,7 +1,7 @@
 import { Session, User } from '@supabase/supabase-js';
 // import Constants from 'expo-constants'; // Constants is unused
 import { router } from 'expo-router';
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useRef } from 'react';
 
 import { authConfig, isDevelopment } from '../config'; // isExpoGo is unused
 import supabase, { initializeDatabase } from '../supabase';
@@ -44,8 +44,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * NOTE ON MOUNT-GUARDING (React 18 Strict Mode):
+   * React mounts, unmounts, and re-mounts components twice in development to
+   * surface side-effects that are not correctly cleaned-up. Guarding state
+   * updates with a `ref` that is re-initialised to `true` on every render – as
+   * we did previously – still allows the first (discarded) instance of the
+   * component to update its state when an async task resolves. React detects
+   * that update and logs the warning:
+   * "Can't perform a React state update on a component that hasn't mounted yet"
+   *
+   * To prevent that we now scope the mounted flag **inside** the effect so each
+   * component instance has its own isolated flag. When the cleanup runs the
+   * flag is flipped to `false`, guaranteeing that any inflight async work will
+   * bail-out before updating state on an unmounted instance.
+   */
+  // -------------------------------------------------------------------------
   // Initialize auth state
+  // -------------------------------------------------------------------------
+   
   useEffect(() => {
+    /* flag scoped to *this* component instance */
+    let isMounted = true;
+    
     // Get the initial session
     const initializeAuth = async () => {
       try {
@@ -62,7 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           await devBypassAuth();
           console.log('[AuthProvider] Dev bypass complete.');
-          return;
+          if (isMounted) setLoading(false);
+          return; // keep early exit, but loading is now cleared
         } else {
           console.log(
             '[AuthProvider] Dev bypass NOT active (isDevelopment:',
@@ -79,16 +101,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           '[AuthProvider] supabase.auth.getSession complete. Session:',
           data.session ? 'Exists' : 'Null'
         );
-        setSession(data.session);
-        setUser(data.session?.user || null);
-        // Set loading to false only AFTER session is set
-        console.log('[AuthProvider] Setting loading to false.');
-        setLoading(false);
+        
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setSession(data.session);
+          setUser(data.session?.user || null);
+          // Set loading to false only AFTER session is set
+          console.log('[AuthProvider] Setting loading to false.');
+          setLoading(false);
+        }
       } catch (error) {
         console.error('[AuthProvider] Error during initializeAuth:', error);
-        // Also set loading false in case of error
-        console.log('[AuthProvider] Setting loading to false after error.');
-        setLoading(false);
+        // Also set loading false in case of error, but only if mounted
+        if (isMounted) {
+          console.log('[AuthProvider] Setting loading to false after error.');
+          setLoading(false);
+        }
       }
       // Removed finally block as setLoading is handled in try/catch
     };
@@ -104,12 +132,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setSession(newSession);
-      setUser(newSession?.user || null);
+      // Only update state if component is still mounted
+      if (isMounted) {
+        setSession(newSession);
+        setUser(newSession?.user || null);
+      }
     });
 
     // Clean up subscription on unmount
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);

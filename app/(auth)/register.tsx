@@ -1,7 +1,7 @@
 import { OptimizedIcon, IconName } from '../../components/ui/OptimizedIcon';
 import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   ActivityIndicator,
@@ -10,13 +10,13 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TextInput,
+  InputAccessoryView,
 } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withSequence,
-  runOnUI,
   FadeIn,
   FadeInDown,
 } from 'react-native-reanimated';
@@ -26,8 +26,10 @@ import ThemedView from '../../components/ui/ThemedView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
 
-// Shared strict-mode safe AnimatedInput
-import AnimatedInput from '../../components/ui/AnimatedInput';
+// Enhanced keyboard handling components
+import { EnhancedTextInput } from '../../components/ui/EnhancedTextInput';
+import { KeyboardToolbar } from '../../components/ui/KeyboardToolbar';
+import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -73,10 +75,9 @@ function AnimatedButton({
   });
 
   const handlePressIn = () => {
-    runOnUI(() => {
-      scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
-      shadowOpacity.value = withSpring(0.1, { damping: 15, stiffness: 400 });
-    })();
+    // Directly mutate shared values; Reanimated proxies writes to UI thread safely
+    scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
+    shadowOpacity.value = withSpring(0.1, { damping: 15, stiffness: 400 });
 
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -84,10 +85,8 @@ function AnimatedButton({
   };
 
   const handlePressOut = () => {
-    runOnUI(() => {
-      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
-      shadowOpacity.value = withSpring(0.2, { damping: 15, stiffness: 400 });
-    })();
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+    shadowOpacity.value = withSpring(0.2, { damping: 15, stiffness: 400 });
   };
 
   const getButtonStyles = () => {
@@ -298,6 +297,18 @@ export default function RegisterScreen() {
   const [registrationState, setRegistrationState] = useState<RegistrationState | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const { signUp } = useAuth();
+
+  // Enhanced keyboard handling
+  const usernameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
+  const inputRefs = [usernameRef, emailRef, passwordRef, confirmPasswordRef];
+  
+  const keyboard = useEnhancedKeyboard(inputRefs, 4);
+  
+  // Keyboard toolbar ID for iOS accessory view
+  const inputAccessoryViewID = 'register-keyboard-toolbar';
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -607,18 +618,25 @@ export default function RegisterScreen() {
 
             {/* Form Section */}
             <Animated.View entering={FadeInDown.duration(800).delay(400)}>
-              <AnimatedInput
-                icon="person"
+              <EnhancedTextInput
+                ref={usernameRef}
+                leftIcon="person"
                 placeholder="Username"
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
                 editable={!isLoading && !isRetrying}
                 error={errors.username}
+                onSubmitEditing={() => keyboard.goToNextInput()}
+                inputAccessoryViewID={Platform.OS === 'ios' ? inputAccessoryViewID : undefined}
+                onFocus={() => keyboard.setActiveInputIndex(0)}
+                showCharacterCount
+                maxLength={30}
               />
 
-              <AnimatedInput
-                icon="mail"
+              <EnhancedTextInput
+                ref={emailRef}
+                leftIcon="mail"
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
@@ -626,28 +644,39 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 editable={!isLoading && !isRetrying}
                 error={errors.email}
+                onSubmitEditing={() => keyboard.goToNextInput()}
+                inputAccessoryViewID={Platform.OS === 'ios' ? inputAccessoryViewID : undefined}
+                onFocus={() => keyboard.setActiveInputIndex(1)}
               />
 
-              <AnimatedInput
-                icon="lock-closed"
+              <EnhancedTextInput
+                ref={passwordRef}
+                leftIcon="lock-closed"
                 placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 editable={!isLoading && !isRetrying}
                 error={errors.password}
+                onSubmitEditing={() => keyboard.goToNextInput()}
+                inputAccessoryViewID={Platform.OS === 'ios' ? inputAccessoryViewID : undefined}
+                onFocus={() => keyboard.setActiveInputIndex(2)}
               />
 
               <PasswordStrength password={password} />
 
-              <AnimatedInput
-                icon="lock-closed"
+              <EnhancedTextInput
+                ref={confirmPasswordRef}
+                leftIcon="lock-closed"
                 placeholder="Confirm Password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
                 editable={!isLoading && !isRetrying}
                 error={errors.confirmPassword}
+                onSubmitEditing={handleRegister}
+                inputAccessoryViewID={Platform.OS === 'ios' ? inputAccessoryViewID : undefined}
+                onFocus={() => keyboard.setActiveInputIndex(3)}
               />
 
               {!registrationState && (
@@ -683,6 +712,82 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Enhanced Keyboard Toolbar (Android only) */}
+      {Platform.OS !== 'ios' && (
+        <KeyboardToolbar
+          isVisible={keyboard.isKeyboardVisible}
+          keyboardHeight={keyboard.keyboardHeight}
+          onPrevious={() => keyboard.goToPreviousInput()}
+          onNext={() => keyboard.goToNextInput()}
+          onDone={() => {
+            if (keyboard.currentIndex === 3) {
+              handleRegister();
+            } else {
+              keyboard.dismissKeyboard();
+            }
+          }}
+          canGoPrevious={keyboard.canGoPrevious}
+          canGoNext={keyboard.canGoNext}
+          currentField={
+            keyboard.activeInputIndex === 0 ? 'Username' : 
+            keyboard.activeInputIndex === 1 ? 'Email' : 
+            keyboard.activeInputIndex === 2 ? 'Password' : 
+            keyboard.activeInputIndex === 3 ? 'Confirm Password' : 
+            undefined
+          }
+          totalFields={4}
+          currentIndex={keyboard.currentIndex}
+        />
+      )}
+
+      {/* iOS Input Accessory View */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={inputAccessoryViewID}>
+          <ThemedView className="flex-row items-center justify-between bg-neutral-100 border-t border-neutral-200 px-4 py-3 dark:bg-neutral-800 dark:border-neutral-700">
+            <ThemedView className="flex-row items-center space-x-3">
+              <Pressable 
+                onPress={() => keyboard.goToPreviousInput()}
+                disabled={!keyboard.canGoPrevious}
+                className={`rounded-lg p-2 ${!keyboard.canGoPrevious ? 'opacity-30' : 'opacity-100'}`}
+              >
+                <OptimizedIcon 
+                  name="chevron-up" 
+                  size={20} 
+                  className="text-neutral-600 dark:text-neutral-400" 
+                />
+              </Pressable>
+              
+              <Pressable 
+                onPress={() => keyboard.goToNextInput()}
+                disabled={!keyboard.canGoNext}
+                className={`rounded-lg p-2 ${!keyboard.canGoNext ? 'opacity-30' : 'opacity-100'}`}
+              >
+                <OptimizedIcon 
+                  name="chevron-down" 
+                  size={20} 
+                  className="text-neutral-600 dark:text-neutral-400" 
+                />
+              </Pressable>
+            </ThemedView>
+            
+            <Pressable 
+              onPress={() => {
+                if (keyboard.currentIndex === 3) {
+                  handleRegister();
+                } else {
+                  keyboard.dismissKeyboard();
+                }
+              }}
+              className="rounded-lg bg-primary-500 px-4 py-2"
+            >
+              <ThemedText className="font-semibold text-white">
+                {keyboard.currentIndex === 3 ? 'Create Account' : 'Done'}
+              </ThemedText>
+            </Pressable>
+          </ThemedView>
+        </InputAccessoryView>
+      )}
     </ThemedView>
   );
 }

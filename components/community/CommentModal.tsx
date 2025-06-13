@@ -35,7 +35,11 @@ import CommentItem from './CommentItem';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
+import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
+import { triggerLightHaptic, triggerMediumHaptic, triggerHeavyHaptic, triggerSelectionHaptic } from '../../lib/utils/haptics';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { EnhancedTextInput } from '../ui/EnhancedTextInput';
+import { KeyboardToolbar } from '../ui/KeyboardToolbar';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 
@@ -89,7 +93,22 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
 
   const handlePress = useCallback(() => {
     if (disabled) return;
-    Haptics.impactAsync(hapticStyle);
+    
+    // Map haptic style to appropriate utility function
+    switch (hapticStyle) {
+      case Haptics.ImpactFeedbackStyle.Light:
+        triggerLightHaptic();
+        break;
+      case Haptics.ImpactFeedbackStyle.Medium:
+        triggerMediumHaptic();
+        break;
+      case Haptics.ImpactFeedbackStyle.Heavy:
+        triggerHeavyHaptic();
+        break;
+      default:
+        triggerLightHaptic();
+    }
+    
     onPress();
   }, [onPress, disabled, hapticStyle]);
 
@@ -151,6 +170,13 @@ function CommentModal({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<TextInput>(null);
+
+  // Enhanced keyboard handling
+  const {
+    isKeyboardVisible,
+    keyboardHeight,
+    dismissKeyboard,
+  } = useEnhancedKeyboard([inputRef], 1);
 
   // Animation values
   const modalScale = useSharedValue(0.95);
@@ -612,12 +638,11 @@ function CommentModal({
                         </View>
                       )}
 
-                      {/* Input Field */}
-                      <TextInput
+                      {/* Enhanced Input Field */}
+                      <EnhancedTextInput
                         ref={inputRef}
-                        className="max-h-[100px] flex-1 rounded-[20px] bg-neutral-100 px-[15px] py-[10px] text-base text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100"
+                        className="max-h-[100px] flex-1"
                         placeholder="Add a comment..."
-                        placeholderTextColor="#9ca3af"
                         value={commentText}
                         onChangeText={setCommentText}
                         multiline
@@ -625,6 +650,9 @@ function CommentModal({
                         returnKeyType="send"
                         blurOnSubmit
                         onSubmitEditing={commentText.trim() ? handleAddComment : undefined}
+                        maxLength={500}
+                        showCharacterCount={commentText.length > 400}
+                        onFocus={() => triggerLightHaptic()}
                       />
                     </View>
 
@@ -670,6 +698,14 @@ function CommentModal({
           </Pressable>
         </Animated.View>
       </GestureDetector>
+
+      {/* Enhanced Keyboard Toolbar */}
+      <KeyboardToolbar
+        isVisible={isKeyboardVisible}
+        keyboardHeight={keyboardHeight}
+        onDone={dismissKeyboard}
+        currentField="Comment"
+      />
     </Modal>
   );
 }

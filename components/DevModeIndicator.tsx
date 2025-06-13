@@ -1,5 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, Modal, Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -15,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isDevelopment, authConfig } from '../lib/config';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { resetDatabase } from '../lib/utils/database';
+import { triggerLightHapticSync, triggerMediumHapticSync } from '../lib/utils/haptics';
 
 interface DevModeIndicatorProps {
   showFullDetails?: boolean;
@@ -75,7 +75,7 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
     .onBegin(() => {
       'worklet';
       authButtonScale.value = withTiming(0.95, { duration: 100 });
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
     })
     .onFinalize(() => {
       'worklet';
@@ -87,7 +87,7 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
     .onBegin(() => {
       'worklet';
       indicatorScale.value = withTiming(0.9, { duration: 100 });
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium);
+      runOnJS(triggerMediumHapticSync)();
     })
     .onFinalize(() => {
       'worklet';

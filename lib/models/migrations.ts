@@ -368,6 +368,16 @@ const migrations = schemaMigrations({
       toVersion: 22,
       steps: [],
     },
+    // Migration to version 23: Add title column to diary_entries
+    {
+      toVersion: 23,
+      steps: [
+        addColumns({
+          table: 'diary_entries',
+          columns: [{ name: 'title', type: 'string', isOptional: true }],
+        }),
+      ],
+    },
   ],
 });
 

@@ -10,14 +10,11 @@ import { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-nat
 
 import { SPRING_CONFIGS } from './presets';
 import { useAnimationCleanup } from './useAnimationCleanup';
-
-// Dynamic import to avoid hard dependency on expo-haptics
-let Haptics: typeof import('expo-haptics') | null = null;
-try {
-  Haptics = require('expo-haptics');
-} catch {
-  // expo-haptics not available - haptic feedback will be disabled
-}
+import { 
+  triggerLightHapticSync,
+  triggerMediumHapticSync,
+  triggerHeavyHapticSync 
+} from '../utils/haptics';
 
 interface UseAdvancedGestureConfig {
   // Pan gesture settings
@@ -95,15 +92,19 @@ export function useAdvancedGesture(config: UseAdvancedGestureConfig = {}) {
   const velocityY = useSharedValue(0);
   // Haptic feedback helper
   const triggerHaptics = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-    if (!enableHaptics || !Haptics) return;
+    if (!enableHaptics) return;
 
-    const hapticMap = {
-      light: Haptics.ImpactFeedbackStyle.Light,
-      medium: Haptics.ImpactFeedbackStyle.Medium,
-      heavy: Haptics.ImpactFeedbackStyle.Heavy,
-    };
-
-    Haptics.impactAsync(hapticMap[style]);
+    switch (style) {
+      case 'light':
+        triggerLightHapticSync();
+        break;
+      case 'medium':
+        triggerMediumHapticSync();
+        break;
+      case 'heavy':
+        triggerHeavyHapticSync();
+        break;
+    }
   };
 
   // Bounds checking helper

@@ -29,7 +29,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { createPost } from '../../lib/services/community-service'; // Import createPost
 import supabase from '../../lib/supabase'; // Import supabase client
+import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
+import { triggerMediumHapticSync, triggerLightHaptic } from '../../lib/utils/haptics';
 import { OptimizedIcon, type IconName } from '../ui/OptimizedIcon';
+import { EnhancedTextInput } from '../ui/EnhancedTextInput';
+import { KeyboardToolbar } from '../ui/KeyboardToolbar';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 
@@ -64,9 +68,9 @@ const AnimatedActionButton = ({
   const pressed = useSharedValue(0);
 
   const handlePress = useCallback(() => {
-    runOnJS(Haptics.impactAsync)(hapticStyle);
+    runOnJS(triggerMediumHapticSync)();
     onPress();
-  }, [onPress, hapticStyle]);
+  }, [onPress]);
 
   const gesture = Gesture.Tap()
     .onBegin(() => {
@@ -122,6 +126,29 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [image, setImage] = useState<string | null>(null); // State for selected image URI
   const [location, setLocation] = useState<Location.LocationObject | null>(null); // State for location
+
+  // Enhanced keyboard handling for post form
+  const contentInputRef = React.useRef<TextInput>(null);
+  const inputRefs = [contentInputRef];
+  const totalInputs = 1;
+
+  const {
+    isKeyboardVisible,
+    keyboardHeight,
+    currentIndex,
+    goToNextInput,
+    goToPreviousInput,
+    dismissKeyboard,
+    canGoNext,
+    canGoPrevious,
+    setCurrentIndex,
+  } = useEnhancedKeyboard(inputRefs, totalInputs);
+
+  // Enhanced input focus management
+  const handleInputFocus = (index: number) => {
+    setCurrentIndex(index);
+    triggerLightHaptic();
+  };
 
   const canPost = content.trim().length > 0 || image; // Can post if there's text or an image
 
@@ -359,16 +386,19 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
           >
             {/* Main Content Area - Removed flex: 1 */}
             <View className="px-4 pt-2">
-              <TextInput
+              <EnhancedTextInput
+                ref={contentInputRef}
                 value={content}
                 onChangeText={setContent}
                 placeholder="What's on your mind?"
-                placeholderTextColor="#9CA3AF"
                 multiline
-                className="flex-1 text-lg leading-snug text-neutral-900 dark:text-neutral-100" // Use flex-1 to take available space
+                className="flex-1 text-lg leading-snug" // Use flex-1 to take available space
                 style={{
                   textAlignVertical: 'top',
                 }} // Ensure text starts at top
+                onFocus={() => handleInputFocus(0)}
+                returnKeyType="done"
+                maxLength={1000}
               />
               {/* Optionally display selected image preview here */}
               {/* Add <Image source={{ uri: image }} ... /> for preview */}
@@ -410,6 +440,20 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
             </View>
           </View>
           {/* End Bottom Toolbar */}
+
+          {/* Enhanced Keyboard Toolbar */}
+          <KeyboardToolbar
+            isVisible={isKeyboardVisible}
+            keyboardHeight={keyboardHeight}
+            onPrevious={goToPreviousInput}
+            onNext={goToNextInput}
+            onDone={dismissKeyboard}
+            canGoPrevious={canGoPrevious}
+            canGoNext={canGoNext}
+            currentField="Post Content"
+            totalFields={totalInputs}
+            currentIndex={currentIndex}
+          />
         </KeyboardAvoidingView>
         {/* End KeyboardAvoidingView */}
       </ThemedView>

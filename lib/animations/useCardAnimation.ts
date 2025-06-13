@@ -5,13 +5,17 @@
  * strains screen implementation. Creates smooth, professional card interactions.
  */
 
-import * as Haptics from 'expo-haptics';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 
 import { ANIMATION_PRESETS, SHADOW_VALUES, SPRING_CONFIGS } from './presets';
 import { useAnimationCleanup } from './useAnimationCleanup';
+import { 
+  triggerLightHapticSync,
+  triggerMediumHapticSync,
+  triggerHeavyHapticSync 
+} from '../utils/haptics';
 
 interface UseCardAnimationConfig {
   // Override default scale values
@@ -93,13 +97,17 @@ export function useCardAnimation(config: UseCardAnimationConfig = {}) {
   const triggerHaptics = () => {
     if (!enableHaptics) return;
 
-    const hapticMap = {
-      light: Haptics.ImpactFeedbackStyle.Light,
-      medium: Haptics.ImpactFeedbackStyle.Medium,
-      heavy: Haptics.ImpactFeedbackStyle.Heavy,
-    };
-
-    Haptics.impactAsync(hapticMap[hapticStyle]);
+    switch (hapticStyle) {
+      case 'light':
+        triggerLightHapticSync();
+        break;
+      case 'medium':
+        triggerMediumHapticSync();
+        break;
+      case 'heavy':
+        triggerHeavyHapticSync();
+        break;
+    }
   };
 
   // Animation style

@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -12,6 +11,7 @@ import Animated, {
 
 import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
+import { triggerLightHapticSync } from '@/lib/utils/haptics';
 
 /**
  * Displays a profile statistic with an icon, value, and label.
@@ -59,7 +59,7 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({
     .onEnd(() => {
       'worklet';
       if (onPress) {
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+        runOnJS(triggerLightHapticSync)();
         runOnJS(onPress)();
       }
     });

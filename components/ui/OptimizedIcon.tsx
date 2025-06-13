@@ -110,10 +110,11 @@ const IconSVG = {
   'close-outline': '⊗',
   checkmark: '✓',
   'checkmark-circle': '✅',
-  
-  // Navigation - using symbols that can be colored
+    // Navigation - using symbols that can be colored
   'chevron-forward': '▶',
+  'chevron-forward-outline': '▷', // Outline variant
   'chevron-back': '◀',
+  'chevron-back-outline': '◁', // Outline variant
   'arrow-back': '←',
   'chevron-up': '▲',
   'chevron-down': '▼',
@@ -186,7 +187,6 @@ const IconSVG = {
   refresh: '🔄',
   'scale-balance': '⚖️',
   'cut-outline': '✂️',
-
   // Additional unique icons
   bookmark: '🔖',
   'flash-off': '🔆',
@@ -203,6 +203,17 @@ const IconSVG = {
   'palette-swatch': '🎨',
   'partly-sunny-outline': '⛅',
 
+  // Missing icons from components
+  'trash-outline': '🗑️',
+  'pricetag-outline': '🏷️',
+  'sunny-outline': '☀️',
+  'content-cut': '✂️',
+  'scissors-cutting': '✂️',
+  'close-circle': '❌',
+  'calendar-outline': '📅',
+  'search-outline': '🔍',
+  'check-circle': '✅',
+
   // Loading states
   loading1: '⭮',
 
@@ -217,9 +228,10 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   close: 'Close',
   'close-outline': 'Close',
   checkmark: 'Checkmark',
-  'checkmark-circle': 'Checkmark circle',
-  'chevron-forward': 'Forward',
+  'checkmark-circle': 'Checkmark circle',  'chevron-forward': 'Forward',
+  'chevron-forward-outline': 'Forward outline',
   'chevron-back': 'Back',
+  'chevron-back-outline': 'Back outline',
   'arrow-back': 'Back',
   'chevron-up': 'Up',
   'chevron-down': 'Down',
@@ -284,10 +296,21 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   waves: 'Waves',
   'spider-thread': 'Thread',
   'arrow-expand-vertical': 'Expand vertical',
-  'calendar-range': 'Date range',
-  'globe-outline': 'Globe',
+  'calendar-range': 'Date range',  'globe-outline': 'Globe',
   'palette-swatch': 'Color palette',
   'partly-sunny-outline': 'Partly sunny',
+
+  // Missing icon labels
+  'trash-outline': 'Delete',
+  'pricetag-outline': 'Price tag',
+  'sunny-outline': 'Sunny',
+  'content-cut': 'Cut',
+  'scissors-cutting': 'Scissors',
+  'close-circle': 'Close circle',
+  'calendar-outline': 'Calendar',
+  'search-outline': 'Search',
+  'check-circle': 'Check circle',
+
   loading1: 'Loading',
   default: 'Icon',
 };

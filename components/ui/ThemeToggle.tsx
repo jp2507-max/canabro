@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useColorScheme } from 'nativewind';
 import React from 'react';
 import { Pressable } from 'react-native';
@@ -14,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { OptimizedIcon } from './OptimizedIcon';
+import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
 
 interface ThemeToggleProps {
   showLabel?: boolean;
@@ -48,7 +48,7 @@ function ThemeToggle({ showLabel = true, compact = false }: ThemeToggleProps) {
 
   const toggleTheme = React.useCallback(() => {
     // Context-aware haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerMediumHapticSync();
 
     // Icon bounce animation
     iconScale.value = withSequence(
@@ -64,7 +64,7 @@ function ThemeToggle({ showLabel = true, compact = false }: ThemeToggleProps) {
     .onBegin(() => {
       'worklet';
       containerScale.value = withTiming(SCALE_VALUES.pressed, { duration: 100 });
-      runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      runOnJS(triggerLightHapticSync)();
     })
     .onFinalize(() => {
       'worklet';
@@ -136,7 +136,7 @@ function ThemeToggle({ showLabel = true, compact = false }: ThemeToggleProps) {
           className={`${iconSizeClasses} items-center justify-center rounded-full transition-colors`}>
           <Animated.View style={iconAnimatedStyle}>
             <OptimizedIcon
-              name={isDarkMode ? 'moon' : 'sun'}
+              name={isDarkMode ? 'moon-outline' : 'sun'}
               size={iconSize}
               className={isDarkMode ? 'text-white' : 'text-primary-600'}
             />
