@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -57,12 +57,10 @@ const AnimatedActionButton = ({
   onPress,
   iconName,
   size = 28,
-  hapticStyle = Haptics.ImpactFeedbackStyle.Light,
 }: {
   onPress: () => void;
   iconName: IconName;
   size?: number;
-  hapticStyle?: Haptics.ImpactFeedbackStyle;
 }) => {
   const scale = useSharedValue(1);
   const pressed = useSharedValue(0);
@@ -384,15 +382,14 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
             contentContainerStyle={{ flexGrow: 1 }} // Ensure content can grow
             keyboardShouldPersistTaps="handled" // Dismiss keyboard on tap outside input
           >
-            {/* Main Content Area - Removed flex: 1 */}
-            <View className="px-4 pt-2">
+            {/* Main Content Area - Now with flex-1 to allow EnhancedTextInput to grow */}
+            <View className="flex-1 px-4 pt-2">
               <EnhancedTextInput
                 ref={contentInputRef}
                 value={content}
                 onChangeText={setContent}
                 placeholder="What's on your mind?"
                 multiline
-                className="flex-1 text-lg leading-snug" // Use flex-1 to take available space
                 style={{
                   textAlignVertical: 'top',
                 }} // Ensure text starts at top
@@ -423,17 +420,14 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
                 <AnimatedActionButton
                   onPress={handleTakePhoto}
                   iconName="camera-outline"
-                  hapticStyle={Haptics.ImpactFeedbackStyle.Medium}
                 />
                 <AnimatedActionButton
                   onPress={handlePickImage}
                   iconName="images-outline"
-                  hapticStyle={Haptics.ImpactFeedbackStyle.Light}
                 />
                 <AnimatedActionButton
                   onPress={handleGetLocation}
                   iconName="location-outline"
-                  hapticStyle={Haptics.ImpactFeedbackStyle.Light}
                 />
               </View>
               {/* Reply Text Removed */}

@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Pressable } from 'react-native';
 import Animated, {
@@ -9,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import ThemedText from './ThemedText';
+import { triggerLightHapticSync } from '@/lib/utils/haptics';
 
 interface TagPillProps {
   text: string;
@@ -76,7 +76,7 @@ export function TagPill({
 
     // Haptic feedback
     if (enableHaptics) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerLightHapticSync();
     }
 
     // Press animation

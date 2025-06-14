@@ -1,5 +1,10 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as Haptics from 'expo-haptics';
+import {
+  triggerLightHaptic,
+  triggerMediumHaptic,
+  triggerSuccessHaptic,
+  triggerErrorHaptic,
+} from '@/lib/utils/haptics';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
@@ -112,8 +117,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
   }, [permission, requestPermission]);
 
   // Trigger haptic feedback helper
-  const triggerCaptureHaptic = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const triggerCaptureHaptic = useCallback(() => {
+    triggerMediumHaptic();
   }, []);
 
   // Gesture handlers
@@ -219,12 +224,12 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
     });
 
   const handleCameraTypeToggle = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await triggerLightHaptic();
     setCameraType((prevType) => (prevType === 'back' ? 'front' : 'back'));
   }, []);
 
   const handleFlashToggle = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await triggerLightHaptic();
     setFlashMode((prevMode) => (prevMode === 'off' ? 'on' : 'off'));
   }, []);
 
@@ -234,21 +239,21 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
     try {
       const result = await cameraRef.current.takePictureAsync();
       if (result && result.uri) {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        await triggerSuccessHaptic();
         onImageCaptured(result.uri);
       } else {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        await triggerErrorHaptic();
         Alert.alert('Error', 'Failed to capture image');
       }
     } catch (error) {
       console.error('Error taking picture:', error);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      await triggerErrorHaptic();
       Alert.alert('Error', 'Failed to take picture');
     }
   }, [onImageCaptured]);
 
   const pickImage = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await triggerMediumHaptic();
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -258,19 +263,19 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]?.uri) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerSuccessHaptic();
       onImageCaptured(result.assets[0].uri);
     }
   }, [onImageCaptured]);
 
   const handleClose = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await triggerLightHaptic();
     controlsOpacity.value = withTiming(0, { duration: 300 });
     setTimeout(onClose, 300);
   }, [onClose]);
 
   const handlePermissionRequest = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await triggerMediumHaptic();
     permissionScale.value = withSequence(
       withSpring(0.95, SPRING_CONFIGS.quick),
       withSpring(1, SPRING_CONFIGS.smooth)
@@ -339,7 +344,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
           onCameraReady={() => console.log('Camera ready')}
           onMountError={(error) => {
             console.error('Camera mount error:', error);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            triggerErrorHaptic();
             Alert.alert('Error', 'Failed to initialize camera');
           }}>
           <Animated.View style={[styles.cameraContent, controlsStyle]}>

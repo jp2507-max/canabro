@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { debounce } from 'lodash';
 import { useColorScheme } from 'nativewind';
 import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
@@ -450,12 +450,12 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
               accessibilityRole="text"
               accessibilityLabel={`Search results: ${sources.local} saved locally, ${sources.supabase} from cloud, ${sources.external} from external sources`}>
               <ThemedText variant="caption" className="font-medium">
-                {sources.local > 0 && `${sources.local} saved`}
-                {sources.local > 0 && (sources.supabase > 0 || sources.external > 0) && ' • '}
-                {sources.supabase > 0 && `${sources.supabase} cloud`}
-                {sources.supabase > 0 && sources.external > 0 && ' • '}
-                {sources.external > 0 && `${sources.external} external`}
-                {hasMore && ' • Type more for refined results'}
+                {sources.local > 0 ? `${sources.local} saved` : ''}
+                {sources.local > 0 && (sources.supabase > 0 || sources.external > 0) ? ' • ' : ''}
+                {sources.supabase > 0 ? `${sources.supabase} cloud` : ''}
+                {sources.supabase > 0 && sources.external > 0 ? ' • ' : ''}
+                {sources.external > 0 ? `${sources.external} external` : ''}
+                {hasMore ? ' • Type more for refined results' : ''}
               </ThemedText>
             </Animated.View>
           )}

@@ -2,7 +2,7 @@
 
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -544,11 +544,11 @@ function CommentModal({
                 <ThemedView className="flex-row items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
                   <View className="flex-row items-center">
                     <ThemedText className="text-lg font-bold">Comments</ThemedText>
-                    {commentsCount > 0 && (
+                    {commentsCount > 0 ? (
                       <ThemedText className="ml-2 text-sm font-medium text-neutral-500 dark:text-neutral-400">
                         {commentsCount}
                       </ThemedText>
-                    )}
+                    ) : null}
                   </View>
                   <AnimatedActionButton
                     onPress={onClose}

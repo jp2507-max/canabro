@@ -160,7 +160,8 @@ const IconSVG = {
   heart: '♥',
   'heart-outline': '♡',
   star: '⭐',
-  medal: '🏅',  notification: '🔔',
+  medal: '🏅',
+  notification: '🔔',
   warning: '⚠️',
   'warning-outline': '⚠️', // Alias for warning
   'help-circle': '❓',

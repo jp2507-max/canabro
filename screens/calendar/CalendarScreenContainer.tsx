@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 
 import CalendarScreenView from './CalendarScreenView';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
@@ -23,6 +23,15 @@ function CalendarScreenContainer({
   const { refreshing, handleRefresh } = usePullToRefresh();
   const [isTaskActionsVisible, setTaskActionsVisible] = useState(false);
   const router = useRouter();
+
+  // Add validation for selectedDate prop
+  useEffect(() => {
+    if (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
+      console.error('[CalendarScreenContainer] Invalid selectedDate received:', selectedDate, 'Type:', typeof selectedDate);
+    } else {
+      console.log('[CalendarScreenContainer] Valid selectedDate:', selectedDate);
+    }
+  }, [selectedDate]);
 
   // Fetch tasks for the selected date and user
   const fetchTasks = useCallback(async () => {

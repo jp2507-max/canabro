@@ -1,5 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef } from 'react';
 import { Modal, View, useWindowDimensions, Platform } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -10,11 +9,16 @@ import Animated, {
   withTiming,
   withDelay,
   runOnUI,
+  runOnJS,
   interpolateColor as rInterpolateColor,
 } from 'react-native-reanimated';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
+import {
+  triggerLightHapticSync,
+  triggerMediumHapticSync,
+} from '../../lib/utils/haptics';
 
 type CreatePostModalProps = {
   visible: boolean;
@@ -189,9 +193,9 @@ export default function CreatePostModal({
     // UI-side: trigger animation only
     hideModal();
 
-    // JS-side: haptics + delayed close with cleanup
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    safeSetTimeout(() => onClose(), 300);
+    // JS-side: haptics + delayed close with cleanup (run on JS thread)
+    runOnJS(triggerLightHapticSync)();
+    runOnJS(safeSetTimeout)(onClose, 300);
   });
 
   const panGesture = Gesture.Pan()
@@ -220,9 +224,9 @@ export default function CreatePostModal({
         // UI-side: trigger animation only
         hideModal();
 
-        // JS-side: haptics + delayed close with cleanup
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        safeSetTimeout(() => onClose(), 300);
+        // JS-side: haptics + delayed close with cleanup (run on JS thread)
+        runOnJS(triggerMediumHapticSync)();
+        runOnJS(safeSetTimeout)(onClose, 300);
       } else {
         // Snap back
         modalTranslateY.value = withSpring(0, ANIMATION_CONFIG.modal);
@@ -233,8 +237,8 @@ export default function CreatePostModal({
 
   // 🎯 Enhanced Button Handlers with Haptic Feedback
   const handleSharePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    hideModal();
+    triggerMediumHapticSync();
+    runOnUI(hideModal)();
     safeSetTimeout(() => {
       onClose();
       onCreatePost();
@@ -242,12 +246,23 @@ export default function CreatePostModal({
   };
 
   const handleQuestionPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    hideModal();
+    triggerMediumHapticSync();
+    runOnUI(hideModal)();
     safeSetTimeout(() => {
       onClose();
       onAskQuestion();
     }, 250);
+  };
+
+  // Add worklet wrappers for gesture callbacks to run JS functions safely
+  const handleShareTapGesture = () => {
+    'worklet';
+    runOnJS(handleSharePress)();
+  };
+
+  const handleQuestionTapGesture = () => {
+    'worklet';
+    runOnJS(handleQuestionPress)();
   };
 
   // 🎯 Effect Management
@@ -306,10 +321,10 @@ export default function CreatePostModal({
 
                   {/* 🌱 Enhanced Share Plant Option */}
                   <Animated.View style={animatedShareButtonStyle}>
-                    <GestureDetector gesture={Gesture.Tap().onEnd(handleSharePress)}>
+                    <GestureDetector gesture={Gesture.Tap().onEnd(handleShareTapGesture)}>
                       <View className="mb-4 flex-row items-center rounded-2xl bg-neutral-50 p-4 active:bg-neutral-100 dark:bg-zinc-800 dark:active:bg-zinc-700">
                         <View className="mr-4 h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 dark:bg-primary-900/30">
-                          <OptimizedIcon name="leaf" size={28} color="#10b981" />
+                          <OptimizedIcon name="leaf" size={28} className="text-emerald-500" />
                         </View>
                         <View className="flex-1">
                           <ThemedText className="mb-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
@@ -319,17 +334,17 @@ export default function CreatePostModal({
                             Post photos and updates about your plants
                           </ThemedText>
                         </View>
-                        <OptimizedIcon name="chevron-forward" size={20} color="#9ca3af" />
+                        <OptimizedIcon name="chevron-forward" size={20} className="text-neutral-400" />
                       </View>
                     </GestureDetector>
                   </Animated.View>
 
                   {/* ❓ Enhanced Ask Question Option */}
                   <Animated.View style={animatedQuestionButtonStyle}>
-                    <GestureDetector gesture={Gesture.Tap().onEnd(handleQuestionPress)}>
+                    <GestureDetector gesture={Gesture.Tap().onEnd(handleQuestionTapGesture)}>
                       <View className="flex-row items-center rounded-2xl bg-neutral-50 p-4 active:bg-neutral-100 dark:bg-zinc-800 dark:active:bg-zinc-700">
                         <View className="mr-4 h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-900/30">
-                          <OptimizedIcon name="help-circle" size={28} color="#d97706" />
+                          <OptimizedIcon name="help-circle" size={28} className="text-amber-600" />
                         </View>
                         <View className="flex-1">
                           <ThemedText className="mb-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
@@ -339,7 +354,7 @@ export default function CreatePostModal({
                             Get help from the community on growing issues
                           </ThemedText>
                         </View>
-                        <OptimizedIcon name="chevron-forward" size={20} color="#9ca3af" />
+                        <OptimizedIcon name="chevron-forward" size={20} className="text-neutral-400" />
                       </View>
                     </GestureDetector>
                   </Animated.View>

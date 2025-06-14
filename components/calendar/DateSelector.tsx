@@ -65,7 +65,27 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
     }
   }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow, date]);
 
-  // Modern gesture handling
+  // Pre-compute a serialisable primitive so the worklet never touches Date methods
+  const timestamp = useMemo(() => {
+    if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
+      return date.getTime();
+    }
+    return Date.now(); // fallback – should never hit given our validation
+  }, [date]);
+
+  // Wrapper to convert the timestamp coming from the UI thread back into a Date
+  const handleSelect = useCallback(
+    (timestamp: number) => {
+      const validDate = new Date(timestamp);
+      if (!isNaN(validDate.getTime())) {
+        onSelect(validDate);
+      } else {
+        console.error('[DateSelector] Received invalid timestamp from gesture:', timestamp);
+      }
+    },
+    [onSelect]
+  );
+
   const tapGesture = Gesture.Tap()
     .onStart(() => {
       'worklet';
@@ -83,7 +103,8 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
     })
     .onFinalize(() => {
       'worklet';
-      runOnJS(onSelect)(date);
+      // Pass the pre-computed timestamp (primitive) to JS; no Date methods in UI runtime.
+      runOnJS(handleSelect)(timestamp);
     });
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -147,6 +168,29 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
 DateItem.displayName = 'DateItem';
 
 function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
+  // Ensure selectedDate is always a valid Date object with more robust validation
+  const safeSelectedDate = useMemo(() => {
+    // Check for null, undefined, or non-objects first
+    if (!selectedDate) {
+      console.warn('[DateSelector] selectedDate is null/undefined, using current date');
+      return new Date();
+    }
+    
+    // Check if it's actually a Date object or has Date-like properties
+    if (!(selectedDate instanceof Date)) {
+      console.warn('[DateSelector] selectedDate is not a Date instance:', selectedDate, 'Type:', typeof selectedDate);
+      return new Date();
+    }
+    
+    // Check if the Date object has a valid getTime method and is not Invalid Date
+    if (typeof selectedDate.getTime !== 'function' || isNaN(selectedDate.getTime())) {
+      console.warn('[DateSelector] Invalid selectedDate provided, using current date:', selectedDate);
+      return new Date();
+    }
+    
+    return selectedDate;
+  }, [selectedDate]);
+
   // Generate date range (7 days: 3 before, today, 3 after)
   const dates = useMemo(() => {
     const result = [];
@@ -159,6 +203,13 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
 
   const handleDateSelect = useCallback(
     (date: Date) => {
+      // Validate the date before calling the parent callback
+      if (!date || !(date instanceof Date) || typeof date.getTime !== 'function' || isNaN(date.getTime())) {
+        console.error('[DateSelector] Attempted to select invalid date:', date);
+        return;
+      }
+      
+      console.log('[DateSelector] Date selected:', date);
       onDateSelect(date);
     },
     [onDateSelect]
@@ -183,9 +234,8 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
             if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
               dateString = format(date, 'yyyy-MM-dd');
             }
-            if (selectedDate && typeof selectedDate.getTime === 'function' && !isNaN(selectedDate.getTime())) {
-              selectedDateString = format(selectedDate, 'yyyy-MM-dd');
-            }
+            // Use safeSelectedDate instead of selectedDate
+            selectedDateString = format(safeSelectedDate, 'yyyy-MM-dd');
             isSelected = dateString === selectedDateString && dateString !== 'invalid';
           } catch (error) {
             console.error('[DateSelector] Error formatting dates for comparison:', error);

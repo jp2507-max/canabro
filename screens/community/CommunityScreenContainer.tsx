@@ -27,27 +27,37 @@ function CommunityScreenContainer() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
 
+  // Fetch posts with stable identity to avoid unnecessary re-renders
   const fetchPosts = useCallback(
     async (page: number, refreshing = false) => {
       if (!session) return;
+
       const limit = PAGE_SIZE;
       const offset = page * limit;
+
+      // Loading & refresh state management
       setIsLoading(page === 0 && !refreshing);
       setIsRefreshing(refreshing);
+
       try {
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`*, profiles ( username, avatar_url )`)
           .order('created_at', { ascending: false })
           .range(offset, offset + limit - 1);
+
         if (postsError) throw postsError;
+
         if (!postsData) {
-          setPosts(refreshing ? [] : posts);
+          // Nothing returned – clear or keep existing posts based on refresh flag
+          setPosts((prev) => (refreshing ? [] : prev));
           setHasMore(false);
           setFetchError(null);
           return;
         }
-        setPosts(refreshing ? postsData : [...posts, ...postsData]);
+
+        // Update posts using functional state to avoid dependency on `posts`
+        setPosts((prev) => (refreshing ? postsData : [...prev, ...postsData]));
         setHasMore(postsData.length === limit);
         setFetchError(null);
       } catch (err) {
@@ -58,7 +68,7 @@ function CommunityScreenContainer() {
         setIsLoadingMore(false);
       }
     },
-    [session, posts]
+    [session]
   );
 
   React.useEffect(() => {

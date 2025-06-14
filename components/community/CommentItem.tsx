@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, Pressable, Image } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -16,6 +15,7 @@ import { useCardAnimation } from '../../lib/animations/useCardAnimation';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { triggerSuccessHaptic, triggerErrorHaptic } from '@/lib/utils/haptics';
 
 interface CommentItemProps {
   comment: Comment & {
@@ -35,7 +35,17 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
  * Format a date string into a relative time string (e.g. "2m ago")
  */
 function formatRelativeTime(dateString: string): string {
+  if (!dateString) {
+    console.warn('[CommentItem] Empty dateString provided to formatRelativeTime');
+    return 'Unknown time';
+  }
+
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    console.warn('[CommentItem] Invalid dateString provided to formatRelativeTime:', dateString);
+    return 'Invalid time';
+  }
+
   const now = new Date();
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
@@ -207,7 +217,7 @@ export default React.memo(function CommentItem({
       setLikesCount(previousCount);
 
       // Enhanced error feedback
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      await triggerErrorHaptic();
     } finally {
       setIsLiking(false);
     }
@@ -284,12 +294,12 @@ export default React.memo(function CommentItem({
             await supabase.rpc('decrement_comment_count', { post_id: postId }).throwOnError();
 
             // ✅ Success haptic feedback
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            await triggerSuccessHaptic();
           } catch (error) {
             console.error('Error deleting comment:', error);
             Alert.alert('Error', 'Failed to delete comment. Please try again.');
             // ✅ Error haptic feedback
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            await triggerErrorHaptic();
           }
         },
       },
@@ -435,11 +445,11 @@ export default React.memo(function CommentItem({
                     size={16}
                     color={isLiked ? '#ef4444' : '#71717a'} // red-500 if liked, zinc-500 if not
                   />
-                  {likesCount > 0 && (
+                  {likesCount > 0 ? (
                     <Text className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">
                       {likesCount}
                     </Text>
-                  )}
+                  ) : null}
                 </AnimatedPressable>
               </Animated.View>
             </GestureDetector>

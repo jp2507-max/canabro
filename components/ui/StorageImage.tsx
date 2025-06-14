@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { Image } from 'expo-image';
 import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator, Pressable } from 'react-native';
@@ -189,13 +189,13 @@ export default function StorageImage({
       <Animated.View style={loadingAnimatedStyle}>
         <ActivityIndicator size="small" className="text-primary-500" />
       </Animated.View>
-      {showProgress && retryCount > 0 && (
+      {showProgress && retryCount > 0 ? (
         <ThemedText
           variant="caption"
           className="mt-2 text-center text-neutral-500 dark:text-neutral-400">
           Retry {retryCount}/3
         </ThemedText>
-      )}
+      ) : null}
     </View>
   );
 

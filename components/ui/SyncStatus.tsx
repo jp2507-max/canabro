@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import Animated, {
@@ -15,6 +14,11 @@ import ThemedText from './ThemedText';
 
 import { useSyncContext } from '@/lib/contexts/SyncContext';
 import { useSyncHealth } from '@/lib/hooks/useSyncHealth';
+import {
+  triggerErrorHapticSync,
+  triggerLightHapticSync,
+  triggerMediumHapticSync,
+} from '@/lib/utils/haptics';
 
 interface SyncStatusProps {
   compact?: boolean;
@@ -106,11 +110,11 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
   const handlePress = useCallback(() => {
     // Haptic feedback based on current state
     if (syncError) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerErrorHapticSync();
     } else if (isSyncing) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerLightHapticSync();
     } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      triggerMediumHapticSync();
     }
 
     // Press animation
@@ -253,7 +257,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
         )}
 
         {/* Statistics section */}
-        {!compact && !isSyncing && health.totalSyncs > 0 && (
+        {!compact && !isSyncing && health.totalSyncs > 0 ? (
           <View className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
             {/* Success rate */}
             <View className="mb-1 flex-row justify-between">
@@ -282,7 +286,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
               </View>
             )}
           </View>
-        )}
+        ) : null}
 
         {/* Recommendation text */}
         {health.shouldRecommendSync && !isSyncing && (
