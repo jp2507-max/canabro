@@ -1,5 +1,12 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
+import {
+  triggerHeavyHaptic,
+  triggerHeavyHapticSync,
+  triggerMediumHapticSync,
+  triggerLightHapticSync,
+  triggerSuccessHaptic,
+  triggerErrorHaptic,
+} from '@/lib/utils/haptics';
 import React, { useState } from 'react';
 import { Text, Alert, ActivityIndicator, Modal, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -69,13 +76,13 @@ const DatabaseResetButton = () => {
     setIsResetting(true);
 
     // Critical action haptic feedback
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await triggerHeavyHaptic();
 
     try {
       await resetDatabase();
 
       // Success haptic
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerSuccessHaptic();
 
       Alert.alert(
         'Reset Complete',
@@ -86,7 +93,7 @@ const DatabaseResetButton = () => {
       console.error('Failed to reset database:', error);
 
       // Error haptic
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      await triggerErrorHaptic();
 
       Alert.alert(
         'Error',
@@ -99,7 +106,7 @@ const DatabaseResetButton = () => {
 
   const showConfirmation = () => {
     // Warning haptic for opening destructive action modal
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerMediumHapticSync();
     setShowConfirmModal(true);
   };
 
@@ -128,9 +135,9 @@ const DatabaseResetButton = () => {
   });
 
   // Haptic feedback functions for runOnJS
-  const mediumHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  const heavyHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-  const lightHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const mediumHaptic = () => triggerMediumHapticSync();
+  const heavyHaptic = () => triggerHeavyHapticSync();
+  const lightHaptic = () => triggerLightHapticSync();
 
   // Gesture handlers
   const buttonGesture = Gesture.Tap()

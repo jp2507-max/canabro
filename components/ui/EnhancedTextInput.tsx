@@ -8,7 +8,6 @@
  * - Complex validation states
  * - Forms with optional icons
  * 
- * FOR SIMPLE FORMS: Use AnimatedInput instead
  * 
  * Key Features:
  * - Optional labels and icons
@@ -114,9 +113,11 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
           ]
         ),
       };
-    });    const handleFocus = () => {
+    });
+
+    const handleFocus = () => {
       if (disabled) return;
-      
+
       inputScale.value = withSpring(1.02, { damping: 15 });
       borderColor.value = withSpring(error ? 2 : 1, { duration: 200 });
       backgroundColor.value = withSpring(1, { duration: 200 });
@@ -127,10 +128,14 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
       inputScale.value = withSpring(1, { damping: 15 });
       borderColor.value = withSpring(getBorderColorState(), { duration: 200 });
       backgroundColor.value = withSpring(0, { duration: 200 });
-    };    const handleSubmitEditing = () => {
+    };
+
+    const handleSubmitEditing = () => {
       triggerSelectionHaptic();
       onSubmitEditing?.();
-    };    const handleRightIconPress = () => {
+    };
+
+    const handleRightIconPress = () => {
       triggerLightHaptic();
       onRightIconPress?.();
     };
@@ -151,33 +156,30 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
           </ThemedText>
         )}
         
-        <Animated.View 
-          style={[animatedInputStyle]} 
-          className={`
-            relative flex-row items-center rounded-lg border-2 
+        <Animated.View
+          style={[animatedInputStyle]}
+          className={`relative flex-row items-center rounded-lg border-2 
             ${disabled ? 'opacity-50' : ''}
-            ${multiline ? 'min-h-[100px] items-start' : 'h-12'}
-          `}
-        >          {leftIcon && (
+            ${multiline ? 'min-h-[100px] items-start' : 'h-12'}`}
+        >
+          {leftIcon && (
             <ThemedView className="pl-3">
-              <OptimizedIcon 
-                name={leftIcon as any} 
-                size={20} 
-                className="text-neutral-400 dark:text-neutral-500" 
+              <OptimizedIcon
+                name={leftIcon as any}
+                size={20}
+                className="text-neutral-400 dark:text-neutral-500"
               />
             </ThemedView>
           )}
-          
+
           <TextInput
             ref={ref}
-            className={`
-              flex-1 text-base font-medium
+            className={`flex-1 text-base font-medium
               text-neutral-900 placeholder:text-neutral-400
               dark:text-neutral-100 dark:placeholder:text-neutral-500
               ${leftIcon ? 'pl-2' : 'pl-4'}
               ${rightIcon ? 'pr-2' : 'pr-4'}
-              ${multiline ? 'py-3' : 'py-0'}
-            `}
+              ${multiline ? 'py-3' : 'py-0'}`}
             placeholder={placeholder}
             value={value}
             onChangeText={onChangeText}
@@ -195,12 +197,13 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
             style={style}
             {...props}
           />
-            {rightIcon && (
+
+          {rightIcon && (
             <Pressable onPress={handleRightIconPress} className="pr-3">
-              <OptimizedIcon 
-                name={rightIcon as any} 
-                size={20} 
-                className="text-neutral-400 dark:text-neutral-500" 
+              <OptimizedIcon
+                name={rightIcon as any}
+                size={20}
+                className="text-neutral-400 dark:text-neutral-500"
               />
             </Pressable>
           )}
@@ -216,19 +219,18 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
         )}
 
         {/* Character count */}
-        {showCharacterCount && maxLength && (
+        {showCharacterCount && maxLength ? (
           <ThemedView className="mt-1 flex-row justify-end">
-            <ThemedText 
+            <ThemedText
               className={`text-xs ${
-                isOverLimit 
-                  ? 'text-red-500 dark:text-red-400' 
+                isOverLimit
+                  ? 'text-red-500 dark:text-red-400'
                   : 'text-neutral-500 dark:text-neutral-400'
-              }`}
-            >
-              {characterCount}/{maxLength}
+              }`}>
+              {`${characterCount}/${maxLength}`}
             </ThemedText>
           </ThemedView>
-        )}
+        ) : null}
       </ThemedView>
     );
   }

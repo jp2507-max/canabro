@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { Image as ExpoImage } from 'expo-image';
 import React from 'react';
 import { View } from 'react-native';

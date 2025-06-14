@@ -90,7 +90,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
       </Animated.View>
 
       {/* Optional: Quick stats row if plants exist */}
-      {plantCount > 0 && (
+      {plantCount > 0 ? (
         <Animated.View
           entering={FadeInDown.delay(600).duration(500)}
           className="mt-4 border-t border-neutral-200 pt-4 dark:border-neutral-700">
@@ -138,7 +138,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
             </View>
           </View>
         </Animated.View>
-      )}
+      ) : null}
     </ThemedView>
   );
 });

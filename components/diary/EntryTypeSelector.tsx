@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import React from 'react';
 import { FlatList } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';

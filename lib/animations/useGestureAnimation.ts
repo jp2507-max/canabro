@@ -5,7 +5,7 @@
  * implementation. Provides tap, long press, and micro-rotation animations.
  */
 
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { useColorScheme } from 'nativewind';
 import { Gesture } from 'react-native-gesture-handler';
 import { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';

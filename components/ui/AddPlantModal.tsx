@@ -1,5 +1,5 @@
 import { BlurView as ExpoBlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import React, { useEffect } from 'react';
 import { Modal, Platform, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';

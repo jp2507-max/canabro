@@ -96,12 +96,9 @@ export const KeyboardToolbar: React.FC<KeyboardToolbarProps> = ({
           {currentField && (
             <ThemedView className="ml-3">
               <ThemedText className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                {currentField}
-                {totalFields && currentIndex !== undefined && (
-                  <ThemedText className="text-xs text-neutral-500 dark:text-neutral-500">
-                    {' '}({currentIndex + 1}/{totalFields})
-                  </ThemedText>
-                )}
+                {totalFields && currentIndex !== undefined
+                  ? `${currentField} (${currentIndex + 1}/${totalFields})`
+                  : currentField}
               </ThemedText>
             </ThemedView>
           )}

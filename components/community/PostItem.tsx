@@ -335,11 +335,11 @@ const PostItem: React.FC<PostItemProps> = React.memo(
                   size={24}
                   color={isLiked ? '#ef4444' : '#71717a'}
                 />
-                {post.likes_count > 0 && (
+                {post.likes_count > 0 ? (
                   <Text className="ml-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">
                     {post.likes_count}
                   </Text>
-                )}
+                ) : null}
               </Pressable>
             </Animated.View>
           </GestureDetector>
@@ -353,11 +353,11 @@ const PostItem: React.FC<PostItemProps> = React.memo(
                 accessibilityLabel="Comment on post"
                 accessibilityHint="Double-tap to add a comment">
                 <OptimizedIcon name="chatbubble-outline" size={24} color="#71717a" />
-                {post.comments_count > 0 && (
+                {post.comments_count > 0 ? (
                   <Text className="ml-3 text-base font-semibold text-zinc-700 dark:text-zinc-300">
                     {post.comments_count}
                   </Text>
-                )}
+                ) : null}
               </Pressable>
             </Animated.View>
           </GestureDetector>

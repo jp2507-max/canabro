@@ -166,3 +166,10 @@ export const triggerSelectionHaptic = async (options: HapticOptions = {}): Promi
     console.warn('Failed to trigger selection haptic feedback:', error);
   }
 };
+
+// Expose all underlying Expo Haptics exports so that other modules can simply
+// `import * as Haptics from "lib/utils/haptics"` and keep the same API while
+// benefiting from the centralized wrapper and global enable flag. This allows
+// us to remove direct `expo-haptics` imports across the codebase without
+// refactoring every call site immediately.
+export * from 'expo-haptics';

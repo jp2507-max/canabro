@@ -5,7 +5,7 @@
  * strains screen and PlantCard implementations.
  */
 
-import { ImpactFeedbackStyle } from 'expo-haptics';
+import { ImpactFeedbackStyle } from '@/lib/utils/haptics';
 import { WithSpringConfig } from 'react-native-reanimated';
 
 // 🚀 Spring Animation Configurations

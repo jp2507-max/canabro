@@ -1,5 +1,5 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Image, StyleSheet, ScrollView, useWindowDimensions, Alert } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';

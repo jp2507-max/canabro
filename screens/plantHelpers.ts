@@ -8,7 +8,18 @@ import dayjs from 'dayjs';
  */
 export function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return 'Not set';
-  return dayjs(dateString).format('MMMM D, YYYY');
+  
+  try {
+    const parsed = dayjs(dateString);
+    if (!parsed.isValid()) {
+      console.warn('[plantHelpers] Invalid date string:', dateString);
+      return 'Invalid Date';
+    }
+    return parsed.format('MMMM D, YYYY');
+  } catch (error) {
+    console.error('[plantHelpers] Error formatting date:', dateString, error);
+    return 'Invalid Date';
+  }
 }
 
 /**

@@ -1,4 +1,3 @@
-
 import React, { useMemo, useEffect } from 'react';
 import { FlatList, View, RefreshControl } from 'react-native';
 import Animated, {
@@ -268,7 +267,7 @@ function CommunityScreenView({
               <FloatingActionButton
                 onPress={handleFabPress}
                 iconName="add"
-                size={64}
+                size={56}
                 className="bg-primary-500 shadow-lg shadow-primary-500/25 dark:bg-primary-600"
                 accessibilityLabel="Create new post"
               />

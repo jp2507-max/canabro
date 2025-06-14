@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { useColorScheme } from 'nativewind';
 import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';

@@ -1,4 +1,8 @@
-import * as Haptics from 'expo-haptics';
+import {
+  triggerLightHapticSync,
+  triggerMediumHaptic,
+  triggerWarningHaptic,
+} from '@/lib/utils/haptics';
 import { router } from 'expo-router';
 import React, { useCallback } from 'react';
 import { View, Alert } from 'react-native';
@@ -75,7 +79,7 @@ function ActionItem({
       })();
       // Run haptics on JS thread
       requestAnimationFrame(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        triggerLightHapticSync();
       });
     })
     .onEnd(() => {
@@ -136,17 +140,17 @@ function ActionItem({
 
 export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
   const handleGrowJournal = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerMediumHaptic();
     router.push(`/plant/diary/${plantId}`);
   }, [plantId]);
 
   const handleMetrics = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerWarningHaptic();
     Alert.alert('Coming Soon', 'Plant metrics tracking will be available soon.');
   }, []);
 
   const handleDelete = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    triggerWarningHaptic();
     onDelete();
   }, [onDelete]);
 

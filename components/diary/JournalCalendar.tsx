@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, ScrollView } from 'react-native';
 import { Gesture, GestureDetector, State } from 'react-native-gesture-handler';
@@ -85,8 +85,20 @@ const AnimatedDateItem = ({
     backgroundColor.value = withSpring(isSelected ? 1 : 0, { damping: 15 });
   }, [isSelected, backgroundColor]);
 
-  const dayName = date.toLocaleDateString('en', { weekday: 'short' }).charAt(0);
-  const dayNumber = date.getDate();
+  // Validate date before formatting
+  let dayName = '?';
+  let dayNumber = '?';
+  
+  if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
+    try {
+      dayName = date.toLocaleDateString('en', { weekday: 'short' }).charAt(0);
+      dayNumber = date.getDate().toString();
+    } catch (error) {
+      console.error('[JournalCalendar] Error formatting date:', error);
+    }
+  } else {
+    console.warn('[JournalCalendar] Invalid date in AnimatedDateItem:', date);
+  }
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
@@ -177,19 +189,27 @@ export default function JournalCalendar({
               Week {weekNumber} • Day {plantAge}
             </ThemedText>
             <ThemedText className="text-sm font-medium">
-              {currentWeekStart.toLocaleDateString('en', {
-                month: 'short',
-                day: 'numeric',
-              })}{' '}
-              -{' '}
-              {new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(
-                'en',
-                {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
+              {(() => {
+                try {
+                  if (!currentWeekStart || isNaN(currentWeekStart.getTime())) {
+                    return 'Invalid Date Range';
+                  }
+                  const startStr = currentWeekStart.toLocaleDateString('en', {
+                    month: 'short',
+                    day: 'numeric',
+                  });
+                  const endDate = new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+                  const endStr = endDate.toLocaleDateString('en', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  });
+                  return `${startStr} - ${endStr}`;
+                } catch (error) {
+                  console.error('[JournalCalendar] Error formatting week range:', error);
+                  return 'Date Error';
                 }
-              )}
+              })()}
             </ThemedText>
           </View>
 

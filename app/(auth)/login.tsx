@@ -1,5 +1,5 @@
 import { OptimizedIcon, IconName } from '../../components/ui/OptimizedIcon';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '@/lib/utils/haptics';
 import { Link } from 'expo-router';
 import React, { useState, useRef } from 'react';
 import {

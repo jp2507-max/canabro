@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { View, Text, Alert, Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -12,6 +11,12 @@ import Animated, {
 
 import { OptimizedIcon } from './OptimizedIcon';
 import { resetDatabase } from '../../lib/database/database';
+import {
+  triggerHeavyHaptic,
+  triggerLightHapticSync,
+  triggerSuccessHaptic,
+  triggerErrorHaptic,
+} from '@/lib/utils/haptics';
 
 // Animation configurations
 const SPRING_CONFIG = { damping: 15, stiffness: 200 };
@@ -89,7 +94,7 @@ const DatabaseResetHelper = () => {
 
   const handleReset = async () => {
     // Critical action haptic
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    await triggerHeavyHaptic();
 
     setIsResetting(true);
 
@@ -97,7 +102,7 @@ const DatabaseResetHelper = () => {
       const result = await resetDatabase();
 
       // Success haptic
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerSuccessHaptic();
 
       if (result) {
         Alert.alert(
@@ -114,7 +119,7 @@ const DatabaseResetHelper = () => {
       console.error('Error resetting database:', error);
 
       // Error haptic
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      await triggerErrorHaptic();
 
       Alert.alert(
         'Reset Failed',
@@ -127,7 +132,7 @@ const DatabaseResetHelper = () => {
   };
 
   const toggleGuidance = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerLightHapticSync();
     setShowGuidance(!showGuidance);
   };
 
