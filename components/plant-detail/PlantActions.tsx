@@ -73,10 +73,6 @@ function ActionItem({
       pressed.value = withTiming(1, { duration: 150 });
       shadowOpacity.value = withTiming(0.2, { duration: 150 });
 
-      // Haptic feedback
-      runOnUI(() => {
-        'worklet';
-      })();
       // Run haptics on JS thread
       requestAnimationFrame(() => {
         triggerLightHapticSync();

@@ -1,4 +1,4 @@
-import * as Haptics from '@/lib/utils/haptics';
+import { triggerLightHaptic, triggerMediumHaptic } from '@/lib/utils/haptics';
 import React, { useEffect, useCallback } from 'react';
 import { View, Image, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -136,12 +136,12 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: Pla
 
   // Memoized handlers
   const handleTakePhoto = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await triggerMediumHaptic();
     onTakePhoto();
   }, [onTakePhoto]);
 
   const handleCompanionTap = useCallback(async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await triggerLightHaptic();
   }, []);
 
   // Gesture handlers with proper completion patterns

@@ -136,7 +136,6 @@ const DatabaseResetButton = () => {
 
   // Haptic feedback functions for runOnJS
   const mediumHaptic = () => triggerMediumHapticSync();
-  const heavyHaptic = () => triggerHeavyHapticSync();
   const lightHaptic = () => triggerLightHapticSync();
 
   // Gesture handlers
@@ -160,10 +159,6 @@ const DatabaseResetButton = () => {
     });
 
   const confirmGesture = Gesture.Tap()
-    .onBegin(() => {
-      'worklet';
-      runOnJS(heavyHaptic)();
-    })
     .onFinalize(() => {
       'worklet';
       runOnJS(handleReset)();

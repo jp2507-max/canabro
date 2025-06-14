@@ -217,7 +217,7 @@ export default React.memo(function CommentItem({
       setLikesCount(previousCount);
 
       // Enhanced error feedback
-      await triggerErrorHaptic();
+      triggerErrorHaptic();
     } finally {
       setIsLiking(false);
     }
@@ -294,12 +294,12 @@ export default React.memo(function CommentItem({
             await supabase.rpc('decrement_comment_count', { post_id: postId }).throwOnError();
 
             // ✅ Success haptic feedback
-            await triggerSuccessHaptic();
+            triggerSuccessHaptic();
           } catch (error) {
             console.error('Error deleting comment:', error);
             Alert.alert('Error', 'Failed to delete comment. Please try again.');
             // ✅ Error haptic feedback
-            await triggerErrorHaptic();
+            triggerErrorHaptic();
           }
         },
       },

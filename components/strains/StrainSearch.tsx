@@ -1,4 +1,4 @@
-import * as Haptics from '@/lib/utils/haptics';
+import { triggerLightHapticSync } from '@/lib/utils/haptics';
 import React, { memo, useRef } from 'react';
 import { View, TextInput } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -29,7 +29,7 @@ const StrainSearch = memo<StrainSearchProps>(
     const clearGesture = Gesture.Tap()
       .onBegin(() => {
         clearHandlers.onPressIn();
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        triggerLightHapticSync();
       })
       .onFinalize(() => {
         clearHandlers.onPressOut();

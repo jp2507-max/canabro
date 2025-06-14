@@ -2,7 +2,6 @@
 
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
-import * as Haptics from '@/lib/utils/haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -36,7 +35,7 @@ import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
 import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
-import { triggerLightHaptic, triggerMediumHaptic, triggerHeavyHaptic, triggerSelectionHaptic } from '../../lib/utils/haptics';
+import { ImpactFeedbackStyle, triggerLightHaptic, triggerMediumHaptic, triggerHeavyHaptic } from '../../lib/utils/haptics';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
 import { KeyboardToolbar } from '../ui/KeyboardToolbar';
@@ -76,7 +75,7 @@ interface AnimatedActionButtonProps {
   className?: string;
   style?: any;
   accessibilityLabel?: string;
-  hapticStyle?: Haptics.ImpactFeedbackStyle;
+  hapticStyle?: ImpactFeedbackStyle;
 }
 
 const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
@@ -86,7 +85,7 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
   className = '',
   style,
   accessibilityLabel,
-  hapticStyle = Haptics.ImpactFeedbackStyle.Light,
+  hapticStyle = ImpactFeedbackStyle.Light,
 }) => {
   const scale = useSharedValue(1);
   const pressed = useSharedValue(0);
@@ -96,13 +95,13 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
     
     // Map haptic style to appropriate utility function
     switch (hapticStyle) {
-      case Haptics.ImpactFeedbackStyle.Light:
+      case ImpactFeedbackStyle.Light:
         triggerLightHaptic();
         break;
-      case Haptics.ImpactFeedbackStyle.Medium:
+      case ImpactFeedbackStyle.Medium:
         triggerMediumHaptic();
         break;
-      case Haptics.ImpactFeedbackStyle.Heavy:
+      case ImpactFeedbackStyle.Heavy:
         triggerHeavyHaptic();
         break;
       default:
@@ -554,7 +553,7 @@ function CommentModal({
                     onPress={onClose}
                     className="rounded-full p-2"
                     accessibilityLabel="Close comments"
-                    hapticStyle={Haptics.ImpactFeedbackStyle.Medium}>
+                    hapticStyle={ImpactFeedbackStyle.Medium}>
                     <OptimizedIcon
                       name="close"
                       size={24}
@@ -595,7 +594,7 @@ function CommentModal({
                             onPress={focusCommentInput}
                             className="mt-4 rounded-full bg-primary-500 px-5 py-2"
                             accessibilityLabel="Add Comment"
-                            hapticStyle={Haptics.ImpactFeedbackStyle.Medium}>
+                            hapticStyle={ImpactFeedbackStyle.Medium}>
                             <ThemedText className="font-medium text-white">Add Comment</ThemedText>
                           </AnimatedActionButton>
                         </ThemedView>
@@ -632,7 +631,7 @@ function CommentModal({
                             onPress={() => setSelectedImage(null)}
                             className="absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-full bg-black/50"
                             accessibilityLabel="Remove image"
-                            hapticStyle={Haptics.ImpactFeedbackStyle.Light}>
+                            hapticStyle={ImpactFeedbackStyle.Light}>
                             <OptimizedIcon name="close" size={16} className="text-white" />
                           </AnimatedActionButton>
                         </View>
@@ -662,7 +661,7 @@ function CommentModal({
                       disabled={isSubmitting || isUploading}
                       className="ml-2 rounded-full bg-neutral-300 p-2 dark:bg-neutral-700"
                       accessibilityLabel="Attach photo"
-                      hapticStyle={Haptics.ImpactFeedbackStyle.Light}>
+                      hapticStyle={ImpactFeedbackStyle.Light}>
                       <OptimizedIcon
                         name="camera"
                         size={18}
@@ -684,7 +683,7 @@ function CommentModal({
                             : '#10b981',
                       }}
                       accessibilityLabel="Send comment"
-                      hapticStyle={Haptics.ImpactFeedbackStyle.Medium}>
+                      hapticStyle={ImpactFeedbackStyle.Medium}>
                       {isSubmitting || isUploading ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (

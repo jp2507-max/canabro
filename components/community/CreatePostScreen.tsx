@@ -1,6 +1,5 @@
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
-import * as Haptics from '@/lib/utils/haptics';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -30,7 +29,7 @@ import { useAuth } from '../../lib/contexts/AuthProvider';
 import { createPost } from '../../lib/services/community-service'; // Import createPost
 import supabase from '../../lib/supabase'; // Import supabase client
 import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
-import { triggerMediumHapticSync, triggerLightHaptic } from '../../lib/utils/haptics';
+import { triggerMediumHapticSync, triggerLightHaptic } from '@/lib/utils/haptics';
 import { OptimizedIcon, type IconName } from '../ui/OptimizedIcon';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
 import { KeyboardToolbar } from '../ui/KeyboardToolbar';

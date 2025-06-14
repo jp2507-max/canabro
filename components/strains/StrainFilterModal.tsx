@@ -1,4 +1,4 @@
-import * as Haptics from '@/lib/utils/haptics';
+
 import React, { useState } from 'react';
 import { Modal, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -158,7 +158,7 @@ const AnimatedSelectionButton = React.memo<AnimatedSelectionButtonProps>(
           scale.value = withTiming(0.95, { duration: 100 });
         })();
         if (enableHaptics) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          triggerLightHaptic();
         }
       })
       .onFinalize(() => {
@@ -223,7 +223,7 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(
           shadowOpacity.value = withTiming(0.1, { duration: 100 });
         })();
         if (enableHaptics) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          triggerMediumHaptic();
         }
       })
       .onFinalize(() => {

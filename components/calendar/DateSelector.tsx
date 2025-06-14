@@ -70,12 +70,18 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
     if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
       return date.getTime();
     }
-    return Date.now(); // fallback – should never hit given our validation
+    return NaN; // surface the invalid state instead of silently correcting it
   }, [date]);
 
   // Wrapper to convert the timestamp coming from the UI thread back into a Date
   const handleSelect = useCallback(
     (timestamp: number) => {
+      // Bail out early for invalid timestamps
+      if (isNaN(timestamp)) {
+        console.warn('[DateSelector] Ignoring tap on invalid date item');
+        return;
+      }
+      
       const validDate = new Date(timestamp);
       if (!isNaN(validDate.getTime())) {
         onSelect(validDate);

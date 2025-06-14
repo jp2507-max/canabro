@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 
 import CalendarScreenView from './CalendarScreenView';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
@@ -24,13 +24,14 @@ function CalendarScreenContainer({
   const [isTaskActionsVisible, setTaskActionsVisible] = useState(false);
   const router = useRouter();
 
-  // Add validation for selectedDate prop
-  useEffect(() => {
+  // Normalize selectedDate with defensive fallback
+  const normalizedDate = useMemo(() => {
     if (!selectedDate || !(selectedDate instanceof Date) || isNaN(selectedDate.getTime())) {
-      console.error('[CalendarScreenContainer] Invalid selectedDate received:', selectedDate, 'Type:', typeof selectedDate);
-    } else {
-      console.log('[CalendarScreenContainer] Valid selectedDate:', selectedDate);
+      console.error('[CalendarScreenContainer] Invalid selectedDate received:', selectedDate, 'Type:', typeof selectedDate, '- falling back to current date');
+      return new Date();
     }
+    console.log('[CalendarScreenContainer] Valid selectedDate:', selectedDate);
+    return selectedDate;
   }, [selectedDate]);
 
   // Fetch tasks for the selected date and user
@@ -41,7 +42,7 @@ function CalendarScreenContainer({
       setTasks([]); // Placeholder
       setLoading(false);
     }, 500);
-  }, [selectedDate, userId]);
+  }, [normalizedDate, userId]);
 
   React.useEffect(() => {
     fetchTasks();
@@ -72,7 +73,7 @@ function CalendarScreenContainer({
       refreshing={refreshing}
       onRefresh={handleRefresh}
       setIsTaskActionsVisible={setIsTaskActionsVisible}
-      selectedDate={selectedDate}
+      selectedDate={normalizedDate}
       onDateSelect={onDateSelect}
       isTaskActionsVisible={isTaskActionsVisible}
       onOpenTaskActions={handleOpenTaskActions}
