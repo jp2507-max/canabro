@@ -2,10 +2,6 @@
 
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system'; // Import FileSystem
-<<<<<<< HEAD
-=======
-import * as Haptics from '@/lib/utils/haptics';
->>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';

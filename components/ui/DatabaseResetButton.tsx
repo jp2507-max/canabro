@@ -136,10 +136,7 @@ const DatabaseResetButton = () => {
 
   // Haptic feedback functions for runOnJS
   const mediumHaptic = () => triggerMediumHapticSync();
-<<<<<<< HEAD
-=======
   const heavyHaptic = () => triggerHeavyHapticSync();
->>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
   const lightHaptic = () => triggerLightHapticSync();
 
   // Gesture handlers

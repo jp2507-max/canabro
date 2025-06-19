@@ -195,10 +195,7 @@ export default function CreatePostModal({
 
     // JS-side: haptics + delayed close with cleanup (run on JS thread)
     runOnJS(triggerLightHapticSync)();
-<<<<<<< HEAD
     runOnJS(clearAllTimers)();
-=======
->>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
     runOnJS(safeSetTimeout)(onClose, 300);
   });
 
@@ -230,10 +227,7 @@ export default function CreatePostModal({
 
         // JS-side: haptics + delayed close with cleanup (run on JS thread)
         runOnJS(triggerMediumHapticSync)();
-<<<<<<< HEAD
         runOnJS(clearAllTimers)();
-=======
->>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
         runOnJS(safeSetTimeout)(onClose, 300);
       } else {
         // Snap back
@@ -246,10 +240,7 @@ export default function CreatePostModal({
   // 🎯 Enhanced Button Handlers with Haptic Feedback
   const handleSharePress = () => {
     triggerMediumHapticSync();
-<<<<<<< HEAD
     clearAllTimers();
-=======
->>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
     runOnUI(hideModal)();
     safeSetTimeout(() => {
       onClose();
@@ -259,10 +250,7 @@ export default function CreatePostModal({
 
   const handleQuestionPress = () => {
     triggerMediumHapticSync();
-<<<<<<< HEAD
     clearAllTimers();
-=======
->>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
     runOnUI(hideModal)();
     safeSetTimeout(() => {
       onClose();

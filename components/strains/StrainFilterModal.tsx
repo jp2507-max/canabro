@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 
-=======
-import * as Haptics from '@/lib/utils/haptics';
->>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
 import React, { useState } from 'react';
 import { Modal, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
