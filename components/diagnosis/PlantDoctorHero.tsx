@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { triggerLightHaptic, triggerMediumHaptic } from '@/lib/utils/haptics';
+=======
+import * as Haptics from '@/lib/utils/haptics';
+>>>>>>> 836c100a31ac4ff0e792a170abc189b8ac5195c0
 import React, { useEffect, useCallback } from 'react';
 import { View, Image, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
