@@ -53,6 +53,11 @@
 - Use **expo-image** for optimized image handling
 - Handle device permissions with latest Expo APIs
 
+## 🎛️ **Custom Components & Utilities**
+- Use custom **haptics** (`@/lib/utils/haptics`) for consistent tactile feedback across the app
+- Use **useEnhancedKeyboard** hook (`@/lib/hooks/useEnhancedKeyboard`) for advanced keyboard state management and input navigation
+- Use **EnhancedTextInput** component (`@/components/ui/EnhancedTextInput`) for complex forms with validation, character counting, and keyboard navigation support
+
 ## 📱 **Mobile-First Approach**
 - Use safe area management (`SafeAreaProvider`, safe area utilities)
 - Implement accessibility standards (a11y props, semantic elements)

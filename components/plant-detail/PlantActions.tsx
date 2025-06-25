@@ -137,7 +137,10 @@ function ActionItem({
 export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
   const handleGrowJournal = useCallback(() => {
     triggerMediumHaptic();
-    router.push(`/plant/diary/${plantId}`);
+    router.push({
+      pathname: '/(app)/plant/[id]/journal',
+      params: { id: plantId },
+    });
   }, [plantId]);
 
   const handleMetrics = useCallback(() => {

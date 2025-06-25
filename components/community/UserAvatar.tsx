@@ -42,7 +42,7 @@ export default function UserAvatar({
   accessibilityLabel?: string;
 }) {
   // 🖼️ Image Loading State Management
-  const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState(!uri || uri.trim() === '');
 
   // 🎬 Enhanced Animation System
   const scale = useSharedValue(1);
@@ -66,7 +66,7 @@ export default function UserAvatar({
 
   // 🔄 Reset error state when URI changes
   useEffect(() => {
-    setImageError(false);
+    setImageError(!uri || uri.trim() === '');
   }, [uri]);
 
   // ♻️ Cleanup animations on unmount
@@ -137,7 +137,9 @@ export default function UserAvatar({
         },
       ]}
       className="relative">
-      {!imageError ? (
+      {imageError || !uri || uri.trim() === '' ? (
+        <FallbackAvatar />
+      ) : (
         <Image
           source={{ uri }}
           style={{
@@ -150,8 +152,6 @@ export default function UserAvatar({
           accessibilityLabel={accessibilityLabel || 'User avatar'}
           onError={() => setImageError(true)}
         />
-      ) : (
-        <FallbackAvatar />
       )}
 
       {verified && (

@@ -146,22 +146,28 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       case NotificationType.HARVEST:
         // If we have a plantId, navigate to the plant detail screen
         if (plantId) {
-          router.push(`/plant/${plantId}`);
+          router.push({
+            pathname: '/(app)/plant/[id]',
+            params: { id: plantId },
+          });
         }
         break;
       case NotificationType.TASK_REMINDER:
         // For task reminders, navigate to the plant or diary screen
         if (plantId && taskId) {
           // Navigate to the plant detail screen
-          router.push(`/plant/${plantId}`);
+          router.push({
+            pathname: '/(app)/plant/[id]',
+            params: { id: plantId },
+          });
         } else if (taskId) {
-          // Navigate to the diary screen
-          router.push('/');
+          // Navigate to the diary screen (home tab)
+          router.push('/(app)/(tabs)');
         }
         break;
       default:
-        // For general notifications, navigate to diary screen
-        router.push('/');
+        // For general notifications, navigate to diary screen (home tab)
+        router.push('/(app)/(tabs)');
         break;
     }
   };

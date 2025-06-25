@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
-import React, { useEffect, useRef } from 'react';
-import { Modal, View, useWindowDimensions, Platform } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Modal, View, useWindowDimensions, Platform, Alert } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -11,6 +11,8 @@ import Animated, {
   runOnUI,
   runOnJS,
   interpolateColor as rInterpolateColor,
+  WithSpringConfig,
+  WithTimingConfig,
 } from 'react-native-reanimated';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
@@ -19,33 +21,164 @@ import {
   triggerLightHapticSync,
   triggerMediumHapticSync,
 } from '../../lib/utils/haptics';
+import { CreatePostBottomSheet, type PostData, type QuestionData } from './CreatePostBottomSheet';
+import { useAuth } from '../../lib/contexts/AuthProvider';
+import { createPost } from '../../lib/services/community-service';
 
 type CreatePostModalProps = {
   visible: boolean;
   onClose: () => void;
   onCreatePost: () => void;
   onAskQuestion: () => void;
+  modalVariant?: ModalVariant;
 };
 
-// 🎯 Production Animation Configurations
-const ANIMATION_CONFIG = {
-  backdrop: { damping: 20, stiffness: 300 },
-  modal: { damping: 18, stiffness: 350 },
-  stagger: { damping: 15, stiffness: 400 },
-  quick: { damping: 25, stiffness: 600 },
-} as const;
+// Enhanced modal with A/B testing support
+type ModalVariant = 'legacy' | 'bottomSheet';
+
+// Animation configuration constants
+const SPRING_CONFIG: WithSpringConfig = {
+  damping: 15,
+  stiffness: 300,
+  mass: 0.8,
+};
+
+const QUICK_SPRING: WithSpringConfig = {
+  damping: 15,
+  stiffness: 400,
+  mass: 0.5,
+};
+
+const BOUNCY_SPRING: WithSpringConfig = {
+  damping: 10,
+  stiffness: 200,
+  mass: 1,
+};
 
 const TIMING_CONFIG = {
-  backdrop: { duration: 300 },
-  modal: { duration: 400 },
-  stagger: { duration: 300 },
-} as const;
+  backdrop: { duration: 300 } as WithTimingConfig,
+  modal: { duration: 300 } as WithTimingConfig,
+  stagger: { duration: 200 } as WithTimingConfig,
+};
+
+const ANIMATION_CONFIG = {
+  modal: SPRING_CONFIG,
+  quick: QUICK_SPRING,
+  stagger: BOUNCY_SPRING,
+};
 
 /**
- * Enhanced CreatePostModal with sophisticated animations and gesture handling
- * Following production patterns from AddPlantModal for consistency
+ * Enhanced CreatePostModal with modern bottom sheet design
+ * Supports A/B testing between legacy modal and new bottom sheet
  */
-export default function CreatePostModal({
+const CreatePostModal = React.memo(function CreatePostModal({
+  visible,
+  onClose,
+  onCreatePost,
+  onAskQuestion,
+  modalVariant = 'bottomSheet',
+}: CreatePostModalProps) {
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Memoized user data for performance
+  const userData = useMemo(() => ({
+    avatarUrl: user?.user_metadata?.avatar_url,
+    userName: user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous',
+  }), [user?.user_metadata?.avatar_url, user?.user_metadata?.username, user?.email]);
+
+  // Enhanced error handling with proper error boundaries
+  const handleCreatePost = useCallback(async (data: PostData): Promise<void> => {
+    if (!user?.id || isSubmitting) {
+      throw new Error('User not authenticated or already submitting');
+    }
+
+    setIsSubmitting(true);
+    try {
+      const postData = {
+        user_id: user.id,
+        content: data.content,
+        image_url: data.image,
+      };
+
+      const result = await createPost(postData);
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Failed to create post');
+      }
+
+      // Trigger success callback
+      onCreatePost();
+    } catch (error) {
+      console.error('Error creating post:', error);
+      Alert.alert(
+        'Error',
+        'Failed to create post. Please check your connection and try again.',
+        [{ text: 'OK' }]
+      );
+      throw error; // Re-throw for the bottom sheet to handle
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [user?.id, isSubmitting, onCreatePost]);
+
+  // Handle questions as posts with question prefix
+  const handleCreateQuestion = useCallback(async (data: QuestionData): Promise<void> => {
+    if (!user?.id || isSubmitting) {
+      throw new Error('User not authenticated or already submitting');
+    }
+
+    setIsSubmitting(true);
+    try {
+      const questionContent = `**${data.title}**\n\n${data.content}`;
+      const postData = {
+        user_id: user.id,
+        content: questionContent,
+        image_url: data.image,
+      };
+
+      const result = await createPost(postData);
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Failed to create question');
+      }
+
+      // Trigger success callback
+      onAskQuestion();
+    } catch (error) {
+      console.error('Error creating question:', error);
+      Alert.alert(
+        'Error',
+        'Failed to post question. Please check your connection and try again.',
+        [{ text: 'OK' }]
+      );
+      throw error; // Re-throw for the bottom sheet to handle
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [user?.id, isSubmitting, onAskQuestion]);
+
+  // Modern bottom sheet implementation
+  if (modalVariant === 'bottomSheet') {
+    return (
+      <CreatePostBottomSheet
+        visible={visible}
+        onClose={onClose}
+        onCreatePost={handleCreatePost}
+        onCreateQuestion={handleCreateQuestion}
+        userAvatarUrl={userData.avatarUrl}
+        userName={userData.userName}
+      />
+    );
+  }
+
+  // Legacy modal fallback for A/B testing or compatibility
+  return <LegacyCreatePostModal {...{ visible, onClose, onCreatePost, onAskQuestion }} />;
+});
+
+/**
+ * Legacy modal implementation for backward compatibility
+ * Used for A/B testing or as fallback
+ */
+const LegacyCreatePostModal = React.memo(function LegacyCreatePostModal({
   visible,
   onClose,
   onCreatePost,
@@ -370,4 +503,6 @@ export default function CreatePostModal({
       </GestureDetector>
     </Modal>
   );
-}
+});
+
+export default CreatePostModal;

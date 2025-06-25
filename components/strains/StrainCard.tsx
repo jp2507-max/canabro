@@ -26,7 +26,10 @@ const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) =
     onTap: () => {
       // Announce navigation for screen readers
       AccessibilityInfo.announceForAccessibility(`Opening ${strain.name} details`);
-      router.push(`/catalog/${strain.id}`);
+      router.push({
+        pathname: '/(app)/catalog/[strain_id]',
+        params: { strain_id: strain.id },
+      });
     },
   });
 

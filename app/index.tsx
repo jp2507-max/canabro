@@ -18,7 +18,7 @@ const Index = () => {
   }
 
   // Once loading is complete, immediately redirect based on auth state.
-  return <Redirect href={user ? '/(tabs)' : '/(auth)/login'} />;
+  return <Redirect href={user ? '/(app)/(tabs)' : '/(auth)/login'} />;
 };
 
 export default Index;

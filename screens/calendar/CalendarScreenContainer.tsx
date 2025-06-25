@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 
 import CalendarScreenView from './CalendarScreenView';
 import usePullToRefresh from '../../lib/hooks/usePullToRefresh';
 import { PlantTask } from '../../lib/models/PlantTask';
+import { navigateToTaskRoute } from '../../lib/utils/taskNavigation';
 
 interface CalendarScreenContainerProps {
   selectedDate: Date;
@@ -54,16 +55,14 @@ function CalendarScreenContainer({
   function handleCloseTaskActions() {
     setTaskActionsVisible(false);
   }
+
   function handleAddTaskPlant() {
     setTaskActionsVisible(false);
-    router.push('/task/add' as any); // Added type assertion to handle path format
+    navigateToTaskRoute.addPlantTask(router, normalizedDate);
   }
   function handleAddTaskAll() {
     setTaskActionsVisible(false);
-    router.push({
-      pathname: '/task/add-all' as any, // Added type assertion to handle path format
-      params: { all: '1' },
-    });
+    navigateToTaskRoute.addTask(router, normalizedDate);
   }
 
   return (

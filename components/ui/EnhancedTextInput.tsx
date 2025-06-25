@@ -54,6 +54,7 @@ interface EnhancedTextInputProps extends TextInputProps {
   showCharacterCount?: boolean;
   maxLength?: number;
   inputAccessoryViewID?: string;
+  variant?: 'default' | 'post';
 }
 
 export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
@@ -77,6 +78,7 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
       inputAccessoryViewID,
       keyboardType = 'default',
       style,
+      variant = 'default',
       ...props
     },
     ref
@@ -113,19 +115,23 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
           ]
         ),
       };
-    });
-
-    const handleFocus = () => {
+    });    const handleFocus = () => {
       if (disabled) return;
 
-      inputScale.value = withSpring(1.02, { damping: 15 });
+      // Skip scaling for post variant
+      if (variant !== 'post') {
+        inputScale.value = withSpring(1.02, { damping: 15 });
+      }
       borderColor.value = withSpring(error ? 2 : 1, { duration: 200 });
       backgroundColor.value = withSpring(1, { duration: 200 });
       triggerLightHaptic();
     };
 
     const handleBlur = () => {
-      inputScale.value = withSpring(1, { damping: 15 });
+      // Skip scaling for post variant
+      if (variant !== 'post') {
+        inputScale.value = withSpring(1, { damping: 15 });
+      }
       borderColor.value = withSpring(getBorderColorState(), { duration: 200 });
       backgroundColor.value = withSpring(0, { duration: 200 });
     };
@@ -148,6 +154,58 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
     const characterCount = value?.length || 0;
     const isOverLimit = maxLength ? characterCount > maxLength : false;
 
+    // Post variant: borderless, minimal styling for bottom sheet
+    if (variant === 'post') {
+      return (
+        <ThemedView className="flex-1">
+          <TextInput
+            ref={ref}
+            className="min-h-[120px] flex-1 text-base font-normal text-neutral-900 dark:text-neutral-100"
+            placeholder={placeholder}
+            placeholderTextColor="#6D6D72"
+            value={value}
+            onChangeText={onChangeText}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onSubmitEditing={handleSubmitEditing}
+            multiline={true}
+            textAlignVertical="top"
+            returnKeyType="default"
+            blurOnSubmit={false}
+            editable={!disabled}
+            maxLength={maxLength}
+            inputAccessoryViewID={inputAccessoryViewID}
+            style={[
+              {
+                backgroundColor: 'transparent',
+                borderWidth: 0,
+                paddingHorizontal: 0,
+                paddingVertical: 0,
+                margin: 0,
+              },
+              style,
+            ]}
+            {...props}
+          />
+
+          {/* Character count for post variant */}
+          {showCharacterCount && maxLength && (
+            <ThemedView className="mt-2 flex-row justify-end">
+              <ThemedText
+                className={`text-xs ${
+                  isOverLimit
+                    ? 'text-red-500 dark:text-red-400'
+                    : 'text-neutral-500 dark:text-neutral-400'
+                }`}>
+                {`${characterCount}/${maxLength}`}
+              </ThemedText>
+            </ThemedView>
+          )}
+        </ThemedView>
+      );
+    }
+
+    // Default variant with full styling
     return (
       <ThemedView className="mb-4">
         {label && (
@@ -171,12 +229,10 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
               />
             </ThemedView>
           )}
-
           <TextInput
             ref={ref}
             className={`flex-1 text-base font-medium
-              text-neutral-900 placeholder:text-neutral-400
-              dark:text-neutral-100 dark:placeholder:text-neutral-500
+              placeholder:text-neutral-400 dark:placeholder:text-neutral-500
               ${leftIcon ? 'pl-2' : 'pl-4'}
               ${rightIcon ? 'pr-2' : 'pr-4'}
               ${multiline ? 'py-3' : 'py-0'}`}

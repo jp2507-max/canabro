@@ -416,41 +416,41 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
 };
 
 const styles = StyleSheet.create({
-  container: {
+  camera: {
     flex: 1,
-    backgroundColor: '#000',
   },
   cameraContainer: {
     flex: 1,
     overflow: 'hidden',
-  },
-  camera: {
-    flex: 1,
   },
   cameraContent: {
     flex: 1,
     justifyContent: 'space-between',
   },
   captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 40,
+    elevation: 8,
+    height: 80,
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
+    width: 80,
   },
   captureButtonInner: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
     backgroundColor: 'white',
-    borderWidth: 3,
     borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: 34,
+    borderWidth: 3,
+    height: 68,
+    width: 68,
+  },
+  container: {
+    backgroundColor: '#000',
+    flex: 1,
   },
 });
 

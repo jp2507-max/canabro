@@ -2,6 +2,41 @@ import supabase from '../supabase';
 import { Post, Comment } from '../types/community'; // Like is unused
 
 /**
+ * Database post record structure
+ */
+interface DBPost {
+  id: string;
+  user_id: string;
+  content: string;
+  image_url?: string;
+  likes_count?: number;
+  comments_count?: number;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    username?: string;
+    avatar_url?: string;
+  };
+}
+
+/**
+ * Database comment record structure
+ */
+interface DBComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  likes_count?: number;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    username?: string;
+    avatar_url?: string;
+  };
+}
+
+/**
  * Extended Comment interface with user information
  */
 interface CommentWithUser extends Comment {
@@ -15,7 +50,7 @@ interface CommentWithUser extends Comment {
 /**
  * Adapts a database post record to our frontend Post model
  */
-export function adaptPostFromDB(dbPost: any): Post {
+export function adaptPostFromDB(dbPost: DBPost): Post {
   return {
     id: dbPost.id,
     user_id: dbPost.user_id,
@@ -87,6 +122,28 @@ export async function getPosts({
 }
 
 /**
+ * Result type for createPost operation
+ */
+export interface CreatePostResult {
+  success: boolean;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+  data?: {
+    id: string;
+    user_id: string;
+    content: string;
+    image_url?: string;
+    likes_count: number;
+    comments_count: number;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+/**
  * Creates a new post
  */
 export async function createPost(post: {
@@ -95,11 +152,31 @@ export async function createPost(post: {
   image_url?: string;
   // plant_id?: string; // Removed - Doesn't exist in live schema (has plant_stage/strain instead)
   // is_public?: boolean; // Removed non-existent field from type definition
-}): Promise<boolean> {
-  // Changed return type to boolean for success/failure
+}): Promise<CreatePostResult> {
   try {
+    // Validate input
+    if (!post.user_id) {
+      return {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'User ID is required',
+        },
+      };
+    }
+
+    if (!post.content?.trim()) {
+      return {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Post content cannot be empty',
+        },
+      };
+    }
+
     // Perform insert without selecting the result
-    const { error } = await supabase.from('posts').insert([
+    const { data, error } = await supabase.from('posts').insert([
       {
         user_id: post.user_id,
         content: post.content,
@@ -109,20 +186,78 @@ export async function createPost(post: {
         likes_count: 0,
         comments_count: 0,
       },
-    ]);
-    // Removed .select().single()
+    ]).select().single();
 
     if (error) {
       console.error('Error during post insert:', error);
-      throw error; // Re-throw the error
+      
+      // Categorize different types of Supabase errors
+      let errorCode = 'DATABASE_ERROR';
+      let errorMessage = 'Failed to create post';
+
+      if (error.code === '23505') {
+        errorCode = 'DUPLICATE_ERROR';
+        errorMessage = 'A post with this content already exists';
+      } else if (error.code === '23503') {
+        errorCode = 'FOREIGN_KEY_ERROR';
+        errorMessage = 'Invalid user or plant reference';
+      } else if (error.code === '42501') {
+        errorCode = 'PERMISSION_ERROR';
+        errorMessage = 'You do not have permission to create posts';
+      } else if (error.code === 'PGRST301') {
+        errorCode = 'RLS_ERROR';
+        errorMessage = 'Access denied by security policy';
+      } else if (error.message?.includes('JWT')) {
+        errorCode = 'AUTH_ERROR';
+        errorMessage = 'Authentication token is invalid or expired';
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorCode = 'NETWORK_ERROR';
+        errorMessage = 'Network connection failed. Please check your internet connection';
+      }
+
+      return {
+        success: false,
+        error: {
+          code: errorCode,
+          message: errorMessage,
+          details: error,
+        },
+      };
     }
 
-    // If insert succeeded without error, return true
-    return true;
-  } catch (error) {
+    // If insert succeeded without error, return success
+    return {
+      success: true,
+      data,
+    };
+  } catch (error: unknown) {
     // Log the error but let the caller handle UI feedback
     console.error('Error in createPost function:', error);
-    return false; // Indicate failure
+    
+    // Handle unexpected errors
+    let errorCode = 'UNKNOWN_ERROR';
+    let errorMessage = 'An unexpected error occurred while creating the post';
+
+    if (error instanceof Error) {
+      if (error.name === 'TypeError' && error.message?.includes('fetch')) {
+        errorCode = 'NETWORK_ERROR';
+        errorMessage = 'Network connection failed. Please check your internet connection';
+      } else if (error.message?.includes('timeout')) {
+        errorCode = 'TIMEOUT_ERROR';
+        errorMessage = 'Request timed out. Please try again';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    return {
+      success: false,
+      error: {
+        code: errorCode,
+        message: errorMessage,
+        details: error,
+      },
+    };
   }
 }
 
@@ -188,7 +323,7 @@ export async function getComments(postId: string): Promise<CommentWithUser[]> {
 
     // Map the database results to the CommentWithUser interface
     const comments = (data || []).map(
-      (dbComment: any): CommentWithUser => ({
+      (dbComment: DBComment): CommentWithUser => ({
         // Use dbComment as parameter
         id: dbComment.id,
         post_id: dbComment.post_id,

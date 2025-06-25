@@ -11,13 +11,11 @@ import ThemedView from '@/components/ui/ThemedView';
 import { useAuth } from '@/lib/contexts/AuthProvider';
 import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
 import { useFilteredStrains, usePrefetchStrain } from '@/lib/hooks/strains/useStrainQueries';
-import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
 import { Strain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
 
 export function StrainsContainer() {
   // Call all hooks at the top level always
-  useProtectedRoute();
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;

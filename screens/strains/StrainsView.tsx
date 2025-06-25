@@ -511,7 +511,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   const renderStrainItem = useCallback(({ item }: { item: any }) => (
     <StrainCard
       item={item}
-      onPress={() => router.push(`/catalog/${item.id}`)}
+      onPress={() => router.push(`/(app)/catalog/${item.id}` as any)}
       isFavorite={checkIsFavorite(item.id ?? item._id)}
       onToggleFavorite={onToggleFavorite}
     />
@@ -620,7 +620,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
             variant="outlined"
             size="small"
             enableAnimation
-            onPress={() => router.push('/strains/favorites')}
+            onPress={() => router.push('/(app)/strains/favorites' as any)}
             className="ml-2">
             <OptimizedIcon name="heart" size={24} className="text-danger-500" />
           </AnimatedCard>

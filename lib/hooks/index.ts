@@ -4,9 +4,6 @@ import useWatermelon from './useWatermelon';
  * Export all hooks from a single entry point
  */
 
-// Authentication hooks
-export * from './useProtectedRoute';
-
 // Keyboard and UI hooks
 export * from './useEnhancedKeyboard';
 

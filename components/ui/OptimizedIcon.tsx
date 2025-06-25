@@ -133,6 +133,7 @@ const IconSVG = {
   search: '🔍',
   settings: '⚙️',
   pencil: '✏️',
+  'pencil-outline': '✏️',
   trash: '🗑️',
 
   // People and social
@@ -220,6 +221,16 @@ const IconSVG = {
 
   // Fallback
   default: '◦',
+
+  // Added missing icons used in StrainsView category chips
+  'white-balance-sunny': '☀️',
+  'moon-waning-crescent': '🌙',
+
+  // Social & emojis - newly added
+  'happy-outline': '😊',
+  'at-outline': '@',
+  'people-outline': '👥',
+  'lock-closed-outline': '🔒',
 } as const;
 
 // Icon labels for accessibility - cleaned up to match IconSVG
@@ -247,6 +258,7 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   search: 'Search',
   settings: 'Settings',
   pencil: 'Edit',
+  'pencil-outline': 'Edit',
   trash: 'Delete',
   person: 'Person',
   'person-circle-outline': 'Person profile',
@@ -314,7 +326,17 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
 
   loading1: 'Loading',
   default: 'Icon',
-};
+
+  // Added missing icons used in StrainsView category chips
+  'white-balance-sunny': 'Sunny',
+  'moon-waning-crescent': 'Moon',
+
+  // Social & emojis - newly added
+  'happy-outline': 'Happy',
+  'at-outline': 'At',
+  'people-outline': 'People',
+  'lock-closed-outline': 'Lock closed',
+} as const;
 
 type IconName = keyof typeof IconSVG;
 

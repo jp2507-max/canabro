@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { FlatList, View, RefreshControl } from 'react-native';
+import { FlatList, View, RefreshControl, Text } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -12,23 +12,24 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import CommentModal from '../../components/community/CommentModal';
-import CreatePostModal from '../../components/community/CreatePostModal';
+import { CreatePostBottomSheet, type PostData as CreatePostData, type QuestionData } from '../../components/community/CreatePostBottomSheet';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
 import PostItem from '../../components/community/PostItem';
 import type { PostData } from '../../components/community/PostItem';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
-import ThemedText from '../../components/ui/ThemedText';
 import { triggerMediumHapticSync } from '../../lib/utils/haptics';
+import { useAuth } from '../../lib/contexts/AuthProvider';
+import { createPost } from '../../lib/services/community-service';
 
 interface CommunityScreenViewProps {
   posts: PostData[];
   isLoading: boolean;
   isRefreshing: boolean;
-  isLoadingMore: boolean;
+  _isLoadingMore: boolean;
   fetchError: string | null;
-  activeFilter: 'trending' | 'following';
-  setActiveFilter: (filter: 'trending' | 'following') => void;
+  _activeFilter: 'trending' | 'following';
+  _setActiveFilter: (filter: 'trending' | 'following') => void;
   showCreateModal: boolean;
   setShowCreateModal: (show: boolean) => void;
   showCreateScreen: boolean;
@@ -38,8 +39,6 @@ interface CommunityScreenViewProps {
   handleLike: (postId: string, currentlyLiked: boolean) => void;
   handleCommentPress: (postId: string) => void;
   handleCloseComments: () => void;
-  handleCreatePost: () => void;
-  handleAskQuestion: () => void;
   handlePostCreated: () => void;
   handleRefresh: () => void;
   handleLoadMore: () => void;
@@ -51,10 +50,10 @@ function CommunityScreenView({
   posts,
   isLoading,
   isRefreshing,
-  isLoadingMore,
+  _isLoadingMore,
   fetchError,
-  activeFilter,
-  setActiveFilter,
+  _activeFilter,
+  _setActiveFilter,
   showCreateModal,
   setShowCreateModal,
   showCreateScreen,
@@ -64,14 +63,80 @@ function CommunityScreenView({
   handleLike,
   handleCommentPress,
   handleCloseComments,
-  handleCreatePost,
-  handleAskQuestion,
   handlePostCreated,
   handleRefresh,
   handleLoadMore,
   likingPostId,
   user,
 }: CommunityScreenViewProps) {
+  const { user: authUser } = useAuth();
+
+  // Create post handler for the bottom sheet
+  const handleCreatePost = async (data: CreatePostData): Promise<void> => {
+    if (!authUser?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    const postData = {
+      user_id: authUser.id,
+      content: data.content,
+      image_url: data.image,
+    };
+
+    const result = await createPost(postData);
+    if (!result.success) {
+      // Throw specific error with detailed information
+      const errorMessage = result.error?.message || 'Failed to create post';
+      const errorCode = result.error?.code || 'UNKNOWN_ERROR';
+      
+      // Log detailed error information for debugging
+      console.error('Post creation failed:', {
+        code: errorCode,
+        message: errorMessage,
+        details: result.error?.details,
+      });
+      
+      throw new Error(`${errorMessage} (${errorCode})`);
+    }
+
+    // Close modal and refresh
+    setShowCreateModal(false);
+    handlePostCreated();
+  };
+
+  // Create question handler for the bottom sheet
+  const handleCreateQuestion = async (data: QuestionData): Promise<void> => {
+    if (!authUser?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    const questionContent = `**${data.title}**\n\n${data.content}`;
+    const postData = {
+      user_id: authUser.id,
+      content: questionContent,
+      image_url: data.image,
+    };
+
+    const result = await createPost(postData);
+    if (!result.success) {
+      // Throw specific error with detailed information
+      const errorMessage = result.error?.message || 'Failed to create question';
+      const errorCode = result.error?.code || 'UNKNOWN_ERROR';
+      
+      // Log detailed error information for debugging
+      console.error('Question creation failed:', {
+        code: errorCode,
+        message: errorMessage,
+        details: result.error?.details,
+      });
+      
+      throw new Error(`${errorMessage} (${errorCode})`);
+    }
+
+    // Close modal and refresh
+    setShowCreateModal(false);
+    handlePostCreated();
+  };
   // 🎬 Enhanced Animation System with Entrance Sequences
   const containerOpacity = useSharedValue(0);
   const fabScale = useSharedValue(0);
@@ -148,12 +213,12 @@ function CommunityScreenView({
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(600).duration(500)}>
-          <ThemedText className="mb-3 text-center text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+          <Text className="mb-3 text-center text-2xl font-bold text-neutral-900 dark:text-neutral-100">
             No Posts Yet
-          </ThemedText>
-          <ThemedText className="mb-8 text-center text-lg leading-6 text-neutral-600 dark:text-neutral-400">
+          </Text>
+          <Text className="mb-8 text-center text-lg leading-6 text-neutral-600 dark:text-neutral-400">
             Be the first to share your plants or ask a question!
-          </ThemedText>
+          </Text>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(800).duration(500)}>
@@ -181,9 +246,9 @@ function CommunityScreenView({
               className="text-primary-600 dark:text-primary-400"
             />
           </View>
-          <ThemedText className="text-lg font-medium text-neutral-600 dark:text-neutral-400">
+          <Text className="text-lg font-medium text-neutral-600 dark:text-neutral-400">
             Loading posts...
-          </ThemedText>
+          </Text>
         </View>
       </Animated.View>
     ),
@@ -203,12 +268,12 @@ function CommunityScreenView({
               className="text-red-600 dark:text-red-400"
             />
           </View>
-          <ThemedText className="mb-2 text-center text-xl font-bold text-neutral-900 dark:text-neutral-100">
+          <Text className="mb-2 text-center text-xl font-bold text-neutral-900 dark:text-neutral-100">
             Something went wrong
-          </ThemedText>
-          <ThemedText className="mb-6 text-center text-base text-neutral-600 dark:text-neutral-400">
+          </Text>
+          <Text className="mb-6 text-center text-base text-neutral-600 dark:text-neutral-400">
             {fetchError || 'Failed to load posts. Please try again.'}
-          </ThemedText>
+          </Text>
           <FloatingActionButton
             onPress={handleRefresh}
             iconName="camera-flip-outline"
@@ -276,12 +341,14 @@ function CommunityScreenView({
         </>
       )}
 
-      {/* 🎯 Enhanced Create Post Modal */}
-      <CreatePostModal
+      {/* Enhanced Create Post Bottom Sheet */}
+      <CreatePostBottomSheet
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreatePost={handleCreatePost}
-        onAskQuestion={handleAskQuestion}
+        onCreateQuestion={handleCreateQuestion}
+        userAvatarUrl={authUser?.user_metadata?.avatar_url || ''}
+        userName={authUser?.user_metadata?.username || authUser?.email?.split('@')[0] || 'Anonymous'}
       />
 
       {/* Create Post Screen */}

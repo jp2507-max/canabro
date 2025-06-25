@@ -4,13 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CommunityScreenView from './CommunityScreenView';
 import type { PostData } from '../../components/community/PostItem';
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { useProtectedRoute } from '../../lib/hooks/useProtectedRoute';
 import supabase from '../../lib/supabase';
 
 const PAGE_SIZE = 10;
 
 function CommunityScreenContainer() {
-  useProtectedRoute();
   const { user, session } = useAuth();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -104,16 +102,6 @@ function CommunityScreenContainer() {
     setSelectedPostId(null);
   }, []);
 
-  const handleCreatePost = useCallback(() => {
-    setShowCreateModal(false);
-    setShowCreateScreen(true);
-  }, []);
-
-  const handleAskQuestion = useCallback(() => {
-    setShowCreateModal(false);
-    setShowCreateScreen(true);
-  }, []);
-
   const handlePostCreated = useCallback(() => {
     setShowCreateScreen(false);
     handleRefresh();
@@ -125,10 +113,10 @@ function CommunityScreenContainer() {
         posts={posts}
         isLoading={isLoading}
         isRefreshing={isRefreshing}
-        isLoadingMore={isLoadingMore}
+        _isLoadingMore={isLoadingMore}
         fetchError={fetchError}
-        activeFilter={activeFilter}
-        setActiveFilter={setActiveFilter}
+        _activeFilter={activeFilter}
+        _setActiveFilter={setActiveFilter}
         showCreateModal={showCreateModal}
         setShowCreateModal={setShowCreateModal}
         showCreateScreen={showCreateScreen}
@@ -138,8 +126,6 @@ function CommunityScreenContainer() {
         handleLike={handleLike}
         handleCommentPress={handleCommentPress}
         handleCloseComments={handleCloseComments}
-        handleCreatePost={handleCreatePost}
-        handleAskQuestion={handleAskQuestion}
         handlePostCreated={handlePostCreated}
         handleRefresh={handleRefresh}
         handleLoadMore={handleLoadMore}

@@ -163,72 +163,95 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 12,
-    backgroundColor: 'rgba(255, 200, 0, 0.2)',
-    borderRadius: 6,
-    marginVertical: 8,
-    marginHorizontal: 12,
+  actionButton: {
+    alignItems: 'center',
+    backgroundColor: '#ff3b30',
+    borderRadius: 8,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    width: '100%',
   },
-  title: {
+  actionButtonText: {
+    color: 'white',
     fontWeight: 'bold',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  detail: {
-    fontSize: 12,
-    marginBottom: 2,
   },
   button: {
+    alignItems: 'center',
     backgroundColor: '#0066cc',
-    padding: 8,
     borderRadius: 4,
     marginTop: 8,
-    alignItems: 'center',
+    padding: 8,
+  },
+  buttonSection: {
+    marginBottom: 20,
+    width: '100%',
   },
   buttonText: {
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
   },
-  miniContainer: {
+  closeButton: {
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+    marginTop: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  closeButtonText: {
+    color: '#333',
+    fontWeight: '500',
+  },
+  container: {
+    backgroundColor: 'rgba(255, 200, 0, 0.2)',
+    borderRadius: 6,
+    marginHorizontal: 12,
+    marginVertical: 8,
+    padding: 12,
+  },
+  detail: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  indicator: {
+    backgroundColor: 'rgba(255, 0, 0, 0.6)',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     position: 'absolute',
-    top: 8,
-    right: 8,
+    right: 10,
+    zIndex: 1000,
+  },
+  indicatorText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  miniContainer: {
     backgroundColor: 'rgba(255, 200, 0, 0.6)',
     borderRadius: 4,
     padding: 4,
+    position: 'absolute',
+    right: 8,
+    top: 8,
     zIndex: 999,
   },
   miniText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
-  indicator: {
-    position: 'absolute',
-    right: 10,
-    backgroundColor: 'rgba(255, 0, 0, 0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    zIndex: 1000,
-  },
-  indicatorText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 10,
-  },
   modalBackdrop: {
+    alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
   },
   modalContent: {
-    width: '80%',
+    alignItems: 'center',
     backgroundColor: 'white',
     borderRadius: 16,
+    elevation: 5,
     padding: 24,
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -236,46 +259,23 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5,
+    width: '80%',
   },
   modalTitle: {
+    color: '#333',
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
-  },
-  buttonSection: {
-    width: '100%',
-    marginBottom: 20,
   },
   sectionTitle: {
+    color: '#555',
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#555',
   },
-  actionButton: {
-    backgroundColor: '#ff3b30',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 10,
-    width: '100%',
-    alignItems: 'center',
-  },
-  actionButtonText: {
-    color: 'white',
+  title: {
+    fontSize: 14,
     fontWeight: 'bold',
-  },
-  closeButton: {
-    backgroundColor: '#e0e0e0',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  closeButtonText: {
-    color: '#333',
-    fontWeight: '500',
+    marginBottom: 4,
   },
 });

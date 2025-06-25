@@ -322,7 +322,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
         // Add plant_id or is_public if needed
       });
 
-      if (newPost === true) {
+      if (newPost.success === true) {
         // Check for boolean true instead of accessing .id
         console.log('Post created successfully.'); // Updated log message
         setContent(''); // Clear content

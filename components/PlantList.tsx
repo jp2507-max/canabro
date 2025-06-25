@@ -76,7 +76,10 @@ const PlantListComponent = React.memo(({
 
   const handlePress = React.useCallback(
     (plantId: string) => {
-      router.push(`/plant/${plantId}`);
+      router.push({
+        pathname: '/(app)/plant/[id]',
+        params: { id: plantId },
+      });
     },
     [router]
   );
