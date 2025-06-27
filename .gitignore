@@ -2,8 +2,10 @@
 .env
 .env.*
 
-# VSCode
+# VSCode & MCP
 .vscode/mcp.json
+.cursor/mcp.json
+mcp.json
 
 # Dependencies
 node_modules/
