@@ -142,14 +142,19 @@ export function CreatePostBottomSheet({
     screenHeight - insets.top - 20 // 20px top margin
   );
 
-  // Reset form when mode changes
+  // Reset form when mode changes – skip first render to avoid unintended keyboard hide
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setContent('');
     setQuestionTitle('');
     setImage(null);
     setLocation(null);
-    dismissKeyboard();
-  }, [mode, dismissKeyboard]);
+    // Do NOT force-dismiss here; user may still be typing
+  }, [mode]);
 
   // Handle modal visibility changes
   useEffect(() => {

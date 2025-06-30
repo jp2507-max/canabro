@@ -102,9 +102,20 @@ export const useEnhancedKeyboard = (
     return false;
   };
 
+  // Avoid spamming Keyboard.dismiss when the keyboard is already hidden
+  const lastVisibility = useRef(isKeyboardVisible);
+
+  useEffect(() => {
+    lastVisibility.current = isKeyboardVisible;
+  }, [isKeyboardVisible]);
+
   const dismissKeyboard = () => {
+    if (!lastVisibility.current) {
+      // Keyboard already hidden – no action needed
+      return;
+    }
     Keyboard.dismiss();
-    // Don't reset currentIndex to 0 immediately, let keyboard hide handle it
+    // Don't reset currentIndex to 0 immediately; let keyboardHide event handle cleanup
   };
 
   // Helper methods for external use
