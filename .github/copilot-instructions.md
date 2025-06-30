@@ -1,6 +1,7 @@
 ---
 applyTo: "**"
 ---
+
 # You are an expert in TypeScript, React Native, Expo, and Mobile UI development.
 
 ## 🎯 **Core Technologies (2025)**
