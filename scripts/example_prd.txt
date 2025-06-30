@@ -1,0 +1,72 @@
+# Canabro - Cannabis Growing Assistant App (PRD)
+
+## Executive Summary
+Canabro is a mobile application designed to help cannabis enthusiasts track, manage, and optimize their growing process. The app provides strain information, personalized growing schedules, plant diary features, community interactions, and diagnostic tools.
+
+## Product Vision
+To be the all-in-one mobile companion for cannabis growers, combining education, tracking, community, and AI-powered diagnostics in a beautifully designed, user-friendly interface built with React Native and Expo.
+
+## User Personas
+1. **Novice Home Grower** - Needs guidance, education, and simple tracking features
+2. **Experienced Cultivator** - Wants detailed logging, optimal strain information, and advanced features
+3. **Medical Cannabis Patient** - Focused on specific strains for medical purposes, needs quality tracking
+
+## Core Features
+
+### Strain Catalog & Information
+- Comprehensive strain database with effects, flavors, growing difficulties
+- Favorite strains feature for quick access
+- Detailed growing parameters per strain
+
+### My Plants Dashboard
+- Add, track, and manage multiple plants
+- Growth stage tracking and visualization
+- Current status and health indicators
+
+### Plant Diary
+- Log entries with customizable parameters (watering, nutrients, observations)
+- Photo timeline of plant development
+- Notes and custom fields for personalized tracking
+
+### Community Features
+- User forums organized by growing topics
+- Post and comment on growing experiences
+- Share diary entries (optional) with the community
+
+### Schedule & Tasks
+- Automated task generation based on plant stage
+- Calendar view with upcoming tasks
+- Notifications for time-sensitive actions
+
+### AI-Powered Diagnostics
+- Issue detection through photo analysis
+- Treatment recommendations
+- Historical tracking of plant health issues
+
+### User Profile
+- Growing statistics
+- Achievements and milestones
+- Experience level progression
+
+## Technical Requirements
+- React Native with Expo for cross-platform deployment
+- TypeScript for code quality and developer experience
+- NativeWind for styling components
+- Supabase for backend services and authentication
+- Local storage for offline functionality
+- Optimized image handling with efficient storage
+- Support for iOS and Android devices
+
+## Success Metrics
+- User retention rate
+- Number of plants tracked to harvest
+- Community engagement metrics
+- Diagnostic tool usage and accuracy
+- App store ratings and user feedback
+
+## Timeline and Priorities
+1. Core plant tracking and strain information features
+2. Diary and task management functionality
+3. Community features implementation
+4. AI diagnostics integration
+5. Polishing, performance optimization, and extended strain database

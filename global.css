@@ -1,0 +1,409 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* NativeWind v4 Configuration */
+@cssInterop set darkMode class dark;
+@cssInterop set nativewind;
+
+/* CSS Variables for Dynamic Theming - NativeWind v4 Best Practices */
+:root {
+  /* Primary palette */
+  --color-primary-50: 240 253 244;
+  --color-primary-100: 220 252 231;
+  --color-primary-200: 187 247 208;
+  --color-primary-300: 134 239 172;
+  --color-primary-400: 74 222 128;
+  --color-primary-500: 22 163 74;
+  --color-primary-600: 5 150 105;
+  --color-primary-700: 4 120 87;
+  --color-primary-800: 6 95 70;
+  --color-primary-900: 6 78 59;
+
+  /* Neutral palette */
+  --color-neutral-50: 253 251 247;
+  --color-neutral-100: 251 246 239;
+  --color-neutral-200: 245 234 220;
+  --color-neutral-300: 233 216 192;
+  --color-neutral-400: 211 191 168;
+  --color-neutral-500: 184 161 138;
+  --color-neutral-600: 156 132 110;
+  --color-neutral-700: 127 106 86;
+  --color-neutral-800: 97 81 65;
+  --color-neutral-900: 75 63 51;
+  /* Complete Red palette */
+  --color-red-50: 254 242 242;
+  --color-red-100: 254 226 226;
+  --color-red-200: 254 202 202;
+  --color-red-300: 252 165 165;
+  --color-red-400: 248 113 113;
+  --color-red-500: 239 68 68;
+  --color-red-600: 220 38 38;
+  --color-red-700: 185 28 28;
+  --color-red-800: 153 27 27;
+  --color-red-900: 127 29 29;
+  --color-red-950: 69 10 10;
+
+  /* Complete Green palette */
+  --color-green-50: 240 253 244;
+  --color-green-100: 220 252 231;
+  --color-green-200: 187 247 208;
+  --color-green-300: 134 239 172;
+  --color-green-400: 74 222 128;
+  --color-green-500: 34 197 94;
+  --color-green-600: 22 163 74;
+  --color-green-700: 21 128 61;
+  --color-green-800: 22 101 52;
+  --color-green-900: 20 83 45;
+  --color-green-950: 5 46 22;
+
+  /* Complete Amber palette */
+  --color-amber-50: 255 251 235;
+  --color-amber-100: 254 243 199;
+  --color-amber-200: 253 230 138;
+  --color-amber-300: 252 211 77;
+  --color-amber-400: 251 191 36;
+  --color-amber-500: 245 158 11;
+  --color-amber-600: 217 119 6;
+  --color-amber-700: 180 83 9;
+  --color-amber-800: 146 64 14;
+  --color-amber-900: 120 53 15;
+  --color-amber-950: 69 26 3;
+
+  /* Complete Blue palette */
+  --color-blue-50: 239 246 255;
+  --color-blue-100: 219 234 254;
+  --color-blue-200: 191 219 254;
+  --color-blue-300: 147 197 253;
+  --color-blue-400: 96 165 250;
+  --color-blue-500: 59 130 246;
+  --color-blue-600: 37 99 235;
+  --color-blue-700: 29 78 216;
+  --color-blue-800: 30 64 175;
+  --color-blue-900: 30 58 138;
+  --color-blue-950: 23 37 84;
+
+  /* Purple Palette (indica, feeding) */
+  --color-purple-50: 250 245 255;
+  --color-purple-100: 243 232 255;
+  --color-purple-200: 233 213 255;
+  --color-purple-300: 216 180 254;
+  --color-purple-400: 196 181 253;
+  --color-purple-500: 168 85 247;
+  --color-purple-600: 147 51 234;
+  --color-purple-700: 126 34 206;
+  --color-purple-800: 107 33 168;
+  --color-purple-900: 88 28 135;
+
+  /* Violet Palette (feeding specific) */
+  --color-violet-50: 250 245 255;
+  --color-violet-100: 243 232 255;
+  --color-violet-200: 233 213 255;
+  --color-violet-300: 216 180 254;
+  --color-violet-400: 196 181 253;
+  --color-violet-500: 139 92 246;
+  --color-violet-600: 124 58 237;
+  --color-violet-700: 109 40 217;
+  --color-violet-800: 91 33 182;
+  --color-violet-900: 76 29 149;
+
+  /* Orange Palette (sativa) */
+  --color-orange-50: 255 247 237;
+  --color-orange-100: 255 237 213;
+  --color-orange-200: 254 215 170;
+  --color-orange-300: 253 186 116;
+  --color-orange-400: 251 146 60;
+  --color-orange-500: 249 115 22;
+  --color-orange-600: 234 88 12;
+  --color-orange-700: 194 65 12;
+  --color-orange-800: 154 52 18;
+  --color-orange-900: 124 45 18;
+
+  /* Cyan Palette (ruderalis) */
+  --color-cyan-50: 236 254 255;
+  --color-cyan-100: 207 250 254;
+  --color-cyan-200: 165 243 252;
+  --color-cyan-300: 103 232 249;
+  --color-cyan-400: 34 211 238;
+  --color-cyan-500: 6 182 212;
+  --color-cyan-600: 8 145 178;
+  --color-cyan-700: 14 116 144;
+  --color-cyan-800: 21 94 117;
+  --color-cyan-900: 22 78 99;
+
+  /* Rose Palette (favorite) */
+  --color-rose-50: 255 241 242;
+  --color-rose-100: 255 228 230;
+  --color-rose-200: 254 205 211;
+  --color-rose-300: 253 164 175;
+  --color-rose-400: 251 113 133;
+  --color-rose-500: 244 63 94;
+  --color-rose-600: 225 29 72;
+  --color-rose-700: 190 18 60;
+  --color-rose-800: 159 18 57;
+  --color-rose-900: 136 19 55;
+
+  /* Slate Palette (muted) */
+  --color-slate-50: 248 250 252;
+  --color-slate-100: 241 245 249;
+  --color-slate-200: 226 232 240;
+  --color-slate-300: 203 213 225;
+  --color-slate-400: 148 163 184;
+  --color-slate-500: 100 116 139;
+  --color-slate-600: 71 85 105;
+  --color-slate-700: 51 65 85;
+  --color-slate-800: 30 41 59;
+  --color-slate-900: 15 23 42;
+
+  /* Semantic Color Aliases - Light Mode */
+  --color-success-50: 240 253 244;
+  --color-success-100: 220 252 231;
+  --color-success-200: 187 247 208;
+  --color-success-300: 134 239 172;
+  --color-success-400: 74 222 128;
+  --color-success-500: 34 197 94;
+  --color-success-600: 22 163 74;
+  --color-success-700: 21 128 61;
+  --color-success-800: 22 101 52;
+  --color-success-900: 20 83 45;
+
+  --color-danger-50: 254 242 242;
+  --color-danger-100: 254 226 226;
+  --color-danger-200: 254 202 202;
+  --color-danger-300: 252 165 165;
+  --color-danger-400: 248 113 113;
+  --color-danger-500: 239 68 68;
+  --color-danger-600: 220 38 38;
+  --color-danger-700: 185 28 28;
+  --color-danger-800: 153 27 27;
+  --color-danger-900: 127 29 29;
+
+  --color-warning-50: 255 251 235;
+  --color-warning-100: 254 243 199;
+  --color-warning-200: 253 230 138;
+  --color-warning-300: 252 211 77;
+  --color-warning-400: 251 191 36;
+  --color-warning-500: 245 158 11;
+  --color-warning-600: 217 119 6;
+  --color-warning-700: 180 83 9;
+  --color-warning-800: 146 64 14;
+  --color-warning-900: 120 53 15;
+
+  --color-info-50: 239 246 255;
+  --color-info-100: 219 234 254;
+  --color-info-200: 191 219 254;
+  --color-info-300: 147 197 253;
+  --color-info-400: 96 165 250;
+  --color-info-500: 59 130 246;
+  --color-info-600: 37 99 235;
+  --color-info-700: 29 78 216;
+  --color-info-800: 30 64 175;
+  --color-info-900: 30 58 138;
+
+  /* Strain Type Color Aliases - Light Mode */
+  --color-indica-50: var(--color-purple-50);
+  --color-indica-100: var(--color-purple-100);
+  --color-indica-200: var(--color-purple-200);
+  --color-indica-300: var(--color-purple-300);
+  --color-indica-400: var(--color-purple-400);
+  --color-indica-500: var(--color-purple-500);
+  --color-indica-600: var(--color-purple-600);
+  --color-indica-700: var(--color-purple-700);
+  --color-indica-800: var(--color-purple-800);
+  --color-indica-900: var(--color-purple-900);
+
+  --color-sativa-50: var(--color-orange-50);
+  --color-sativa-100: var(--color-orange-100);
+  --color-sativa-200: var(--color-orange-200);
+  --color-sativa-300: var(--color-orange-300);
+  --color-sativa-400: var(--color-orange-400);
+  --color-sativa-500: var(--color-orange-500);
+  --color-sativa-600: var(--color-orange-600);
+  --color-sativa-700: var(--color-orange-700);
+  --color-sativa-800: var(--color-orange-800);
+  --color-sativa-900: var(--color-orange-900);
+
+  --color-hybrid-50: 240 253 244;
+  --color-hybrid-100: 220 252 231;
+  --color-hybrid-200: 187 247 208;
+  --color-hybrid-300: 134 239 172;
+  --color-hybrid-400: 74 222 128;
+  --color-hybrid-500: 34 197 94;
+  --color-hybrid-600: 22 163 74;
+  --color-hybrid-700: 21 128 61;
+  --color-hybrid-800: 22 101 52;
+  --color-hybrid-900: 20 83 45;
+
+  --color-ruderalis-50: var(--color-cyan-50);
+  --color-ruderalis-100: var(--color-cyan-100);
+  --color-ruderalis-200: var(--color-cyan-200);
+  --color-ruderalis-300: var(--color-cyan-300);
+  --color-ruderalis-400: var(--color-cyan-400);
+  --color-ruderalis-500: var(--color-cyan-500);
+  --color-ruderalis-600: var(--color-cyan-600);
+  --color-ruderalis-700: var(--color-cyan-700);
+  --color-ruderalis-800: var(--color-cyan-800);
+  --color-ruderalis-900: var(--color-cyan-900);
+
+  /* Special Activity Color Aliases - Light Mode */
+  --color-watering-50: 239 246 255;
+  --color-watering-100: 219 234 254;
+  --color-watering-200: 191 219 254;
+  --color-watering-300: 147 197 253;
+  --color-watering-400: 96 165 250;
+  --color-watering-500: 59 130 246;
+  --color-watering-600: 37 99 235;
+  --color-watering-700: 29 78 216;
+  --color-watering-800: 30 64 175;
+  --color-watering-900: 30 58 138;
+
+  --color-feeding-50: var(--color-violet-50);
+  --color-feeding-100: var(--color-violet-100);
+  --color-feeding-200: var(--color-violet-200);
+  --color-feeding-300: var(--color-violet-300);
+  --color-feeding-400: var(--color-violet-400);
+  --color-feeding-500: var(--color-violet-500);
+  --color-feeding-600: var(--color-violet-600);
+  --color-feeding-700: var(--color-violet-700);
+  --color-feeding-800: var(--color-violet-800);
+  --color-feeding-900: var(--color-violet-900);
+
+  --color-harvesting-50: 255 251 235;
+  --color-harvesting-100: 254 243 199;
+  --color-harvesting-200: 253 230 138;
+  --color-harvesting-300: 252 211 77;
+  --color-harvesting-400: 251 191 36;
+  --color-harvesting-500: 245 158 11;
+  --color-harvesting-600: 217 119 6;
+  --color-harvesting-700: 180 83 9;
+  --color-harvesting-800: 146 64 14;
+  --color-harvesting-900: 120 53 15;
+
+  /* Semantic UI Color Aliases - Light Mode */
+  --color-favorite-50: var(--color-rose-50);
+  --color-favorite-100: var(--color-rose-100);
+  --color-favorite-200: var(--color-rose-200);
+  --color-favorite-300: var(--color-rose-300);
+  --color-favorite-400: var(--color-rose-400);
+  --color-favorite-500: var(--color-rose-500);
+  --color-favorite-600: var(--color-rose-600);
+  --color-favorite-700: var(--color-rose-700);
+  --color-favorite-800: var(--color-rose-800);
+  --color-favorite-900: var(--color-rose-900);
+
+  --color-muted-50: var(--color-slate-50);
+  --color-muted-100: var(--color-slate-100);
+  --color-muted-200: var(--color-slate-200);
+  --color-muted-300: var(--color-slate-300);
+  --color-muted-400: var(--color-slate-400);
+  --color-muted-500: var(--color-slate-500);
+  --color-muted-600: var(--color-slate-600);
+  --color-muted-700: var(--color-slate-700);
+  --color-muted-800: var(--color-slate-800);
+  --color-muted-900: var(--color-slate-900);
+
+}
+
+/* Dark mode color overrides */
+.dark {
+  --color-primary-50: 13 47 35;
+  --color-primary-100: 17 58 44;
+  --color-primary-200: 23 76 58;
+  --color-primary-300: 34 108 84;
+  --color-primary-400: 46 140 109;
+  --color-primary-500: 22 163 74;
+  --color-primary-600: 5 150 105;
+  --color-primary-700: 4 120 87;
+  --color-primary-800: 6 95 70;
+  --color-primary-900: 6 78 59;
+
+  --color-neutral-50: 75 63 51;
+  --color-neutral-100: 97 81 65;
+  --color-neutral-200: 127 106 86;
+  --color-neutral-300: 156 132 110;
+  --color-neutral-400: 184 161 138;
+  --color-neutral-500: 211 191 168;
+  --color-neutral-600: 233 216 192;
+  --color-neutral-700: 245 234 220;
+  --color-neutral-800: 251 246 239;
+  --color-neutral-900: 253 251 247;
+}
+
+/* Common utility classes */
+.btn-primary {
+  @apply bg-primary-500 text-white rounded-lg px-4 py-2 font-semibold;
+}
+
+.btn-secondary {
+  @apply bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 rounded-lg px-4 py-2 font-semibold;
+}
+
+.card {
+  @apply bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700;
+}
+
+/* Safe area utilities */
+.h-screen-safe {
+  height: 100vh;
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+
+.pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Animation classes */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
