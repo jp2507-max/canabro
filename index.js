@@ -40,10 +40,4 @@ if (process.env.NODE_ENV !== 'production') {
 // Enable screens after gesture handler but before other components
 enableScreens();
 
-// Development-only keyboard visibility & dismissal logger
-if (__DEV__) {
-  console.log('[index] attaching keyboard-dismiss debugger');
-  require('./lib/utils/keyboard-debug');
-}
-
 import 'expo-router/entry';

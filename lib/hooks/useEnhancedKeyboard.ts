@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Keyboard, KeyboardEventListener, Platform } from 'react-native';
 
 export interface EnhancedKeyboardState {
@@ -102,15 +102,8 @@ export const useEnhancedKeyboard = (
     return false;
   };
 
-  // Avoid spamming Keyboard.dismiss when the keyboard is already hidden
-  const lastVisibility = useRef(isKeyboardVisible);
-
-  useEffect(() => {
-    lastVisibility.current = isKeyboardVisible;
-  }, [isKeyboardVisible]);
-
   const dismissKeyboard = () => {
-    if (!lastVisibility.current) {
+    if (!isKeyboardVisible) {
       // Keyboard already hidden – no action needed
       return;
     }
