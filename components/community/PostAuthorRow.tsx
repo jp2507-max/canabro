@@ -38,9 +38,9 @@ const SPRING_CONFIG = {
 } as const;
 
 const PRIVACY_OPTIONS = [
-  { value: 'everyone' as const, label: 'Everyone', icon: 'globe-outline' },
-  { value: 'followers' as const, label: 'Followers', icon: 'people-outline' },
-  { value: 'private' as const, label: 'Private', icon: 'lock-closed-outline' },
+  { value: 'everyone' as const, label: 'Everyone', icon: 'globe' },
+  { value: 'followers' as const, label: 'Followers', icon: 'person.2' },
+  { value: 'private' as const, label: 'Private', icon: 'lock' },
 ];
 
 /**
@@ -152,13 +152,14 @@ export function PostAuthorRow({
                   {option.label}
                 </ThemedText>
                 {privacy === option.value && (
-                  <NativeIconSymbol 
-                    name="checkmark" 
-                    size={16} 
-                    tintColor="#BAE06F"
-                    weight="medium"
-                    className="ml-auto"
-                  />
+                  <ThemedView style={{ marginLeft: 'auto' }}>
+                    <NativeIconSymbol 
+                      name="checkmark" 
+                      size={16} 
+                      tintColor="#BAE06F"
+                      weight="medium"
+                    />
+                  </ThemedView>
                 )}
               </Pressable>
             ))}

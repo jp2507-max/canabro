@@ -479,7 +479,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
             {image && (
               <View className="mt-4 rounded-lg overflow-hidden">
                 <Pressable onPress={() => setImage(null)} className="absolute top-2 right-2 z-10 w-8 h-8 bg-black/50 rounded-full items-center justify-center">
-                  <NativeIconSymbol name="close" size={20} className="text-white" />
+                  <NativeIconSymbol name="close" size={20} tintColor="#FFFFFF" />
                 </Pressable>
                 <ThemedText className="text-sm text-neutral-600 mb-2">Image selected</ThemedText>
               </View>
