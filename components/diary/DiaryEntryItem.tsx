@@ -15,7 +15,7 @@ import { triggerLightHapticSync } from '../../lib/utils/haptics';
 import { DiaryEntryType } from './EntryTypeSelector';
 import { DiaryEntry } from '../../lib/types/diary';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
-import StorageImage from '../ui/StorageImage';
+import NetworkResilientImage from '../ui/NetworkResilientImage';
 import ThemedText from '../ui/ThemedText';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -155,11 +155,18 @@ export default function DiaryEntryItem({ entry, onPress }: DiaryEntryItemProps) 
           accessibilityLabel={`${label} entry from ${formattedDate}`}>
           {/* Image Header (if image exists) */}
           {entry.image_url && (
-            <StorageImage
+            <NetworkResilientImage
               url={entry.image_url}
               height={180}
               contentFit="cover"
               accessibilityLabel={`Image for diary entry on ${formattedDate}`}
+              maxRetries={3}
+              retryDelayMs={800}
+              timeoutMs={6000}
+              enableRetry={true}
+              showProgress={true}
+              fallbackIconName="image-outline"
+              fallbackIconSize={48}
             />
           )}
 

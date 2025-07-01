@@ -15,7 +15,7 @@ import Animated, {
 
 import UserAvatar from './UserAvatar';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
-import StorageImage from '../ui/StorageImage';
+import NetworkResilientImage from '../ui/NetworkResilientImage';
 import {
   triggerLightHaptic,
   triggerMediumHaptic,
@@ -74,7 +74,7 @@ const SCALE_VALUES = {
 } as const;
 
 const PostItem: React.FC<PostItemProps> = React.memo(
-  ({ post, currentUserId, onLike, onComment, onUserPress, onImagePress, liking = false }) => {
+  ({ post, currentUserId: _currentUserId, onLike, onComment, onUserPress, onImagePress, liking = false }) => {
     // 🎬 Enhanced Reanimated v3 + React Compiler Compatible Animation System
     const scale = useSharedValue(1);
     const shadowOpacity = useSharedValue(0.15);
@@ -319,13 +319,18 @@ const PostItem: React.FC<PostItemProps> = React.memo(
                     </Text>
                   </View>
                 ) : (
-                  <StorageImage
+                  <NetworkResilientImage
                     url={post.image_url}
                     height="100%"
                     width="100%"
                     contentFit="cover"
                     fallbackIconName="image-outline"
                     fallbackIconSize={56}
+                    maxRetries={3}
+                    retryDelayMs={800}
+                    timeoutMs={6000}
+                    enableRetry={true}
+                    showProgress={true}
                   />
                 )}
               </View>

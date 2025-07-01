@@ -2,10 +2,11 @@
  * PostAuthorRow - User avatar display with privacy selector for post creation
  *
  * Features:
- * - 28px diameter user avatar
+ * - 48px diameter user avatar (enhanced from 40px)
  * - Privacy selector pill (32px height, 12px padding, #F2F2F7 background)
  * - "Everyone" dropdown with globe icon
  * - Proper spacing and accessibility
+ * - Native SF Symbols on iOS
  */
 import React, { useState } from 'react';
 import { Pressable } from 'react-native';
@@ -19,7 +20,7 @@ import { triggerLightHaptic } from '@/lib/utils/haptics';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import UserAvatar from '@/components/community/UserAvatar';
-import { OptimizedIcon, type IconName } from '@/components/ui/OptimizedIcon';
+import { NativeIconSymbol } from '@/components/ui/NativeIconSymbol';
 
 export type PrivacyLevel = 'everyone' | 'followers' | 'private';
 
@@ -37,9 +38,9 @@ const SPRING_CONFIG = {
 } as const;
 
 const PRIVACY_OPTIONS = [
-  { value: 'everyone' as const, label: 'Everyone', icon: 'globe-outline' as IconName },
-  { value: 'followers' as const, label: 'Followers', icon: 'people-outline' as IconName },
-  { value: 'private' as const, label: 'Private', icon: 'lock-closed-outline' as IconName },
+  { value: 'everyone' as const, label: 'Everyone', icon: 'globe-outline' },
+  { value: 'followers' as const, label: 'Followers', icon: 'people-outline' },
+  { value: 'private' as const, label: 'Private', icon: 'lock-closed-outline' },
 ];
 
 /**
@@ -87,10 +88,10 @@ export function PostAuthorRow({
       <ThemedView className="flex-row items-center">
         <UserAvatar
           uri={userAvatarUrl || ''}
-          size={28}
+          size={48}
           accessibilityLabel={`${userName}'s avatar`}
         />
-        <ThemedText className="ml-3 text-base font-medium text-neutral-900 dark:text-neutral-100">
+        <ThemedText className="ml-4 text-lg font-medium text-neutral-900 dark:text-neutral-100">
           {userName}
         </ThemedText>
       </ThemedView>
@@ -101,7 +102,7 @@ export function PostAuthorRow({
           <Pressable
             onPress={handlePrivacyPress}
             disabled={disabled}
-            className={`h-8 flex-row items-center rounded-full px-3 ${
+            className={`h-9 flex-row items-center rounded-full px-4 ${
               disabled ? 'opacity-50' : ''
             }`}
             style={{
@@ -110,18 +111,20 @@ export function PostAuthorRow({
             accessibilityLabel={`Privacy setting: ${safePrivacyOption.label}`}
             accessibilityHint="Tap to change privacy settings"
             accessibilityRole="button">
-            <OptimizedIcon
+            <NativeIconSymbol
               name={safePrivacyOption.icon}
-              size={14}
-              className="text-neutral-600 dark:text-neutral-400"
+              size={16}
+              tintColor="#6B7280"
+              weight="regular"
             />
-            <ThemedText className="ml-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            <ThemedText className="ml-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">
               {safePrivacyOption.label}
             </ThemedText>
-            <OptimizedIcon
+            <NativeIconSymbol
               name="chevron-down"
-              size={12}
-              className="ml-1 text-neutral-600 dark:text-neutral-400"
+              size={14}
+              tintColor="#6B7280"
+              weight="regular"
             />
           </Pressable>
         </Animated.View>
@@ -130,7 +133,7 @@ export function PostAuthorRow({
         {showPrivacyDropdown && (
           <Animated.View
             entering={FadeInDown.duration(200)}
-            className="absolute right-0 top-10 z-50 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+            className="absolute right-0 top-12 z-50 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
             style={{ minWidth: 120 }}>
             {PRIVACY_OPTIONS.map((option) => (
               <Pressable
@@ -139,16 +142,23 @@ export function PostAuthorRow({
                 className="flex-row items-center px-3 py-2.5 active:bg-neutral-100 dark:active:bg-neutral-700"
                 accessibilityLabel={`Set privacy to ${option.label}`}
                 accessibilityRole="button">
-                <OptimizedIcon
+                <NativeIconSymbol
                   name={option.icon}
                   size={16}
-                  className="text-neutral-600 dark:text-neutral-400"
+                  tintColor="#6B7280"
+                  weight="regular"
                 />
                 <ThemedText className="ml-2.5 text-sm text-neutral-900 dark:text-neutral-100">
                   {option.label}
                 </ThemedText>
                 {privacy === option.value && (
-                  <OptimizedIcon name="checkmark" size={16} className="ml-auto text-primary-500" />
+                  <NativeIconSymbol 
+                    name="checkmark" 
+                    size={16} 
+                    tintColor="#BAE06F"
+                    weight="medium"
+                    className="ml-auto"
+                  />
                 )}
               </Pressable>
             ))}
