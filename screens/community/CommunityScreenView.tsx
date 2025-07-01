@@ -19,8 +19,7 @@ import type { PostData } from '../../components/community/PostItem';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import { triggerMediumHapticSync } from '../../lib/utils/haptics';
-import { useAuth } from '../../lib/contexts/AuthProvider';
-import { createPost } from '../../lib/services/community-service';
+import type { User } from '../../lib/types/user';
 
 interface CommunityScreenViewProps {
   posts: PostData[];
@@ -43,7 +42,7 @@ interface CommunityScreenViewProps {
   handleRefresh: () => void;
   handleLoadMore: () => void;
   likingPostId: string | null;
-  user: any;
+  user: User | null;
 }
 
 function CommunityScreenView({
@@ -69,9 +68,6 @@ function CommunityScreenView({
   likingPostId,
   user,
 }: CommunityScreenViewProps) {
-  const { user: authUser } = useAuth();
-
-
   // 🎬 Enhanced Animation System with Entrance Sequences
   const containerOpacity = useSharedValue(0);
   const fabScale = useSharedValue(0);
@@ -263,7 +259,7 @@ function CommunityScreenView({
 
           {/* 🚀 Enhanced Floating Action Button with Sophisticated Animations */}
           {posts.length > 0 && (
-            <Animated.View style={animatedFabStyle} className="absolute bottom-6 right-6">
+            <Animated.View style={animatedFabStyle} className="absolute bottom-20 right-6">
               <FloatingActionButton
                 onPress={handleFabPress}
                 iconName="add"

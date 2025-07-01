@@ -1,120 +1,192 @@
 /**
- * PostActionButtons - Action buttons for post creation (camera, gif, mention)
+ * PostActionButtons - Native-style action buttons for post creation
  *
  * Features:
- * - Camera button for adding photos
- * - GIF button for adding GIFs
- * - Mention button for tagging users
- * - 44px touch targets with proper spacing
- * - Subtle animations and haptic feedback
+ * - Native iOS-style action buttons with SF Symbol inspiration
+ * - Modern rounded rectangular backgrounds with subtle shadows
+ * - Spring animations and haptic feedback
+ * - Proper accessibility support
+ * - Consistent with app's native bottom tab aesthetic
  */
 import React from 'react';
-import { Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { triggerLightHaptic } from '@/lib/utils/haptics';
+import { Pressable, Platform } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  interpolateColor,
+  runOnJS
+} from 'react-native-reanimated';
+import { triggerLightHaptic, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import ThemedView from '@/components/ui/ThemedView';
+import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon, type IconName } from '@/components/ui/OptimizedIcon';
 
 interface PostActionButtonsProps {
   onCameraPress?: () => void;
-  onGifPress?: () => void;
-  onMentionPress?: () => void;
+  onPhotoLibraryPress?: () => void;
   onLocationPress?: () => void;
+  onMentionPress?: () => void;
   disabled?: boolean;
 }
 
 const SPRING_CONFIG = {
-  damping: 25,
-  stiffness: 600,
+  damping: 15,
+  stiffness: 200,
+  mass: 0.8,
+  restDisplacementThreshold: 0.01,
+  restSpeedThreshold: 0.01,
 } as const;
 
-interface ActionButtonProps {
+interface NativeActionButtonProps {
   iconName: IconName;
+  label: string;
   onPress?: () => void;
   disabled?: boolean;
   accessibilityLabel: string;
+  variant?: 'primary' | 'secondary';
 }
 
 /**
- * Individual action button with animation
+ * Native-style action button with modern design
  */
-function ActionButton({ iconName, onPress, disabled, accessibilityLabel }: ActionButtonProps) {
+function NativeActionButton({ 
+  iconName, 
+  label, 
+  onPress, 
+  disabled, 
+  accessibilityLabel,
+  variant = 'secondary'
+}: NativeActionButtonProps) {
   const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = variant === 'primary' 
+      ? interpolateColor(
+          pressed.value,
+          [0, 1],
+          ['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.2)']
+        )
+      : interpolateColor(
+          pressed.value,
+          [0, 1],
+          ['rgba(118, 118, 128, 0.08)', 'rgba(118, 118, 128, 0.16)']
+        );
+
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+    };
+  });
+
+  const handlePressIn = () => {
+    'worklet';
+    scale.value = withSpring(0.95, SPRING_CONFIG);
+    pressed.value = withSpring(1, SPRING_CONFIG);
+    runOnJS(triggerLightHaptic)();
+  };
+
+  const handlePressOut = () => {
+    'worklet';
+    scale.value = withSpring(1, SPRING_CONFIG);
+    pressed.value = withSpring(0, SPRING_CONFIG);
+  };
 
   const handlePress = () => {
     if (disabled) return;
-
-    scale.value = withSpring(0.9, SPRING_CONFIG);
-    setTimeout(() => {
-      scale.value = withSpring(1, SPRING_CONFIG);
-    }, 100);
-
-    triggerLightHaptic();
+    triggerMediumHapticSync();
     onPress?.();
   };
 
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={animatedStyle} className="rounded-2xl">
       <Pressable
         onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
         disabled={disabled}
-        className={`h-11 w-11 items-center justify-center rounded-full ${
-          disabled ? 'opacity-50' : 'active:bg-neutral-100 dark:active:bg-neutral-800'
+        className={`flex-row items-center justify-center rounded-2xl px-4 py-3 ${
+          disabled ? 'opacity-50' : ''
         }`}
+        style={{
+          minHeight: 44,
+          minWidth: 44,
+          ...(Platform.OS === 'ios' && {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.08,
+            shadowRadius: 2,
+          }),
+        }}
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="button">
         <OptimizedIcon
           name={iconName}
-          size={24}
-          className="text-neutral-600 dark:text-neutral-400"
+          size={20}
+          className={`${
+            variant === 'primary' 
+              ? 'text-primary-600 dark:text-primary-400' 
+              : 'text-neutral-700 dark:text-neutral-300'
+          }`}
         />
+        <ThemedText 
+          className={`ml-2 text-sm font-medium ${
+            variant === 'primary'
+              ? 'text-primary-600 dark:text-primary-400'
+              : 'text-neutral-700 dark:text-neutral-300'
+          }`}
+        >
+          {label}
+        </ThemedText>
       </Pressable>
     </Animated.View>
   );
 }
 
 /**
- * Row of action buttons for post creation
+ * Grid of native-style action buttons for post creation
  */
 export function PostActionButtons({
   onCameraPress,
-  onGifPress,
-  onMentionPress,
+  onPhotoLibraryPress,
   onLocationPress,
+  onMentionPress,
   disabled = false,
 }: PostActionButtonsProps) {
   return (
-    <ThemedView className="flex-row items-center space-x-2">
-      <ActionButton
+    <ThemedView className="flex-row flex-wrap gap-3">
+      <NativeActionButton
         iconName="camera-outline"
+        label="Camera"
         onPress={onCameraPress}
         disabled={disabled}
-        accessibilityLabel="Add photo"
+        accessibilityLabel="Take photo with camera"
+        variant="primary"
       />
 
-      <ActionButton
-        iconName="happy-outline"
-        onPress={onGifPress}
+      <NativeActionButton
+        iconName="images-outline"
+        label="Photos"
+        onPress={onPhotoLibraryPress}
         disabled={disabled}
-        accessibilityLabel="Add GIF"
+        accessibilityLabel="Choose from photo library"
       />
 
-      <ActionButton
-        iconName="at-outline"
-        onPress={onMentionPress}
-        disabled={disabled}
-        accessibilityLabel="Mention someone"
-      />
-
-      <ActionButton
+      <NativeActionButton
         iconName="location-outline"
+        label="Location"
         onPress={onLocationPress}
         disabled={disabled}
         accessibilityLabel="Add location"
+      />
+
+      <NativeActionButton
+        iconName="at-outline"
+        label="Mention"
+        onPress={onMentionPress}
+        disabled={disabled}
+        accessibilityLabel="Mention someone"
       />
     </ThemedView>
   );

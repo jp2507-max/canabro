@@ -60,8 +60,8 @@ alwaysApply: true
 
 ## 🎛️ **Custom Components & Utilities**
 - Use custom **haptics** (`@/lib/utils/haptics`) for consistent tactile feedback across the app
-- Use **useEnhancedKeyboard** hook (`@/lib/hooks/useEnhancedKeyboard`) for advanced keyboard state management and input navigation
 - Use **EnhancedTextInput** component (`@/components/ui/EnhancedTextInput`) for complex forms with validation, character counting, and keyboard navigation support
+- Use **EnhancedKeyboardWrapper** component (`@/components/keyboard/EnhancedKeyboardWrapper`) to automatically manage keyboard visibility, padding, and optional accessory toolbar around form screens
 
 ## 📱 **Mobile-First Approach**
 - Use safe area management (`SafeAreaProvider`, safe area utilities)

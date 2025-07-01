@@ -19,12 +19,17 @@ const BASE_OFFSET = 42; // ← Beto's magic number
  * const { padding } = useKeyboardPadding();
  * const animatedStyle = useAnimatedStyle(() => ({ paddingBottom: padding.value }));
  */
-export const useKeyboardPadding = (extraOffset = 0) => {
+export const useKeyboardPadding = (
+  /** Extra additive offset on top of the minimum padding (e.g. to clear FABs) */
+  extraOffset: number = 0,
+  /** Minimum padding that should always be preserved underneath the keyboard. */
+  minPadding: number = BASE_OFFSET
+) => {
   // Safe-area bottom inset (e.g., iPhone home indicator) so we never overlap.
   const insets = useSafeAreaInsets();
 
   // Baseline padding when the keyboard is hidden.
-  const base = BASE_OFFSET + insets.bottom + extraOffset;
+  const base = minPadding + insets.bottom + extraOffset;
 
   /** Shared value (Reanimated) that tracks the dynamic bottom padding. */
   const padding = useSharedValue<number>(base);
@@ -39,7 +44,7 @@ export const useKeyboardPadding = (extraOffset = 0) => {
         'worklet';
         // `e.height` is 0 when keyboard is hidden.
         // Ensure the padding never goes below the base value.
-        const height = e.height > 0 ? Math.max(e.height + BASE_OFFSET, base) : base;
+        const height = e.height > 0 ? Math.max(e.height + minPadding, base) : base;
         padding.value = height;
         isVisible.value = e.height > 0;
       },

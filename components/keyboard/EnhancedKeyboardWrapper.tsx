@@ -17,6 +17,8 @@ interface Props {
   toolbarContent?: React.ReactElement | null;
   /** Localised text for the keyboard "Done" button */
   doneText?: string;
+  /** Minimum padding below the keyboard when it is hidden (defaults to 42) */
+  minPadding?: number;
 }
 
 /**
@@ -33,9 +35,10 @@ export const EnhancedKeyboardWrapper = ({
   showToolbar = true,
   toolbarContent,
   doneText = 'Close keyboard',
+  minPadding,
 }: Props) => {
   // Shared value representing the required bottom padding.
-  const { padding } = useKeyboardPadding(extraOffset);
+  const { padding } = useKeyboardPadding(extraOffset, minPadding);
   const paddingStyle = useAnimatedStyle(() => ({ height: padding.value }));
 
   return (

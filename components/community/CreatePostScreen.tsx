@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system'; // Import FileSystem
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
+import * as FileSystem from 'expo-file-system';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import React, { useState, useCallback } from 'react';
@@ -9,104 +9,26 @@ import {
   View,
   Pressable,
   TextInput,
-  Alert, // Import Alert
+  Alert,
   Keyboard,
 } from 'react-native';
-// Import useSafeAreaInsets
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  interpolateColor,
-  runOnJS,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { createPost } from '../../lib/services/community-service'; // Import createPost
-import supabase from '../../lib/supabase'; // Import supabase client
-import { triggerMediumHapticSync, triggerLightHaptic } from '@/lib/utils/haptics';
-import { OptimizedIcon, type IconName } from '../ui/OptimizedIcon';
+import { createPost } from '../../lib/services/community-service';
+import supabase from '../../lib/supabase';
+import { triggerLightHaptic } from '@/lib/utils/haptics';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
-
-// Animation configurations
-const SPRING_CONFIG = {
-  damping: 15,
-  stiffness: 200,
-  mass: 0.8,
-  restDisplacementThreshold: 0.01,
-  restSpeedThreshold: 0.01,
-};
+import { PostActionButtons } from './PostActionButtons';
+import { PostAuthorRow } from './PostAuthorRow';
 
 type CreatePostScreenProps = {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-};
-
-// Modern animated action button component
-const AnimatedActionButton = ({
-  onPress,
-  iconName,
-  size = 28,
-}: {
-  onPress: () => void;
-  iconName: IconName;
-  size?: number;
-}) => {
-  const scale = useSharedValue(1);
-  const pressed = useSharedValue(0);
-
-  const handlePress = useCallback(() => {
-    runOnJS(triggerMediumHapticSync)();
-    onPress();
-  }, [onPress]);
-
-  const gesture = Gesture.Tap()
-    .onBegin(() => {
-      'worklet';
-      scale.value = withSpring(0.85, SPRING_CONFIG);
-      pressed.value = withSpring(1, SPRING_CONFIG);
-    })
-    .onFinalize(() => {
-      'worklet';
-      scale.value = withSpring(1, SPRING_CONFIG);
-      pressed.value = withSpring(0, SPRING_CONFIG);
-    })
-    .onEnd(() => {
-      runOnJS(handlePress)();
-    });
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
-      pressed.value,
-      [0, 1],
-      ['transparent', 'rgba(59, 130, 246, 0.08)']
-    );
-
-    return {
-      transform: [{ scale: scale.value }],
-      backgroundColor,
-      borderRadius: 12,
-      padding: 8,
-    };
-  });
-
-  return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={animatedStyle}>
-        <OptimizedIcon
-          name={iconName}
-          size={size}
-          className="text-neutral-600 dark:text-neutral-400"
-        />
-      </Animated.View>
-    </GestureDetector>
-  );
 };
 
 /**
@@ -296,7 +218,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
         user_id: user.id, // Use authenticated user ID
         content,
         image_url: imageUrl, // Pass the uploaded image URL here
-        // Add plant_id or is_public if needed
+        // Add plant_id if needed
       });
 
       if (newPost.success === true) {
@@ -350,11 +272,19 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
         </View>
         {/* End Header */}
 
+        {/* Author Row */}
+        <View className="border-b border-neutral-100 px-4 pb-4 dark:border-neutral-800">
+          <PostAuthorRow
+            userAvatarUrl={user?.user_metadata?.avatar_url}
+            userName={user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'You'}
+          />
+        </View>
+
         {/* Content container with built-in keyboard avoidance */}
         <ThemedView className="flex-1">
           <EnhancedKeyboardWrapper className="flex-1" showToolbar={false}>
             {/* Main Content Area - Now with flex-1 to allow EnhancedTextInput to grow */}
-            <View className="flex-1 px-4 pt-2">
+            <View className="flex-1 px-4 pt-4">
               <EnhancedTextInput
                 ref={contentInputRef}
                 value={content}
@@ -386,15 +316,16 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
             className="border-t border-neutral-200 px-4 dark:border-neutral-700" // Border only
             style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 12, paddingTop: 12 }} // Apply padding top/bottom
           >
-            <View className="flex-row items-center justify-between">
-              {/* Icon Group - Using gap for precise spacing */}
-              <View className="flex-row items-center" style={{ gap: 20 }}>
-                <AnimatedActionButton onPress={handleTakePhoto} iconName="camera-outline" />
-                <AnimatedActionButton onPress={handlePickImage} iconName="images-outline" />
-                <AnimatedActionButton onPress={handleGetLocation} iconName="location-outline" />
-              </View>
-              {/* Reply Text Removed */}
-            </View>
+            <PostActionButtons
+              onCameraPress={handleTakePhoto}
+              onPhotoLibraryPress={handlePickImage}
+              onLocationPress={handleGetLocation}
+              onMentionPress={() => {
+                // TODO: Implement mention functionality
+                console.log('Mention pressed');
+              }}
+              disabled={isSubmitting}
+            />
           </View>
         </ThemedView>
       </ThemedView>
