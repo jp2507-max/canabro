@@ -12,7 +12,11 @@ import Animated, {
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { triggerSelectionHapticSync, triggerMediumHaptic, triggerSelectionHaptic } from '@/lib/utils/haptics';
+import {
+  triggerSelectionHapticSync,
+  triggerMediumHaptic,
+  triggerSelectionHaptic,
+} from '@/lib/utils/haptics';
 
 // Reanimated AnimatedPressable
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);

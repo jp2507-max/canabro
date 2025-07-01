@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import CommentModal from '../../components/community/CommentModal';
-import { CreatePostBottomSheet, type PostData as CreatePostData, type QuestionData } from '../../components/community/CreatePostBottomSheet';
+import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
 import PostItem from '../../components/community/PostItem';
 import type { PostData } from '../../components/community/PostItem';
@@ -71,72 +71,7 @@ function CommunityScreenView({
 }: CommunityScreenViewProps) {
   const { user: authUser } = useAuth();
 
-  // Create post handler for the bottom sheet
-  const handleCreatePost = async (data: CreatePostData): Promise<void> => {
-    if (!authUser?.id) {
-      throw new Error('User not authenticated');
-    }
 
-    const postData = {
-      user_id: authUser.id,
-      content: data.content,
-      image_url: data.image,
-    };
-
-    const result = await createPost(postData);
-    if (!result.success) {
-      // Throw specific error with detailed information
-      const errorMessage = result.error?.message || 'Failed to create post';
-      const errorCode = result.error?.code || 'UNKNOWN_ERROR';
-      
-      // Log detailed error information for debugging
-      console.error('Post creation failed:', {
-        code: errorCode,
-        message: errorMessage,
-        details: result.error?.details,
-      });
-      
-      throw new Error(`${errorMessage} (${errorCode})`);
-    }
-
-    // Close modal and refresh
-    setShowCreateModal(false);
-    handlePostCreated();
-  };
-
-  // Create question handler for the bottom sheet
-  const handleCreateQuestion = async (data: QuestionData): Promise<void> => {
-    if (!authUser?.id) {
-      throw new Error('User not authenticated');
-    }
-
-    const questionContent = `**${data.title}**\n\n${data.content}`;
-    const postData = {
-      user_id: authUser.id,
-      content: questionContent,
-      image_url: data.image,
-    };
-
-    const result = await createPost(postData);
-    if (!result.success) {
-      // Throw specific error with detailed information
-      const errorMessage = result.error?.message || 'Failed to create question';
-      const errorCode = result.error?.code || 'UNKNOWN_ERROR';
-      
-      // Log detailed error information for debugging
-      console.error('Question creation failed:', {
-        code: errorCode,
-        message: errorMessage,
-        details: result.error?.details,
-      });
-      
-      throw new Error(`${errorMessage} (${errorCode})`);
-    }
-
-    // Close modal and refresh
-    setShowCreateModal(false);
-    handlePostCreated();
-  };
   // 🎬 Enhanced Animation System with Entrance Sequences
   const containerOpacity = useSharedValue(0);
   const fabScale = useSharedValue(0);
@@ -341,14 +276,18 @@ function CommunityScreenView({
         </>
       )}
 
-      {/* Enhanced Create Post Bottom Sheet */}
-      <CreatePostBottomSheet
+      {/* Create Post Modal */}
+      <CreatePostModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onCreatePost={handleCreatePost}
-        onCreateQuestion={handleCreateQuestion}
-        userAvatarUrl={authUser?.user_metadata?.avatar_url || ''}
-        userName={authUser?.user_metadata?.username || authUser?.email?.split('@')[0] || 'Anonymous'}
+        onCreatePost={() => {
+          setShowCreateModal(false);
+          setShowCreateScreen(true);
+        }}
+        onAskQuestion={() => {
+          setShowCreateModal(false);
+          setShowCreateScreen(true);
+        }}
       />
 
       {/* Create Post Screen */}

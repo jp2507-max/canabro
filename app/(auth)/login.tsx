@@ -6,10 +6,8 @@ import {
   View,
   ActivityIndicator,
   Pressable,
-  KeyboardAvoidingView,
   Platform,
   TextInput,
-  InputAccessoryView,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -25,10 +23,9 @@ import ThemedView from '../../components/ui/ThemedView';
 import { isDevelopment, authConfig } from '../../lib/config';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 
-// Enhanced keyboard handling components
+// Lightweight keyboard handling components
 import { EnhancedTextInput } from '../../components/ui/EnhancedTextInput';
-import { KeyboardToolbar } from '../../components/ui/KeyboardToolbar';
-import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
+import SimpleFormWrapper from '../../components/keyboard/SimpleFormWrapper';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -143,15 +140,10 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, devBypassAuth } = useAuth();
 
-  // Enhanced keyboard handling
+  // Lightweight keyboard handling
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const inputRefs = [emailRef, passwordRef];
-  
-  const keyboard = useEnhancedKeyboard(inputRefs, 2);
-  
-  // Keyboard toolbar ID for iOS accessory view
-  const inputAccessoryViewID = 'login-keyboard-toolbar';
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -226,9 +218,7 @@ export default function LoginScreen() {
 
   return (
     <ThemedView variant="default" className="flex-1">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
+      <SimpleFormWrapper className="flex-1">
         <View className="flex-1 justify-center px-6">
           {/* Logo Section */}
           <Animated.View entering={FadeIn.duration(800)} className="mb-12 items-center">
@@ -275,9 +265,11 @@ export default function LoginScreen() {
               autoCapitalize="none"
               editable={!isLoading}
               error={errors.email}
-              onSubmitEditing={() => keyboard.goToNextInput()}
-              inputAccessoryViewID={Platform.OS === 'ios' ? inputAccessoryViewID : undefined}
-              onFocus={() => keyboard.setActiveInputIndex(0)}
+              onSubmitEditing={() => {
+                if (passwordRef.current) {
+                  passwordRef.current.focus();
+                }
+              }}
             />
 
             <EnhancedTextInput
@@ -290,8 +282,6 @@ export default function LoginScreen() {
               editable={!isLoading}
               error={errors.password}
               onSubmitEditing={handleLogin}
-              inputAccessoryViewID={Platform.OS === 'ios' ? inputAccessoryViewID : undefined}
-              onFocus={() => keyboard.setActiveInputIndex(1)}
             />
 
             <AnimatedButton
@@ -332,77 +322,7 @@ export default function LoginScreen() {
             </Link>
           </Animated.View>
         </View>
-      </KeyboardAvoidingView>
-
-      {/* Enhanced Keyboard Toolbar (Android only) */}
-      {Platform.OS !== 'ios' && (
-        <KeyboardToolbar
-          isVisible={keyboard.isKeyboardVisible}
-          keyboardHeight={keyboard.keyboardHeight}
-          onPrevious={() => keyboard.goToPreviousInput()}
-          onNext={() => keyboard.goToNextInput()}
-          onDone={() => {
-            if (keyboard.currentIndex === 1) {
-              handleLogin();
-            } else {
-              keyboard.dismissKeyboard();
-            }
-          }}
-          canGoPrevious={keyboard.canGoPrevious}
-          canGoNext={keyboard.canGoNext}
-          currentField={keyboard.activeInputIndex === 0 ? 'Email' : keyboard.activeInputIndex === 1 ? 'Password' : undefined}
-          totalFields={2}
-          currentIndex={keyboard.currentIndex}
-        />
-      )}
-
-      {/* iOS Input Accessory View */}
-      {Platform.OS === 'ios' && (
-        <InputAccessoryView nativeID={inputAccessoryViewID}>
-          <ThemedView className="flex-row items-center justify-between bg-neutral-100 border-t border-neutral-200 px-4 py-3 dark:bg-neutral-800 dark:border-neutral-700">
-            <ThemedView className="flex-row items-center space-x-3">
-              <Pressable 
-                onPress={() => keyboard.goToPreviousInput()}
-                disabled={!keyboard.canGoPrevious}
-                className={`rounded-lg p-2 ${!keyboard.canGoPrevious ? 'opacity-30' : 'opacity-100'}`}
-              >
-                <OptimizedIcon 
-                  name="chevron-up" 
-                  size={20} 
-                  className="text-neutral-600 dark:text-neutral-400" 
-                />
-              </Pressable>
-              
-              <Pressable 
-                onPress={() => keyboard.goToNextInput()}
-                disabled={!keyboard.canGoNext}
-                className={`rounded-lg p-2 ${!keyboard.canGoNext ? 'opacity-30' : 'opacity-100'}`}
-              >
-                <OptimizedIcon 
-                  name="chevron-down" 
-                  size={20} 
-                  className="text-neutral-600 dark:text-neutral-400" 
-                />
-              </Pressable>
-            </ThemedView>
-            
-            <Pressable 
-              onPress={() => {
-                if (keyboard.currentIndex === 1) {
-                  handleLogin();
-                } else {
-                  keyboard.dismissKeyboard();
-                }
-              }}
-              className="rounded-lg bg-primary-500 px-4 py-2"
-            >
-              <ThemedText className="font-semibold text-white">
-                {keyboard.currentIndex === 1 ? 'Sign In' : 'Done'}
-              </ThemedText>
-            </Pressable>
-          </ThemedView>
-        </InputAccessoryView>
-      )}
+      </SimpleFormWrapper>
     </ThemedView>
   );
 }

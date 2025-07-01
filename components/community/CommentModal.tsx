@@ -10,8 +10,6 @@ import {
   View,
   TextInput,
   FlatList,
-  KeyboardAvoidingView, // Keep KAV for now, revert its props later if needed
-  Platform,
   ActivityIndicator,
   Keyboard,
   Pressable,
@@ -34,13 +32,17 @@ import CommentItem from './CommentItem';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
-import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
-import { ImpactFeedbackStyle, triggerLightHaptic, triggerMediumHaptic, triggerHeavyHaptic } from '../../lib/utils/haptics';
+import {
+  ImpactFeedbackStyle,
+  triggerLightHaptic,
+  triggerMediumHaptic,
+  triggerHeavyHaptic,
+} from '../../lib/utils/haptics';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
-import { KeyboardToolbar } from '../ui/KeyboardToolbar';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 
 // Animation configuration
 const SPRING_CONFIG = {
@@ -92,7 +94,7 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
 
   const handlePress = useCallback(() => {
     if (disabled) return;
-    
+
     // Map haptic style to appropriate utility function
     switch (hapticStyle) {
       case ImpactFeedbackStyle.Light:
@@ -107,7 +109,7 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
       default:
         triggerLightHaptic();
     }
-    
+
     onPress();
   }, [onPress, disabled, hapticStyle]);
 
@@ -151,12 +153,7 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
   );
 };
 
-function CommentModal({
-  postId,
-  isVisible,
-  onClose,
-  onCommentAdded,
-}: CommentModalProps) {
+function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentModalProps) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [commentText, setCommentText] = useState('');
@@ -169,13 +166,6 @@ function CommentModal({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<TextInput>(null);
-
-  // Enhanced keyboard handling
-  const {
-    isKeyboardVisible,
-    keyboardHeight,
-    dismissKeyboard,
-  } = useEnhancedKeyboard([inputRef], 1);
 
   // Animation values
   const modalScale = useSharedValue(0.95);
@@ -491,10 +481,7 @@ function CommentModal({
   };
 
   // 🎯 Performance optimized render functions
-  const keyExtractor = React.useCallback(
-    (item: CommentWithProfile) => String(item.id),
-    []
-  );
+  const keyExtractor = React.useCallback((item: CommentWithProfile) => String(item.id), []);
 
   // Render a comment item
   const renderComment = React.useCallback(
@@ -561,51 +548,50 @@ function CommentModal({
                     />
                   </AnimatedActionButton>
                 </ThemedView>
-                {/* KAV wraps FlatList and Input Area */}
-                <KeyboardAvoidingView
-                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Reverted behavior
-                  style={{ flex: 1 }}
-                  keyboardVerticalOffset={insets.bottom + 10} // Reverted offset
-                >
+                {/* Content container with built-in keyboard avoidance */}
+                <Animated.View style={{ flex: 1 }}>
                   {/* Comment List */}
                   {isLoading ? (
                     <View className="flex-1 items-center justify-center">
                       <ActivityIndicator size="large" className="text-primary-500" />
                     </View>
                   ) : (
-                    <FlatList
-                      data={comments}
-                      renderItem={renderComment}
-                      keyExtractor={keyExtractor}
-                      contentContainerStyle={{ paddingBottom: insets.bottom + 80 }} // Reverted extra padding
-                      refreshing={isRefreshing}
-                      onRefresh={handleRefresh}
-                      ListEmptyComponent={
-                        <ThemedView className="flex-1 items-center justify-center p-8">
-                          <OptimizedIcon
-                            name="chatbubble-outline"
-                            size={40}
-                            className="text-neutral-300 dark:text-neutral-600"
-                          />
-                          <ThemedText className="mt-3 text-center text-base text-neutral-500 dark:text-neutral-400">
-                            No comments yet. Be the first to share your thoughts!
-                          </ThemedText>
-                          <AnimatedActionButton
-                            onPress={focusCommentInput}
-                            className="mt-4 rounded-full bg-primary-500 px-5 py-2"
-                            accessibilityLabel="Add Comment"
-                            hapticStyle={ImpactFeedbackStyle.Medium}>
-                            <ThemedText className="font-medium text-white">Add Comment</ThemedText>
-                          </AnimatedActionButton>
-                        </ThemedView>
-                      }
-                      // ⚡ Reanimated v3 compatible performance optimizations
-                      initialNumToRender={10}
-                      maxToRenderPerBatch={5}
-                      windowSize={10}
-                      updateCellsBatchingPeriod={100}
-                      removeClippedSubviews={true}
-                    />
+                    <EnhancedKeyboardWrapper className="flex-1" showToolbar={false}>
+                      <FlatList
+                        contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 80 }}
+                        keyboardShouldPersistTaps="handled"
+                        data={comments}
+                        renderItem={renderComment}
+                        keyExtractor={keyExtractor}
+                        refreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                        ListEmptyComponent={
+                          <ThemedView className="flex-1 items-center justify-center p-8">
+                            <OptimizedIcon
+                              name="chatbubble-outline"
+                              size={40}
+                              className="text-neutral-300 dark:text-neutral-600"
+                            />
+                            <ThemedText className="mt-3 text-center text-base text-neutral-500 dark:text-neutral-400">
+                              No comments yet. Be the first to share your thoughts!
+                            </ThemedText>
+                            <AnimatedActionButton
+                              onPress={focusCommentInput}
+                              className="mt-4 rounded-full bg-primary-500 px-5 py-2"
+                              accessibilityLabel="Add Comment"
+                              hapticStyle={ImpactFeedbackStyle.Medium}>
+                              <ThemedText className="font-medium text-white">Add Comment</ThemedText>
+                            </AnimatedActionButton>
+                          </ThemedView>
+                        }
+                        // ⚡ Reanimated v3 compatible performance optimizations
+                        initialNumToRender={10}
+                        maxToRenderPerBatch={5}
+                        windowSize={10}
+                        updateCellsBatchingPeriod={100}
+                        removeClippedSubviews={true}
+                      />
+                    </EnhancedKeyboardWrapper>
                   )}
 
                   {/* Input Area */}
@@ -691,20 +677,14 @@ function CommentModal({
                       )}
                     </AnimatedActionButton>
                   </ThemedView>
-                </KeyboardAvoidingView>
+
+                  {/* Keyboard avoidance handled by EnhancedKeyboardWrapper parent */}
+                </Animated.View>
               </Pressable>
             </Animated.View>
           </Pressable>
         </Animated.View>
       </GestureDetector>
-
-      {/* Enhanced Keyboard Toolbar */}
-      <KeyboardToolbar
-        isVisible={isKeyboardVisible}
-        keyboardHeight={keyboardHeight}
-        onDone={dismissKeyboard}
-        currentField="Comment"
-      />
     </Modal>
   );
 }

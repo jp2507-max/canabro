@@ -9,7 +9,6 @@ import type { AppleIcon } from 'react-native-bottom-tabs';
 
 const BottomTabNavigator = createNativeBottomTabNavigator().Navigator;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Tabs = withLayoutContext<
   NativeBottomTabNavigationOptions,
   typeof BottomTabNavigator,
@@ -19,24 +18,21 @@ const Tabs = withLayoutContext<
 
 type TabBarIconFunction = (props: { focused: boolean }) => ImageSourcePropType | AppleIcon;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const baseScreenOptions = {
   headerShown: false,
 } as any;
 
 // Helper function to create properly typed tab bar icons with focus support
 const createTabBarIcon = (sfSymbol: string): TabBarIconFunction => {
-  return ({ focused }) => ({ 
-    sfSymbol: (focused ? `${sfSymbol}.fill` : sfSymbol)
-  } as AppleIcon);
+  return ({ focused }) =>
+    ({
+      sfSymbol: focused ? `${sfSymbol}.fill` : sfSymbol,
+    }) as AppleIcon;
 };
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      initialRouteName="index"
-      screenOptions={baseScreenOptions}
-    >
+    <Tabs initialRouteName="index" screenOptions={baseScreenOptions}>
       <Tabs.Screen
         name="strains"
         options={{

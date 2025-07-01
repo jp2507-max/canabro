@@ -3,34 +3,34 @@ import { View, Text, Platform, TextStyle } from 'react-native';
 
 /**
  * EMOJI ICON LIMITATIONS & MITIGATION STRATEGIES
- * 
+ *
  * This component uses emojis to reduce bundle size (~99% smaller than vector icons)
  * but comes with trade-offs that are actively mitigated:
- * 
- * 1. Platform Inconsistency: 
+ *
+ * 1. Platform Inconsistency:
  *    - Problem: Emojis render differently across iOS/Android/Web/versions
  *    - Solution: Platform-specific fallbacks + font-size adjustments per platform
- * 
- * 2. No Color Control: 
+ *
+ * 2. No Color Control:
  *    - Problem: Emojis can't be recolored (color prop has no effect on emojis)
  *    - Solution: Mixed approach - Unicode symbols for colorable icons, emojis for visual ones
- * 
- * 3. Unicode Support: 
+ *
+ * 3. Unicode Support:
  *    - Problem: Some devices may not support newer Unicode emojis
  *    - Solution: Fallback symbols + graceful degradation to basic shapes
- * 
+ *
  * 4. Accessibility Issues:
  *    - Problem: Raw emojis announce generic Unicode names to screen readers
  *    - Solution: Semantic accessibilityLabel for all icons + proper role attribution
- * 
+ *
  * 5. Duplicate Mappings:
  *    - Problem: Multiple keys for similar icons (sun/sunny-outline, warning/alert-circle)
  *    - Solution: Consolidated mapping with clear semantic naming
- * 
+ *
  * PRODUCTION FALLBACK: For apps requiring precise color control or consistency,
  * consider switching to react-native-vector-icons or @expo/vector-icons via the
  * 'useVectorFallback' prop when needed.
- * 
+ *
  * TESTING: Always test emoji rendering on physical iOS and Android devices
  * as emulator rendering may differ from actual hardware.
  */
@@ -64,7 +64,9 @@ const EmojiIcon = memo(function EmojiIcon({
   // Enhanced emoji detection using Unicode ranges
   const isEmoji = React.useMemo(() => {
     // Check for emoji Unicode ranges more comprehensively
-    return /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(symbol);
+    return /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(
+      symbol
+    );
   }, [symbol]);
 
   // Symbols that can potentially be colored (basic Unicode symbols)
@@ -76,7 +78,7 @@ const EmojiIcon = memo(function EmojiIcon({
         {
           fontSize,
           // Only apply color to colorable symbols, not emojis
-          color: className ? undefined : (canBeColored ? color : undefined),
+          color: className ? undefined : canBeColored ? color : undefined,
           lineHeight: size,
           textAlign: 'center',
           // Improve emoji rendering consistency
@@ -88,7 +90,7 @@ const EmojiIcon = memo(function EmojiIcon({
       ]}
       // Enhanced accessibility configuration
       accessible={!isDecorative}
-      accessibilityRole={isDecorative ? undefined : "image"}
+      accessibilityRole={isDecorative ? undefined : 'image'}
       accessibilityLabel={isDecorative ? undefined : accessibilityLabel}
       accessibilityElementsHidden={isDecorative}
       importantForAccessibility={isDecorative ? 'no-hide-descendants' : 'yes'}
@@ -110,7 +112,7 @@ const IconSVG = {
   'close-outline': '⊗',
   checkmark: '✓',
   'checkmark-circle': '✅',
-    // Navigation - using symbols that can be colored
+  // Navigation - using symbols that can be colored
   'chevron-forward': '▶',
   'chevron-forward-outline': '▷', // Outline variant
   'chevron-back': '◀',
@@ -240,7 +242,8 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   close: 'Close',
   'close-outline': 'Close',
   checkmark: 'Checkmark',
-  'checkmark-circle': 'Checkmark circle',  'chevron-forward': 'Forward',
+  'checkmark-circle': 'Checkmark circle',
+  'chevron-forward': 'Forward',
   'chevron-forward-outline': 'Forward outline',
   'chevron-back': 'Back',
   'chevron-back-outline': 'Back outline',
@@ -266,7 +269,8 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   'person-add': 'Add person',
   send: 'Send',
   share: 'Share',
-  mail: 'Email',  'chatbubble-outline': 'Chat',
+  mail: 'Email',
+  'chatbubble-outline': 'Chat',
   'chatbubble-ellipses': 'Messages',
   camera: 'Camera',
   'camera-outline': 'Camera',
@@ -278,7 +282,8 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   heart: 'Heart filled',
   'heart-outline': 'Heart outline',
   star: 'Star',
-  medal: 'Achievement',  notification: 'Notification',
+  medal: 'Achievement',
+  notification: 'Notification',
   warning: 'Warning',
   'warning-outline': 'Warning',
   'help-circle': 'Help',
@@ -309,7 +314,8 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   waves: 'Waves',
   'spider-thread': 'Thread',
   'arrow-expand-vertical': 'Expand vertical',
-  'calendar-range': 'Date range',  'globe-outline': 'Globe',
+  'calendar-range': 'Date range',
+  'globe-outline': 'Globe',
   'palette-swatch': 'Color palette',
   'partly-sunny-outline': 'Partly sunny',
 
@@ -385,7 +391,7 @@ interface OptimizedIconProps {
  * ✅ ENHANCED: Lightweight icon component with comprehensive accessibility
  *
  * Features:
- * - ✅ NativeWind v4 className support for true "one file" theming  
+ * - ✅ NativeWind v4 className support for true "one file" theming
  * - ✅ Enhanced accessibility with proper ARIA roles and labels
  * - ✅ Cross-platform emoji rendering with fallbacks
  * - ✅ Smart emoji vs symbol detection for color control
@@ -409,11 +415,11 @@ interface OptimizedIconProps {
  * @example Accessibility-first approach
  * ```tsx
  * // Custom accessibility label
- * <OptimizedIcon 
- *   name="settings" 
- *   size={24} 
+ * <OptimizedIcon
+ *   name="settings"
+ *   size={24}
  *   accessibilityLabel="Open settings menu"
- *   className="text-neutral-700 dark:text-neutral-300" 
+ *   className="text-neutral-700 dark:text-neutral-300"
  * />
  * ```
  */
@@ -436,17 +442,17 @@ export const OptimizedIcon = memo(function OptimizedIcon({
       if (__DEV__) {
         console.warn(
           `OptimizedIcon: Icon "${name}" not found in mapping. ` +
-          `Available icons: ${Object.keys(IconSVG).slice(0, 10).join(', ')}...`
+            `Available icons: ${Object.keys(IconSVG).slice(0, 10).join(', ')}...`
         );
       }
       return IconSVG.default;
     }
-    
+
     // Apply platform-specific fallbacks if enabled
     if (allowFallback && PlatformFallbacks[name]) {
       return PlatformFallbacks[name];
     }
-    
+
     return IconSVG[name];
   };
 
@@ -459,7 +465,9 @@ export const OptimizedIcon = memo(function OptimizedIcon({
     // This would integrate with @expo/vector-icons or react-native-vector-icons
     // when precise color control is required in production apps
     if (__DEV__) {
-      console.warn('OptimizedIcon: useVectorFallback is not yet implemented. Install @expo/vector-icons for production use.');
+      console.warn(
+        'OptimizedIcon: useVectorFallback is not yet implemented. Install @expo/vector-icons for production use.'
+      );
     }
   }
 
@@ -494,34 +502,34 @@ export type { IconName };
 
 /**
  * TESTING CHECKLIST FOR EMOJI ICONS
- * 
+ *
  * Before deploying to production, test the following scenarios:
- * 
+ *
  * 1. DEVICE TESTING:
  *    □ Test on physical iOS devices (not just simulator)
  *    □ Test on physical Android devices (different manufacturers)
  *    □ Test on different OS versions (iOS 15+, Android 10+)
  *    □ Test with system dark/light mode switching
- * 
+ *
  * 2. ACCESSIBILITY TESTING:
  *    □ Enable VoiceOver (iOS) and verify icon announcements
- *    □ Enable TalkBack (Android) and verify icon announcements  
+ *    □ Enable TalkBack (Android) and verify icon announcements
  *    □ Test with screen reader navigation (next/previous element)
  *    □ Verify decorative icons are properly skipped by screen readers
  *    □ Test with larger system font sizes (Dynamic Type)
- * 
+ *
  * 3. VISUAL TESTING:
  *    □ Check emoji rendering consistency across platforms
  *    □ Verify color control works for Unicode symbols (✓, ←, etc.)
  *    □ Test NativeWind className color changes
  *    □ Verify icons remain crisp at different sizes (12px to 48px)
  *    □ Test in both portrait and landscape orientations
- * 
+ *
  * 4. FALLBACK TESTING:
  *    □ Test with older devices that may lack Unicode support
  *    □ Verify graceful degradation to default symbols
  *    □ Test network-dependent scenarios (if any)
- * 
+ *
  * 5. PERFORMANCE TESTING:
  *    □ Test with many icons rendered simultaneously (lists, grids)
  *    □ Verify no memory leaks with icon rerendering

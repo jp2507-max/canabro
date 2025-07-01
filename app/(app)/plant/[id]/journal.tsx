@@ -17,7 +17,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DiaryEntryItem from '../../../../components/diary/DiaryEntryItem';
 import JournalCalendar from '../../../../components/diary/JournalCalendar';
-import { triggerLightHapticSync, triggerMediumHapticSync, triggerMediumHaptic, triggerLightHaptic } from '../../../../lib/utils/haptics';
+import {
+  triggerLightHapticSync,
+  triggerMediumHapticSync,
+  triggerMediumHaptic,
+  triggerLightHaptic,
+} from '../../../../lib/utils/haptics';
 import { OptimizedIcon } from '../../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../../components/ui/ThemedText';
 import ThemedView from '../../../../components/ui/ThemedView';
@@ -34,7 +39,7 @@ const formatDate = (date: Date): string => {
     console.warn('[PlantJournalScreen] Invalid date passed to formatDate:', date);
     return 'Invalid Date';
   }
-  
+
   try {
     return date.toLocaleDateString(Localization.locale, { day: '2-digit', month: 'short' });
   } catch (error) {
@@ -52,25 +57,29 @@ const groupEntriesByDate = (entries: DiaryEntry[]) => {
       }
 
       const entryDate = new Date(entry.created_at);
-      
-             // Validate the created date before proceeding
-       if (isNaN(entryDate.getTime())) {
-         console.warn('[PlantJournalScreen] Invalid created_at date for entry:', entry.id, entry.created_at);
-         return acc;
-       }
 
-       let dateKey: string;
-       try {
-         const isoString = entryDate.toISOString().split('T')[0];
-         if (!isoString) {
-           console.warn('[PlantJournalScreen] Empty date key for entry:', entry.id);
-           return acc;
-         }
-         dateKey = isoString;
-       } catch (error) {
-         console.error('[PlantJournalScreen] Error converting date to ISO string:', error);
-         return acc;
-       }
+      // Validate the created date before proceeding
+      if (isNaN(entryDate.getTime())) {
+        console.warn(
+          '[PlantJournalScreen] Invalid created_at date for entry:',
+          entry.id,
+          entry.created_at
+        );
+        return acc;
+      }
+
+      let dateKey: string;
+      try {
+        const isoString = entryDate.toISOString().split('T')[0];
+        if (!isoString) {
+          console.warn('[PlantJournalScreen] Empty date key for entry:', entry.id);
+          return acc;
+        }
+        dateKey = isoString;
+      } catch (error) {
+        console.error('[PlantJournalScreen] Error converting date to ISO string:', error);
+        return acc;
+      }
 
       if (!dateKey) {
         return acc;
@@ -82,19 +91,17 @@ const groupEntriesByDate = (entries: DiaryEntry[]) => {
 
       acc[dateKey]!.push(entry);
 
-      acc[dateKey]!.sort(
-        (a: DiaryEntry, b: DiaryEntry) => {
-          const dateA = new Date(a.created_at || '');
-          const dateB = new Date(b.created_at || '');
-          
-          // Handle invalid dates in sorting
-          if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
-          if (isNaN(dateA.getTime())) return 1;
-          if (isNaN(dateB.getTime())) return -1;
-          
-          return dateB.getTime() - dateA.getTime();
-        }
-      );
+      acc[dateKey]!.sort((a: DiaryEntry, b: DiaryEntry) => {
+        const dateA = new Date(a.created_at || '');
+        const dateB = new Date(b.created_at || '');
+
+        // Handle invalid dates in sorting
+        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+        if (isNaN(dateA.getTime())) return 1;
+        if (isNaN(dateB.getTime())) return -1;
+
+        return dateB.getTime() - dateA.getTime();
+      });
 
       return acc;
     },

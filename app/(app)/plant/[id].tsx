@@ -18,7 +18,11 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Modern animation imports
-import { triggerLightHapticSync, triggerSuccessHaptic, triggerErrorHaptic } from '../../../lib/utils/haptics';
+import {
+  triggerLightHapticSync,
+  triggerSuccessHaptic,
+  triggerErrorHaptic,
+} from '../../../lib/utils/haptics';
 
 // Sub-components
 import { PlantActions } from '../../../components/plant-detail/PlantActions';

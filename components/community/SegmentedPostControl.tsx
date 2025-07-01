@@ -1,23 +1,19 @@
 /**
  * SegmentedPostControl - iOS-like segmented control for Ask Question/Create Post modes
- * 
+ *
  * Features:
  * - Smooth 200ms animations with animated blue indicator
  * - 36px height with 2px indicator height
  * - Minimum 88px segment width
  * - Haptic feedback on selection
  * - Accessibility support
- * 
+ *
  * Note: Uses ThemedText which wraps React Native Text component
  */
-/* eslint-disable react-native/no-raw-text */
+
 import React from 'react';
 import { View, Pressable } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { triggerSelectionHaptic } from '@/lib/utils/haptics';
 import ThemedText from '@/components/ui/ThemedText';
 
@@ -40,24 +36,21 @@ const SEGMENT_WIDTH = 88;
 /**
  * iOS-like segmented control for switching between Ask Question and Create Post modes
  */
-export function SegmentedPostControl({ 
-  selectedMode, 
-  onModeChange, 
-  disabled = false 
+export function SegmentedPostControl({
+  selectedMode,
+  onModeChange,
+  disabled = false,
 }: SegmentedPostControlProps) {
   // Animated indicator position (0 = question, 1 = post)
   const indicatorPosition = useSharedValue(selectedMode === 'post' ? 1 : 0);
   // Update indicator position when selectedMode changes
   React.useEffect(() => {
-    indicatorPosition.value = withSpring(
-      selectedMode === 'post' ? 1 : 0, 
-      SPRING_CONFIG
-    );
+    indicatorPosition.value = withSpring(selectedMode === 'post' ? 1 : 0, SPRING_CONFIG);
   }, [selectedMode]);
 
   const handleModePress = (mode: PostMode) => {
     if (disabled || mode === selectedMode) return;
-    
+
     triggerSelectionHaptic();
     onModeChange(mode);
   };
@@ -78,8 +71,8 @@ export function SegmentedPostControl({
   const getSegmentTextStyle = (mode: PostMode) => {
     const isSelected = selectedMode === mode;
     return `text-sm font-semibold ${
-      isSelected 
-        ? 'text-primary-600 dark:text-primary-400' 
+      isSelected
+        ? 'text-primary-600 dark:text-primary-400'
         : 'text-neutral-600 dark:text-neutral-400'
     }`;
   };
@@ -100,9 +93,7 @@ export function SegmentedPostControl({
         accessibilityRole="button"
         accessibilityState={{ selected: selectedMode === 'question' }}
         accessibilityLabel="Ask Question mode">
-        <ThemedText className={getSegmentTextStyle('question')}>
-          Ask Question
-        </ThemedText>
+        <ThemedText className={getSegmentTextStyle('question')}>Ask Question</ThemedText>
       </Pressable>
 
       {/* Create Post Segment */}
@@ -113,9 +104,7 @@ export function SegmentedPostControl({
         accessibilityRole="button"
         accessibilityState={{ selected: selectedMode === 'post' }}
         accessibilityLabel="Create Post mode">
-        <ThemedText className={getSegmentTextStyle('post')}>
-          Create Post
-        </ThemedText>
+        <ThemedText className={getSegmentTextStyle('post')}>Create Post</ThemedText>
       </Pressable>
     </View>
   );

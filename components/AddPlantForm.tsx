@@ -16,8 +16,6 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   useColorScheme,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -35,18 +33,19 @@ import { z } from 'zod';
 import { StrainAutocomplete, StrainAutocompleteRef } from './StrainAutocomplete';
 import { OptimizedIcon } from './ui/OptimizedIcon';
 import { EnhancedTextInput } from './ui/EnhancedTextInput';
-import { KeyboardToolbar } from './ui/KeyboardToolbar';
+import { KeyboardToolbar } from 'react-native-keyboard-controller';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 import ThemedText from './ui/ThemedText';
 import ThemedView from './ui/ThemedView';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { useDatabase } from '../lib/contexts/DatabaseProvider';
-import { useEnhancedKeyboard } from '../lib/hooks/useEnhancedKeyboard';
-import { 
-  triggerLightHaptic, 
-  triggerMediumHaptic, 
+import { useEnhancedKeyboard } from '../lib/hooks/keyboard/useEnhancedKeyboard';
+import {
+  triggerLightHaptic,
+  triggerMediumHaptic,
   triggerHeavyHaptic,
   triggerLightHapticSync,
-  triggerErrorHaptic 
+  triggerErrorHaptic,
 } from '../lib/utils/haptics';
 import { Plant as PlantModel } from '../lib/models/Plant';
 import {
@@ -454,21 +453,20 @@ const BasicInfoStep: React.FC<
     onInputFocus?: (index: number) => void;
     goToNextStep?: () => void;
   }
-> = ({ 
-  control, 
-  handleStrainSelectionAndSync, 
-  isSyncingStrain, 
-  syncError, 
+> = ({
+  control,
+  handleStrainSelectionAndSync,
+  isSyncingStrain,
+  syncError,
   inputRefs = [],
   currentInputIndex = 0,
   onInputFocus,
-  goToNextStep
+  goToNextStep,
 }) => {
-
   // Create refs for this step's inputs
   const nameInputRef = useRef<TextInput>(null);
   const strainInputRef = useRef<StrainAutocompleteRef>(null);
-  
+
   // Register refs with parent component
   React.useEffect(() => {
     if (inputRefs[0] && nameInputRef.current) {
@@ -614,25 +612,25 @@ const BasicInfoStep: React.FC<
 };
 
 const LocationStep: React.FC<
-  StepProps & { 
-    inputClasses: string; 
+  StepProps & {
+    inputClasses: string;
     placeholderTextColor: string;
     inputRefs?: any[];
     currentInputIndex?: number;
     onInputFocus?: (index: number) => void;
   }
-> = ({ 
-  control, 
-  setValue, 
-  inputClasses, 
+> = ({
+  control,
+  setValue,
+  inputClasses,
   placeholderTextColor,
   inputRefs = [],
   currentInputIndex = 0,
-  onInputFocus 
+  onInputFocus,
 }) => {
   const [customLocation, setCustomLocation] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
-  
+
   const customLocationRef = useRef<TextInput>(null);
 
   // Register refs with parent component
@@ -726,8 +724,8 @@ const LocationStep: React.FC<
                   onSubmitEditing={handleCustomLocationSubmit}
                   className="flex-1"
                 />
-                <AnimatedButton 
-                  onPress={handleCustomLocationSubmit} 
+                <AnimatedButton
+                  onPress={handleCustomLocationSubmit}
                   variant="primary"
                   className="h-12 w-12 rounded-lg">
                   <OptimizedIcon name="checkmark" size={16} className="text-white" />
@@ -787,13 +785,7 @@ const DetailsStep: React.FC<
     currentInputIndex?: number;
     onInputFocus?: (index: number) => void;
   }
-> = ({ 
-  control,
-  inputRefs = [],
-  currentInputIndex = 0,
-  onInputFocus 
-}) => {
-  
+> = ({ control, inputRefs = [], currentInputIndex = 0, onInputFocus }) => {
   const notesInputRef = useRef<TextInput>(null);
 
   // Register refs with parent component
@@ -921,11 +913,11 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const progress = useSharedValue(0);
   const stepTransition = useSharedValue(0);
-  
+
   // Enhanced keyboard handling
   const inputRefs = useRef<any[]>([]);
   const [fieldNames, setFieldNames] = useState<string[]>([]);
-  
+
   const {
     isKeyboardVisible,
     keyboardHeight,
@@ -935,7 +927,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     dismissKeyboard,
     canGoNext,
     canGoPrevious,
-    setActiveInputIndex
+    setActiveInputIndex,
   } = useEnhancedKeyboard(inputRefs.current, fieldNames.length);
 
   const {
@@ -1298,11 +1290,11 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const renderCurrentStep = () => {
     const commonProps = { control, setValue, errors, getValues };
-    
+
     // Create stable input refs with useMemo to maintain focus history
     const stepInputRefs = useMemo(() => {
       const currentStepId = FORM_STEPS[currentStepIndex]?.id;
-      
+
       switch (currentStepId) {
         case 'basicInfo':
           return [React.createRef(), React.createRef()]; // Plant Name + Strain
@@ -1313,12 +1305,12 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           return [];
       }
     }, [currentStepIndex]);
-    
+
     // Setup field names and refs based on current step
     React.useEffect(() => {
       const currentStepId = FORM_STEPS[currentStepIndex]?.id;
       let stepFieldNames: string[] = [];
-      
+
       switch (currentStepId) {
         case 'basicInfo':
           stepFieldNames = ['Plant Name', 'Strain'];
@@ -1332,7 +1324,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         default:
           stepFieldNames = [];
       }
-      
+
       setFieldNames(stepFieldNames);
       inputRefs.current = stepInputRefs;
     }, [currentStepIndex, stepInputRefs]);
@@ -1344,7 +1336,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       currentInputIndex: currentIndex,
       onInputFocus: (index: number) => {
         setActiveInputIndex(index);
-      }
+      },
     };
 
     switch (FORM_STEPS[currentStepIndex]?.id) {
@@ -1382,48 +1374,49 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const currentStep = FORM_STEPS[currentStepIndex];
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1">
-      <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
-        {/* Header */}
-        <ThemedView className="border-b border-neutral-200 bg-white px-4 py-6 dark:border-neutral-700 dark:bg-neutral-800">
-          <ThemedView className="mb-4 flex-row items-center justify-between">
-            <AnimatedButton onPress={() => router.back()} variant="tertiary" className="h-10 w-10">
-              <OptimizedIcon
-                name="close"
-                size={20}
-                className="text-neutral-900 dark:text-neutral-100"
-              />
-            </AnimatedButton>
-
-            <ThemedText variant="heading" className="text-lg">
-              Add Plant
-            </ThemedText>
-
-            <ThemedView className="w-10" />
-          </ThemedView>
-
-          {/* Progress Bar */}
-          <ThemedView className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
-            <Animated.View
-              style={progressBarStyle}
-              className="h-full rounded-full bg-primary-500 dark:bg-primary-400"
+    <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+      {/* Header */}
+      <ThemedView className="border-b border-neutral-200 bg-white px-4 py-6 dark:border-neutral-700 dark:bg-neutral-800">
+        <ThemedView className="mb-4 flex-row items-center justify-between">
+          <AnimatedButton onPress={() => router.back()} variant="tertiary" className="h-10 w-10">
+            <OptimizedIcon
+              name="close"
+              size={20}
+              className="text-neutral-900 dark:text-neutral-100"
             />
-          </ThemedView>
+          </AnimatedButton>
 
-          <ThemedView className="mt-2 flex-row justify-between">
-            <ThemedText variant="muted" className="text-xs">
-              Step {currentStepIndex + 1} of {FORM_STEPS.length}
-            </ThemedText>
-            <ThemedText variant="muted" className="text-xs">
-              {Math.round(((currentStepIndex + 1) / FORM_STEPS.length) * 100)}%
-            </ThemedText>
-          </ThemedView>
+          <ThemedText variant="heading" className="text-lg">
+            Add Plant
+          </ThemedText>
+
+          <ThemedView className="w-10" />
         </ThemedView>
 
-        {/* Step Content */}
-        <ScrollView className="flex-1 px-4 py-6" showsVerticalScrollIndicator={false}>
+        {/* Progress Bar */}
+        <ThemedView className="h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
+          <Animated.View
+            style={progressBarStyle}
+            className="h-full rounded-full bg-primary-500 dark:bg-primary-400"
+          />
+        </ThemedView>
+
+        <ThemedView className="mt-2 flex-row justify-between">
+          <ThemedText variant="muted" className="text-xs">
+            Step {currentStepIndex + 1} of {FORM_STEPS.length}
+          </ThemedText>
+          <ThemedText variant="muted" className="text-xs">
+            {Math.round(((currentStepIndex + 1) / FORM_STEPS.length) * 100)}%
+          </ThemedText>
+        </ThemedView>
+      </ThemedView>
+
+      {/* Step Content */}
+      <EnhancedKeyboardWrapper className="flex-1">
+        <ScrollView
+          className="px-4 py-6"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
           <Animated.View style={stepAnimatedStyle}>
             <ThemedView className="mb-6">
               <ThemedText variant="heading" className="mb-2 text-xl">
@@ -1437,61 +1430,49 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             {renderCurrentStep()}
           </Animated.View>
         </ScrollView>
+      </EnhancedKeyboardWrapper>
 
-        {/* Enhanced Keyboard Toolbar */}
-        <KeyboardToolbar
-          isVisible={isKeyboardVisible}
-          keyboardHeight={keyboardHeight}
-          onPrevious={goToPreviousInput}
-          onNext={goToNextInput}
-          onDone={dismissKeyboard}
-          canGoPrevious={canGoPrevious}
-          canGoNext={canGoNext}
-          currentField={fieldNames[currentIndex]}
-          totalFields={fieldNames.length}
-          currentIndex={currentIndex}
-        />
 
-        {/* Footer Navigation */}
-        <ThemedView className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">
-          <ThemedView className="flex-row space-x-3">
-            {currentStepIndex > 0 && (
-              <AnimatedButton onPress={goToPreviousStep} variant="secondary" className="flex-1">
-                <OptimizedIcon
-                  name="chevron-back"
-                  size={16}
-                  className="mr-2 text-neutral-900 dark:text-neutral-100"
-                />
-                <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
-                  Back
-                </ThemedText>
-              </AnimatedButton>
-            )}
 
-            {currentStepIndex < FORM_STEPS.length - 1 ? (
-              <AnimatedButton onPress={goToNextStep} variant="primary" className="flex-1">
-                <ThemedText className="mr-2 font-medium text-white">Next</ThemedText>
-                <OptimizedIcon name="chevron-forward" size={16} className="text-white" />
-              </AnimatedButton>
-            ) : (
-              <AnimatedButton
-                onPress={handleSubmit(onSubmit)}
-                variant="primary"
-                className="flex-1"
-                disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <>
-                    <OptimizedIcon name="checkmark" size={16} className="mr-2 text-white" />
-                    <ThemedText className="font-medium text-white">Add Plant</ThemedText>
-                  </>
-                )}
-              </AnimatedButton>
-            )}
-          </ThemedView>
+      {/* Footer Navigation */}
+      <ThemedView className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">
+        <ThemedView className="flex-row space-x-3">
+          {currentStepIndex > 0 && (
+            <AnimatedButton onPress={goToPreviousStep} variant="secondary" className="flex-1">
+              <OptimizedIcon
+                name="chevron-back"
+                size={16}
+                className="mr-2 text-neutral-900 dark:text-neutral-100"
+              />
+              <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
+                Back
+              </ThemedText>
+            </AnimatedButton>
+          )}
+
+          {currentStepIndex < FORM_STEPS.length - 1 ? (
+            <AnimatedButton onPress={goToNextStep} variant="primary" className="flex-1">
+              <ThemedText className="mr-2 font-medium text-white">Next</ThemedText>
+              <OptimizedIcon name="chevron-forward" size={16} className="text-white" />
+            </AnimatedButton>
+          ) : (
+            <AnimatedButton
+              onPress={handleSubmit(onSubmit)}
+              variant="primary"
+              className="flex-1"
+              disabled={isSubmitting}>
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <>
+                  <OptimizedIcon name="checkmark" size={16} className="mr-2 text-white" />
+                  <ThemedText className="font-medium text-white">Add Plant</ThemedText>
+                </>
+              )}
+            </AnimatedButton>
+          )}
         </ThemedView>
       </ThemedView>
-    </KeyboardAvoidingView>
+    </ThemedView>
   );
 }

@@ -2,7 +2,9 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { ScrollView } from 'react-native';
 
-import EntryTypeSelector, { DiaryEntryType } from '../../../../../components/diary/EntryTypeSelector';
+import EntryTypeSelector, {
+  DiaryEntryType,
+} from '../../../../../components/diary/EntryTypeSelector';
 import ThemedText from '../../../../../components/ui/ThemedText';
 import ThemedView from '../../../../../components/ui/ThemedView';
 

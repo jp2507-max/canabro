@@ -147,7 +147,7 @@ export default function StorageImage({
     setRetryCount((prev) => prev + 1);
     setHasError(false);
     setIsLoading(true);
-    
+
     // Fix: Move shared value mutations to worklet to avoid render warnings
     runOnUI(() => {
       'worklet';

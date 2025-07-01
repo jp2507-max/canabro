@@ -13,7 +13,7 @@ export default function CalendarIndex() {
       console.warn('[CalendarIndex] Invalid date received, ignoring:', date);
       return;
     }
-    
+
     console.log('[CalendarIndex] Setting selected date:', date);
     setSelectedDate(date);
   }, []);

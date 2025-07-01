@@ -159,11 +159,10 @@ const DatabaseResetButton = () => {
       }
     });
 
-  const confirmGesture = Gesture.Tap()
-    .onFinalize(() => {
-      'worklet';
-      runOnJS(handleReset)();
-    });
+  const confirmGesture = Gesture.Tap().onFinalize(() => {
+    'worklet';
+    runOnJS(handleReset)();
+  });
 
   const cancelGesture = Gesture.Tap()
     .onBegin(() => {

@@ -78,7 +78,7 @@ export default function AddTaskToAllPlantsScreen() {
 
       await database.write(async () => {
         const tasksCollection = database.get('plant_tasks');
-        
+
         // Create a task for each plant
         const taskPromises = allPlants.map((plant: any) =>
           tasksCollection.create((task: any) => {
@@ -147,24 +147,20 @@ export default function AddTaskToAllPlantsScreen() {
               className="text-neutral-700 dark:text-neutral-300"
             />
           </TouchableOpacity>
-          <ThemedText className="flex-1 text-xl font-bold">
-            Add Task to All Plants
-          </ThemedText>
+          <ThemedText className="flex-1 text-xl font-bold">Add Task to All Plants</ThemedText>
         </View>
 
         <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
           {/* Task Type Selection */}
           <View className="mb-6">
-            <ThemedText className="mb-3 text-lg font-semibold">
-              Task Type
-            </ThemedText>
+            <ThemedText className="mb-3 text-lg font-semibold">Task Type</ThemedText>
             <View className="space-y-2">
               {TASK_TYPES.map((taskType) => (
                 <TouchableOpacity
                   key={taskType.id}
                   className={`rounded-xl border-2 p-4 ${
                     selectedTaskType === taskType.id
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950'
+                      ? 'dark:bg-primary-950 border-primary-500 bg-primary-50'
                       : isDark
                         ? 'border-neutral-700 bg-neutral-800'
                         : 'border-neutral-200 bg-white'
@@ -187,11 +183,7 @@ export default function AddTaskToAllPlantsScreen() {
                       {taskType.name}
                     </ThemedText>
                     {selectedTaskType === taskType.id && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={24}
-                        className="text-primary-500"
-                      />
+                      <Ionicons name="checkmark-circle" size={24} className="text-primary-500" />
                     )}
                   </View>
                 </TouchableOpacity>
@@ -201,14 +193,10 @@ export default function AddTaskToAllPlantsScreen() {
 
           {/* Due Date Selection */}
           <View className="mb-6">
-            <ThemedText className="mb-3 text-lg font-semibold">
-              Due Date
-            </ThemedText>
+            <ThemedText className="mb-3 text-lg font-semibold">Due Date</ThemedText>
             <TouchableOpacity
               className={`rounded-xl border-2 p-4 ${
-                isDark
-                  ? 'border-neutral-700 bg-neutral-800'
-                  : 'border-neutral-200 bg-white'
+                isDark ? 'border-neutral-700 bg-neutral-800' : 'border-neutral-200 bg-white'
               }`}
               onPress={() => setShowDatePicker(true)}
               accessibilityRole="button"
@@ -219,9 +207,7 @@ export default function AddTaskToAllPlantsScreen() {
                   size={24}
                   className="mr-3 text-neutral-500 dark:text-neutral-400"
                 />
-                <ThemedText className="flex-1 text-base">
-                  {formatDate(dueDate)}
-                </ThemedText>
+                <ThemedText className="flex-1 text-base">{formatDate(dueDate)}</ThemedText>
                 <Ionicons
                   name="chevron-forward"
                   size={20}
@@ -233,9 +219,7 @@ export default function AddTaskToAllPlantsScreen() {
 
           {/* Notes */}
           <View className="mb-6">
-            <ThemedText className="mb-3 text-lg font-semibold">
-              Notes (Optional)
-            </ThemedText>
+            <ThemedText className="mb-3 text-lg font-semibold">Notes (Optional)</ThemedText>
             <TextInput
               className={`rounded-xl border-2 p-4 text-base ${
                 isDark

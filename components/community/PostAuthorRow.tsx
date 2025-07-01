@@ -1,6 +1,6 @@
 /**
  * PostAuthorRow - User avatar display with privacy selector for post creation
- * 
+ *
  * Features:
  * - 28px diameter user avatar
  * - Privacy selector pill (32px height, 12px padding, #F2F2F7 background)
@@ -54,8 +54,8 @@ export function PostAuthorRow({
 }: PostAuthorRowProps) {
   const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
   const privacyScale = useSharedValue(1);
-  const currentPrivacyOption = PRIVACY_OPTIONS.find(option => option.value === privacy);
-  
+  const currentPrivacyOption = PRIVACY_OPTIONS.find((option) => option.value === privacy);
+
   // Type guard to ensure currentPrivacyOption is never undefined
   const safePrivacyOption = currentPrivacyOption || PRIVACY_OPTIONS[0]!;
 
@@ -65,12 +65,12 @@ export function PostAuthorRow({
 
   const handlePrivacyPress = () => {
     if (disabled) return;
-    
+
     privacyScale.value = withSpring(0.95, SPRING_CONFIG);
     setTimeout(() => {
       privacyScale.value = withSpring(1, SPRING_CONFIG);
     }, 100);
-    
+
     triggerLightHaptic();
     setShowPrivacyDropdown(!showPrivacyDropdown);
   };
@@ -101,7 +101,7 @@ export function PostAuthorRow({
           <Pressable
             onPress={handlePrivacyPress}
             disabled={disabled}
-            className={`flex-row items-center h-8 px-3 rounded-full ${
+            className={`h-8 flex-row items-center rounded-full px-3 ${
               disabled ? 'opacity-50' : ''
             }`}
             style={{
@@ -109,8 +109,7 @@ export function PostAuthorRow({
             }}
             accessibilityLabel={`Privacy setting: ${safePrivacyOption.label}`}
             accessibilityHint="Tap to change privacy settings"
-            accessibilityRole="button"
-          >
+            accessibilityRole="button">
             <OptimizedIcon
               name={safePrivacyOption.icon}
               size={14}
@@ -131,17 +130,15 @@ export function PostAuthorRow({
         {showPrivacyDropdown && (
           <Animated.View
             entering={FadeInDown.duration(200)}
-            className="absolute top-10 right-0 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden z-50"
-            style={{ minWidth: 120 }}
-          >
+            className="absolute right-0 top-10 z-50 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+            style={{ minWidth: 120 }}>
             {PRIVACY_OPTIONS.map((option) => (
               <Pressable
                 key={option.value}
                 onPress={() => handlePrivacySelect(option.value)}
                 className="flex-row items-center px-3 py-2.5 active:bg-neutral-100 dark:active:bg-neutral-700"
                 accessibilityLabel={`Set privacy to ${option.label}`}
-                accessibilityRole="button"
-              >
+                accessibilityRole="button">
                 <OptimizedIcon
                   name={option.icon}
                   size={16}
@@ -151,11 +148,7 @@ export function PostAuthorRow({
                   {option.label}
                 </ThemedText>
                 {privacy === option.value && (
-                  <OptimizedIcon
-                    name="checkmark"
-                    size={16}
-                    className="ml-auto text-primary-500"
-                  />
+                  <OptimizedIcon name="checkmark" size={16} className="ml-auto text-primary-500" />
                 )}
               </Pressable>
             ))}

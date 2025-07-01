@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import EnhancedKeyboardWrapper from '../../../../components/keyboard/EnhancedKeyboardWrapper';
 
 import { useAuth } from '../../../../lib/contexts/AuthProvider';
 
@@ -26,20 +27,20 @@ export default function AddTaskScreen() {
 
     try {
       const parsedDate = new Date(dateString);
-      
+
       // Check if the date is valid
       if (isNaN(parsedDate.getTime())) {
         console.warn('Invalid selectedDate provided, using current date:', dateString);
         return new Date();
       }
-      
+
       return parsedDate;
     } catch (error) {
       console.warn('Error parsing selectedDate, using current date:', dateString, error);
       return new Date();
     }
   };
-  
+
   const [formData, setFormData] = useState<TaskFormData>({
     title: '',
     description: '',
@@ -55,7 +56,7 @@ export default function AddTaskScreen() {
 
     // TODO: Implement task creation logic with database
     console.log('Creating task:', formData);
-    
+
     // Navigate back to calendar
     router.back();
   };
@@ -66,126 +67,118 @@ export default function AddTaskScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
-      <ScrollView className="flex-1 px-4 py-6">
-        <View className="space-y-6">
-          {/* Task Title */}
-          <View>
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Task Title
-            </Text>
-            <TextInput
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              placeholder="Enter task title"
-              placeholderTextColor="#9CA3AF"
-              value={formData.title}
-              onChangeText={(title) => setFormData(prev => ({ ...prev, title }))}
-            />
-          </View>
+      <EnhancedKeyboardWrapper className="flex-1" showToolbar={false}>
+        <ScrollView className="flex-1 px-4 py-6">
+          <View className="space-y-6">
+            {/* Task Title */}
+            <View>
+              <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                Task Title
+              </Text>
+              <TextInput
+                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                placeholder="Enter task title"
+                placeholderTextColor="#9CA3AF"
+                value={formData.title}
+                onChangeText={(title) => setFormData((prev) => ({ ...prev, title }))}
+              />
+            </View>
 
-          {/* Description */}
-          <View>
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Description (Optional)
-            </Text>
-            <TextInput
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800 h-24"
-              placeholder="Add task details..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              textAlignVertical="top"
-              value={formData.description}
-              onChangeText={(description) => setFormData(prev => ({ ...prev, description }))}
-            />
-          </View>
+            {/* Description */}
+            <View>
+              <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                Description (Optional)
+              </Text>
+              <TextInput
+                className="h-24 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                placeholder="Add task details..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                textAlignVertical="top"
+                value={formData.description}
+                onChangeText={(description) => setFormData((prev) => ({ ...prev, description }))}
+              />
+            </View>
 
-          {/* Priority Selection */}
-          <View>
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Priority
-            </Text>
-            <View className="flex-row space-x-3">
-              {(['low', 'medium', 'high'] as const).map((priority) => (
-                <TouchableOpacity
-                  key={priority}
-                  className={`flex-1 py-3 rounded-lg border ${
-                    formData.priority === priority
-                      ? 'bg-green-500 border-green-500'
-                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
-                  }`}
-                  onPress={() => setFormData(prev => ({ ...prev, priority }))}
-                >
-                  <Text
-                    className={`text-center font-medium capitalize ${
+            {/* Priority Selection */}
+            <View>
+              <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                Priority
+              </Text>
+              <View className="flex-row space-x-3">
+                {(['low', 'medium', 'high'] as const).map((priority) => (
+                  <TouchableOpacity
+                    key={priority}
+                    className={`flex-1 rounded-lg border py-3 ${
                       formData.priority === priority
-                        ? 'text-white'
-                        : 'text-gray-900 dark:text-white'
+                        ? 'border-green-500 bg-green-500'
+                        : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'
                     }`}
-                  >
-                    {priority}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    onPress={() => setFormData((prev) => ({ ...prev, priority }))}>
+                    <Text
+                      className={`text-center font-medium capitalize ${
+                        formData.priority === priority
+                          ? 'text-white'
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
+                      {priority}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Category Selection */}
+            <View>
+              <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                Category
+              </Text>
+              <View className="space-y-2">
+                {(['watering', 'feeding', 'pruning', 'inspection', 'other'] as const).map(
+                  (category) => (
+                    <TouchableOpacity
+                      key={category}
+                      className={`rounded-lg border px-4 py-3 ${
+                        formData.category === category
+                          ? 'border-green-500 bg-green-500'
+                          : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'
+                      }`}
+                      onPress={() => setFormData((prev) => ({ ...prev, category }))}>
+                      <Text
+                        className={`font-medium capitalize ${
+                          formData.category === category
+                            ? 'text-white'
+                            : 'text-gray-900 dark:text-white'
+                        }`}>
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </View>
             </View>
           </View>
+        </ScrollView>
 
-          {/* Category Selection */}
-          <View>
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Category
-            </Text>
-            <View className="space-y-2">
-              {(['watering', 'feeding', 'pruning', 'inspection', 'other'] as const).map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  className={`py-3 px-4 rounded-lg border ${
-                    formData.category === category
-                      ? 'bg-green-500 border-green-500'
-                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
-                  }`}
-                  onPress={() => setFormData(prev => ({ ...prev, category }))}
-                >
-                  <Text
-                    className={`font-medium capitalize ${
-                      formData.category === category
-                        ? 'text-white'
-                        : 'text-gray-900 dark:text-white'
-                    }`}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        {/* Action Buttons */}
+        <View className="border-t border-gray-200 px-4 py-6 dark:border-gray-700">
+          <View className="flex-row space-x-3">
+            <TouchableOpacity
+              className="flex-1 rounded-lg bg-gray-200 py-4 dark:bg-gray-700"
+              onPress={handleCancel}>
+              <Text className="text-center font-semibold text-gray-900 dark:text-white">Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`flex-1 rounded-lg py-4 ${
+                formData.title.trim() ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+              onPress={handleSave}
+              disabled={!formData.title.trim()}>
+              <Text className="text-center font-semibold text-white">Save Task</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
-
-      {/* Action Buttons */}
-      <View className="px-4 py-6 border-t border-gray-200 dark:border-gray-700">
-        <View className="flex-row space-x-3">
-          <TouchableOpacity
-            className="flex-1 py-4 rounded-lg bg-gray-200 dark:bg-gray-700"
-            onPress={handleCancel}
-          >
-            <Text className="text-center font-semibold text-gray-900 dark:text-white">
-              Cancel
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className={`flex-1 py-4 rounded-lg ${
-              formData.title.trim()
-                ? 'bg-green-500'
-                : 'bg-gray-300 dark:bg-gray-600'
-            }`}
-            onPress={handleSave}
-            disabled={!formData.title.trim()}
-          >
-            <Text className="text-center font-semibold text-white">
-              Save Task
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </EnhancedKeyboardWrapper>
     </SafeAreaView>
   );
 }

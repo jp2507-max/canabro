@@ -166,7 +166,7 @@ const ProfileScreenContainer: React.FC = () => {
   }
 
   return (
-    <ProfileScreenBase 
+    <ProfileScreenBase
       profile={profileData.profile}
       plantsCount={profileData.plantsCount}
       postsCount={profileData.postsCount}

@@ -12,23 +12,21 @@ import {
   RefreshControl,
   TextInput,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+  Keyboard,
+  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OptimizedIcon, IconName } from '../../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../../components/ui/ThemedText';
 import ThemedView from '../../../../components/ui/ThemedView';
 import { EnhancedTextInput } from '../../../../components/ui/EnhancedTextInput';
-import { KeyboardToolbar } from '../../../../components/ui/KeyboardToolbar';
 // import { isExpoGo } from '../../../../lib/config'; // isExpoGo is unused
 import { useAuth } from '../../../../lib/contexts/AuthProvider';
 import useWatermelon from '../../../../lib/hooks/useWatermelon';
-import { useEnhancedKeyboard } from '../../../../lib/hooks/useEnhancedKeyboard';
 import { DiaryEntry } from '../../../../lib/models/DiaryEntry';
 import { Plant } from '../../../../lib/models/Plant';
 import { triggerLightHaptic } from '../../../../lib/utils/haptics';
+import EnhancedKeyboardWrapper from '../../../../components/keyboard/EnhancedKeyboardWrapper';
 
 // Simplified interfaces for props
 interface PlantDiaryScreenProps {
@@ -37,7 +35,10 @@ interface PlantDiaryScreenProps {
 }
 
 // Base component that receives data from withObservables
-const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, diaryEntries }: PlantDiaryScreenProps) {
+const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({
+  plant,
+  diaryEntries,
+}: PlantDiaryScreenProps) {
   const { session } = useAuth();
   const { sync, isSyncing } = useWatermelon();
 
@@ -54,41 +55,13 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
 
   // Enhanced keyboard handling for diary form
   const titleInputRef = useRef<TextInput>(null);
-  const inputRefs = [titleInputRef, contentInputRef];
-  const totalInputs = 2;
 
-  const {
-    isKeyboardVisible,
-    keyboardHeight,
-    currentIndex,
-    goToNextInput,
-    goToPreviousInput,
-    dismissKeyboard,
-    canGoNext,
-    canGoPrevious,
-    setCurrentIndex,
-  } = useEnhancedKeyboard(inputRefs, totalInputs);
-
-  // Get field name for keyboard toolbar
-  const getFieldName = (index: number): string => {
-    if (index === 0) return 'Title';
-    if (index === 1) return 'Content';
-    return `Field ${index + 1}`;
-  };
-
-  // Enhanced input focus management
-  const handleInputFocus = (index: number) => {
-    setCurrentIndex(index);
+  const handleInputFocus = () => {
     triggerLightHaptic();
   };
 
-  // Enhanced input submit handling
-  const handleSubmitEditing = (index: number) => {
-    if (index < inputRefs.length - 1) {
-      goToNextInput();
-    } else {
-      dismissKeyboard();
-    }
+  const handleSubmitEditing = () => {
+    Keyboard.dismiss();
   };
 
   // Sort entries by date - newest first
@@ -230,7 +203,8 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
                 </ThemedText>
 
                 <View className={`rounded-full px-2 py-0.5 ${typeStyles.tagClasses}`}>
-                  <ThemedText className={`text-xs font-medium capitalize ${typeStyles.iconClasses}`}>
+                  <ThemedText
+                    className={`text-xs font-medium capitalize ${typeStyles.iconClasses}`}>
                     {item.entryType}
                   </ThemedText>
                 </View>
@@ -253,7 +227,7 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
   );
 
   return (
-    <>
+    <EnhancedKeyboardWrapper className="flex-1" showToolbar={false}>
       <StatusBar style="auto" />
       <Stack.Screen
         options={{
@@ -262,185 +236,163 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({ plant, d
         }}
       />
 
-      <SafeAreaView className="flex-1">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1">
-          <ThemedView variant="default" className="flex-1 p-4 transition-colors">
-            {/* Plant Header */}
-            <ThemedView variant="card" className="mb-4 flex-row items-center p-4">
-              <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900">
-                <OptimizedIcon name="leaf-outline" size={24} className="text-primary-500" />
-              </View>
-              <View className="flex-1">
-                <ThemedText variant="heading">{plant.name}</ThemedText>
-                <ThemedText variant="muted">
-                  {plant.strain} • {plant.growthStage}
-                </ThemedText>
-              </View>
+      <ThemedView variant="default" className="flex-1 p-4 transition-colors">
+        {/* Plant Header */}
+        <ThemedView variant="card" className="mb-4 flex-row items-center p-4">
+          <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900">
+            <OptimizedIcon name="leaf-outline" size={24} className="text-primary-500" />
+          </View>
+          <View className="flex-1">
+            <ThemedText variant="heading">{plant.name}</ThemedText>
+            <ThemedText variant="muted">
+              {plant.strain} • {plant.growthStage}
+            </ThemedText>
+          </View>
+        </ThemedView>
+
+        {/* Diary Entries List */}
+        <FlatList
+          data={sortedEntries}
+          renderItem={renderDiaryEntryItem}
+          keyExtractor={keyExtractor}
+          contentContainerClassName="pb-20"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing || isSyncing}
+              onRefresh={onRefresh}
+              colors={['rgb(var(--color-primary-500))']}
+              tintColor="rgb(var(--color-primary-500))"
+            />
+          }
+          ListEmptyComponent={
+            <ThemedView variant="card" className="items-center p-6">
+              <OptimizedIcon
+                name="document-text-outline"
+                size={48}
+                className="text-neutral-300 dark:text-neutral-600"
+              />
+              <ThemedText variant="heading" className="mt-3 text-center">
+                No diary entries yet
+              </ThemedText>
+              <ThemedText variant="muted" className="mt-1 text-center">
+                Start keeping track of your plant's journey by adding your first entry!
+              </ThemedText>
+            </ThemedView>
+          }
+          // ⚡ Performance optimizations for diary entries
+          initialNumToRender={8}
+          windowSize={10}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={100}
+          removeClippedSubviews={true}
+        />
+
+        {/* Add Entry Button (visible when not adding entry) */}
+        {!isAddingEntry && (
+          <View className="absolute bottom-4 right-4">
+            <Pressable
+              accessibilityLabel="Add diary entry"
+              className="h-14 w-14 items-center justify-center rounded-full bg-primary-500 shadow-xl transition-colors"
+              onPress={() => {
+                setIsAddingEntry(true);
+                setTimeout(() => {
+                  contentInputRef.current?.focus();
+                }, 100);
+              }}
+              style={({ pressed }) => [
+                {
+                  backgroundColor: pressed
+                    ? 'rgb(var(--color-primary-600))'
+                    : 'rgb(var(--color-primary-500))',
+                  elevation: 4,
+                },
+              ]}>
+              <OptimizedIcon name="add" size={28} color="white" />
+            </Pressable>
+          </View>
+        )}
+
+        {/* Add Entry Form (shown when isAddingEntry is true) */}
+        {isAddingEntry && (
+          <ThemedView
+            className="absolute bottom-0 left-0 right-0 rounded-t-xl border-t border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-800"
+            style={[{ elevation: 8 }]}>
+            <View className="mb-3 flex-row items-center justify-between">
+              {' '}
+              <ThemedText className="text-lg font-bold">New Diary Entry</ThemedText>
+              <Pressable
+                accessibilityLabel="Close entry form"
+                onPress={() => {
+                  setIsAddingEntry(false);
+                  setEntryTitle('');
+                  setEntryContent('');
+                  setEntryType('general');
+                }}>
+                <OptimizedIcon
+                  name="close"
+                  size={24}
+                  className="text-neutral-500 dark:text-neutral-400"
+                />
+              </Pressable>
+            </View>
+
+            {/* Entry Type Selection */}
+            <ScrollableEntryTypeSelector selectedType={entryType} onSelect={setEntryType} />
+
+            {/* Entry Form */}
+            <ThemedView className="mb-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
+              <EnhancedTextInput
+                ref={titleInputRef}
+                placeholder="Title (optional)"
+                value={entryTitle}
+                onChangeText={setEntryTitle}
+                onFocus={() => handleInputFocus()}
+                onSubmitEditing={() => handleSubmitEditing()}
+                returnKeyType="next"
+                className="mb-1 text-base font-medium"
+                maxLength={100}
+              />
+              <EnhancedTextInput
+                ref={contentInputRef}
+                placeholder="What's happening with your plant today?"
+                value={entryContent}
+                onChangeText={setEntryContent}
+                onFocus={() => handleInputFocus()}
+                onSubmitEditing={() => handleSubmitEditing()}
+                multiline
+                numberOfLines={4}
+                className="min-h-[100px] text-base"
+                textAlignVertical="top"
+                returnKeyType="done"
+                maxLength={500}
+              />
             </ThemedView>
 
-            {/* Diary Entries List */}
-            <FlatList
-              data={sortedEntries}
-              renderItem={renderDiaryEntryItem}
-              keyExtractor={keyExtractor}
-              contentContainerClassName="pb-20"
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing || isSyncing}
-                  onRefresh={onRefresh}
-                  colors={['rgb(var(--color-primary-500))']}
-                  tintColor="rgb(var(--color-primary-500))"
-                />
-              }
-              ListEmptyComponent={
-                <ThemedView variant="card" className="items-center p-6">
-                  <OptimizedIcon
-                    name="document-text-outline"
-                    size={48}
-                    className="text-neutral-300 dark:text-neutral-600"
-                  />
-                  <ThemedText variant="heading" className="mt-3 text-center">
-                    No diary entries yet
-                  </ThemedText>
-                  <ThemedText variant="muted" className="mt-1 text-center">
-                    Start keeping track of your plant's journey by adding your first entry!
-                  </ThemedText>
-                </ThemedView>
-              }
-              // ⚡ Performance optimizations for diary entries
-              initialNumToRender={8}
-              windowSize={10}
-              maxToRenderPerBatch={6}
-              updateCellsBatchingPeriod={100}
-              removeClippedSubviews={true}
-            />
-
-            {/* Add Entry Button (visible when not adding entry) */}
-            {!isAddingEntry && (
-              <View className="absolute bottom-4 right-4">
-                <Pressable
-                  accessibilityLabel="Add diary entry"
-                  className="h-14 w-14 items-center justify-center rounded-full bg-primary-500 shadow-xl transition-colors"
-                  onPress={() => {
-                    setIsAddingEntry(true);
-                    setTimeout(() => {
-                      contentInputRef.current?.focus();
-                    }, 100);
-                  }}
-                  style={({ pressed }) => [
-                    {
-                      backgroundColor: pressed
+            {/* Submit Button */}
+            <Pressable
+              className="items-center rounded-lg bg-primary-500 py-3 transition-colors"
+              onPress={handleAddEntry}
+              disabled={isSubmitting || !entryContent.trim()}
+              style={({ pressed }) => [
+                {
+                  backgroundColor:
+                    isSubmitting || !entryContent.trim()
+                      ? 'rgb(var(--color-neutral-300))'
+                      : pressed
                         ? 'rgb(var(--color-primary-600))'
                         : 'rgb(var(--color-primary-500))',
-                      elevation: 4,
-                    },
-                  ]}>
-                  <OptimizedIcon name="add" size={28} color="white" />
-                </Pressable>
-              </View>
-            )}
-
-            {/* Add Entry Form (shown when isAddingEntry is true) */}
-            {isAddingEntry && (
-              <ThemedView
-                className="absolute bottom-0 left-0 right-0 rounded-t-xl border-t border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-800"
-                style={[{ elevation: 8 }]}>
-                <View className="mb-3 flex-row items-center justify-between">
-                  {' '}
-                  <ThemedText className="text-lg font-bold">New Diary Entry</ThemedText>
-                  <Pressable
-                    accessibilityLabel="Close entry form"
-                    onPress={() => {
-                      setIsAddingEntry(false);
-                      setEntryTitle('');
-                      setEntryContent('');
-                      setEntryType('general');
-                    }}>
-                    <OptimizedIcon
-                      name="close"
-                      size={24}
-                      className="text-neutral-500 dark:text-neutral-400"
-                    />
-                  </Pressable>
-                </View>
-
-                {/* Entry Type Selection */}
-                <ScrollableEntryTypeSelector selectedType={entryType} onSelect={setEntryType} />
-
-                {/* Entry Form */}
-                <ThemedView className="mb-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
-                  <EnhancedTextInput
-                    ref={titleInputRef}
-                    placeholder="Title (optional)"
-                    value={entryTitle}
-                    onChangeText={setEntryTitle}
-                    onFocus={() => handleInputFocus(0)}
-                    onSubmitEditing={() => handleSubmitEditing(0)}
-                    returnKeyType="next"
-                    className="mb-1 text-base font-medium"
-                    maxLength={100}
-                  />
-                  <EnhancedTextInput
-                    ref={contentInputRef}
-                    placeholder="What's happening with your plant today?"
-                    value={entryContent}
-                    onChangeText={setEntryContent}
-                    onFocus={() => handleInputFocus(1)}
-                    onSubmitEditing={() => handleSubmitEditing(1)}
-                    multiline
-                    numberOfLines={4}
-                    className="min-h-[100px] text-base"
-                    textAlignVertical="top"
-                    returnKeyType="done"
-                    maxLength={500}
-                  />
-                </ThemedView>
-
-                {/* Submit Button */}
-                <Pressable
-                  className="items-center rounded-lg bg-primary-500 py-3 transition-colors"
-                  onPress={handleAddEntry}
-                  disabled={isSubmitting || !entryContent.trim()}
-                  style={({ pressed }) => [
-                    {
-                      backgroundColor:
-                        isSubmitting || !entryContent.trim()
-                          ? 'rgb(var(--color-neutral-300))'
-                          : pressed
-                            ? 'rgb(var(--color-primary-600))'
-                            : 'rgb(var(--color-primary-500))',
-                    },
-                  ]}>
-                  {isSubmitting ? (
-                    <ActivityIndicator color="white" size="small" />
-                  ) : (
-                    <ThemedText className="font-bold text-white">Add Entry</ThemedText>
-                  )}
-                </Pressable>
-              </ThemedView>
-            )}
+                },
+              ]}>
+              {isSubmitting ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <ThemedText className="font-bold text-white">Add Entry</ThemedText>
+              )}
+            </Pressable>
           </ThemedView>
-        </KeyboardAvoidingView>
-
-        {/* Enhanced Keyboard Toolbar - only show when adding entry */}
-        {isAddingEntry && (
-          <KeyboardToolbar
-            isVisible={isKeyboardVisible}
-            keyboardHeight={keyboardHeight}
-            onPrevious={goToPreviousInput}
-            onNext={goToNextInput}
-            onDone={dismissKeyboard}
-            canGoPrevious={canGoPrevious}
-            canGoNext={canGoNext}
-            currentField={getFieldName(currentIndex)}
-            totalFields={totalInputs}
-            currentIndex={currentIndex}
-          />
         )}
-      </SafeAreaView>
-    </>
+      </ThemedView>
+    </EnhancedKeyboardWrapper>
   );
 });
 

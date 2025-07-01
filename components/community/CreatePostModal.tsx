@@ -17,13 +17,23 @@ import Animated, {
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
-import {
-  triggerLightHapticSync,
-  triggerMediumHapticSync,
-} from '../../lib/utils/haptics';
-import { CreatePostBottomSheet, type PostData, type QuestionData } from './CreatePostBottomSheet';
+import { EnhancedKeyboardWrapper } from '../keyboard/EnhancedKeyboardWrapper';
+import { triggerLightHapticSync, triggerMediumHapticSync } from '../../lib/utils/haptics';
+
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { createPost } from '../../lib/services/community-service';
+
+// Temporary type definitions for the missing component
+type PostData = {
+  content: string;
+  image?: string;
+};
+
+type QuestionData = {
+  title: string;
+  content: string;
+  image?: string;
+};
 
 type CreatePostModalProps = {
   visible: boolean;
@@ -82,95 +92,88 @@ const CreatePostModal = React.memo(function CreatePostModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Memoized user data for performance
-  const userData = useMemo(() => ({
-    avatarUrl: user?.user_metadata?.avatar_url,
-    userName: user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous',
-  }), [user?.user_metadata?.avatar_url, user?.user_metadata?.username, user?.email]);
+  const userData = useMemo(
+    () => ({
+      avatarUrl: user?.user_metadata?.avatar_url,
+      userName: user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous',
+    }),
+    [user?.user_metadata?.avatar_url, user?.user_metadata?.username, user?.email]
+  );
 
   // Enhanced error handling with proper error boundaries
-  const handleCreatePost = useCallback(async (data: PostData): Promise<void> => {
-    if (!user?.id || isSubmitting) {
-      throw new Error('User not authenticated or already submitting');
-    }
-
-    setIsSubmitting(true);
-    try {
-      const postData = {
-        user_id: user.id,
-        content: data.content,
-        image_url: data.image,
-      };
-
-      const result = await createPost(postData);
-      if (!result.success) {
-        throw new Error(result.error?.message || 'Failed to create post');
+  const handleCreatePost = useCallback(
+    async (data: PostData): Promise<void> => {
+      if (!user?.id || isSubmitting) {
+        throw new Error('User not authenticated or already submitting');
       }
 
-      // Trigger success callback
-      onCreatePost();
-    } catch (error) {
-      console.error('Error creating post:', error);
-      Alert.alert(
-        'Error',
-        'Failed to create post. Please check your connection and try again.',
-        [{ text: 'OK' }]
-      );
-      throw error; // Re-throw for the bottom sheet to handle
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [user?.id, isSubmitting, onCreatePost]);
+      setIsSubmitting(true);
+      try {
+        const postData = {
+          user_id: user.id,
+          content: data.content,
+          image_url: data.image,
+        };
+
+        const result = await createPost(postData);
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Failed to create post');
+        }
+
+        // Trigger success callback
+        onCreatePost();
+      } catch (error) {
+        console.error('Error creating post:', error);
+        Alert.alert('Error', 'Failed to create post. Please check your connection and try again.', [
+          { text: 'OK' },
+        ]);
+        throw error; // Re-throw for the bottom sheet to handle
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user?.id, isSubmitting, onCreatePost]
+  );
 
   // Handle questions as posts with question prefix
-  const handleCreateQuestion = useCallback(async (data: QuestionData): Promise<void> => {
-    if (!user?.id || isSubmitting) {
-      throw new Error('User not authenticated or already submitting');
-    }
-
-    setIsSubmitting(true);
-    try {
-      const questionContent = `**${data.title}**\n\n${data.content}`;
-      const postData = {
-        user_id: user.id,
-        content: questionContent,
-        image_url: data.image,
-      };
-
-      const result = await createPost(postData);
-      if (!result.success) {
-        throw new Error(result.error?.message || 'Failed to create question');
+  const handleCreateQuestion = useCallback(
+    async (data: QuestionData): Promise<void> => {
+      if (!user?.id || isSubmitting) {
+        throw new Error('User not authenticated or already submitting');
       }
 
-      // Trigger success callback
-      onAskQuestion();
-    } catch (error) {
-      console.error('Error creating question:', error);
-      Alert.alert(
-        'Error',
-        'Failed to post question. Please check your connection and try again.',
-        [{ text: 'OK' }]
-      );
-      throw error; // Re-throw for the bottom sheet to handle
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [user?.id, isSubmitting, onAskQuestion]);
+      setIsSubmitting(true);
+      try {
+        const questionContent = `**${data.title}**\n\n${data.content}`;
+        const postData = {
+          user_id: user.id,
+          content: questionContent,
+          image_url: data.image,
+        };
 
-  // Modern bottom sheet implementation
-  if (modalVariant === 'bottomSheet') {
-    return (
-      <CreatePostBottomSheet
-        visible={visible}
-        onClose={onClose}
-        onCreatePost={handleCreatePost}
-        onCreateQuestion={handleCreateQuestion}
-        userAvatarUrl={userData.avatarUrl}
-        userName={userData.userName}
-      />
-    );
-  }
+        const result = await createPost(postData);
+        if (!result.success) {
+          throw new Error(result.error?.message || 'Failed to create question');
+        }
 
-  // Legacy modal fallback for A/B testing or compatibility
+        // Trigger success callback
+        onAskQuestion();
+      } catch (error) {
+        console.error('Error creating question:', error);
+        Alert.alert(
+          'Error',
+          'Failed to post question. Please check your connection and try again.',
+          [{ text: 'OK' }]
+        );
+        throw error; // Re-throw for the bottom sheet to handle
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user?.id, isSubmitting, onAskQuestion]
+  );
+
+  // Use legacy modal implementation for now since bottom sheet component is missing
   return <LegacyCreatePostModal {...{ visible, onClose, onCreatePost, onAskQuestion }} />;
 });
 
@@ -471,7 +474,11 @@ const LegacyCreatePostModal = React.memo(function LegacyCreatePostModal({
                             Post photos and updates about your plants
                           </ThemedText>
                         </View>
-                        <OptimizedIcon name="chevron-forward" size={20} className="text-neutral-400" />
+                        <OptimizedIcon
+                          name="chevron-forward"
+                          size={20}
+                          className="text-neutral-400"
+                        />
                       </View>
                     </GestureDetector>
                   </Animated.View>
@@ -491,7 +498,11 @@ const LegacyCreatePostModal = React.memo(function LegacyCreatePostModal({
                             Get help from the community on growing issues
                           </ThemedText>
                         </View>
-                        <OptimizedIcon name="chevron-forward" size={20} className="text-neutral-400" />
+                        <OptimizedIcon
+                          name="chevron-forward"
+                          size={20}
+                          className="text-neutral-400"
+                        />
                       </View>
                     </GestureDetector>
                   </Animated.View>

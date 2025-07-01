@@ -5,7 +5,7 @@ import useWatermelon from './useWatermelon';
  */
 
 // Keyboard and UI hooks
-export * from './useEnhancedKeyboard';
+export * from './keyboard/useEnhancedKeyboard';
 
 // Database hooks
 export * from './useDatabase';

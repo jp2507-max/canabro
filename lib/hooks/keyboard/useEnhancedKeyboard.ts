@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Keyboard, KeyboardEventListener, Platform } from 'react-native';
+import { useState } from 'react';
+import { Keyboard } from 'react-native';
+import { runOnJS } from 'react-native-reanimated';
+import { useKeyboardHandler } from 'react-native-keyboard-controller';
 
 export interface EnhancedKeyboardState {
   // Keyboard state
@@ -34,35 +36,34 @@ export const useEnhancedKeyboard = (
   // Keyboard state
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-    // Input navigation state
+  
+  // Input navigation state
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null);
 
   // Keyboard event handlers - defined before useEffect to avoid TDZ
-  const handleKeyboardShow: KeyboardEventListener = (event) => {
-    setIsKeyboardVisible(true);
-    setKeyboardHeight(event.endCoordinates.height);
-  };
+  /**
+   * Use react-native-keyboard-controller to drive the shared values.  The hook
+   * executes in the worklet context on each keyboard animation frame to keep
+   * everything buttery-smooth (60 fps).
+   */
+  useKeyboardHandler(
+    {
+      onMove: (event: any) => {
+        'worklet';
+        // Sync JS state with native keyboard frame changes
+        runOnJS(setIsKeyboardVisible)(event.height > 0);
+        runOnJS(setKeyboardHeight)(event.height);
+      },
+      onEnd: (event: any) => {
+        'worklet';
+        runOnJS(setIsKeyboardVisible)(event.height > 0);
+        runOnJS(setKeyboardHeight)(event.height);
+      },
+    },
+    []
+  );
 
-  const handleKeyboardHide: KeyboardEventListener = () => {
-    setIsKeyboardVisible(false);
-    setKeyboardHeight(0);
-    setActiveInputIndex(null);
-    setCurrentIndex(0);
-  };
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardShow);
-    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
   // Input navigation methods
   const goToNextInput = () => {
     if (totalInputs === 0) return false;
@@ -137,7 +138,8 @@ export const useEnhancedKeyboard = (
     // Input navigation state
     currentIndex,
     activeInputIndex,
-      // Navigation methods
+    
+    // Navigation methods
     goToNextInput,
     goToPreviousInput,
     goToInput,
@@ -147,5 +149,6 @@ export const useEnhancedKeyboard = (
     
     // Helper properties
     canGoNext,
-    canGoPrevious,  };
+    canGoPrevious,
+  };
 };

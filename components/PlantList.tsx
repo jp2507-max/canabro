@@ -58,98 +58,100 @@ const EmptyPlantList = React.memo(() => {
 EmptyPlantList.displayName = 'EmptyPlantList';
 
 // Base component that receives plants as an array - Optimized with React.memo
-const PlantListComponent = React.memo(({
-  plants,
-  isLoading,
-  onCountChange,
-  ListHeaderComponent,
-  refreshing = false,
-  onRefresh,
-}: PlantListComponentProps) => {
-  const router = useRouter();
+const PlantListComponent = React.memo(
+  ({
+    plants,
+    isLoading,
+    onCountChange,
+    ListHeaderComponent,
+    refreshing = false,
+    onRefresh,
+  }: PlantListComponentProps) => {
+    const router = useRouter();
 
-  useEffect(() => {
-    if (onCountChange) {
-      onCountChange(plants?.length ?? 0);
+    useEffect(() => {
+      if (onCountChange) {
+        onCountChange(plants?.length ?? 0);
+      }
+    }, [plants, onCountChange]);
+
+    const handlePress = React.useCallback(
+      (plantId: string) => {
+        router.push({
+          pathname: '/(app)/plant/[id]',
+          params: { id: plantId },
+        });
+      },
+      [router]
+    );
+
+    const renderPlantCard = React.useCallback(
+      ({ item: wdbPlantItem }: { item: WDBPlant }) => {
+        const plantCardData = getPlantCardData(wdbPlantItem);
+
+        return <PlantCard plant={plantCardData} onPress={handlePress} />;
+      },
+      [handlePress]
+    );
+
+    const keyExtractor = React.useCallback((item: WDBPlant) => item.id, []);
+
+    const getItemLayout = React.useCallback(
+      (_data: ArrayLike<WDBPlant> | null | undefined, index: number) => ({
+        length: 120, // Approximate height of PlantCard
+        offset: 120 * index,
+        index,
+      }),
+      []
+    );
+
+    if (isLoading) {
+      return (
+        <View className="mt-10 flex-1 items-center justify-center">
+          <ActivityIndicator size="large" className="text-primary-500" />
+          <ThemedText className="mt-3 text-neutral-600 dark:text-neutral-400">
+            Loading plants...
+          </ThemedText>
+        </View>
+      );
     }
-  }, [plants, onCountChange]);
 
-  const handlePress = React.useCallback(
-    (plantId: string) => {
-      router.push({
-        pathname: '/(app)/plant/[id]',
-        params: { id: plantId },
-      });
-    },
-    [router]
-  );
-
-  const renderPlantCard = React.useCallback(
-    ({ item: wdbPlantItem }: { item: WDBPlant }) => {
-      const plantCardData = getPlantCardData(wdbPlantItem);
-
-      return <PlantCard plant={plantCardData} onPress={handlePress} />;
-    },
-    [handlePress]
-  );
-
-  const keyExtractor = React.useCallback((item: WDBPlant) => item.id, []);
-
-  const getItemLayout = React.useCallback(
-    (_data: ArrayLike<WDBPlant> | null | undefined, index: number) => ({
-      length: 120, // Approximate height of PlantCard
-      offset: 120 * index,
-      index,
-    }),
-    []
-  );
-
-  if (isLoading) {
     return (
-      <View className="mt-10 flex-1 items-center justify-center">
-        <ActivityIndicator size="large" className="text-primary-500" />
-        <ThemedText className="mt-3 text-neutral-600 dark:text-neutral-400">
-          Loading plants...
-        </ThemedText>
-      </View>
+      <FlatList
+        data={plants}
+        keyExtractor={keyExtractor}
+        renderItem={renderPlantCard}
+        getItemLayout={getItemLayout}
+        ListEmptyComponent={<EmptyPlantList />}
+        ListHeaderComponent={ListHeaderComponent}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#a3a3a3" // neutral-400 for universal compatibility
+              colors={['#10b981']} // primary-500 for universal compatibility
+              progressBackgroundColor="#ffffff" // Will be handled by system for dark mode
+            />
+          ) : undefined
+        }
+        // Reanimated v3 + FlatList optimizations
+        initialNumToRender={10}
+        windowSize={10}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={100}
+        removeClippedSubviews={true}
+        // Performance optimizations
+        scrollEventThrottle={16}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: ListHeaderComponent ? 0 : 8,
+          paddingBottom: 80,
+        }}
+      />
     );
   }
-
-  return (
-    <FlatList
-      data={plants}
-      keyExtractor={keyExtractor}
-      renderItem={renderPlantCard}
-      getItemLayout={getItemLayout}
-      ListEmptyComponent={<EmptyPlantList />}
-      ListHeaderComponent={ListHeaderComponent}
-      refreshControl={
-        onRefresh ? (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#a3a3a3" // neutral-400 for universal compatibility
-            colors={['#10b981']} // primary-500 for universal compatibility
-            progressBackgroundColor="#ffffff" // Will be handled by system for dark mode
-          />
-        ) : undefined
-      }
-      // Reanimated v3 + FlatList optimizations
-      initialNumToRender={10}
-      windowSize={10}
-      maxToRenderPerBatch={5}
-      updateCellsBatchingPeriod={100}
-      removeClippedSubviews={true}
-      // Performance optimizations
-      scrollEventThrottle={16}
-      contentContainerStyle={{
-        flexGrow: 1,
-        paddingTop: ListHeaderComponent ? 0 : 8,
-        paddingBottom: 80,
-      }}
-    />
-  );
-});
+);
 
 PlantListComponent.displayName = 'PlantListComponent';
 

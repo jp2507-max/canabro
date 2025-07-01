@@ -9,10 +9,8 @@ import {
   View,
   Pressable,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
   Alert, // Import Alert
-  ScrollView, // Import ScrollView
+  Keyboard,
 } from 'react-native';
 // Import useSafeAreaInsets
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -28,13 +26,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { createPost } from '../../lib/services/community-service'; // Import createPost
 import supabase from '../../lib/supabase'; // Import supabase client
-import { useEnhancedKeyboard } from '../../lib/hooks/useEnhancedKeyboard';
 import { triggerMediumHapticSync, triggerLightHaptic } from '@/lib/utils/haptics';
 import { OptimizedIcon, type IconName } from '../ui/OptimizedIcon';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
-import { KeyboardToolbar } from '../ui/KeyboardToolbar';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 
 // Animation configurations
 const SPRING_CONFIG = {
@@ -124,28 +121,8 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
   const [image, setImage] = useState<string | null>(null); // State for selected image URI
   const [location, setLocation] = useState<Location.LocationObject | null>(null); // State for location
 
-  // Enhanced keyboard handling for post form
+  // Simple reference to the input for focus management
   const contentInputRef = React.useRef<TextInput>(null);
-  const inputRefs = [contentInputRef];
-  const totalInputs = 1;
-
-  const {
-    isKeyboardVisible,
-    keyboardHeight,
-    currentIndex,
-    goToNextInput,
-    goToPreviousInput,
-    dismissKeyboard,
-    canGoNext,
-    canGoPrevious,
-    setCurrentIndex,
-  } = useEnhancedKeyboard(inputRefs, totalInputs);
-
-  // Enhanced input focus management
-  const handleInputFocus = (index: number) => {
-    setCurrentIndex(index);
-    triggerLightHaptic();
-  };
 
   const canPost = content.trim().length > 0 || image; // Can post if there's text or an image
 
@@ -341,6 +318,10 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
     }
   }, [canPost, user, content, image, location, onSuccess, onClose]);
 
+  const handleInputFocus = () => {
+    triggerLightHaptic();
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <ThemedView className="flex-1 bg-white dark:bg-black">
@@ -369,18 +350,9 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
         </View>
         {/* End Header */}
 
-        {/* KeyboardAvoidingView now wraps ScrollView AND Toolbar */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }} // KAV takes remaining space
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // Reset offset to 0 for iOS
-        >
-          {/* ScrollView for content and keyboard dismissal */}
-          <ScrollView
-            style={{ flex: 1 }} // ScrollView takes available space within KAV
-            contentContainerStyle={{ flexGrow: 1 }} // Ensure content can grow
-            keyboardShouldPersistTaps="handled" // Dismiss keyboard on tap outside input
-          >
+        {/* Content container with built-in keyboard avoidance */}
+        <ThemedView className="flex-1">
+          <EnhancedKeyboardWrapper className="flex-1" showToolbar={false}>
             {/* Main Content Area - Now with flex-1 to allow EnhancedTextInput to grow */}
             <View className="flex-1 px-4 pt-2">
               <EnhancedTextInput
@@ -392,8 +364,10 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
                 style={{
                   textAlignVertical: 'top',
                 }} // Ensure text starts at top
-                onFocus={() => handleInputFocus(0)}
-                returnKeyType="done"
+                onFocus={handleInputFocus}
+                onSubmitEditing={() => {
+                  Keyboard.dismiss();
+                }}
                 maxLength={1000}
               />
               {/* Optionally display selected image preview here */}
@@ -405,10 +379,9 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
                 <ThemedText className="mt-1 text-sm text-blue-500">Location added!</ThemedText>
               )}
             </View>
-          </ScrollView>
-          {/* End ScrollView / Content Area */}
+          </EnhancedKeyboardWrapper>
 
-          {/* Bottom Toolbar - Now INSIDE KeyboardAvoidingView */}
+          {/* Bottom Toolbar */}
           <View
             className="border-t border-neutral-200 px-4 dark:border-neutral-700" // Border only
             style={{ paddingBottom: insets.bottom > 0 ? insets.bottom : 12, paddingTop: 12 }} // Apply padding top/bottom
@@ -416,39 +389,14 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
             <View className="flex-row items-center justify-between">
               {/* Icon Group - Using gap for precise spacing */}
               <View className="flex-row items-center" style={{ gap: 20 }}>
-                <AnimatedActionButton
-                  onPress={handleTakePhoto}
-                  iconName="camera-outline"
-                />
-                <AnimatedActionButton
-                  onPress={handlePickImage}
-                  iconName="images-outline"
-                />
-                <AnimatedActionButton
-                  onPress={handleGetLocation}
-                  iconName="location-outline"
-                />
+                <AnimatedActionButton onPress={handleTakePhoto} iconName="camera-outline" />
+                <AnimatedActionButton onPress={handlePickImage} iconName="images-outline" />
+                <AnimatedActionButton onPress={handleGetLocation} iconName="location-outline" />
               </View>
               {/* Reply Text Removed */}
             </View>
           </View>
-          {/* End Bottom Toolbar */}
-
-          {/* Enhanced Keyboard Toolbar */}
-          <KeyboardToolbar
-            isVisible={isKeyboardVisible}
-            keyboardHeight={keyboardHeight}
-            onPrevious={goToPreviousInput}
-            onNext={goToNextInput}
-            onDone={dismissKeyboard}
-            canGoPrevious={canGoPrevious}
-            canGoNext={canGoNext}
-            currentField="Post Content"
-            totalFields={totalInputs}
-            currentIndex={currentIndex}
-          />
-        </KeyboardAvoidingView>
-        {/* End KeyboardAvoidingView */}
+        </ThemedView>
       </ThemedView>
     </Modal>
   );

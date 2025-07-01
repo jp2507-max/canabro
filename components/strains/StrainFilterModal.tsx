@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Modal, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -23,6 +22,7 @@ import { OptimizedIcon } from '../ui/OptimizedIcon';
 import PotencySlider from '../ui/PotencySlider';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 
 // Species icon color constants for consistency and maintainability
 const SPECIES_ICON_COLORS = {
@@ -583,13 +583,13 @@ export default function StrainFilterModal({
         </ThemedView>
 
         {/* Filter Content */}
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <EnhancedKeyboardWrapper className="flex-1 p-4">
           {renderFilterSection('Species', renderSpeciesSelector())}
           {renderFilterSection('Favorites', renderFavoritesSelector())}
           {renderFilterSection('Effects', renderEffectsSelector())}
           {renderFilterSection('Flavors', renderFlavorsSelector())}
           {renderFilterSection('Potency Range', renderPotencySelector())}
-        </ScrollView>
+        </EnhancedKeyboardWrapper>
 
         {/* Footer / Apply Button */}
         <ThemedView

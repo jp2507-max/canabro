@@ -1,36 +1,29 @@
 import { parseISO, isValid } from 'date-fns';
-import { triggerMediumHapticSync, triggerSuccessHaptic, triggerErrorHaptic } from '@/lib/utils/haptics';
+import {
+  triggerMediumHapticSync,
+  triggerSuccessHaptic,
+  triggerErrorHaptic,
+} from '@/lib/utils/haptics';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  ScrollView,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-} from 'react-native';
+import { TextInput, ActivityIndicator, Alert, Pressable, ScrollView, Keyboard } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withSequence,
   FadeIn,
   FadeInDown,
   SlideInDown,
-  interpolateColor,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EnhancedTextInput } from '@/components/ui/EnhancedTextInput';
-import { KeyboardToolbar } from '@/components/ui/KeyboardToolbar';
 import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
 import { useDatabase } from '@/lib/hooks/useDatabase';
-import { useEnhancedKeyboard } from '@/lib/hooks/useEnhancedKeyboard';
 import { Profile } from '@/lib/models/Profile';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 
 // Enhanced Profile Edit Component with Keyboard Management
 
@@ -131,18 +124,13 @@ export default function EditProfileScreen() {
     growingSinceRef,
   ];
 
-  const {
-    isKeyboardVisible,
-    activeInputIndex,
-    dismissKeyboard,
-    goToNextInput,
-    goToPreviousInput,
-  } = useEnhancedKeyboard(inputRefs, 7);
+  // Simplified keyboard handling – no advanced navigation
+  const dismissKeyboard = () => Keyboard.dismiss();
 
   // Field labels for keyboard toolbar
   const fieldLabels = [
     'Username',
-    'Display Name', 
+    'Display Name',
     'Bio',
     'Location',
     'Experience Level',
@@ -262,7 +250,9 @@ export default function EditProfileScreen() {
             } else {
               // This should not happen due to form validation, but handle gracefully
               console.error('Invalid date detected during save operation:', growingSince);
-              throw new Error('Invalid date format detected during save. Please check the date and try again.');
+              throw new Error(
+                'Invalid date format detected during save. Please check the date and try again.'
+              );
             }
           } else {
             p.growingSince = undefined;
@@ -326,9 +316,7 @@ export default function EditProfileScreen() {
         </ThemedText>
       </Animated.View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1">
+      <EnhancedKeyboardWrapper className="flex-1" showToolbar={false}>
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: 24,
@@ -350,7 +338,7 @@ export default function EditProfileScreen() {
             accessibilityLabel="Username input field"
             accessibilityHint="Enter your public username"
             returnKeyType="next"
-            onSubmitEditing={() => goToNextInput()}
+            onSubmitEditing={() => dismissKeyboard()}
           />
 
           <EnhancedTextInput
@@ -365,7 +353,7 @@ export default function EditProfileScreen() {
             accessibilityLabel="Display name input field"
             accessibilityHint="Enter your display name (optional)"
             returnKeyType="next"
-            onSubmitEditing={() => goToNextInput()}
+            onSubmitEditing={() => dismissKeyboard()}
           />
 
           <EnhancedTextInput
@@ -383,7 +371,7 @@ export default function EditProfileScreen() {
             accessibilityLabel="Bio input field"
             accessibilityHint="Tell us about yourself"
             returnKeyType="next"
-            onSubmitEditing={() => goToNextInput()}
+            onSubmitEditing={() => dismissKeyboard()}
           />
 
           <EnhancedTextInput
@@ -398,7 +386,7 @@ export default function EditProfileScreen() {
             accessibilityLabel="Location input field"
             accessibilityHint="Enter your location (optional)"
             returnKeyType="next"
-            onSubmitEditing={() => goToNextInput()}
+            onSubmitEditing={() => dismissKeyboard()}
           />
 
           <EnhancedTextInput
@@ -413,7 +401,7 @@ export default function EditProfileScreen() {
             accessibilityLabel="Experience level input field"
             accessibilityHint="Enter your growing experience level"
             returnKeyType="next"
-            onSubmitEditing={() => goToNextInput()}
+            onSubmitEditing={() => dismissKeyboard()}
           />
 
           <EnhancedTextInput
@@ -428,7 +416,7 @@ export default function EditProfileScreen() {
             accessibilityLabel="Preferred grow method input field"
             accessibilityHint="Enter your preferred growing method"
             returnKeyType="next"
-            onSubmitEditing={() => goToNextInput()}
+            onSubmitEditing={() => dismissKeyboard()}
           />
 
           <EnhancedTextInput
@@ -449,20 +437,7 @@ export default function EditProfileScreen() {
 
           <AnimatedSaveButton onPress={handleSave} isLoading={isSaving} />
         </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* Enhanced Keyboard Toolbar */}
-      {isKeyboardVisible && (
-        <KeyboardToolbar
-          isVisible={isKeyboardVisible}
-          currentField={fieldLabels[activeInputIndex ?? 0] || 'Field'}
-          onPrevious={() => goToPreviousInput()}
-          onNext={() => goToNextInput()}
-          onDone={() => dismissKeyboard()}
-          canGoPrevious={(activeInputIndex ?? 0) > 0}
-          canGoNext={(activeInputIndex ?? 0) < inputRefs.length - 1}
-        />
-      )}
+      </EnhancedKeyboardWrapper>
     </SafeAreaView>
   );
 }

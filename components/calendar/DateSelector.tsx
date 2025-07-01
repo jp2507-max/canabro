@@ -52,11 +52,11 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
       console.warn('[DateSelector] Invalid date in getDateLabel:', date);
       return 'Invalid';
     }
-    
+
     if (isCurrentToday) return 'Today';
     if (isCurrentYesterday) return 'Yesterday';
     if (isCurrentTomorrow) return 'Tomorrow';
-    
+
     try {
       return format(date, 'E');
     } catch (error) {
@@ -81,7 +81,7 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
         console.warn('[DateSelector] Ignoring tap on invalid date item');
         return;
       }
-      
+
       const validDate = new Date(timestamp);
       if (!isNaN(validDate.getTime())) {
         onSelect(validDate);
@@ -142,7 +142,9 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
         ]}
         accessibilityRole="button"
         accessibilityLabel={`Select date ${
-          !date || typeof date.getTime !== 'function' || isNaN(date.getTime()) ? 'Invalid Date' : format(date, 'PPP')
+          !date || typeof date.getTime !== 'function' || isNaN(date.getTime())
+            ? 'Invalid Date'
+            : format(date, 'PPP')
         }`}
         accessibilityState={{ selected: isSelected }}
         accessibilityHint={isSelected ? 'Currently selected date' : 'Tap to select this date'}>
@@ -164,7 +166,9 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
                 ? 'text-primary-700 dark:text-primary-300'
                 : 'text-neutral-800 dark:text-neutral-200'
           }`}>
-          {!date || typeof date.getTime !== 'function' || isNaN(date.getTime()) ? '?' : format(date, 'd')}
+          {!date || typeof date.getTime !== 'function' || isNaN(date.getTime())
+            ? '?'
+            : format(date, 'd')}
         </ThemedText>
       </AnimatedPressable>
     </GestureDetector>
@@ -181,19 +185,27 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
       console.warn('[DateSelector] selectedDate is null/undefined, using current date');
       return new Date();
     }
-    
+
     // Check if it's actually a Date object or has Date-like properties
     if (!(selectedDate instanceof Date)) {
-      console.warn('[DateSelector] selectedDate is not a Date instance:', selectedDate, 'Type:', typeof selectedDate);
+      console.warn(
+        '[DateSelector] selectedDate is not a Date instance:',
+        selectedDate,
+        'Type:',
+        typeof selectedDate
+      );
       return new Date();
     }
-    
+
     // Check if the Date object has a valid getTime method and is not Invalid Date
     if (typeof selectedDate.getTime !== 'function' || isNaN(selectedDate.getTime())) {
-      console.warn('[DateSelector] Invalid selectedDate provided, using current date:', selectedDate);
+      console.warn(
+        '[DateSelector] Invalid selectedDate provided, using current date:',
+        selectedDate
+      );
       return new Date();
     }
-    
+
     return selectedDate;
   }, [selectedDate]);
 
@@ -210,11 +222,16 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
   const handleDateSelect = useCallback(
     (date: Date) => {
       // Validate the date before calling the parent callback
-      if (!date || !(date instanceof Date) || typeof date.getTime !== 'function' || isNaN(date.getTime())) {
+      if (
+        !date ||
+        !(date instanceof Date) ||
+        typeof date.getTime !== 'function' ||
+        isNaN(date.getTime())
+      ) {
         console.error('[DateSelector] Attempted to select invalid date:', date);
         return;
       }
-      
+
       console.log('[DateSelector] Date selected:', date);
       onDateSelect(date);
     },
@@ -235,7 +252,7 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
           let dateString = 'invalid';
           let selectedDateString = 'invalid';
           let isSelected = false;
-          
+
           try {
             if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
               dateString = format(date, 'yyyy-MM-dd');

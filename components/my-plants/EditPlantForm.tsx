@@ -17,9 +17,7 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -38,12 +36,12 @@ import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
-import { KeyboardToolbar } from '../ui/KeyboardToolbar';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 
 import { useButtonAnimation } from '@/lib/animations';
 import { searchStrainsByName } from '@/lib/data/strains';
 import { useDatabase } from '@/lib/hooks/useDatabase';
-import { useEnhancedKeyboard } from '@/lib/hooks/useEnhancedKeyboard';
+import { useEnhancedKeyboard } from '@/lib/hooks/keyboard/useEnhancedKeyboard';
 import { Plant } from '@/lib/models/Plant';
 import { findOrCreateLocalStrain } from '@/lib/services/strain-sync-service';
 import { WeedDbService } from '@/lib/services/weed-db.service';
@@ -1112,10 +1110,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1">
-      <ThemedView className="flex-1 p-5">
+    <ThemedView className="flex-1">
+      <EnhancedKeyboardWrapper className="flex-1 p-5">
         <ThemedText variant="heading" className="mb-5 text-center">
           Edit Plant Details
         </ThemedText>
@@ -1363,19 +1359,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           isSubmitting={isSubmitting}
           label="Update Plant"
         />
-      </ThemedView>
-
-      {/* Enhanced Keyboard Toolbar */}
-      <KeyboardToolbar
-        isVisible={isKeyboardVisible}
-        keyboardHeight={keyboardHeight}
-        onNext={goToNextInput}
-        onPrevious={goToPreviousInput}
-        onDone={dismissKeyboard}
-        canGoNext={canGoNext}
-        canGoPrevious={canGoPrevious}
-        currentField={getCurrentFieldName()}
-      />
-    </KeyboardAvoidingView>
+      </EnhancedKeyboardWrapper>
+    </ThemedView>
   );
 }

@@ -16,7 +16,12 @@ import Animated, {
 import UserAvatar from './UserAvatar';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import StorageImage from '../ui/StorageImage';
-import { triggerLightHaptic, triggerMediumHaptic, triggerLightHapticSync, triggerMediumHapticSync } from '../../lib/utils/haptics';
+import {
+  triggerLightHaptic,
+  triggerMediumHaptic,
+  triggerLightHapticSync,
+  triggerMediumHapticSync,
+} from '../../lib/utils/haptics';
 
 dayjs.extend(relativeTime);
 
@@ -158,7 +163,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
     const avatarUri = useMemo(
       () => post.profiles?.avatar_url || 'https://via.placeholder.com/48',
       [post.profiles?.avatar_url]
-    );    // 🎯 Enhanced event handlers with sophisticated haptic feedback
+    ); // 🎯 Enhanced event handlers with sophisticated haptic feedback
     const handleUserPress = useCallback(async () => {
       const profileId = post.profiles?.id;
       if (profileId) {
@@ -195,7 +200,9 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         scale.value = withSpring(SCALE_VALUES.cardPress, ANIMATION_CONFIG.card);
         shadowOpacity.value = withSpring(0.25, ANIMATION_CONFIG.quick);
         cardBorderRadius.value = withSpring(28, ANIMATION_CONFIG.quick);
-      })      .onEnd(() => {        'worklet';
+      })
+      .onEnd(() => {
+        'worklet';
         scale.value = withSpring(1, ANIMATION_CONFIG.card);
         shadowOpacity.value = withSpring(0.15, ANIMATION_CONFIG.quick);
         cardBorderRadius.value = withSpring(24, ANIMATION_CONFIG.quick);
@@ -216,8 +223,10 @@ const PostItem: React.FC<PostItemProps> = React.memo(
           withSpring(isLiked ? SCALE_VALUES.likeActive : 1, ANIMATION_CONFIG.like),
           withSpring(1, { damping: 12, stiffness: 400 })
         );
-        shadowOpacity.value = withSpring(0.15);        if (isLiked) {
-          runOnJS(triggerLightHapticSync)();        } else {
+        shadowOpacity.value = withSpring(0.15);
+        if (isLiked) {
+          runOnJS(triggerLightHapticSync)();
+        } else {
           runOnJS(triggerMediumHapticSync)();
         }
         runOnJS(handleLike)();
@@ -228,7 +237,9 @@ const PostItem: React.FC<PostItemProps> = React.memo(
       .onBegin(() => {
         'worklet';
         commentIconScale.value = withSpring(SCALE_VALUES.buttonPress, ANIMATION_CONFIG.button);
-      })      .onEnd(() => {        'worklet';
+      })
+      .onEnd(() => {
+        'worklet';
         commentIconScale.value = withSpring(1, ANIMATION_CONFIG.button);
         runOnJS(triggerLightHapticSync)();
         runOnJS(handleComment)();
@@ -239,7 +250,9 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         'worklet';
         scale.value = withSpring(SCALE_VALUES.imagePress, ANIMATION_CONFIG.image);
         shadowOpacity.value = withSpring(0.25);
-      })      .onEnd(() => {        'worklet';
+      })
+      .onEnd(() => {
+        'worklet';
         scale.value = withSpring(1, ANIMATION_CONFIG.image);
         shadowOpacity.value = withSpring(0.15);
         runOnJS(triggerLightHapticSync)();

@@ -207,7 +207,7 @@ function EntryOption({
 function EntryTypeSelector({ onSelectType }: EntryTypeSelectorProps) {
   // 🎯 Performance optimized callbacks
   const keyExtractor = React.useCallback((item: EntryTypeOption) => item.type, []);
-  
+
   const renderItem = React.useCallback(
     ({ item, index }: { item: EntryTypeOption; index: number }) => (
       <EntryOption item={item} onSelect={onSelectType} index={index} />

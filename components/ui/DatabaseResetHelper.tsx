@@ -228,7 +228,8 @@ const DatabaseResetHelper = () => {
 
       {/* Description */}
       <Text className="mb-4 text-sm leading-5 text-yellow-800 dark:text-yellow-200">
-        If you're experiencing database errors about missing columns, use the reset button below.
+        If you're experiencing database errors about missing columns, use the reset button
+        below.
         <Text className="font-semibold">
           {' '}
           WARNING: This will delete all local data that hasn't been synced!

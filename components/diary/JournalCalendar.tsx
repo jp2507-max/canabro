@@ -88,7 +88,7 @@ const AnimatedDateItem = ({
   // Validate date before formatting
   let dayName = '?';
   let dayNumber = '?';
-  
+
   if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
     try {
       dayName = date.toLocaleDateString('en', { weekday: 'short' }).charAt(0);

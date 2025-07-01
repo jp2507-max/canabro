@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import EditPlantForm from '../../../../components/my-plants/EditPlantForm';
@@ -8,6 +8,7 @@ import ThemedText from '../../../../components/ui/ThemedText';
 import ThemedView from '../../../../components/ui/ThemedView';
 import { useDatabase } from '../../../../lib/contexts/DatabaseProvider';
 import { Plant } from '../../../../lib/models/Plant';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 
 export default function EditPlantScreen() {
   const router = useRouter();
@@ -84,14 +85,11 @@ export default function EditPlantScreen() {
   return (
     <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
       <Stack.Screen options={{ title: 'Edit Plant' }} />
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="p-4 pb-safe-or-4"
-        showsVerticalScrollIndicator={false}>
+      <EnhancedKeyboardWrapper className="flex-1 p-4 pb-safe-or-4">
         <ThemedView variant="card" className="rounded-lg">
           <EditPlantForm plant={plant} onUpdateSuccess={handleUpdateSuccess} />
         </ThemedView>
-      </ScrollView>
+      </EnhancedKeyboardWrapper>
     </SafeAreaView>
   );
 }
