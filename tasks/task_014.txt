@@ -1,0 +1,118 @@
+# Task ID: 14
+# Title: Advanced Bundle Analysis and Optimization with 2025 Best Practices
+# Status: in-progress
+# Dependencies: 1
+# Priority: high
+# Description: Conduct comprehensive bundle size analysis and implement advanced optimization techniques for React Native Expo app using 2025 best practices including Hermes bytecode, Metro experimental tree-shaking, and dynamic imports with focus on immediate high-impact optimizations.
+# Details:
+**Implementation Priority: Focus on Steps 2-4 for biggest wins with low risk**
+
+1. **Bundle Analysis Setup**:
+   - Configure `npx react-native-bundle-visualizer` for detailed dependency analysis
+   - Set up Expo Atlas UI with `npx expo upload-bundle` for comprehensive bundle insights
+   - Install and configure bundle size tracking with CI/CD integration
+   - Create automated bundle size monitoring scripts
+
+2. **Hermes Bytecode & Inline Requires** (SDK ≥53 default):
+   - Verify Hermes engine enabled in `app.config.js` (default for SDK 53+)
+   - Configure `babel.config.js` with `"inlineRequires": true` for lazy module initialization
+   - Validate Hermes-specific optimizations for startup performance
+   - Set up bytecode precompilation verification for production builds
+
+3. **Metro Experimental Tree-Shaking** (HIGH PRIORITY):
+   - Enable in `metro.config.js`: `computeDependencies: { experimentalTreeShake: true }`
+   - Configure Metro minifier settings for dead-code elimination
+   - Set up custom Metro resolver for enhanced tree-shaking
+   - Implement incremental builds with Metro cache optimization
+
+4. **Production Code Stripping** (HIGH PRIORITY):
+   - Add `babel-plugin-transform-remove-console` for production builds in `babel.config.js`
+   - Configure environment-specific builds with different optimization levels
+   - Ensure Metro minifier settings eliminate dead code
+   - Set up source map generation for production debugging
+
+5. **Route-Based Code Splitting with Expo Router** (HIGH PRIORITY):
+   - Implement dynamic imports per route: `const SettingsScreen = React.lazy(() => import('./settings'))`
+   - Set up Suspense boundaries for lazy-loaded screens
+   - Configure Expo Router auto-generated RAM bundles for async imports
+   - Implement progressive loading strategies for heavy components
+
+6. **Utility Library De-bloating**:
+   - Replace full lodash with per-method imports or lodash-es treeshakable paths
+   - Configure `babel-plugin-lodash` for automatic cherry-picking
+   - Migrate to `dayjs/esm` for modular date library
+   - Implement TanStack Query with selective feature imports
+
+7. **Expo Module Cleanup**:
+   - Run `npx expo customise metro config` for module exclusion setup
+   - Configure `expo.prebuild.js` with `"expoModules": { ios: [...] }` to exclude unused modules
+   - Audit `expo install` dependencies and remove unused modules
+   - Set up automated unused dependency detection
+
+8. **Asset Optimization**:
+   - Run `npx expo-optimize` on PNG, JPG, MP4 assets
+   - Enable `assetPlugins` in `metro.config.js`: `['expo-asset/tools/hashAssetFiles']`
+   - Implement WebP/AVIF asset compression pipeline
+   - Configure asset caching strategies
+
+9. **Advanced Build Tools** (Optional):
+   - Evaluate Re.Pack integration for incremental builds (EAS Build support Feb-2025)
+   - Consider rnx-kit for enhanced bundling capabilities
+   - Set up experimental bundling features evaluation
+
+10. **Bundle Analysis & Iteration**:
+    - Use `npx react-native-bundle-visualizer` for dependency analysis
+    - Leverage Expo Atlas UI (`npx expo upload-bundle`) for comprehensive insights
+    - Target any >50kB module offenders revealed in visualizer
+    - Document bundle size improvements with before/after reports
+
+**Automated Optimization Scripts**:
+```bash
+# Bundle analysis with Atlas
+#!/bin/bash
+expo export --platform all
+npx expo upload-bundle
+
+# Size tracking with threshold alerts
+#!/bin/bash
+BUNDLE_SIZE=$(expo export --platform ios --output-dir ./dist | grep -o '[0-9.]*MB')
+echo "$(date): Bundle size: ${BUNDLE_SIZE}MB" >> bundle-size-history.log
+```
+
+# Test Strategy:
+1. **Bundle Size Verification**:
+   - Run `expo export --bundle` and verify bundle size reduction of at least 20%
+   - Use Expo Atlas UI (`npx expo upload-bundle`) to confirm tree-shaking effectiveness
+   - Validate individual chunks under recommended limits (iOS: <20MB, Android: <150MB)
+   - Target elimination of >50kB module offenders identified in visualizer
+
+2. **Tree-Shaking & Dead Code Elimination Testing**:
+   - Verify Metro experimental tree-shaking removes unused exports
+   - Confirm console statements stripped in production builds
+   - Test that unused Expo modules are excluded from final bundle
+   - Validate lodash/dayjs optimizations show size reduction
+
+3. **Dynamic Import Performance Testing**:
+   - Measure route-based code splitting load times using React DevTools Profiler
+   - Test lazy-loaded screens with proper Suspense boundary handling
+   - Verify RAM bundle generation for async imports
+   - Validate progressive loading on low-end devices
+
+4. **Hermes & Inline Requires Validation**:
+   - Confirm Hermes bytecode compilation success
+   - Test `inlineRequires: true` improves startup performance
+   - Measure app initialization time before/after optimization
+   - Validate production build performance improvements
+
+5. **Functionality Verification**:
+   - Run comprehensive E2E tests ensuring no functionality broken by optimizations
+   - Test all lazy-loaded components load correctly with error boundaries
+   - Verify excluded Expo modules don't break remaining functionality
+   - Validate asset optimization doesn't affect visual quality
+
+6. **Automated Monitoring & Reporting**:
+   - Set up CI/CD pipeline tracking bundle size changes
+   - Configure alerts for bundle size increases above 5% threshold
+   - Generate automated Expo Atlas reports for each build
+   - Create dashboard tracking optimization metrics over time
+   - Document before/after bundle analysis reports with screenshots

@@ -1,0 +1,65 @@
+# Task ID: 11
+# Title: App Store Submission & Review Process (2025 Best Practices)
+# Status: pending
+# Dependencies: 2, 3, 4, 6, 7
+# Priority: high
+# Description: Prepare and submit the application to Apple App Store and Google Play Store, managing the review process in accordance with 2025 guidelines, cannabis app requirements, and current best practices for analytics, compliance, and user privacy.
+# Details:
+1. Create and configure App Store Connect and Google Play Console listings, ensuring compliance with 2025 platform and cannabis app requirements, including analytics/privacy disclosures.
+2. Upload all prepared assets and metadata, following updated guidelines for content, privacy, accessibility, and analytics event disclosures.
+3. Configure app pricing and availability, considering new revenue share models, regional restrictions, and cannabis-specific compliance.
+4. Set up in-app purchases if applicable, ensuring all purchase flows and analytics tracking comply with latest store policies.
+5. Complete app content ratings questionnaires, including new questions specific to cannabis and analytics data collection.
+6. Review and adhere to 2025 App Store and Google Play review guidelines, with special attention to cannabis app restrictions (age gating, regional legality, analytics privacy).
+7. Submit apps for review, factoring in longer review times for new developer accounts or sensitive app categories.
+8. Prepare for potential rejection scenarios, especially those related to cannabis content, analytics, or regulatory compliance.
+9. Monitor review status and respond promptly to reviewer questions, providing documentation or clarifications as needed.
+10. Prepare expedited review request if needed, following updated procedures.
+11. Document the submission process, including any cannabis-specific requirements, analytics/privacy feedback, or reviewer comments, for future updates.
+12. Apply submission best practices: double-check all metadata, ensure all legal disclaimers and analytics/privacy notices are present, and verify that all required agreements (export compliance, developer distribution) are accepted.
+
+# Test Strategy:
+1. Verify all required fields are completed in store listings, including new 2025 compliance and analytics/privacy fields.
+2. Test the submitted build one final time before review, ensuring all cannabis-related features and analytics events are properly age-gated and regionally restricted.
+3. Have multiple team members review store listings for accuracy, compliance, and completeness.
+4. Prepare responses to potential reviewer questions, especially regarding cannabis content, analytics, and legal compliance.
+5. Test app with 2025 App Store Review Guidelines and Google Play Developer Program Policies in mind, focusing on sensitive content, analytics, and privacy.
+6. Confirm all legal, export, developer, and analytics/privacy agreements are accepted and documented.
+
+# Subtasks:
+## 1. Prepare Store Listings and Developer Accounts [pending]
+### Dependencies: None
+### Description: Set up and configure App Store Connect and Google Play Console accounts. Create app listings with all required information, ensuring compliance with 2025 platform requirements, cannabis app restrictions, and analytics/privacy disclosures.
+### Details:
+Register developer accounts if not already done. Complete all organization and contact information. Create new app entries, ensuring app names, bundle identifiers, and package names are unique and appropriate. Prepare and enter metadata such as descriptions, keywords, and promotional text, following the latest guidelines for cannabis-related content, analytics event disclosures, and regional restrictions.
+
+## 2. Upload Assets, Metadata, and Configure App Details [pending]
+### Dependencies: 11.1
+### Description: Upload all required assets (icons, screenshots, videos) and metadata. Configure app pricing, availability, and in-app purchases, ensuring adherence to updated content, privacy, accessibility, analytics, and revenue share guidelines.
+### Details:
+Prepare and upload high-resolution icons, screenshots for all device sizes, and preview videos. Enter detailed app descriptions, privacy policies, analytics event disclosures, and accessibility statements. Set app pricing tiers, regional availability, and configure in-app purchases if applicable, ensuring all flows comply with the latest store policies, analytics requirements, and regional cannabis regulations.
+
+## 3. Complete Content Ratings and Legal Agreements [pending]
+### Dependencies: 11.2
+### Description: Fill out app content ratings questionnaires for both stores, addressing any new questions specific to cannabis content and analytics data collection. Accept and verify all required legal agreements, including export compliance, developer distribution terms, and analytics/privacy policies.
+### Details:
+Carefully answer all content rating questions, paying special attention to those related to cannabis, age restrictions, analytics, and sensitive content. Ensure all necessary legal and analytics/privacy agreements are reviewed and accepted in both developer consoles.
+
+## 4. Review and Validate Compliance with 2025 Guidelines [pending]
+### Dependencies: 11.3
+### Description: Thoroughly review the latest App Store and Google Play guidelines, with a focus on 2025 updates, cannabis app restrictions, and analytics/privacy requirements. Double-check all metadata, legal disclaimers, and ensure all requirements are met.
+### Details:
+Consult the most recent review guidelines for both platforms, ensuring the app meets requirements for safety, privacy, analytics event disclosures, age gating, regional legality, and content limitations. Verify that all legal disclaimers and analytics/privacy notices are present and that the app does not violate any new or existing policies.
+
+## 5. Submit Apps for Review and Manage Communication [pending]
+### Dependencies: 11.4
+### Description: Submit the app for review on both platforms, anticipating longer review times for cannabis apps or new developer accounts. Monitor review status and respond promptly to reviewer questions or requests for clarification, especially regarding analytics and privacy.
+### Details:
+Initiate the submission process in both consoles. Monitor dashboards for review progress. Prepare documentation or clarifications for potential reviewer inquiries, especially regarding cannabis content, analytics event tracking, age gating, and regional compliance. Be ready to submit expedited review requests if justified.
+
+## 6. Handle Rejections, Finalize Documentation, and Record Best Practices [pending]
+### Dependencies: 11.5
+### Description: Prepare for and address potential rejection scenarios, especially those related to cannabis content, analytics, or regulatory compliance. Document the entire submission process, including reviewer feedback and any cannabis-specific or analytics/privacy requirements, for future reference.
+### Details:
+If the app is rejected, analyze feedback, make necessary adjustments, and resubmit. Maintain detailed records of the submission process, reviewer communications, and any unique requirements or best practices encountered (including analytics/privacy), to streamline future updates or submissions.
+

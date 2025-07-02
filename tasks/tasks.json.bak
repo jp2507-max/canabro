@@ -1,0 +1,762 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Performance Optimization & Bundle Size Reduction",
+      "description": "Analyze and optimize the app's performance metrics and reduce the bundle size for production deployment, with a focus on iOS-first release.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "high",
+      "details": "1. Run performance profiling using React Native Performance tools with focus on iOS devices\n2. Implement code splitting where applicable\n3. Use the Expo bundle analyzer to identify large dependencies\n4. Optimize image assets using iOS-specific compression techniques\n5. Implement lazy loading for non-critical components\n6. Remove development-only code and console logs\n7. Ensure compliance with Apple's App Store guidelines for performance\n8. Verify tree-shaking is working correctly\n9. Measure and document performance improvements (before/after)\n10. Target bundle size reduction of at least 20% for iOS App Store submission",
+      "testStrategy": "1. Measure app startup time before and after optimization on iOS devices\n2. Compare bundle sizes before and after changes for iOS build\n3. Run performance benchmarks on target iOS devices (older and newer models)\n4. Test app responsiveness using UI interaction timing on iOS\n5. Verify no regressions in functionality after optimization\n6. Validate compliance with App Store performance requirements",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Analyze and Profile App Performance",
+          "description": "Use React Native Performance tools and Expo's bundle analyzer to identify performance bottlenecks and large dependencies.",
+          "dependencies": [],
+          "details": "1. Set up React Native Performance tools\n2. Run performance profiling on key app screens\n3. Use Expo bundle analyzer to identify large dependencies\n4. Document findings, focusing on TensorFlow.js, crypto libraries, WatermelonDB, and Expo modules\n5. Create a prioritized list of optimization targets",
+          "status": "done",
+          "testStrategy": "Compare profiling results against industry benchmarks for cannabis apps"
+        },
+        {
+          "id": 2,
+          "title": "Optimize Dependencies and Implement Code Splitting",
+          "description": "Reduce bundle size by optimizing dependencies and implementing code splitting for non-critical components, prioritizing iOS bundle size requirements.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Evaluate alternatives for TensorFlow.js and crypto libraries with iOS performance in mind\n2. Implement dynamic imports for non-critical components\n3. Use React.lazy() and Suspense for component-level code splitting\n4. Configure tree-shaking for unused exports\n5. Verify correct implementation using Expo bundle analyzer\n6. Ensure bundle size meets App Store submission requirements\n<info added on 2025-05-30T15:24:25.740Z>\n7. Implemented OptimizedIcon system to replace @expo/vector-icons\n   - Migrated 8 critical components (tab bar, FAB, plant cards, tasks, social features, camera)\n   - Created lightweight Unicode-based icon system with 25+ icons\n   - Successfully replaced icons from Ionicons, AntDesign, MaterialCommunityIcons\n   - Estimated ~4.5 MB reduction in bundle size when migration completes\n   - All migrated components compile without errors\n   - Need to continue migration to reach critical mass for tree-shaking to remove icon fonts\n</info added on 2025-05-30T15:24:25.740Z>",
+          "status": "done",
+          "testStrategy": "Measure bundle size reduction and load time improvements on iOS devices"
+        },
+        {
+          "id": 3,
+          "title": "Optimize Asset Loading and Management for iOS",
+          "description": "Implement lazy loading for images and optimize asset compression techniques specifically for iOS devices.",
+          "dependencies": [],
+          "details": "1. Implement lazy loading for images using react-native-fast-image\n2. Set up a CDN for serving optimized images\n3. Use iOS-optimized image formats (HEIC where supported)\n4. Implement asset preloading for critical resources\n5. Configure caching strategies for frequently accessed assets\n6. Optimize image assets specifically for different iOS device resolutions",
+          "status": "pending",
+          "testStrategy": "Measure image load times and overall app startup time on various iOS devices"
+        },
+        {
+          "id": 4,
+          "title": "Remove Development Code and Optimize for iOS",
+          "description": "Remove development-only code and implement iOS-specific optimizations to reduce bundle size.",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Remove all console.log statements and development-only code\n2. Implement a custom logger for production builds\n3. Configure environment-specific builds in Expo\n4. Optimize JavaScript execution for iOS JavaScriptCore\n5. Implement iOS-specific memory management best practices\n6. Ensure compliance with App Store performance guidelines",
+          "status": "pending",
+          "testStrategy": "Run automated tests on iOS simulators and devices to ensure app functionality after optimization"
+        },
+        {
+          "id": 5,
+          "title": "Measure and Document iOS Optimizations",
+          "description": "Quantify performance improvements and bundle size reduction for iOS, aiming for at least 20% reduction.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "1. Re-run performance profiling and bundle analysis on iOS devices\n2. Compare before and after metrics for CPU usage, memory consumption, and load times\n3. Document bundle size reduction percentage for iOS build\n4. Create a detailed report of all iOS-specific optimizations implemented\n5. Identify any remaining performance bottlenecks for future iterations\n6. Validate App Store readiness from performance perspective",
+          "status": "pending",
+          "testStrategy": "Conduct user testing on various iOS devices to validate perceived performance improvements"
+        },
+        {
+          "id": 6,
+          "title": "Ensure App Store Guidelines Compliance",
+          "description": "Verify that all performance optimizations comply with Apple's App Store guidelines.",
+          "dependencies": [
+            2,
+            3,
+            4
+          ],
+          "details": "1. Review Apple's latest performance requirements for App Store submissions\n2. Check app launch time against Apple's guidelines (under 400ms recommended)\n3. Verify app responsiveness meets Apple's standards\n4. Ensure memory usage stays within acceptable limits for target iOS devices\n5. Test app performance on oldest supported iOS device\n6. Document compliance with all relevant App Store performance guidelines",
+          "status": "pending",
+          "testStrategy": "Create a compliance checklist and verify each item against App Store requirements"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "App Store Assets Creation",
+      "description": "Create all required visual and textual assets for App Store and Google Play Store submissions.",
+      "details": "1. Design and create app store screenshots (5-10 per platform)\n2. Create promotional videos (30-second app preview)\n3. Write compelling app descriptions (short and full versions)\n4. Create feature bullet points highlighting key functionality\n5. Design custom feature graphics for Google Play\n6. Prepare app store keywords for ASO\n7. Create app icons in all required resolutions\n8. Write privacy policy URL and marketing URL\n9. Prepare release notes for initial version\n10. Create support contact information",
+      "testStrategy": "1. Review all assets against platform-specific guidelines\n2. Verify screenshots display correctly on different device sizes\n3. Test videos on target platforms for quality and playback\n4. Conduct A/B testing of descriptions with test audience if possible\n5. Verify all assets meet cannabis content guidelines",
+      "priority": "high",
+      "dependencies": [],
+      "status": "in-progress",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design and Prepare App Store Screenshots (iOS-First, Cannabis Compliance)",
+          "description": "Create 5-10 high-quality, platform-specific screenshots for iOS App Store, ensuring all visuals comply with Apple’s guidelines and cannabis-related content restrictions.",
+          "dependencies": [],
+          "details": "Capture key app features and user flows. Avoid depicting cannabis consumption or encouraging illegal activity. Use device frames and add captions to highlight value. Review Apple’s App Store Review Guidelines for cannabis-related apps to ensure compliance.",
+          "status": "pending",
+          "testStrategy": "Review screenshots on multiple devices and submit for internal compliance check against Apple’s guidelines."
+        },
+        {
+          "id": 2,
+          "title": "Create Promotional Video (30-Second App Preview, iOS Format)",
+          "description": "Produce a 30-second app preview video for the iOS App Store, focusing on core features and user experience while adhering to content guidelines for cannabis apps.",
+          "dependencies": [
+            1
+          ],
+          "details": "Storyboard the video to showcase main app flows and benefits. Avoid explicit cannabis imagery or claims. Use royalty-free music and ensure video meets Apple’s technical requirements (resolution, length, format).",
+          "status": "pending",
+          "testStrategy": "Play video on iOS devices and validate against App Store preview requirements and cannabis content restrictions."
+        },
+        {
+          "id": 3,
+          "title": "Write Compelling App Descriptions and Feature Bullet Points",
+          "description": "Draft both short and full app descriptions, along with concise feature bullet points, tailored for the iOS App Store and compliant with cannabis-related content policies.",
+          "dependencies": [
+            1
+          ],
+          "details": "Highlight unique selling points and key features. Avoid medical claims or language that violates App Store policies. Use clear, benefit-driven language and include feature bullet points for quick scanning.",
+          "status": "pending",
+          "testStrategy": "Peer review for clarity, compliance, and marketing effectiveness; check for prohibited terms."
+        },
+        {
+          "id": 4,
+          "title": "Design App Icons and Custom Feature Graphics",
+          "description": "Create app icons in all required iOS resolutions and design a custom feature graphic for Google Play (for future use), ensuring all assets are visually consistent and compliant.",
+          "dependencies": [
+            1
+          ],
+          "details": "Follow Apple’s Human Interface Guidelines for icon sizes and style. For Google Play, design a feature graphic (1024x500px) that avoids explicit cannabis imagery. Maintain brand consistency across all assets.",
+          "status": "pending",
+          "testStrategy": "Validate icon appearance on various devices and review for guideline compliance."
+        },
+        {
+          "id": 5,
+          "title": "Prepare App Store Keywords, Privacy Policy URL, and Marketing URLs",
+          "description": "Research and select effective keywords for App Store Optimization (ASO), and prepare privacy policy and marketing URLs required for submission.",
+          "dependencies": [
+            3
+          ],
+          "details": "Use keyword research tools to identify relevant, compliant keywords. Draft or update a privacy policy tailored to cannabis app requirements. Set up a marketing landing page and ensure all URLs are live and accessible.",
+          "status": "pending",
+          "testStrategy": "Test keyword relevance in App Store search; verify URLs are functional and policy is accessible."
+        },
+        {
+          "id": 6,
+          "title": "Draft Release Notes and Support Contact Information",
+          "description": "Write clear release notes for the initial app version and prepare support contact details for App Store listing.",
+          "dependencies": [
+            3
+          ],
+          "details": "Summarize new features and improvements in release notes. Provide a dedicated support email or contact form, ensuring responsiveness and compliance with App Store requirements.",
+          "status": "pending",
+          "testStrategy": "Review for clarity and accuracy; test support contact method for responsiveness."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Cannabis Content Compliance Review",
+      "description": "Review all app content to ensure compliance with the latest (2025) App Store and Google Play policies and regulatory requirements regarding cannabis-related applications, incorporating current best practices for cannabis mobile apps.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "high",
+      "details": "1. Research and document the most recent (2025) App Store and Google Play policies on cannabis apps, including any April 2025 updates\n2. Review all app content, including images, text, and features, for compliance with updated platform policies and regulatory requirements\n3. Identify potential policy violations, especially regarding in-app sales, delivery facilitation, and THC product references, and create a mitigation plan\n4. Implement content warnings and disclaimers where necessary, following best practices for cannabis-related content\n5. Add robust age verification if required by platforms or local regulations\n6. Ensure the app is positioned strictly as a 'growing assistant' or educational tool, not promoting or facilitating consumption or sales\n7. Remove any references to illegal activities or unlicensed cannabis sales\n8. Verify all strain information is strictly educational in nature and does not promote use\n9. Document all compliance measures taken for the app review process, including geo-restriction logic for jurisdictions where cannabis content is prohibited or restricted\n10. Ensure that any features related to cannabis sales, delivery, or pickup are not present in the app, especially for Google Play, and that any transactional flows are handled outside the app if necessary\n11. Stay updated on evolving best practices for cannabis-related mobile applications and incorporate them into the compliance process",
+      "testStrategy": "1. Conduct a mock app review using the latest (2025) platform guidelines and regulatory requirements\n2. Have legal counsel or compliance experts review app content and features\n3. Test age verification functionality and ensure it meets current standards\n4. Verify content warnings and disclaimers display correctly and are appropriately worded\n5. Test geo-restriction functionality to ensure content is inaccessible in prohibited regions\n6. Confirm that no in-app shopping cart, ordering, or delivery facilitation features exist, especially for Google Play\n7. Review app positioning and educational content for compliance with best practices",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Research and Document 2025 Cannabis App Policies",
+          "description": "Gather and summarize the latest (2025) App Store and Google Play policies, including any updates from April 2025, as well as current regulatory requirements for cannabis-related mobile applications.",
+          "dependencies": [],
+          "details": "Review official policy documentation from Apple and Google, focusing on sections related to cannabis, THC, and controlled substances. Note any changes, especially regarding in-app sales, delivery, and content restrictions. Document findings in a compliance reference guide for the team.",
+          "status": "pending",
+          "testStrategy": "Verify that all relevant policy documents are collected and that a summary document is produced and reviewed for completeness."
+        },
+        {
+          "id": 2,
+          "title": "Audit App Content for Policy and Regulatory Compliance",
+          "description": "Systematically review all app content—including images, text, features, and flows—to identify any elements that may violate updated platform policies or regulatory requirements.",
+          "dependencies": [
+            1
+          ],
+          "details": "Use the compliance reference guide to audit every screen, feature, and asset in the app. Pay special attention to references to sales, delivery, THC, and any potentially illegal activities. Document all findings and flag potential violations.",
+          "status": "pending",
+          "testStrategy": "Cross-check audit results with the compliance guide and ensure all app areas are reviewed."
+        },
+        {
+          "id": 3,
+          "title": "Identify Violations and Develop Mitigation Plan",
+          "description": "Catalog all identified policy violations and regulatory risks, then create a detailed mitigation plan to address each issue.",
+          "dependencies": [
+            2
+          ],
+          "details": "List each violation with references to the specific policy or regulation. For each, propose actionable mitigation steps (e.g., content removal, feature modification, externalizing transactional flows). Prioritize based on severity and compliance risk.",
+          "status": "pending",
+          "testStrategy": "Review mitigation plan with compliance/legal stakeholders to ensure all issues are addressed."
+        },
+        {
+          "id": 4,
+          "title": "Implement Content Warnings, Disclaimers, and Age Verification",
+          "description": "Add or update content warnings, disclaimers, and robust age verification mechanisms as required by platform policies and best practices.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement age gates, geo-restriction logic, and clear disclaimers on educational intent. Ensure warnings are visible where required and that age verification meets platform and local regulatory standards.",
+          "status": "pending",
+          "testStrategy": "Test age verification and disclaimer flows on all supported devices and regions."
+        },
+        {
+          "id": 5,
+          "title": "Refactor App Positioning and Remove Prohibited Content",
+          "description": "Ensure the app is positioned strictly as an educational or growing assistant tool, removing any references to sales, delivery, or illegal activities, and ensuring all strain information is educational.",
+          "dependencies": [
+            4
+          ],
+          "details": "Update app descriptions, marketing materials, and in-app content to emphasize educational value. Remove or rewrite any content that could be interpreted as promoting or facilitating consumption, sales, or delivery. Verify that no transactional flows remain in-app.",
+          "status": "pending",
+          "testStrategy": "Review all app content and descriptions for compliance and test that no prohibited features are accessible."
+        },
+        {
+          "id": 6,
+          "title": "Document Compliance Measures and Prepare for App Review",
+          "description": "Create comprehensive documentation of all compliance actions taken, including geo-restriction logic, and prepare materials for the app review process.",
+          "dependencies": [
+            5
+          ],
+          "details": "Compile a compliance checklist, screenshots of implemented changes, and a summary of geo-restriction and age verification logic. Prepare a submission note for app reviewers outlining compliance steps and referencing relevant policies.",
+          "status": "pending",
+          "testStrategy": "Conduct an internal review of documentation and perform a mock app review to ensure readiness."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "EAS Build Configuration & Code Signing Setup",
+      "description": "Configure Expo Application Services (EAS) for production builds and set up code signing certificates for both iOS and Android platforms, following 2025 best practices for React Native apps using TypeScript.",
+      "status": "pending",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "1. Create a production profile in eas.json with up-to-date EAS Build options, ensuring compatibility with React Native's latest architecture and TypeScript.\n2. Generate and configure Apple Distribution Certificate and iOS Provisioning Profile using EAS CLI, leveraging EAS-managed credentials for automation and security.\n3. Generate Android Keystore for app signing and configure Google Play App Signing, using EAS CLI to securely manage credentials.\n4. Set up build secrets in EAS for API keys and sensitive environment variables, using the latest EAS secrets management features.\n5. Configure build hooks and EAS Workflows (via .eas/workflows/*.yml) for automated builds on main branches, version bumping, and custom logic as needed.\n6. Enable and configure build cache for faster incremental builds.\n7. Integrate Over-the-Air (OTA) updates using EAS Update for rapid bug fixes and feature delivery.\n8. Document the build, release, and OTA update process for team reference, including TypeScript-specific considerations and troubleshooting tips.\n9. Ensure all native dependencies and config plugins are compatible with Expo SDK and React Native's new architecture.\n10. Regularly review EAS and Expo documentation for updates to workflows, security, and deployment best practices.",
+      "testStrategy": "1. Perform test builds for both iOS and Android using EAS Build, verifying compatibility with TypeScript and the latest Expo SDK.\n2. Verify app signature and code signing status on test builds using EAS CLI and device tools.\n3. Install test builds on physical devices and simulators for both platforms.\n4. Confirm app version, build number, and OTA update functionality are correct and increment as expected.\n5. Test the entire build pipeline from code commit to installable app, including automated workflow triggers and secrets management.\n6. Validate that all build and deployment steps are reproducible and documented for the team.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create and Configure Production Profile in eas.json",
+          "description": "Set up a production build profile in eas.json with the latest EAS Build options, ensuring compatibility with React Native's new architecture and TypeScript.",
+          "dependencies": [],
+          "details": "Use the EAS CLI to initialize and update eas.json. Specify the production profile with appropriate build settings, such as the correct React Native version, TypeScript support, and architecture flags. Reference Expo documentation for recommended configuration fields for 2025.",
+          "status": "pending",
+          "testStrategy": "Run 'eas build:configure' and validate that the production profile is recognized and correctly applies the intended settings."
+        },
+        {
+          "id": 2,
+          "title": "Set Up iOS Code Signing with EAS-Managed Credentials",
+          "description": "Generate and configure Apple Distribution Certificate and iOS Provisioning Profile using EAS CLI, leveraging EAS-managed credentials for automation and security.",
+          "dependencies": [
+            1
+          ],
+          "details": "Use 'eas credentials' commands to let EAS manage iOS certificates and provisioning profiles. Ensure credentials are stored securely in the EAS system and linked to the correct Apple Developer account. Enable automatic credential management for streamlined builds.",
+          "status": "pending",
+          "testStrategy": "Trigger an iOS build and verify that code signing completes without manual intervention and the app installs on a test device."
+        },
+        {
+          "id": 3,
+          "title": "Set Up Android Keystore and Google Play App Signing",
+          "description": "Generate an Android Keystore and configure Google Play App Signing using EAS CLI, ensuring secure credential management.",
+          "dependencies": [
+            1
+          ],
+          "details": "Use 'eas credentials' to generate or upload an Android Keystore. Enable Play App Signing in the Google Play Console and upload the required keys if needed. Store credentials securely with EAS-managed services.",
+          "status": "pending",
+          "testStrategy": "Run an Android production build and confirm that the APK/AAB is signed and accepted by the Play Console."
+        },
+        {
+          "id": 4,
+          "title": "Configure Build Secrets and Environment Variables",
+          "description": "Set up build secrets for API keys and sensitive environment variables using the latest EAS secrets management features.",
+          "dependencies": [
+            1
+          ],
+          "details": "Use 'eas secret:push' or the EAS dashboard to securely add secrets. Reference these secrets in eas.json or workflow files as needed. Ensure secrets are not exposed in logs or source control.",
+          "status": "pending",
+          "testStrategy": "Trigger a build and verify that secrets are injected correctly and not visible in build logs."
+        },
+        {
+          "id": 5,
+          "title": "Implement EAS Workflows and Build Hooks",
+          "description": "Configure build hooks and EAS Workflows (via .eas/workflows/*.yml) for automated builds, version bumping, and custom logic.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Create or update workflow YAML files to define build steps, including pre- and post-build hooks for tasks like version incrementing, custom scripts, or notifications. Ensure workflows are optimized for main branches and production releases.",
+          "status": "pending",
+          "testStrategy": "Run builds on main branches and confirm that hooks execute as expected and workflows complete successfully."
+        },
+        {
+          "id": 6,
+          "title": "Enable Build Cache for Faster Incremental Builds",
+          "description": "Configure and enable EAS build cache to speed up incremental builds and reduce build times.",
+          "dependencies": [
+            5
+          ],
+          "details": "Update eas.json and workflow files to enable build caching according to Expo's 2025 recommendations. Test cache effectiveness by making small code changes and observing build duration improvements.",
+          "status": "pending",
+          "testStrategy": "Compare build times before and after enabling cache; verify cache hits in build logs."
+        },
+        {
+          "id": 7,
+          "title": "Integrate and Document OTA Updates with EAS Update",
+          "description": "Set up EAS Update for Over-the-Air (OTA) updates and document the build, release, and OTA update process, including TypeScript-specific considerations.",
+          "dependencies": [],
+          "details": "Configure EAS Update in eas.json and workflows. Test OTA updates by publishing a change and verifying delivery to devices. Create internal documentation covering the full build and release process, troubleshooting, and TypeScript integration notes.",
+          "status": "pending",
+          "testStrategy": "Publish an OTA update and confirm it is received on test devices; review documentation with team for clarity and completeness."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Beta Testing Program Setup",
+      "description": "Configure and launch beta testing programs using TestFlight for iOS and Google Play Internal Testing for Android, following 2025 best practices for modern beta testing, tester engagement, and feedback collection.",
+      "status": "pending",
+      "dependencies": [
+        2,
+        4
+      ],
+      "priority": "medium",
+      "details": "1. Prepare stable, feature-complete beta builds for both iOS and Android platforms, ensuring all known critical bugs are resolved and performance is optimized before distribution[5].\n2. Configure TestFlight in App Store Connect, selecting appropriate internal and external tester groups, and providing clear release notes and testing instructions for each build[4][3].\n3. Set up the Internal Testing track in Google Play Console, inviting testers via email or public link, and ensuring compliance with Google Play's latest beta testing policies.\n4. Create a streamlined beta tester recruitment form, leveraging public invitation links for broader reach and easier onboarding[4][5].\n5. Prepare a comprehensive beta testing instructions document, including test scenarios, expected behaviors, and how to submit feedback.\n6. Integrate advanced analytics and logging in beta builds to capture user behavior, crashes, and engagement metrics.\n7. Implement a multi-channel feedback collection mechanism, combining in-app feedback prompts, email, and dedicated channels (e.g., Slack, Discord) for real-time communication and support.\n8. Set up automated build distribution and update notifications to testers, ensuring timely access to new builds and release notes.\n9. Develop detailed test scenarios and checklists tailored to new features and critical user flows.\n10. Create a beta testing timeline with clear milestones, deadlines for feedback, and scheduled build updates.\n11. Establish a dedicated communication channel for beta testers (Slack/Discord), and assign moderators to facilitate discussions, answer questions, and encourage participation.\n12. Regularly monitor tester engagement, crash reports, and feedback, and iterate on the beta program to maximize participation and actionable insights.",
+      "testStrategy": "1. Verify beta builds are distributed promptly to all registered testers on both platforms, using public links and email invitations as appropriate[4][5].\n2. Test the feedback collection mechanism across all channels (in-app, email, Slack/Discord) for reliability and ease of use.\n3. Monitor crash reports, analytics, and engagement metrics from beta builds to identify issues and measure tester activity.\n4. Track beta tester engagement rates, feedback volume, and response times to ensure active participation.\n5. Validate that fixes and improvements based on beta feedback are implemented and communicated to testers in subsequent builds.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Prepare Beta Builds for iOS and Android",
+          "description": "Create stable, feature-complete beta builds for both platforms with optimized performance and critical bugs resolved",
+          "dependencies": [],
+          "details": "Finalize development of essential features, fix known bugs, and optimize app performance for both iOS and Android platforms. Ensure builds are properly signed and configured for distribution through TestFlight and Google Play Internal Testing channels.",
+          "status": "pending",
+          "testStrategy": "Conduct internal QA testing to verify build stability and feature completeness before distribution to external testers"
+        },
+        {
+          "id": 2,
+          "title": "Configure TestFlight for iOS Beta Testing",
+          "description": "Set up TestFlight in App Store Connect with appropriate tester groups and detailed release notes",
+          "dependencies": [
+            1
+          ],
+          "details": "Upload the iOS build to App Store Connect, enable TestFlight, create internal and external tester groups, and prepare comprehensive release notes with testing instructions. Configure build settings including expiration dates and test information according to 2025 best practices.",
+          "status": "pending",
+          "testStrategy": "Verify TestFlight configuration by sending test invitations to development team members and confirming proper build delivery"
+        },
+        {
+          "id": 3,
+          "title": "Set Up Google Play Internal Testing for Android",
+          "description": "Configure the Internal Testing track in Google Play Console with appropriate tester groups and compliance measures",
+          "dependencies": [
+            1
+          ],
+          "details": "Upload the Android build to Google Play Console, set up the Internal Testing track, invite testers via email or public link, and ensure compliance with Google Play's 2025 beta testing policies. Configure testing settings and prepare release notes with clear instructions.",
+          "status": "pending",
+          "testStrategy": "Verify Google Play Internal Testing configuration by sending test invitations to development team members and confirming proper build delivery"
+        },
+        {
+          "id": 4,
+          "title": "Create Beta Tester Recruitment and Onboarding System",
+          "description": "Develop a streamlined recruitment form and comprehensive testing instructions document",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Create a beta tester recruitment form that captures relevant user information, leverages public invitation links for broader reach, and automates the onboarding process. Prepare detailed testing instructions including test scenarios, expected behaviors, and feedback submission guidelines.",
+          "status": "pending",
+          "testStrategy": "Test the recruitment form and onboarding process with a small group of users to ensure clarity and effectiveness"
+        },
+        {
+          "id": 5,
+          "title": "Implement Feedback Collection Mechanisms",
+          "description": "Set up multi-channel feedback collection with in-app prompts, email, and dedicated communication channels",
+          "dependencies": [
+            4
+          ],
+          "details": "Integrate in-app feedback mechanisms, set up dedicated communication channels (Slack/Discord) with assigned moderators, and establish email feedback collection. Configure advanced analytics and logging in beta builds to capture user behavior, crashes, and engagement metrics.",
+          "status": "pending",
+          "testStrategy": "Verify all feedback channels are properly receiving and processing submissions through test submissions from development team"
+        },
+        {
+          "id": 6,
+          "title": "Establish Beta Program Management System",
+          "description": "Create a structured timeline, monitoring process, and iteration plan for the beta program",
+          "dependencies": [
+            5
+          ],
+          "details": "Develop a detailed beta testing timeline with clear milestones and deadlines, set up automated build distribution and update notifications, and implement a system for regularly monitoring tester engagement, crash reports, and feedback. Create a process for iterating on the beta program based on participation metrics and actionable insights.",
+          "status": "pending",
+          "testStrategy": "Review the management system with stakeholders to ensure it meets program objectives and can effectively track progress"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Security Audit & Compliance Implementation",
+      "description": "Conduct comprehensive security audit and implement necessary measures for GDPR/CCPA compliance and data protection, with specific focus on 2025 best practices for React Native security and mobile app security for cannabis applications.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "high",
+      "details": "1. Perform static code analysis using advanced security tools for React Native applications\n2. Conduct penetration testing on API endpoints with focus on cannabis-specific vulnerabilities\n3. Implement GDPR-compliant user data management based on 2025 standards\n4. Create data deletion and export functionality aligned with latest CCPA requirements\n5. Implement secure storage for sensitive user data with cannabis industry-specific considerations\n6. Review and secure API authentication mechanisms with biometric options\n7. Implement proper SSL certificate validation and certificate pinning\n8. Create privacy policy and terms of service documents compliant with 2025 GDPR/CCPA regulations\n9. Set up secure data backup procedures with encryption for cannabis user data\n10. Implement session timeout and secure logout functionality\n11. Perform a CCPA-specific gap analysis to identify compliance requirements for 2025\n12. Build personal information inventory documenting all PII processed in the cannabis application\n13. Implement \"Do Not Sell My Personal Information\" option as required by CCPA\n14. Establish data breach response plans with 72-hour notification procedures\n15. Implement React Native-specific security measures (secure storage, code obfuscation, etc.)",
+      "testStrategy": "1. Run automated security scanning tools specialized for React Native applications\n2. Perform manual penetration testing with cannabis industry attack vectors\n3. Verify data encryption at rest and in transit using 2025 recommended encryption standards\n4. Test data export and deletion functionality against CCPA 2025 requirements\n5. Validate compliance with GDPR/CCPA requirements using updated 2025 checklists\n6. Conduct Data Protection Impact Assessments (DPIAs) for high-risk processing\n7. Test consumer rights implementation (access, deletion, portability)\n8. Verify proper implementation of consent mechanisms and privacy notices\n9. Validate secure handling of cannabis-specific sensitive data\n10. Test third-party data sharing controls and documentation",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Static Code Analysis & Vulnerability Assessment",
+          "description": "Perform comprehensive static code analysis on the React Native codebase to identify security vulnerabilities, with special focus on cannabis-specific data handling patterns.",
+          "dependencies": [],
+          "details": "Implement automated SAST tools to scan for hard-coded secrets, insecure API calls, and common React Native vulnerabilities. Review dependencies for known CVEs and security issues. Focus on cannabis-specific data handling patterns that might expose sensitive information. Generate a detailed vulnerability report categorized by severity.",
+          "status": "pending",
+          "testStrategy": "Validate findings with manual code review and cross-reference with the OWASP Mobile Top 10 vulnerabilities list. Document false positives and create a remediation plan for confirmed issues."
+        },
+        {
+          "id": 2,
+          "title": "API Security Enhancement & Penetration Testing",
+          "description": "Secure all API endpoints through penetration testing, implementation of token-based authentication, rate limiting, and encrypted data transmission.",
+          "dependencies": [
+            1
+          ],
+          "details": "Conduct penetration testing on all API endpoints with focus on cannabis-specific vulnerabilities. Implement token-based authentication with short expiration times, rate limiting to prevent brute force attacks, and ensure all data is encrypted in transit using TLS 1.3. Add certificate pinning to prevent MITM attacks and implement integrity checks to detect API response tampering.",
+          "status": "pending",
+          "testStrategy": "Perform API fuzzing tests, authentication bypass attempts, and injection attacks. Validate that all API calls properly handle errors and don't leak sensitive information in responses."
+        },
+        {
+          "id": 3,
+          "title": "Secure Data Storage Implementation",
+          "description": "Implement secure storage mechanisms for sensitive user and cannabis-related data with proper encryption and access controls.",
+          "dependencies": [
+            1
+          ],
+          "details": "Use React Native's SecureStore or equivalent for storing sensitive information. Implement AES-256 encryption for all cannabis-related user data. Add code obfuscation to protect encryption keys. Implement root/jailbreak detection to prevent unauthorized access to stored data. Create a data classification system to ensure appropriate security controls are applied based on sensitivity levels.",
+          "status": "pending",
+          "testStrategy": "Test storage security by attempting to extract data from device backups, file system access, and memory dumps. Verify encryption implementation with cryptographic validation tools."
+        },
+        {
+          "id": 4,
+          "title": "GDPR Compliance Implementation",
+          "description": "Implement GDPR-compliant user data management based on 2025 standards, including consent mechanisms, data minimization, and right to be forgotten.",
+          "dependencies": [
+            3
+          ],
+          "details": "Create granular consent mechanisms for all data collection. Implement data minimization by only collecting necessary information. Build user-accessible privacy dashboards showing all stored data. Develop data deletion functionality with complete removal from all systems. Implement data portability features allowing users to export their data in common formats. Ensure all third-party services used are GDPR compliant.",
+          "status": "pending",
+          "testStrategy": "Conduct end-to-end testing of the consent flow, data export, and deletion processes. Verify that deleted data is completely removed from all systems including backups."
+        },
+        {
+          "id": 5,
+          "title": "CCPA Compliance Implementation",
+          "description": "Implement CCPA-specific requirements including personal information inventory, opt-out mechanisms, and data subject request handling.",
+          "dependencies": [
+            3
+          ],
+          "details": "Build a comprehensive personal information inventory documenting all PII processed in the application. Implement a prominent \"Do Not Sell My Personal Information\" option. Create automated workflows for handling data subject requests within the required timeframes. Develop age verification mechanisms to comply with cannabis-specific regulations. Implement record-keeping of all data subject requests as required by CCPA.",
+          "status": "pending",
+          "testStrategy": "Test the complete user journey for opting out of data sales and making data subject requests. Verify that the system properly tracks and documents all requests and their fulfillment."
+        },
+        {
+          "id": 6,
+          "title": "Authentication & Session Security Enhancement",
+          "description": "Implement secure authentication mechanisms including biometric options, session management, and secure logout functionality.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Integrate biometric authentication (fingerprint/face recognition) as an optional security layer. Implement secure session management with appropriate timeout settings. Create secure logout functionality that properly invalidates tokens and clears sensitive data. Add multi-factor authentication for high-risk operations. Implement progressive security measures based on risk assessment of user actions.",
+          "status": "pending",
+          "testStrategy": "Test authentication flows with various devices and biometric capabilities. Verify session expiration and token invalidation. Attempt session hijacking to ensure proper protections are in place."
+        },
+        {
+          "id": 7,
+          "title": "App Shielding & Runtime Protection",
+          "description": "Implement layered security protections including code obfuscation, anti-tampering measures, and runtime application self-protection.",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Implement code obfuscation to protect business logic and security mechanisms. Add root/jailbreak detection with appropriate responses. Implement emulator detection to prevent automated attacks. Add integrity checks to detect app tampering after installation. Implement runtime application self-protection (RASP) to detect and respond to attacks during execution. Create a response strategy for detected security violations.",
+          "status": "pending",
+          "testStrategy": "Test the app on rooted/jailbroken devices to verify detection. Attempt to modify the app bundle and verify integrity check responses. Use debugging tools to attempt to bypass security measures."
+        },
+        {
+          "id": 8,
+          "title": "Security Documentation & Incident Response Planning",
+          "description": "Create comprehensive security documentation including privacy policies, terms of service, and data breach response procedures.",
+          "dependencies": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "details": "Develop privacy policy and terms of service documents compliant with 2025 GDPR/CCPA regulations. Create a detailed data breach response plan with 72-hour notification procedures. Document all security measures implemented in the application. Develop security training materials for developers and users. Create a vulnerability disclosure policy and bug bounty program guidelines. Establish regular security audit schedules and documentation requirements.",
+          "status": "pending",
+          "testStrategy": "Conduct tabletop exercises to test the incident response plan. Have legal experts review privacy policies and terms of service for compliance with current regulations."
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Comprehensive Cross-Device Testing",
+      "description": "Perform thorough testing across multiple device types, screen sizes, and OS versions to ensure consistent functionality, leveraging 2025 best practices for React Native, device compatibility, and automated testing frameworks.",
+      "status": "pending",
+      "dependencies": [
+        1,
+        4,
+        6
+      ],
+      "priority": "medium",
+      "details": "1. Create a dynamic test matrix covering target devices, OS versions, and browser configurations based on real user analytics and usage data[3].\n2. Set up and maintain a device farm or cloud-based real device testing service (e.g., AWS Device Farm, Sauce Labs Real Device Cloud) to ensure testing on both emulators and real devices[1][5].\n3. Implement automated UI tests for critical user flows using modern frameworks (e.g., Detox, Appium, Playwright) with modular, maintainable scripts and clear documentation of dependencies[5].\n4. Integrate automated cross-device and cross-browser testing into the CI/CD pipeline to catch compatibility issues early and ensure rapid feedback on every commit[5].\n5. Test offline functionality and network resilience across devices and platforms.\n6. Verify responsive design and layout consistency using visual regression testing tools to catch UI inconsistencies across screen sizes and resolutions[1].\n7. Measure and optimize performance on low-end and high-end devices, tracking key performance indicators (KPIs) such as load time and resource usage[5].\n8. Verify accessibility features across platforms, ensuring compliance with the latest accessibility standards.\n9. Test deep linking and navigation flows on all supported platforms.\n10. Verify push notifications and background tasks on all target platforms.\n11. Maintain comprehensive documentation: browser/device compatibility matrices, test case repositories, and issue tracking for device-specific bugs[5].\n12. Leverage AI-powered testing tools and real-time collaboration features where possible to improve test coverage and efficiency[5].",
+      "testStrategy": "1. Execute automated test suite across the device and browser matrix, prioritizing configurations based on user analytics[3].\n2. Perform manual exploratory testing on key devices and OS/browser combinations, especially for new features and edge cases.\n3. Use visual regression testing for UI consistency across screen sizes and platforms[1].\n4. Integrate tests into the CI/CD pipeline for continuous feedback and early detection of compatibility issues[5].\n5. Measure and compare performance metrics (e.g., load time, memory usage) across devices, and document results in performance benchmarks[5].\n6. Generate device- and browser-specific test reports, including issue detection rates and resolution times[5].",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Define Dynamic Test Matrix and Device Coverage",
+          "description": "Establish a comprehensive test matrix specifying target devices, OS versions, and screen sizes based on real user analytics and usage data.",
+          "dependencies": [],
+          "details": "Analyze analytics to identify the most commonly used devices, OS versions, and screen resolutions among your user base. Document these in a matrix that will guide all subsequent testing efforts. Include both high-end and low-end devices, and update the matrix regularly as usage patterns evolve.",
+          "status": "pending",
+          "testStrategy": "Review the matrix with stakeholders and ensure it covers at least 90% of active user configurations."
+        },
+        {
+          "id": 2,
+          "title": "Set Up Device Farm or Cloud-Based Testing Infrastructure",
+          "description": "Provision and configure a device farm or cloud-based real device testing service to enable automated and manual testing across the defined matrix.",
+          "dependencies": [
+            1
+          ],
+          "details": "Select a service such as AWS Device Farm, Sauce Labs, or LambdaTest Real Device Cloud. Integrate it with your development workflow, ensuring access to both emulators and real devices for all target platforms. Document setup steps and access procedures for the team.",
+          "status": "pending",
+          "testStrategy": "Run a sample test on each device type to verify connectivity and environment readiness."
+        },
+        {
+          "id": 3,
+          "title": "Implement Automated UI and E2E Tests for Critical Flows",
+          "description": "Develop automated UI and end-to-end tests for essential user journeys using modern frameworks like Detox, Appium, or Playwright.",
+          "dependencies": [
+            2
+          ],
+          "details": "Identify critical user flows (e.g., onboarding, login, checkout). Write modular, maintainable test scripts with clear documentation of dependencies. Ensure scripts are compatible with both emulators and real devices, and follow best practices for element identification and accessibility.",
+          "status": "pending",
+          "testStrategy": "Run tests locally and in the device farm, validating that all critical flows pass on at least 90% of target configurations."
+        },
+        {
+          "id": 4,
+          "title": "Integrate Automated Testing into CI/CD Pipeline",
+          "description": "Embed cross-device and cross-browser automated tests into the CI/CD pipeline to ensure rapid feedback and early detection of compatibility issues.",
+          "dependencies": [
+            3
+          ],
+          "details": "Configure your CI/CD system (e.g., GitHub Actions, Jenkins) to trigger automated tests on every commit or pull request. Ensure test results are visible to the team and failures block merges until resolved. Optimize for parallel execution to reduce feedback time.",
+          "status": "pending",
+          "testStrategy": "Verify that failed tests in CI/CD prevent deployments and that results are reported within 30 minutes of code submission."
+        },
+        {
+          "id": 5,
+          "title": "Perform Manual and Automated Testing for Edge Cases",
+          "description": "Test offline functionality, network resilience, deep linking, push notifications, and background tasks across all supported devices and platforms.",
+          "dependencies": [
+            4
+          ],
+          "details": "Develop test cases for scenarios such as network loss, app backgrounding, and push notification delivery. Use both automated scripts and manual exploratory testing to cover these cases. Ensure tests are run on real devices to capture platform-specific behaviors.",
+          "status": "pending",
+          "testStrategy": "Document and track all issues found, and verify fixes with regression tests on affected devices."
+        },
+        {
+          "id": 6,
+          "title": "Validate UI Consistency, Accessibility, and Performance",
+          "description": "Verify responsive design, layout consistency, accessibility compliance, and performance KPIs using visual regression and accessibility testing tools.",
+          "dependencies": [
+            5
+          ],
+          "details": "Use tools like Percy or Applitools for visual regression testing to catch UI inconsistencies. Employ accessibility testing tools and manual audits to ensure compliance with standards. Measure performance metrics (load time, resource usage) on both low-end and high-end devices, optimizing as needed.",
+          "status": "pending",
+          "testStrategy": "Automate visual and accessibility checks in CI/CD, and set performance thresholds that must be met before release."
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Analytics & Monitoring Integration",
+      "description": "Implement comprehensive analytics, error tracking, and performance monitoring for production environment.",
+      "details": "1. Integrate crash reporting tool (Sentry/Bugsnag)\n2. Implement user behavior analytics\n3. Set up custom event tracking for key user actions\n4. Configure performance monitoring for critical screens\n5. Implement API response time tracking\n6. Set up real-time alerting for critical issues\n7. Create analytics dashboard for key metrics\n8. Implement user session recording (with privacy considerations)\n9. Configure conversion funnels for key user journeys\n10. Set up A/B testing framework for post-launch optimization",
+      "testStrategy": "1. Verify analytics events are properly tracked\n2. Test crash reporting with simulated crashes\n3. Validate performance metrics collection\n4. Test alerting system with triggered events\n5. Verify user privacy is maintained in analytics data",
+      "priority": "medium",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 9,
+      "title": "Marketing Website & Landing Page Creation",
+      "description": "Design and develop a marketing website and app landing page to support the launch and drive user acquisition.",
+      "details": "1. Design website mockups and get approval\n2. Develop responsive marketing website\n3. Create app showcase section with screenshots and videos\n4. Implement SEO best practices\n5. Set up analytics tracking\n6. Create download links to app stores\n7. Implement contact form and support section\n8. Create blog section for content marketing\n9. Optimize website loading performance\n10. Set up hosting and deployment pipeline",
+      "testStrategy": "1. Test website on multiple browsers and devices\n2. Verify all links and forms work correctly\n3. Run lighthouse audits for performance and SEO\n4. Test app store links functionality\n5. Verify analytics tracking is working properly",
+      "priority": "medium",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 10,
+      "title": "Customer Support System Implementation",
+      "description": "Set up customer support infrastructure including documentation, FAQ, and support ticket system.",
+      "details": "1. Create comprehensive FAQ section\n2. Develop user documentation and guides\n3. Set up support ticket system (Zendesk, Intercom, etc.)\n4. Create email templates for common support issues\n5. Develop troubleshooting guides for support team\n6. Implement in-app support chat or contact form\n7. Create knowledge base for internal team reference\n8. Set up automated responses for common questions\n9. Develop escalation procedures for critical issues\n10. Create support performance metrics and reporting",
+      "testStrategy": "1. Test support ticket creation and resolution flow\n2. Verify in-app support functionality\n3. Test knowledge base search functionality\n4. Conduct mock support scenarios with team\n5. Verify support metrics are being tracked correctly",
+      "priority": "medium",
+      "dependencies": [
+        8,
+        9
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 11,
+      "title": "App Store Submission & Review Process",
+      "description": "Prepare and submit the application to Apple App Store and Google Play Store, managing the review process in accordance with 2025 guidelines, cannabis app requirements, and current best practices.",
+      "status": "pending",
+      "dependencies": [
+        2,
+        3,
+        4,
+        6,
+        7
+      ],
+      "priority": "high",
+      "details": "1. Create and configure App Store Connect and Google Play Console listings, ensuring compliance with 2025 platform requirements\n2. Upload all prepared assets and metadata, following updated guidelines for content, privacy, and accessibility\n3. Configure app pricing and availability, considering new revenue share models and regional restrictions\n4. Set up in-app purchases if applicable, ensuring all purchase flows comply with latest store policies\n5. Complete app content ratings questionnaires, including any new questions specific to cannabis-related content\n6. Review and adhere to 2025 App Store and Google Play review guidelines, with special attention to cannabis app restrictions (e.g., age gating, regional legality, content limitations)\n7. Submit apps for review, factoring in potentially longer review times for new developer accounts or sensitive app categories\n8. Prepare for potential rejection scenarios, especially those related to cannabis content or regulatory compliance\n9. Monitor review status and respond promptly to reviewer questions, providing documentation or clarifications as needed\n10. Prepare expedited review request if needed, following updated procedures\n11. Document the submission process, including any cannabis-specific requirements or reviewer feedback, for future updates\n12. Apply submission best practices: double-check all metadata, ensure all legal disclaimers are present, and verify that all required agreements (e.g., export compliance, developer distribution) are accepted",
+      "testStrategy": "1. Verify all required fields are completed in store listings, including new 2025 compliance fields\n2. Test the submitted build one final time before review, ensuring all cannabis-related features are properly age-gated and regionally restricted\n3. Have multiple team members review store listings for accuracy, compliance, and completeness\n4. Prepare responses to potential reviewer questions, especially regarding cannabis content and legal compliance\n5. Test app with 2025 App Store Review Guidelines and Google Play Developer Program Policies in mind, focusing on sensitive content and privacy\n6. Confirm all legal, export, and developer agreements are accepted and documented",
+      "subtasks": []
+    },
+    {
+      "id": 12,
+      "title": "Launch Day Execution & Post-Launch Monitoring",
+      "description": "Coordinate and execute the app launch day activities and set up post-launch monitoring and support.",
+      "details": "1. Create detailed launch day checklist\n2. Prepare social media announcements\n3. Set up war room for launch day monitoring\n4. Configure real-time alerts for critical metrics\n5. Prepare press releases and media outreach\n6. Set up hourly monitoring schedule for first 48 hours\n7. Prepare rapid response plan for critical issues\n8. Configure server scaling for potential traffic spikes\n9. Coordinate with influencers for launch promotion\n10. Schedule post-launch team retrospective",
+      "testStrategy": "1. Run pre-launch simulation exercise\n2. Test alert systems before launch\n3. Verify monitoring dashboards are working\n4. Test emergency rollback procedures\n5. Monitor success metrics against targets defined in PRD",
+      "priority": "high",
+      "dependencies": [
+        5,
+        8,
+        9,
+        10,
+        11
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 13,
+      "title": "Production-Ready Design Refinement & UI Polish",
+      "description": "Refine and polish the entire app design to achieve production readiness, ensuring professional quality, visual consistency, and usability across all screens for the cannabis cultivation management app.",
+      "status": "pending",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "Conduct a comprehensive review and iterative refinement of all app screens and UI components, focusing on visual consistency, typography, color schemes, iconography, and spacing using NativeWind and TypeScript best practices. Standardize reusable components and design tokens for colors, fonts, and spacing. Address edge cases for responsive layouts and accessibility, ensuring compliance with platform guidelines and cannabis industry requirements. Collaborate with stakeholders for design feedback, and update Figma or equivalent design files to reflect final production-ready states. Document design decisions and provide clear handoff notes for development and QA teams.",
+      "testStrategy": "1. Review every app screen on multiple device sizes and OS versions to ensure visual consistency and adherence to design specifications. 2. Validate that all UI components use standardized styles and design tokens. 3. Conduct accessibility audits (color contrast, font sizes, touch targets, screen reader support). 4. Solicit stakeholder and user feedback on the refined design. 5. Confirm that all edge cases (empty states, error states, long text, etc.) are visually handled. 6. Ensure all updates are reflected in design documentation and component libraries.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Audit All App Screens and UI Components",
+          "description": "Conduct a comprehensive review of every screen and UI component in the app to identify inconsistencies, usability issues, and areas needing refinement.",
+          "dependencies": [],
+          "details": "Systematically go through each screen and component, documenting issues related to layout, spacing, typography, color usage, iconography, and responsiveness. Use checklists based on platform guidelines and cannabis industry requirements.",
+          "status": "pending",
+          "testStrategy": "Create a review log and verify that all screens and components are accounted for and issues are clearly documented."
+        },
+        {
+          "id": 2,
+          "title": "Standardize Design Tokens and Component Library",
+          "description": "Define and implement standardized design tokens for colors, fonts, and spacing, and ensure all reusable components adhere to these standards.",
+          "dependencies": [
+            1
+          ],
+          "details": "Establish a design token system using NativeWind and TypeScript best practices. Refactor the component library to use these tokens, ensuring consistency and maintainability across the app. Integrate NativeWind's utility classes for rapid, consistent styling and leverage TypeScript for type safety and maintainability[2][3][5].",
+          "status": "pending",
+          "testStrategy": "Check that all components reference the standardized tokens and that no hardcoded values remain. Confirm that NativeWind classes are used consistently and TypeScript types are correctly applied."
+        },
+        {
+          "id": 3,
+          "title": "Refine Typography, Color Schemes, and Iconography",
+          "description": "Polish typography, color palettes, and icon sets to ensure a cohesive and professional visual identity throughout the app.",
+          "dependencies": [
+            2
+          ],
+          "details": "Review and update font sizes, weights, and line heights for readability. Harmonize color usage for accessibility and brand alignment. Replace or update icons for clarity and consistency. Ensure all design tokens are reflected in the visual language and that NativeWind's utility classes are leveraged for rapid iteration[2][5].",
+          "status": "pending",
+          "testStrategy": "Visually inspect all screens for typographic and color consistency; use automated tools to check color contrast ratios and verify icon clarity."
+        },
+        {
+          "id": 4,
+          "title": "Enhance Layouts for Responsiveness and Edge Cases",
+          "description": "Address edge cases and ensure all layouts are fully responsive across device sizes and orientations.",
+          "dependencies": [
+            3
+          ],
+          "details": "Test and adjust layouts using device simulators and real devices. Fix overflow, alignment, and scaling issues. Ensure touch targets and interactive elements are appropriately sized. Use NativeWind's responsive and state-based utility classes to handle different device sizes and UI states efficiently[5].",
+          "status": "pending",
+          "testStrategy": "Manually test on multiple devices and screen sizes; use automated responsive testing tools. Confirm that all edge cases (empty states, error states, long text, etc.) are visually handled."
+        },
+        {
+          "id": 5,
+          "title": "Implement Accessibility Improvements",
+          "description": "Ensure the app meets accessibility standards, including proper labeling, color contrast, and keyboard navigation.",
+          "dependencies": [
+            4
+          ],
+          "details": "Add or update ARIA labels, ensure sufficient color contrast, and verify that all interactive elements are accessible via keyboard and screen readers. Use NativeWind's utility classes to help meet accessibility requirements, such as color contrast and touch target sizing[5].",
+          "status": "pending",
+          "testStrategy": "Run accessibility audits using tools like Axe or Lighthouse and perform manual screen reader testing."
+        },
+        {
+          "id": 6,
+          "title": "Validate Compliance with Platform and Cannabis Industry Guidelines",
+          "description": "Review and update UI elements to comply with platform-specific (iOS/Android) and cannabis industry regulations.",
+          "dependencies": [
+            5
+          ],
+          "details": "Cross-reference platform human interface guidelines and cannabis compliance requirements. Adjust UI elements, disclaimers, and flows as needed to ensure legal and platform compliance. Document any compliance-specific design decisions for future reference.",
+          "status": "pending",
+          "testStrategy": "Review compliance checklists and consult with legal or compliance experts if necessary."
+        },
+        {
+          "id": 7,
+          "title": "Collaborate with Stakeholders for Design Feedback",
+          "description": "Present refined designs to stakeholders for feedback and iterate based on their input.",
+          "dependencies": [
+            6
+          ],
+          "details": "Schedule review sessions with product owners, designers, and compliance officers. Collect feedback, prioritize actionable items, and implement necessary changes. Ensure that feedback is incorporated before finalizing design files.",
+          "status": "pending",
+          "testStrategy": "Track feedback items and verify that all critical feedback is addressed in the final designs."
+        },
+        {
+          "id": 8,
+          "title": "Update Design Files and Document Handoff Notes",
+          "description": "Finalize Figma (or equivalent) design files to reflect production-ready states and document design decisions and handoff notes for development and QA teams.",
+          "dependencies": [
+            7
+          ],
+          "details": "Update all design files with the latest refinements. Write clear documentation on design decisions, component usage, and any special implementation notes for developers and QA. Ensure that all updates from stakeholder feedback and compliance reviews are included.",
+          "status": "pending",
+          "testStrategy": "Review documentation for completeness and clarity; confirm with development and QA teams that all necessary information is provided."
+        }
+      ]
+    }
+  ]
+}

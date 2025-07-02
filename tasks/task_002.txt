@@ -1,0 +1,62 @@
+# Task ID: 2
+# Title: App Store Assets Creation
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Create all required visual and textual assets for App Store and Google Play Store submissions.
+# Details:
+1. Design and create app store screenshots (5-10 per platform)
+2. Create promotional videos (30-second app preview)
+3. Write compelling app descriptions (short and full versions)
+4. Create feature bullet points highlighting key functionality
+5. Design custom feature graphics for Google Play
+6. Prepare app store keywords for ASO
+7. Create app icons in all required resolutions
+8. Write privacy policy URL and marketing URL
+9. Prepare release notes for initial version
+10. Create support contact information
+
+# Test Strategy:
+1. Review all assets against platform-specific guidelines
+2. Verify screenshots display correctly on different device sizes
+3. Test videos on target platforms for quality and playback
+4. Conduct A/B testing of descriptions with test audience if possible
+5. Verify all assets meet cannabis content guidelines
+
+# Subtasks:
+## 1. Design and Prepare App Store Screenshots (iOS-First, Cannabis Compliance) [pending]
+### Dependencies: None
+### Description: Create 5-10 high-quality, platform-specific screenshots for iOS App Store, ensuring all visuals comply with Apple’s guidelines and cannabis-related content restrictions.
+### Details:
+Capture key app features and user flows. Avoid depicting cannabis consumption or encouraging illegal activity. Use device frames and add captions to highlight value. Review Apple’s App Store Review Guidelines for cannabis-related apps to ensure compliance.
+
+## 2. Create Promotional Video (30-Second App Preview, iOS Format) [pending]
+### Dependencies: 2.1
+### Description: Produce a 30-second app preview video for the iOS App Store, focusing on core features and user experience while adhering to content guidelines for cannabis apps.
+### Details:
+Storyboard the video to showcase main app flows and benefits. Avoid explicit cannabis imagery or claims. Use royalty-free music and ensure video meets Apple’s technical requirements (resolution, length, format).
+
+## 3. Write Compelling App Descriptions and Feature Bullet Points [pending]
+### Dependencies: 2.1
+### Description: Draft both short and full app descriptions, along with concise feature bullet points, tailored for the iOS App Store and compliant with cannabis-related content policies.
+### Details:
+Highlight unique selling points and key features. Avoid medical claims or language that violates App Store policies. Use clear, benefit-driven language and include feature bullet points for quick scanning.
+
+## 4. Design App Icons and Custom Feature Graphics [pending]
+### Dependencies: 2.1
+### Description: Create app icons in all required iOS resolutions and design a custom feature graphic for Google Play (for future use), ensuring all assets are visually consistent and compliant.
+### Details:
+Follow Apple’s Human Interface Guidelines for icon sizes and style. For Google Play, design a feature graphic (1024x500px) that avoids explicit cannabis imagery. Maintain brand consistency across all assets.
+
+## 5. Prepare App Store Keywords, Privacy Policy URL, and Marketing URLs [pending]
+### Dependencies: 2.3
+### Description: Research and select effective keywords for App Store Optimization (ASO), and prepare privacy policy and marketing URLs required for submission.
+### Details:
+Use keyword research tools to identify relevant, compliant keywords. Draft or update a privacy policy tailored to cannabis app requirements. Set up a marketing landing page and ensure all URLs are live and accessible.
+
+## 6. Draft Release Notes and Support Contact Information [pending]
+### Dependencies: 2.3
+### Description: Write clear release notes for the initial app version and prepare support contact details for App Store listing.
+### Details:
+Summarize new features and improvements in release notes. Provide a dedicated support email or contact form, ensuring responsiveness and compliance with App Store requirements.
+

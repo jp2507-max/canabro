@@ -1,0 +1,69 @@
+# Task ID: 4
+# Title: EAS Build Configuration & Code Signing Setup
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Configure Expo Application Services (EAS) for production builds and set up code signing certificates for both iOS and Android platforms, following 2025 best practices for React Native apps using TypeScript.
+# Details:
+1. Create a production profile in eas.json with up-to-date EAS Build options, ensuring compatibility with React Native's latest architecture and TypeScript.
+2. Generate and configure Apple Distribution Certificate and iOS Provisioning Profile using EAS CLI, leveraging EAS-managed credentials for automation and security.
+3. Generate Android Keystore for app signing and configure Google Play App Signing, using EAS CLI to securely manage credentials.
+4. Set up build secrets in EAS for API keys and sensitive environment variables, using the latest EAS secrets management features.
+5. Configure build hooks and EAS Workflows (via .eas/workflows/*.yml) for automated builds on main branches, version bumping, and custom logic as needed.
+6. Enable and configure build cache for faster incremental builds.
+7. Integrate Over-the-Air (OTA) updates using EAS Update for rapid bug fixes and feature delivery.
+8. Document the build, release, and OTA update process for team reference, including TypeScript-specific considerations and troubleshooting tips.
+9. Ensure all native dependencies and config plugins are compatible with Expo SDK and React Native's new architecture.
+10. Regularly review EAS and Expo documentation for updates to workflows, security, and deployment best practices.
+
+# Test Strategy:
+1. Perform test builds for both iOS and Android using EAS Build, verifying compatibility with TypeScript and the latest Expo SDK.
+2. Verify app signature and code signing status on test builds using EAS CLI and device tools.
+3. Install test builds on physical devices and simulators for both platforms.
+4. Confirm app version, build number, and OTA update functionality are correct and increment as expected.
+5. Test the entire build pipeline from code commit to installable app, including automated workflow triggers and secrets management.
+6. Validate that all build and deployment steps are reproducible and documented for the team.
+
+# Subtasks:
+## 1. Create and Configure Production Profile in eas.json [pending]
+### Dependencies: None
+### Description: Set up a production build profile in eas.json with the latest EAS Build options, ensuring compatibility with React Native's new architecture and TypeScript.
+### Details:
+Use the EAS CLI to initialize and update eas.json. Specify the production profile with appropriate build settings, such as the correct React Native version, TypeScript support, and architecture flags. Reference Expo documentation for recommended configuration fields for 2025.
+
+## 2. Set Up iOS Code Signing with EAS-Managed Credentials [pending]
+### Dependencies: 4.1
+### Description: Generate and configure Apple Distribution Certificate and iOS Provisioning Profile using EAS CLI, leveraging EAS-managed credentials for automation and security.
+### Details:
+Use 'eas credentials' commands to let EAS manage iOS certificates and provisioning profiles. Ensure credentials are stored securely in the EAS system and linked to the correct Apple Developer account. Enable automatic credential management for streamlined builds.
+
+## 3. Set Up Android Keystore and Google Play App Signing [pending]
+### Dependencies: 4.1
+### Description: Generate an Android Keystore and configure Google Play App Signing using EAS CLI, ensuring secure credential management.
+### Details:
+Use 'eas credentials' to generate or upload an Android Keystore. Enable Play App Signing in the Google Play Console and upload the required keys if needed. Store credentials securely with EAS-managed services.
+
+## 4. Configure Build Secrets and Environment Variables [pending]
+### Dependencies: 4.1
+### Description: Set up build secrets for API keys and sensitive environment variables using the latest EAS secrets management features.
+### Details:
+Use 'eas secret:push' or the EAS dashboard to securely add secrets. Reference these secrets in eas.json or workflow files as needed. Ensure secrets are not exposed in logs or source control.
+
+## 5. Implement EAS Workflows and Build Hooks [pending]
+### Dependencies: 4.1, 4.2, 4.3, 4.4
+### Description: Configure build hooks and EAS Workflows (via .eas/workflows/*.yml) for automated builds, version bumping, and custom logic.
+### Details:
+Create or update workflow YAML files to define build steps, including pre- and post-build hooks for tasks like version incrementing, custom scripts, or notifications. Ensure workflows are optimized for main branches and production releases.
+
+## 6. Enable Build Cache for Faster Incremental Builds [pending]
+### Dependencies: 4.5
+### Description: Configure and enable EAS build cache to speed up incremental builds and reduce build times.
+### Details:
+Update eas.json and workflow files to enable build caching according to Expo's 2025 recommendations. Test cache effectiveness by making small code changes and observing build duration improvements.
+
+## 7. Integrate and Document OTA Updates with EAS Update [pending]
+### Dependencies: None
+### Description: Set up EAS Update for Over-the-Air (OTA) updates and document the build, release, and OTA update process, including TypeScript-specific considerations.
+### Details:
+Configure EAS Update in eas.json and workflows. Test OTA updates by publishing a change and verifying delivery to devices. Create internal documentation covering the full build and release process, troubleshooting, and TypeScript integration notes.
+

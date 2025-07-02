@@ -1,0 +1,24 @@
+# Task ID: 9
+# Title: Marketing Website & Landing Page Creation (2025 Best Practices)
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: Design and develop a marketing website and app landing page to support launch and drive user acquisition, leveraging 2025 best practices for cannabis and mobile app marketing.
+# Details:
+1. Design website mockups with accessibility, compliance, and conversion optimization in mind; get stakeholder approval.
+2. Develop a responsive marketing website with clear cannabis compliance messaging (age gating, disclaimers).
+3. Create an app showcase section with screenshots, videos, and interactive demos.
+4. Implement advanced SEO best practices, including structured data, mobile-first indexing, and cannabis-specific keyword strategies.
+5. Set up analytics tracking for all user journeys, including acquisition sources, conversion funnels, and compliance events[1][2][3][5].
+6. Create download links to app stores with dynamic tracking parameters for attribution.
+7. Implement a secure contact form, support section, and privacy-compliant data handling.
+8. Create a blog section for content marketing, focusing on education, compliance, and community engagement.
+9. Optimize website loading performance using 2025 standards (Core Web Vitals, image optimization, CDN).
+10. Set up automated hosting, deployment pipeline, and monitoring for uptime and performance.
+
+# Test Strategy:
+1. Test website on multiple browsers/devices for responsiveness and accessibility.
+2. Verify all links, forms, and age-gating work correctly.
+3. Run Lighthouse audits for performance, SEO, and compliance.
+4. Test app store links with attribution tracking.
+5. Confirm analytics tracking for all key user journeys and compliance events.

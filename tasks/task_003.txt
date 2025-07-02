@@ -1,0 +1,65 @@
+# Task ID: 3
+# Title: Cannabis Content Compliance Review
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Review all app content to ensure compliance with the latest (2025) App Store and Google Play policies and regulatory requirements regarding cannabis-related applications, incorporating current best practices for cannabis mobile apps.
+# Details:
+1. Research and document the most recent (2025) App Store and Google Play policies on cannabis apps, including any April 2025 updates
+2. Review all app content, including images, text, and features, for compliance with updated platform policies and regulatory requirements
+3. Identify potential policy violations, especially regarding in-app sales, delivery facilitation, and THC product references, and create a mitigation plan
+4. Implement content warnings and disclaimers where necessary, following best practices for cannabis-related content
+5. Add robust age verification if required by platforms or local regulations
+6. Ensure the app is positioned strictly as a 'growing assistant' or educational tool, not promoting or facilitating consumption or sales
+7. Remove any references to illegal activities or unlicensed cannabis sales
+8. Verify all strain information is strictly educational in nature and does not promote use
+9. Document all compliance measures taken for the app review process, including geo-restriction logic for jurisdictions where cannabis content is prohibited or restricted
+10. Ensure that any features related to cannabis sales, delivery, or pickup are not present in the app, especially for Google Play, and that any transactional flows are handled outside the app if necessary
+11. Stay updated on evolving best practices for cannabis-related mobile applications and incorporate them into the compliance process
+
+# Test Strategy:
+1. Conduct a mock app review using the latest (2025) platform guidelines and regulatory requirements
+2. Have legal counsel or compliance experts review app content and features
+3. Test age verification functionality and ensure it meets current standards
+4. Verify content warnings and disclaimers display correctly and are appropriately worded
+5. Test geo-restriction functionality to ensure content is inaccessible in prohibited regions
+6. Confirm that no in-app shopping cart, ordering, or delivery facilitation features exist, especially for Google Play
+7. Review app positioning and educational content for compliance with best practices
+
+# Subtasks:
+## 1. Research and Document 2025 Cannabis App Policies [pending]
+### Dependencies: None
+### Description: Gather and summarize the latest (2025) App Store and Google Play policies, including any updates from April 2025, as well as current regulatory requirements for cannabis-related mobile applications.
+### Details:
+Review official policy documentation from Apple and Google, focusing on sections related to cannabis, THC, and controlled substances. Note any changes, especially regarding in-app sales, delivery, and content restrictions. Document findings in a compliance reference guide for the team.
+
+## 2. Audit App Content for Policy and Regulatory Compliance [pending]
+### Dependencies: 3.1
+### Description: Systematically review all app content—including images, text, features, and flows—to identify any elements that may violate updated platform policies or regulatory requirements.
+### Details:
+Use the compliance reference guide to audit every screen, feature, and asset in the app. Pay special attention to references to sales, delivery, THC, and any potentially illegal activities. Document all findings and flag potential violations.
+
+## 3. Identify Violations and Develop Mitigation Plan [pending]
+### Dependencies: 3.2
+### Description: Catalog all identified policy violations and regulatory risks, then create a detailed mitigation plan to address each issue.
+### Details:
+List each violation with references to the specific policy or regulation. For each, propose actionable mitigation steps (e.g., content removal, feature modification, externalizing transactional flows). Prioritize based on severity and compliance risk.
+
+## 4. Implement Content Warnings, Disclaimers, and Age Verification [pending]
+### Dependencies: 3.3
+### Description: Add or update content warnings, disclaimers, and robust age verification mechanisms as required by platform policies and best practices.
+### Details:
+Implement age gates, geo-restriction logic, and clear disclaimers on educational intent. Ensure warnings are visible where required and that age verification meets platform and local regulatory standards.
+
+## 5. Refactor App Positioning and Remove Prohibited Content [pending]
+### Dependencies: 3.4
+### Description: Ensure the app is positioned strictly as an educational or growing assistant tool, removing any references to sales, delivery, or illegal activities, and ensuring all strain information is educational.
+### Details:
+Update app descriptions, marketing materials, and in-app content to emphasize educational value. Remove or rewrite any content that could be interpreted as promoting or facilitating consumption, sales, or delivery. Verify that no transactional flows remain in-app.
+
+## 6. Document Compliance Measures and Prepare for App Review [pending]
+### Dependencies: 3.5
+### Description: Create comprehensive documentation of all compliance actions taken, including geo-restriction logic, and prepare materials for the app review process.
+### Details:
+Compile a compliance checklist, screenshots of implemented changes, and a summary of geo-restriction and age verification logic. Prepare a submission note for app reviewers outlining compliance steps and referencing relevant policies.
+
