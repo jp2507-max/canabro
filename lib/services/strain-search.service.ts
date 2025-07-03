@@ -4,7 +4,7 @@ import {
   fetchStrainsFromApiByQuery,
   convertWdbStrainToRawApi,
   convertSupabaseStrainToRawApi,
-} from './strain-sync.service';
+} from './sync/strain-sync.service';
 import { Strain as WDBStrainModel } from '../models/Strain';
 import { SupabaseStrain } from '../types/supabase';
 import { RawStrainApiResponse } from '../types/weed-db';

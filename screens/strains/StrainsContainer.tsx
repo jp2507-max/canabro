@@ -10,8 +10,9 @@ import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
 import { useAuth } from '@/lib/contexts/AuthProvider';
 import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
-import { useFilteredStrains, usePrefetchStrain } from '@/lib/hooks/strains/useStrainQueries';
-import { Strain } from '@/lib/types/weed-db';
+import { usePrefetchStrain } from '@/lib/hooks/strains/useStrainQueries';
+import { useInfiniteStrains } from '@/lib/hooks/strains/useInfiniteStrains';
+import { Strain as WeedDbStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
 
 export function StrainsContainer() {
@@ -48,12 +49,26 @@ export function StrainsContainer() {
 
   // Strains query - always at top level
   const {
-    data: strains = [],
+    data,
     isLoading,
     isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     error,
     refetch,
-  } = useFilteredStrains(activeFilters, selectedStrainType, searchQuery);
+  } = useInfiniteStrains({
+    search: searchQuery,
+    species: selectedStrainType,
+    activeFilters,
+    enabled: true,
+  });
+
+  // Flatten pages into a single array
+  const strains = useMemo(() => {
+    if (!data) return [];
+    return data.pages.flatMap((p) => p.strains);
+  }, [data]) as WeedDbStrain[];
 
   // Memoized values - always at top level
   const favoriteStrainIdSet = useMemo(
@@ -110,8 +125,14 @@ export function StrainsContainer() {
     refetch();
   }, [refetch]);
 
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const handleStrainHover = useCallback(
-    (strain: Strain) => {
+    (strain: WeedDbStrain) => {
       if (strain.id) {
         prefetchStrain(strain.id);
       }
@@ -153,9 +174,12 @@ export function StrainsContainer() {
         setActiveFilters={setActiveFilters}
         handleApplyFilters={handleApplyFilters}
         handleRefresh={handleRefresh}
+        handleLoadMore={handleLoadMore}
         favoriteStrainIds={favoriteStrainIdSet}
         onToggleFavorite={handleToggleFavorite}
         onStrainHover={handleStrainHover}
+        hasMore={!!hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
       />
     </ErrorBoundary>
   );

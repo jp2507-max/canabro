@@ -7,20 +7,22 @@
 // WatermelonDB Imports
 import { Q } from '@nozbe/watermelondb';
 
-import { WeedDbService } from './weed-db.service'; // Import the existing service
-import { RAPIDAPI_KEY, RAPIDAPI_HOST } from '../config'; // Import API configuration
-import database from '../database/database';
-import { Strain as WDBStrainModel } from '../models/Strain'; // Corrected: Aliased import
-import supabase from '../supabase'; // Import the supabase client
-import { SupabaseStrain } from '../types/supabase'; // Added import
-import { RawStrainApiResponse } from '../types/weed-db';
+import { WeedDbService } from '../weed-db.service'; // Import the existing service
+import { RAPIDAPI_KEY, RAPIDAPI_HOST } from '../../config'; // Import API configuration
+import database from '../../database/database';
+import { Strain as WDBStrainModel } from '../../models/Strain'; // Corrected: Aliased import
+import supabase from '../../supabase'; // Import the supabase client
+import { SupabaseStrain } from '../../types/supabase'; // Added import
+import { RawStrainApiResponse } from '../../types/weed-db';
 import {
   sanitizeString,
   parseOptionalNumber,
   parseOptionalStringArray,
   parsePercentageString,
-} from '../utils/data-parsing'; // Corrected path
-import { log } from '../utils/logger';
+} from '../../utils/data-parsing'; // Corrected path
+import { log } from '../../utils/logger';
+import { Strain } from '../../types/strain';
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */ // Legacy code needs flexible typings
 
 // Use The Weed DB API on RapidAPI
 const STRAIN_API_URL = 'https://the-weed-db.p.rapidapi.com';
@@ -247,13 +249,49 @@ export async function searchStrainsInWatermelonDB(query: string): Promise<WDBStr
     return getAllStrainsFromWatermelonDB();
   }
   try {
-    const lowerCaseQuery = query.toLowerCase();
-    log.info(`Searching for strains in WatermelonDB with query: "${lowerCaseQuery}"`);
+    const trimmedQuery = query.trim();
+    log.info(`Searching for strains in WatermelonDB with query: "${trimmedQuery}"`);
     const strainsCollection = database.collections.get<WDBStrainModel>('strains'); // Corrected: Use WDBStrainModel
+    
+    // Optimize with database-level filtering for exact matches first
+    // Try exact match for optimal performance
+    const exactMatch = await strainsCollection
+      .query(Q.where('name', trimmedQuery))
+      .fetch();
+    
+    if (exactMatch.length > 0) {
+      log.info(`Found ${exactMatch.length} exact matches for "${query}".`);
+      return exactMatch;
+    }
+    
+    // Try case variations for exact matches using database queries
+    const caseVariations = [
+      trimmedQuery.toLowerCase(),
+      trimmedQuery.toUpperCase(),
+      trimmedQuery.charAt(0).toUpperCase() + trimmedQuery.slice(1).toLowerCase()
+    ];
+    
+    for (const variation of caseVariations) {
+      if (variation !== trimmedQuery) { // Avoid duplicate query
+        const variantMatch = await strainsCollection
+          .query(Q.where('name', variation))
+          .fetch();
+        if (variantMatch.length > 0) {
+          log.info(`Found ${variantMatch.length} case-variant matches for "${query}".`);
+          return variantMatch;
+        }
+      }
+    }
+    
+    // Fall back to partial string matching (in-memory filtering)
+    // Note: WatermelonDB doesn't support LIKE operations for database-level partial matching
+    log.info(`No exact matches found, falling back to partial string search for "${query}"`);
+    const lowerCaseQuery = trimmedQuery.toLowerCase();
     const allStrains = await strainsCollection.query().fetch();
     const filteredStrains = allStrains.filter((strain) =>
       strain.name.toLowerCase().includes(lowerCaseQuery)
     );
+      
     log.info(`Found ${filteredStrains.length} strains matching "${query}".`);
     return filteredStrains;
   } catch (error) {
@@ -292,10 +330,19 @@ export async function getStrainsByTypeFromWatermelonDB(type: string): Promise<WD
     const lowerCaseType = type.toLowerCase();
     log.info(`Fetching strains by type: "${lowerCaseType}" from WatermelonDB.`);
     const strainsCollection = database.collections.get<WDBStrainModel>('strains'); // Corrected: Use WDBStrainModel
-    const allStrains = await strainsCollection.query().fetch();
-    const filteredStrains = allStrains.filter(
-      (strain) => strain.type && strain.type.toLowerCase() === lowerCaseType
-    );
+    
+    // Use WatermelonDB query filtering instead of in-memory filtering for better performance
+    // Handle case-insensitive matching by checking common variations
+    const typeVariations = [
+      type.toLowerCase(),
+      type.toUpperCase(), 
+      type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() // Title case
+    ];
+    
+    const filteredStrains = await strainsCollection
+      .query(Q.where('type', Q.oneOf(typeVariations)))
+      .fetch();
+      
     log.info(`Found ${filteredStrains.length} strains of type "${type}".`);
     return filteredStrains;
   } catch (error) {
@@ -707,7 +754,7 @@ export function prepareDataForSupabase(
   const floweringTime = parseOptionalNumber(apiStrain.floweringTime || apiStrain.fromSeedToHarvest);
   const supabaseData: Partial<SupabaseStrain> & { api_id: string } = {
     api_id: sanitizeString(apiStrain.api_id) || apiStrain.api_id.trim(),
-    name: sanitizeString(apiStrain.name) || apiStrain.name.trim(),
+    name: sanitizeString(apiStrain.name) ?? undefined,
     type: apiStrain.type ? sanitizeString(apiStrain.type) : null,
     description: descriptionString,
     thc_percentage: thcPercentage,
@@ -942,4 +989,223 @@ export async function ensureStrainInLocalDB(
     );
     return null;
   }
+}
+
+// -----------------------------------------------------------------------------
+// Legacy compatibility helpers migrated from deprecated strain-service.ts and
+// strain-sync-service.ts (hyphen variant). These keep external API surface
+// intact while consolidating all strain-related logic into this single module.
+// -----------------------------------------------------------------------------
+
+/**
+ * Adapts a Supabase row into the frontend Strain model used throughout the UI.
+ */
+export function adaptStrainFromDB(dbStrain: any): Strain {
+  return {
+    id: dbStrain.id,
+    api_id: dbStrain.api_id,
+    name: dbStrain.name,
+    species: dbStrain.species,
+    thc: dbStrain.thc_content,
+    cbd: dbStrain.cbd_content,
+    description: dbStrain.description,
+    effects: dbStrain.effects || [],
+    flavors: dbStrain.flavors || [],
+    difficulty: dbStrain.grow_difficulty,
+    flowering_time: dbStrain.flowering_time,
+    image_url: dbStrain.image_url,
+    origin: dbStrain.origin,
+    yield_indoor: dbStrain.yield_indoor,
+    yield_outdoor: dbStrain.yield_outdoor,
+    medical_uses: dbStrain.medical_uses || [],
+    negative_effects: dbStrain.negative_effects || [],
+    growing_tips: dbStrain.growing_tips,
+    breeder: dbStrain.breeder,
+    is_auto_flower: dbStrain.is_auto_flower,
+    is_feminized: dbStrain.is_feminized,
+    height_indoor: dbStrain.height_indoor,
+    height_outdoor: dbStrain.height_outdoor,
+    created_at: dbStrain.created_at,
+    updated_at: dbStrain.updated_at,
+  } as Strain;
+}
+
+/**
+ * Paginated strain fetch with rich filtering – API compatible with the original
+ * getStrains() from strain-service.ts so existing hooks keep working.
+ */
+export async function getStrains({
+  search = '',
+  page = 1,
+  limit = 20,
+  species = '',
+  effect = '',
+  flavor = '',
+  minThc,
+  maxThc,
+}: {
+  search?: string;
+  page?: number;
+  limit?: number;
+  species?: string;
+  effect?: string;
+  flavor?: string;
+  minThc?: number;
+  maxThc?: number;
+} = {}): Promise<{ strains: Strain[]; total: number; hasMore: boolean }> {
+  try {
+    let query = supabase
+      .from('strains')
+      .select('*', { count: 'exact' })
+      .order('name')
+      .range((page - 1) * limit, page * limit - 1);
+
+    if (search) query = query.ilike('name', `%${search}%`);
+    if (species) query = query.eq('species', species);
+    if (effect) query = query.ilike('effects', `%${effect}%`);
+    if (flavor) query = query.ilike('flavors', `%${flavor}%`);
+    if (minThc != null) query = query.gte('thc_content', minThc);
+    if (maxThc != null) query = query.lte('thc_content', maxThc);
+
+    const { data, count, error } = await query;
+    if (error) throw error;
+
+    return {
+      strains: (data || []).map(adaptStrainFromDB),
+      total: count || 0,
+      hasMore: count ? page * limit < count : false,
+    };
+  } catch (error) {
+    log.error('[getStrains] Error fetching strains:', error);
+    return { strains: [], total: 0, hasMore: false };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Consolidated findOrCreateLocalStrain (previously in strain-sync-service.ts)
+// -----------------------------------------------------------------------------
+
+// Basic RawApiStrainData interface for compatibility with existing callers.
+export interface RawApiStrainData {
+  api_id: string;
+  _id?: string;
+  name?: string;
+  type?: string;
+  description?: string | string[];
+  thc?: string | number;
+  THC?: string | number;
+  cbd?: string | number;
+  CBD?: string | number;
+  genetics?: string;
+  floweringTime?: string;
+  fromSeedToHarvest?: string;
+  floweringType?: string;
+  growDifficulty?: string;
+  yieldIndoor?: string;
+  yieldOutdoor?: string;
+  heightIndoor?: string;
+  heightOutdoor?: string;
+  effects?: string[];
+  flavors?: string[];
+  parents?: string[];
+  harvestTimeOutdoor?: string;
+  link?: string;
+}
+
+// Helper utilities (duplicated names are avoided to prevent collisions)
+function _legacyParsePercentage(value?: string | number): number | null {
+  if (value === null || value === undefined || String(value).toLowerCase() === 'unknown') {
+    return null;
+  }
+  if (typeof value === 'number') return value;
+  const match = String(value).match(/(\d+(?:\.\d+)?)/);
+  return match && match[1] ? parseFloat(match[1]) : null;
+}
+
+function _legacyExtractFloweringWeeks(value?: string): number | null {
+  if (!value) return null;
+  const week = String(value).match(/(\d+)(?:-(\d+))?\s*weeks?/i);
+  if (week && week[1]) return parseInt(week[1], 10);
+  const day = String(value).match(/(\d+)\s*days?/i);
+  if (day && day[1]) return Math.round(parseInt(day[1], 10) / 7);
+  return null;
+}
+
+function _legacyFormatDescription(desc?: string | string[]): string | null {
+  if (!desc) return null;
+  return Array.isArray(desc) ? desc.join('\n') : desc;
+}
+
+function prepareStrainDataForSupabase(raw: RawApiStrainData): Partial<SupabaseStrain> | null {
+  const effectiveApiId = raw.api_id || raw._id;
+  if (!effectiveApiId) return null;
+  const supa: Partial<SupabaseStrain> = {
+    api_id: effectiveApiId,
+    name: raw.name ?? undefined,
+    type: raw.type || null,
+    description: _legacyFormatDescription(raw.description),
+    thc_percentage: _legacyParsePercentage(raw.thc || raw.THC),
+    cbd_percentage: _legacyParsePercentage(raw.cbd || raw.CBD),
+    genetics: raw.genetics || null,
+    flowering_time: _legacyExtractFloweringWeeks(raw.floweringTime || raw.fromSeedToHarvest),
+    flowering_type: raw.floweringType || null,
+    grow_difficulty: raw.growDifficulty || null,
+    average_yield:
+      raw.yieldIndoor && raw.yieldOutdoor
+        ? `Indoor: ${raw.yieldIndoor}, Outdoor: ${raw.yieldOutdoor}`
+        : raw.yieldIndoor || raw.yieldOutdoor || null,
+    height_indoor: raw.heightIndoor || null,
+    height_outdoor: raw.heightOutdoor || null,
+    effects: raw.effects || null,
+    flavors: raw.flavors || null,
+    harvest_time_outdoor: raw.harvestTimeOutdoor || null,
+    link: raw.link || null,
+  };
+  Object.keys(supa).forEach((k) => {
+    // @ts-ignore cleanup undefined
+    if (supa[k] === undefined) supa[k] = null;
+  });
+  return supa;
+}
+
+/**
+ * Ensures the strain exists in Supabase (creates if needed) and returns the
+ * resulting Supabase row. Also ensures a WatermelonDB mirror for offline use.
+ */
+export async function findOrCreateLocalStrain(
+  apiId: string,
+  rawData?: RawApiStrainData
+): Promise<SupabaseStrain | null> {
+  if (!apiId) return null;
+
+  // Attempt to locate by api_id first
+  const { data: existing, error } = await supabase
+    .from('strains')
+    .select('*')
+    .eq('api_id', apiId)
+    .maybeSingle();
+  if (error) log.warn('[findOrCreateLocalStrain] lookup error:', error);
+  if (existing) return existing as SupabaseStrain;
+
+  if (!rawData) return null; // nothing more we can do
+
+  const prepared = prepareStrainDataForSupabase(rawData);
+  if (!prepared) return null;
+
+  // Upsert into Supabase
+  const { data: inserted, error: upErr } = await supabase
+    .from('strains')
+    .upsert([prepared as SupabaseStrain], { onConflict: 'api_id', ignoreDuplicates: false })
+    .select('*')
+    .single();
+  if (upErr) {
+    log.error('[findOrCreateLocalStrain] upsert failed:', upErr);
+    return null;
+  }
+
+  // Mirror into WatermelonDB for offline availability
+  const wdbData = prepareDataForWatermelonDB({ ...rawData, api_id: apiId } as RawStrainApiResponse);
+  if (wdbData) await ensureStrainInLocalDB(wdbData as any);
+
+  return inserted as SupabaseStrain;
 }

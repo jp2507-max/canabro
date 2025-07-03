@@ -1,6 +1,6 @@
 import { Database, Q } from '@nozbe/watermelondb';
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
-import { format } from 'date-fns';
+import { format } from '@/lib/utils/date';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useRef } from 'react';

@@ -1,5 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { onlineManager } from '@tanstack/react-query';
+import { deltaSyncStrains } from '@/lib/services/sync';
 import { useEffect } from 'react';
 
 /**
@@ -9,13 +10,24 @@ import { useEffect } from 'react';
  */
 export function useOnlineManager() {
   useEffect(() => {
-    // React Query already supports setting an online detector,
-    // we just need to tell it what to use
+    let previousConnected: boolean | null = null;
+
     onlineManager.setEventListener((setOnline) => {
       // Subscribe to NetInfo's connectivity changes
-      return NetInfo.addEventListener((state) => {
-        // Update the online status based on NetInfo's data
-        setOnline(!!state.isConnected);
+      return NetInfo.addEventListener(async (state) => {
+        // Detect reconnection
+        const nowConnected = !!state.isConnected;
+        if (previousConnected === false && nowConnected) {
+          try {
+            console.log('[DeltaSync] Network reconnected – running strain delta sync');
+            await deltaSyncStrains();
+          } catch (err) {
+            console.warn('[DeltaSync] Strain delta sync on reconnection failed', err);
+          }
+        }
+
+        previousConnected = nowConnected;
+        setOnline(nowConnected);
       });
     });
 

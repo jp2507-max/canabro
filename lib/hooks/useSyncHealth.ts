@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getSyncHealth, SyncHealthMetrics } from '../services/sync-service';
+import { getSyncHealth, SyncHealthMetrics } from '../services/sync';
 
 export interface SyncHealthStatus {
   /** Last successful sync timestamp (ms) */

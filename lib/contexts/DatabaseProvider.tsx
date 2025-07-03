@@ -12,8 +12,9 @@ import { isValidUuid, MIN_SYNC_INTERVAL_MS, SyncOptions } from './SyncTypes';
 import database, { resetDatabase as resetWatermelonDB } from '../database/database';
 import { forceResetDatabaseIfNeeded } from '../database/resetUtil';
 // Import the centralized sync function and background task helpers
-import { synchronizeWithServer, loadSyncMetadata } from '../services/sync-service';
+import { synchronizeWithServer, loadSyncMetadata } from '../services/sync';
 import { registerBackgroundSyncAsync, setLastActiveUserId } from '../tasks/syncTask'; // Import task functions
+import { deltaSyncStrains } from '../services/sync';
 
 type DatabaseContextType = {
   database: Database;
@@ -127,6 +128,18 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     performInitialSetup();
+
+    // Run a lightweight delta sync for strains right after DB is ready
+    (async () => {
+      try {
+        if (session?.user?.id) {
+          console.log('[DeltaSync] Running initial strain delta sync');
+          await deltaSyncStrains();
+        }
+      } catch (err) {
+        console.warn('[DeltaSync] Initial strain delta sync failed', err);
+      }
+    })();
 
     return () => {
       isMounted = false;

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from '@/lib/utils/haptics';
-import { debounce } from 'lodash';
+import { debounce } from 'lodash-es';
 import { useColorScheme } from 'nativewind';
 import React, {
   useState,

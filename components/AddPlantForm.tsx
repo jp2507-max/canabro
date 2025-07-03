@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { format, isValid } from 'date-fns';
+import { format, isValid } from '@/lib/utils/date';
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -52,7 +52,7 @@ import {
   ensureStrainInLocalDB,
   ensureStrainInSupabase,
   prepareDataForSupabase,
-} from '../lib/services/strain-sync.service';
+} from '../lib/services/sync/strain-sync.service';
 import supabase from '../lib/supabase';
 import { GrowthStage, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
@@ -1431,8 +1431,6 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           </Animated.View>
         </ScrollView>
       </EnhancedKeyboardWrapper>
-
-
 
       {/* Footer Navigation */}
       <ThemedView className="border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-800">

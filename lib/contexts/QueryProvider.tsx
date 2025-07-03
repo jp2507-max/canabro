@@ -1,32 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient, focusManager, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import * as React from 'react';
 import { AppState, AppStateStatus, Platform } from 'react-native';
-
-// Create a persister for React Query state
-const asyncStoragePersister = createAsyncStoragePersister({
-  storage: AsyncStorage,
-  key: 'canabro-react-query-cache',
-  throttleTime: 1000,
-  // Only persist non-error state that isn't older than 24 hours
-  serialize: (data: any) => {
-    const dataToSerialize = {
-      ...data,
-      clientState: {
-        ...data.clientState,
-        queries: data.clientState.queries.filter(
-          (query: any) =>
-            !query.state.error &&
-            Date.now() - (query.state.dataUpdatedAt || 0) < 1000 * 60 * 60 * 24
-        ),
-      },
-    };
-    return JSON.stringify(dataToSerialize);
-  },
-});
+import { mmkvPersister } from '@/lib/storage/mmkvPersister';
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -46,6 +23,8 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             refetchOnReconnect: true,
             // Don't refetch on mount if the data isn't stale
             refetchOnMount: true,
+            // Always enable structural sharing to minimize re-renders
+            structuralSharing: true,
           },
         },
       })
@@ -91,7 +70,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     <PersistQueryClientProvider
       client={queryClient}
       persistOptions={{
-        persister: asyncStoragePersister,
+        persister: mmkvPersister,
         maxAge: 1000 * 60 * 60 * 24, // 24 hours
         buster: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',
       }}

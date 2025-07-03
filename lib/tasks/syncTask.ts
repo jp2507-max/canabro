@@ -6,7 +6,9 @@ import { Platform } from 'react-native';
 
 // Import the singleton database instance and the sync function
 import database from '../database/database';
-import { synchronizeWithServer, checkUnsyncedChanges } from '../services/sync-service';
+import { synchronizeWithServer } from '../services/sync';
+import { checkUnsyncedChanges } from '../services/sync';
+import { deltaSyncStrains } from '../services/sync';
 
 export const BACKGROUND_SYNC_TASK = 'background-sync';
 const LAST_USER_ID_KEY = 'last_active_user_id';
@@ -63,7 +65,14 @@ if (isBackgroundTaskAvailable()) {
           return BackgroundTask.BackgroundTaskResult.Success;
         }
 
-        // 3. Check if we have any changes to sync
+        // 3. Run a quick delta sync for strains to keep local cache fresh
+        try {
+          await deltaSyncStrains();
+        } catch (err) {
+          console.warn('[SyncTask] Strain delta sync failed', err);
+        }
+
+        // 4. Check if we have any changes to sync
         const hasChanges = await checkUnsyncedChanges(database);
         if (!hasChanges) {
           console.log(`[${BACKGROUND_SYNC_TASK}] No unsynced changes. Skipping sync.`);
@@ -74,7 +83,7 @@ if (isBackgroundTaskAvailable()) {
           `[${BACKGROUND_SYNC_TASK}] Network online, User ID found: ${userId}. Attempting sync...`
         );
 
-        // 4. Perform the synchronization
+        // 5. Perform the synchronization
         // Note: synchronizeWithServer already includes mutex locking
         const syncSuccess = await synchronizeWithServer(database, userId);
 

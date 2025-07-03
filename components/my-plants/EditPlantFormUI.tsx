@@ -1,5 +1,4 @@
 /* eslint-disable prettier/prettier */
-import { format } from 'date-fns';
 import React from 'react';
 import { Pressable, ActivityIndicator } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -8,6 +7,7 @@ import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 
 import { useButtonAnimation } from '@/lib/animations';
+import { format as formatDate } from '@/lib/utils/date';
 
 // Animated Button Components using modern hooks
 interface AnimatedImageButtonProps {
@@ -86,7 +86,7 @@ export const AnimatedDateButton: React.FC<AnimatedDateButtonProps> = ({ onPress,
     hapticStyle: 'light',
   });
 
-  const formattedDate = format(value, 'PPP');
+  const formattedDate = formatDate(value, 'PPP');
 
   return (
     <Pressable

@@ -1,7 +1,7 @@
 // React & React Native Core
 import { Image as ExpoImage } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useEffect } from 'react';
 import { View, ScrollView, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -13,6 +13,13 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { triggerMediumHapticSync } from '../../lib/utils/haptics';
+import {
+  generateCDNImageURL,
+  IMAGE_CACHE_POLICY,
+  IMAGE_PRIORITY_HIGH,
+  IMAGE_TRANSITION_DURATION,
+  PLACEHOLDER_BLUR_HASH,
+} from '@/lib/utils/image';
 
 // Local Components
 import placeholderImageSource from '../../assets/images/placeholder.png';
@@ -31,6 +38,11 @@ import { StrainEffectType, StrainFlavorType } from '@/lib/types/strain';
 import { Strain as BaseStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
 import { logger } from '@/lib/config/production';
+import { FEATURE_FLAGS } from '@/lib/config/featureFlags';
+import { initFPSLogger } from '@/lib/utils/perfLogger';
+
+// FlashList wrapper for better performance
+import { AnimatedFlashList } from '@/components/ui/FlashListWrapper';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +70,9 @@ interface StrainsViewProps {
   favoriteStrainIds: Set<string>;
   onToggleFavorite: (id: string) => void;
   onStrainHover: (strain: Strain) => void;
+  handleLoadMore: () => void;
+  hasMore: boolean;
+  isFetchingNextPage: boolean;
 }
 
 const CATEGORIES_NEW = [
@@ -241,7 +256,7 @@ const StrainCard = memo(
         className="mb-8 bg-white dark:bg-zinc-900">
         <View className="-m-4 overflow-hidden rounded-3xl">
           <ExpoImage
-            source={safeItem.image}
+            source={generateCDNImageURL(safeItem.image, 'thumbnail')}
             style={{
               width: width - 32,
               height: 210,
@@ -249,6 +264,11 @@ const StrainCard = memo(
               borderTopRightRadius: 24,
             }}
             contentFit="cover"
+            cachePolicy={IMAGE_CACHE_POLICY}
+            priority={IMAGE_PRIORITY_HIGH}
+            transition={{ duration: IMAGE_TRANSITION_DURATION }}
+            placeholder={{ blurhash: PLACEHOLDER_BLUR_HASH }}
+            recyclingKey={String(safeItem.id ?? (safeItem as any)._id)}
             accessibilityIgnoresInvertColors
           />
           <View className="absolute left-5 top-5 flex-row items-center rounded-2xl bg-black/50 px-3 py-1">
@@ -490,6 +510,9 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   favoriteStrainIds = new Set(),
   onToggleFavorite = () => {},
   onStrainHover = () => {},
+  handleLoadMore = () => {},
+  hasMore = false,
+  isFetchingNextPage = false,
 }) => {
   // 🎬 Scroll animations for enhanced UX
   const scrollAnimation = useScrollAnimation({
@@ -507,17 +530,29 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     return strains || [];
   }, [strains]);
 
-  // 🎯 Optimized render functions with useCallback for Reanimated performance
-  const renderStrainItem = useCallback(({ item }: { item: any }) => (
-    <StrainCard
-      item={item}
-      onPress={() => router.push(`/(app)/catalog/${item.id}` as any)}
-      isFavorite={checkIsFavorite(item.id ?? item._id)}
-      onToggleFavorite={onToggleFavorite}
-    />
-  ), [router, onToggleFavorite, favoriteStrainIds]);
+  const handleStrainPress = useCallback(
+    (id: string) => {
+      router.push(`/(app)/catalog/${id}` as any);
+    },
+    [router]
+  );
 
-  const keyExtractor = useCallback((item: Strain, index: number) => {
+  const renderStrainItem = useCallback(
+    ({ item, index }: { item: unknown; index: number }) => {
+      const strain = item as Strain;
+      return (
+        <StrainCard
+          item={strain}
+          onPress={() => handleStrainPress(strain.id ?? strain._id)}
+          isFavorite={checkIsFavorite(strain.id ?? strain._id)}
+          onToggleFavorite={onToggleFavorite}
+        />
+      );
+    },
+    [handleStrainPress, onToggleFavorite, favoriteStrainIds]
+  );
+
+  const keyExtractor = useCallback((item: any, index: number) => {
     // Prioritize stable, unique identifiers
     const id = item.id ?? item._id;
     if (id && typeof id === 'string') {
@@ -554,6 +589,13 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
 
     return false;
   }
+
+  // Dev FPS logger
+  useEffect(() => {
+    if (FEATURE_FLAGS.flashListPerf) {
+      initFPSLogger('StrainsFlashList');
+    }
+  }, []);
 
   if (isLoading && !isFetching) {
     // 🎭 Enhanced loading state with animation sequence
@@ -626,8 +668,11 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
           </AnimatedCard>
         </View>
       </View>
-      <Animated.FlatList
-        {...scrollAnimation.scrollHandler}
+      <AnimatedFlashList
+        onScroll={scrollAnimation.scrollHandler}
+        scrollEventThrottle={16}
+        drawDistance={Dimensions.get('window').height}
+        removeClippedSubviews
         data={filteredStrains} // Use our memoized value here instead of direct strains
         keyExtractor={keyExtractor}
         renderItem={renderStrainItem}
@@ -637,14 +682,17 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
           paddingTop: 4,
         }}
         showsVerticalScrollIndicator={false}
-        // Reanimated v3 + FlatList optimizations - Fixed duplicates
-        initialNumToRender={8}
-        windowSize={10}
-        maxToRenderPerBatch={5}
-        updateCellsBatchingPeriod={100}
-        removeClippedSubviews={true}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="py-4">
+              <ActivityIndicator size="small" color="rgb(var(--color-primary-500))" />
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View className="mt-24 flex-1 items-center justify-center">
             <ThemedText className="text-lg text-neutral-500 dark:text-neutral-400">

@@ -47,3 +47,5 @@ export type {
   CacheEntry,
 } from './types';
 export { TABLES_TO_SYNC, SYNC_CONSTANTS, SYNC_METADATA_KEYS } from './types';
+
+export { deltaSyncStrains } from './strain-delta-sync';

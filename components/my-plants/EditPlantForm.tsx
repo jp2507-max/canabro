@@ -4,7 +4,7 @@
 // ✅ React Native & Expo imports - following 2025 best practices
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO } from '@/lib/utils/date';
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -43,7 +43,7 @@ import { searchStrainsByName } from '@/lib/data/strains';
 import { useDatabase } from '@/lib/hooks/useDatabase';
 import { useEnhancedKeyboard } from '@/lib/hooks/keyboard/useEnhancedKeyboard';
 import { Plant } from '@/lib/models/Plant';
-import { findOrCreateLocalStrain } from '@/lib/services/strain-sync-service';
+import { findOrCreateLocalStrain } from '@/lib/services/sync/strain-sync.service';
 import { WeedDbService } from '@/lib/services/weed-db.service';
 import supabase from '@/lib/supabase';
 import {

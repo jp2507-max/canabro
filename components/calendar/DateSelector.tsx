@@ -1,4 +1,4 @@
-import { format, addDays, isToday, isYesterday, isTomorrow } from 'date-fns';
+import { format, addDays, isToday, isYesterday, isTomorrow } from '@/lib/utils/date';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { ScrollView, Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';

@@ -1,5 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import {
+  generateCDNImageURL,
+  IMAGE_CACHE_POLICY,
+  IMAGE_PRIORITY_HIGH,
+  IMAGE_TRANSITION_DURATION,
+  PLACEHOLDER_BLUR_HASH,
+} from '@/lib/utils/image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState, useCallback } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View, Linking } from 'react-native';
@@ -472,7 +479,7 @@ export default function StrainDetailPage() {
             source={
               imageError || !strain.image
                 ? require('../../../assets/images/placeholder.png')
-                : { uri: strain.image }
+                : generateCDNImageURL(strain.image, 'medium')
             }
             style={{
               width: '100%',
@@ -482,6 +489,10 @@ export default function StrainDetailPage() {
             }}
             onError={() => setImageError(true)}
             contentFit="cover"
+            cachePolicy={IMAGE_CACHE_POLICY}
+            priority={IMAGE_PRIORITY_HIGH}
+            transition={{ duration: IMAGE_TRANSITION_DURATION }}
+            placeholder={{ blurhash: PLACEHOLDER_BLUR_HASH }}
             accessibilityLabel={`${strain.name} image`}
           />
           <View

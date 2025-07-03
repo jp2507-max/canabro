@@ -1,6 +1,13 @@
 import * as Haptics from '@/lib/utils/haptics';
 import React, { useEffect, useState } from 'react';
-import { View, Image } from 'react-native';
+import { View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import {
+  generateCDNImageURL,
+  IMAGE_CACHE_POLICY,
+  IMAGE_TRANSITION_DURATION,
+  PLACEHOLDER_BLUR_HASH,
+} from '@/lib/utils/image';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -140,8 +147,8 @@ export default function UserAvatar({
       {imageError || !uri || uri.trim() === '' ? (
         <FallbackAvatar />
       ) : (
-        <Image
-          source={{ uri }}
+        <ExpoImage
+          source={generateCDNImageURL(uri, 'thumbnail')}
           style={{
             width: size,
             height: size,
@@ -150,6 +157,9 @@ export default function UserAvatar({
           className="border-2 border-white bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800"
           accessibilityRole="image"
           accessibilityLabel={accessibilityLabel || 'User avatar'}
+          cachePolicy={IMAGE_CACHE_POLICY}
+          transition={{ duration: IMAGE_TRANSITION_DURATION }}
+          placeholder={{ blurhash: PLACEHOLDER_BLUR_HASH }}
           onError={() => setImageError(true)}
         />
       )}

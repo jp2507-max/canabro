@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, Pressable, Image } from 'react-native';
+import { View, Text, Alert, Pressable, AccessibilityInfo, ViewStyle } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import {
+  generateCDNImageURL,
+  IMAGE_CACHE_POLICY,
+  IMAGE_PRIORITY_HIGH,
+  IMAGE_TRANSITION_DURATION,
+  PLACEHOLDER_BLUR_HASH,
+} from '@/lib/utils/image';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -379,10 +387,13 @@ export default React.memo(function CommentItem({
             className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
             accessibilityLabel={`${userProfile.username}'s avatar`}>
             {userProfile.avatar_url ? (
-              <Image
-                source={{ uri: userProfile.avatar_url }}
+              <ExpoImage
+                source={generateCDNImageURL(userProfile.avatar_url, 'thumbnail')}
                 className="h-full w-full"
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy={IMAGE_CACHE_POLICY}
+                transition={{ duration: IMAGE_TRANSITION_DURATION }}
+                placeholder={{ blurhash: PLACEHOLDER_BLUR_HASH }}
               />
             ) : (
               <OptimizedIcon
@@ -423,10 +434,14 @@ export default React.memo(function CommentItem({
           {/* Comment Image (if any) */}
           {comment.image_url && (
             <View className="mb-3 overflow-hidden rounded-xl">
-              <Image
-                source={{ uri: comment.image_url }}
+              <ExpoImage
+                source={generateCDNImageURL(comment.image_url, 'small')}
                 className="h-48 w-full bg-zinc-100 dark:bg-zinc-800"
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy={IMAGE_CACHE_POLICY}
+                priority={IMAGE_PRIORITY_HIGH}
+                transition={{ duration: IMAGE_TRANSITION_DURATION }}
+                placeholder={{ blurhash: PLACEHOLDER_BLUR_HASH }}
               />
             </View>
           )}
