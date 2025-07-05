@@ -75,6 +75,17 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export default supabase;
 
 /**
+ * Get the configured Supabase URL
+ * @returns string The Supabase URL used by the client
+ */
+export function getSupabaseUrl(): string {
+  if (!supabaseUrl) {
+    throw new Error('Supabase URL not configured');
+  }
+  return supabaseUrl;
+}
+
+/**
  * Initialize database schema if it doesn't exist
  * This helps ensure that all required tables are created
  */

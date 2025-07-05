@@ -1,13 +1,23 @@
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import { Alert } from 'react-native';
-import Constants from 'expo-constants';
-import supabase from '../supabase';
+import supabase, { getSupabaseUrl } from '../supabase';
 
 /**
  * Supported storage buckets for image uploads
  */
 export type StorageBucket = 'posts' | 'plants' | 'diary_entries' | 'plant-images';
+
+/**
+ * Error types for upload operations
+ */
+export type UploadErrorType = 
+  | 'FILE_TOO_LARGE'
+  | 'NO_SESSION'
+  | 'CONFIG_ERROR'
+  | 'UPLOAD_FAILED'
+  | 'URL_GENERATION_FAILED'
+  | 'INVALID_FILE'
+  | 'UNKNOWN_ERROR';
 
 /**
  * Upload configuration options
@@ -23,7 +33,7 @@ export interface UploadImageOptions {
   plantId?: string;
   /** Optional custom filename prefix */
   filenamePrefix?: string;
-  /** Maximum file size in bytes (default: 10MB) */
+  /** Maximum file size in bytes (default: 3MB) */
   maxSizeBytes?: number;
   /** Image compression quality (0-1, default: 0.7) */
   compressionQuality?: number;
@@ -32,30 +42,88 @@ export interface UploadImageOptions {
 }
 
 /**
- * Upload result
+ * Detailed upload error information
+ */
+export interface UploadError {
+  type: UploadErrorType;
+  message: string;
+  details?: string;
+  maxSizeMB?: number;
+  actualSizeMB?: number;
+}
+
+/**
+ * Upload result with detailed error information
  */
 export interface UploadResult {
   success: boolean;
   publicUrl?: string;
-  error?: string;
+  error?: UploadError;
+}
+
+/**
+ * Supported image file extensions
+ */
+const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
+
+/**
+ * Validate that the image URI exists and is a supported image format
+ * 
+ * @param imageUri URI of the image to validate
+ * @returns Promise<UploadError | null> Error if validation fails, null if valid
+ */
+async function validateImageUri(imageUri: string): Promise<UploadError | null> {
+  try {
+    // Check if file exists
+    const fileInfo = await FileSystem.getInfoAsync(imageUri);
+    
+    if (!fileInfo.exists) {
+      return {
+        type: 'INVALID_FILE',
+        message: 'Image file does not exist',
+        details: `File not found at URI: ${imageUri}`,
+      };
+    }
+
+    // Extract file extension from URI
+    const uriLowerCase = imageUri.toLowerCase();
+    const hasValidExtension = SUPPORTED_IMAGE_EXTENSIONS.some(ext => 
+      uriLowerCase.endsWith(ext)
+    );
+
+    if (!hasValidExtension) {
+      return {
+        type: 'INVALID_FILE',
+        message: 'Unsupported image file format',
+        details: `Supported formats: ${SUPPORTED_IMAGE_EXTENSIONS.join(', ')}. Got: ${imageUri}`,
+      };
+    }
+
+    // Additional validation for file size (basic check)
+    if (fileInfo.size === 0) {
+      return {
+        type: 'INVALID_FILE',
+        message: 'Image file is empty',
+        details: `File at ${imageUri} has zero bytes`,
+      };
+    }
+
+    return null; // Valid file
+    
+  } catch (error) {
+    return {
+      type: 'INVALID_FILE',
+      message: 'Failed to validate image file',
+      details: error instanceof Error ? error.message : 'Unknown validation error',
+    };
+  }
 }
 
 /**
  * Get file path structure based on bucket type
  */
-function getFilePath(bucket: StorageBucket, userId: string, filename: string, plantId?: string): string {
-  switch (bucket) {
-    case 'posts':
-      return `${userId}/${filename}`;
-    case 'plants':
-      return `${userId}/${filename}`;
-    case 'diary_entries':
-      return `${userId}/${filename}`;
-    case 'plant-images':
-      return `${userId}/${filename}`;
-    default:
-      return `${userId}/${filename}`;
-  }
+function getFilePath(bucket: StorageBucket, userId: string, filename: string): string {
+  return `${userId}/${filename}`;
 }
 
 /**
@@ -83,14 +151,14 @@ function generateFilename(bucket: StorageBucket, options: UploadImageOptions): s
  * Upload image to Supabase Storage with memory-efficient streaming
  * 
  * @param options Upload configuration options
- * @returns Promise<UploadResult> Upload result with public URL or error
+ * @returns Promise<UploadResult> Upload result with public URL or detailed error information
  */
 export async function uploadImage(options: UploadImageOptions): Promise<UploadResult> {
   const {
     bucket,
     userId,
     imageUri,
-    maxSizeBytes = 10 * 1024 * 1024, // 10MB default
+    maxSizeBytes = 3 * 1024 * 1024, // 3MB default (reduced from 10MB)
     compressionQuality = 0.7,
     maxWidth = 1024,
   } = options;
@@ -98,7 +166,17 @@ export async function uploadImage(options: UploadImageOptions): Promise<UploadRe
   try {
     console.log(`Starting image upload to ${bucket} bucket for user ${userId}`);
 
-    // Step 1: Image manipulation (resize and compress)
+    // Step 1: Validate image URI and format
+    console.log('Validating image URI...');
+    const validationError = await validateImageUri(imageUri);
+    if (validationError) {
+      return {
+        success: false,
+        error: validationError,
+      };
+    }
+
+    // Step 2: Image manipulation (resize and compress)
     console.log('Manipulating image...');
     const manipResult = await manipulateAsync(
       imageUri,
@@ -108,33 +186,58 @@ export async function uploadImage(options: UploadImageOptions): Promise<UploadRe
 
     console.log(`Image manipulated: ${manipResult.width}x${manipResult.height}`);
 
-    // Step 2: File size validation
+    // Step 3: File size validation
     const fileInfo = await FileSystem.getInfoAsync(manipResult.uri);
     if (fileInfo.exists && fileInfo.size && fileInfo.size > maxSizeBytes) {
       const maxSizeMB = Math.round(maxSizeBytes / (1024 * 1024));
-      Alert.alert('File Too Large', `Please select an image smaller than ${maxSizeMB}MB.`);
-      return { success: false, error: 'File too large' };
+      const actualSizeMB = Math.round(fileInfo.size / (1024 * 1024));
+      
+      return { 
+        success: false, 
+        error: {
+          type: 'FILE_TOO_LARGE',
+          message: `File size (${actualSizeMB}MB) exceeds maximum allowed size (${maxSizeMB}MB)`,
+          maxSizeMB,
+          actualSizeMB,
+        }
+      };
     }
 
-    // Step 3: Get authentication session
+    // Step 4: Get authentication session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      throw new Error('No valid session for upload');
+      return {
+        success: false,
+        error: {
+          type: 'NO_SESSION',
+          message: 'No valid authentication session for upload',
+          details: 'User must be logged in to upload images',
+        }
+      };
     }
 
-    // Step 4: Get Supabase URL from configuration
-    const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl) {
-      throw new Error('Supabase URL not configured');
+    // Step 5: Get Supabase URL from client configuration
+    let supabaseUrl: string;
+    try {
+      supabaseUrl = getSupabaseUrl();
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          type: 'CONFIG_ERROR',
+          message: 'Supabase URL not configured',
+          details: error instanceof Error ? error.message : 'Failed to get Supabase URL from client',
+        }
+      };
     }
 
-    // Step 5: Generate filename and file path
+    // Step 6: Generate filename and file path
     const filename = generateFilename(bucket, options);
-    const filePath = getFilePath(bucket, userId, filename, options.plantId);
+    const filePath = getFilePath(bucket, userId, filename);
     
     console.log(`Uploading to ${bucket} bucket at path: ${filePath}`);
 
-    // Step 6: Upload using FileSystem for memory efficiency
+    // Step 7: Upload using FileSystem for memory efficiency
     const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`;
     
     const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
@@ -150,15 +253,30 @@ export async function uploadImage(options: UploadImageOptions): Promise<UploadRe
     if (uploadResult.status !== 200) {
       const errorText = uploadResult.body || 'Unknown upload error';
       console.error('Upload failed:', errorText);
-      throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
+      
+      return {
+        success: false,
+        error: {
+          type: 'UPLOAD_FAILED',
+          message: `Upload failed with status ${uploadResult.status}`,
+          details: errorText,
+        }
+      };
     }
 
-    // Step 7: Get public URL
+    // Step 8: Get public URL
     const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
     
     if (!urlData?.publicUrl) {
       console.error('Could not get public URL for path:', filePath);
-      throw new Error('Could not get public URL after upload');
+      return {
+        success: false,
+        error: {
+          type: 'URL_GENERATION_FAILED',
+          message: 'Could not generate public URL after upload',
+          details: `Failed to get public URL for path: ${filePath}`,
+        }
+      };
     }
 
     console.log(`Image uploaded successfully. Public URL: ${urlData.publicUrl}`);
@@ -170,11 +288,14 @@ export async function uploadImage(options: UploadImageOptions): Promise<UploadRe
 
   } catch (error) {
     console.error('Error uploading image:', error);
-    Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
     
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: {
+        type: 'UNKNOWN_ERROR',
+        message: 'An unexpected error occurred during upload',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      }
     };
   }
 }
