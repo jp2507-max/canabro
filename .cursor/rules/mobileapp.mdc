@@ -59,9 +59,14 @@ alwaysApply: true
 - Handle device permissions with latest Expo APIs
 
 ## 🎛️ **Custom Components & Utilities**
+- **ALWAYS check for existing utilities before creating new ones** - the project has centralized reusable components and helpers
 - Use custom **haptics** (`@/lib/utils/haptics`) for consistent tactile feedback across the app
+- Use **image picker** (`@/lib/utils/image-picker.ts`) for consistent image selection and handling across all components
+- Use **upload image helper** (`@/lib/utils/upload-image.ts`) for image processing, compression, and Supabase Storage uploads
 - Use **EnhancedTextInput** component (`@/components/ui/EnhancedTextInput`) for complex forms with validation, character counting, and keyboard navigation support
 - Use **EnhancedKeyboardWrapper** component (`@/components/keyboard/EnhancedKeyboardWrapper`) to automatically manage keyboard visibility, padding, and optional accessory toolbar around form screens
+- Leverage existing utility functions in `@/lib/utils/` for common operations (date formatting, string manipulation, UUID generation, etc.)
+- **DRY Principle**: Avoid duplicating logic - consolidate similar functionality into reusable utilities
 
 ## 📱 **Mobile-First Approach**
 - Use safe area management (`SafeAreaProvider`, safe area utilities)

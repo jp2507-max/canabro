@@ -2,8 +2,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 
 /**
- * Ultra-simple image picker functions with identical permission handling
- * Both camera and gallery use the exact same pattern
+ * Simplified image picker functions with consistent permission handling
+ * Both camera and gallery use identical patterns for reliability
  */
 
 export interface ImageResult {
@@ -14,40 +14,42 @@ export interface ImageResult {
 }
 
 /**
- * Ultra-simple camera capture - use same pattern as gallery
+ * Capture photo using device camera
+ * @returns Promise<ImageResult | null> - Returns image data or null if cancelled/failed
  */
 export async function takePhoto(): Promise<ImageResult | null> {
   try {
     // Request camera permissions
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Camera permission is required to take photos.');
+      Alert.alert('Permission required', 'Camera permission is needed to take photos.');
       return null;
     }
 
-    console.log('[UltraSimpleImagePicker] Launching camera...');
-    // Use IDENTICAL options to gallery for consistency
+    console.log('[ImagePicker] Launching camera...');
+    
+    // Use modern mediaTypes array syntax and consistent options
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
     });
 
-    console.log('[UltraSimpleImagePicker] Camera result received');
+    console.log('[ImagePicker] Camera result received');
 
     if (result.canceled || !result.assets || result.assets.length === 0) {
-      console.log('[UltraSimpleImagePicker] Camera canceled or no assets');
+      console.log('[ImagePicker] Camera canceled or no assets');
       return null;
     }
 
     const asset = result.assets[0];
     if (!asset) {
-      console.log('[UltraSimpleImagePicker] No asset in result');
+      console.log('[ImagePicker] No asset in result');
       return null;
     }
 
-    console.log('[UltraSimpleImagePicker] Camera success, returning asset');
+    console.log('[ImagePicker] Camera success, returning asset');
     return {
       uri: asset.uri,
       width: asset.width,
@@ -55,49 +57,49 @@ export async function takePhoto(): Promise<ImageResult | null> {
       type: 'image' as const,
     };
   } catch (error) {
-    console.error('[UltraSimpleImagePicker] Camera error:', error);
+    console.error('[ImagePicker] Camera error:', error);
     Alert.alert('Camera Error', 'Failed to take photo. Please try again.');
     return null;
   }
 }
 
 /**
- * Ultra-simple gallery selection - use IDENTICAL pattern to camera
- * Key insight: Both functions should behave identically, just call different launch methods
+ * Select image from device gallery
+ * @returns Promise<ImageResult | null> - Returns image data or null if cancelled/failed
  */
 export async function selectFromGallery(): Promise<ImageResult | null> {
   try {
     // Request media library permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Photo library permission is required to select images.');
+      Alert.alert('Permission required', 'Media library permission is needed to select photos.');
       return null;
     }
 
-    console.log('[UltraSimpleImagePicker] Launching image library...');
+    console.log('[ImagePicker] Launching image library...');
 
-    // Use IDENTICAL options to camera for consistency
+    // Use modern mediaTypes array syntax and consistent options
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
     });
 
-    console.log('[UltraSimpleImagePicker] Gallery result received');
+    console.log('[ImagePicker] Gallery result received');
 
     if (result.canceled || !result.assets || result.assets.length === 0) {
-      console.log('[UltraSimpleImagePicker] Gallery canceled or no assets');
+      console.log('[ImagePicker] Gallery canceled or no assets');
       return null;
     }
 
     const asset = result.assets[0];
     if (!asset) {
-      console.log('[UltraSimpleImagePicker] No asset in result');
+      console.log('[ImagePicker] No asset in result');
       return null;
     }
 
-    console.log('[UltraSimpleImagePicker] Gallery success, returning asset');
+    console.log('[ImagePicker] Gallery success, returning asset');
     return {
       uri: asset.uri,
       width: asset.width,
@@ -105,7 +107,7 @@ export async function selectFromGallery(): Promise<ImageResult | null> {
       type: 'image' as const,
     };
   } catch (error) {
-    console.error('[UltraSimpleImagePicker] Gallery error:', error);
+    console.error('[ImagePicker] Gallery error:', error);
     Alert.alert('Gallery Error', 'Failed to select image. Please try again.');
     return null;
   }

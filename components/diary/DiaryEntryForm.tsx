@@ -1,9 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useRef, useMemo } from 'react';
+import { selectFromGallery } from '@/lib/utils/image-picker';
 import { Controller, useForm } from 'react-hook-form';
 import { View, TextInput, ActivityIndicator, Alert, Text, Image, ScrollView, Keyboard } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -22,6 +19,7 @@ import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapp
 import { DiaryEntryType } from './EntryTypeSelector';
 import { useCreateDiaryEntry } from '../../lib/hooks/diary/useCreateDiaryEntry';
 import supabase from '../../lib/supabase';
+import { uploadDiaryImage } from '../../lib/utils/upload-image';
 import {
   triggerLightHapticSync,
   triggerSuccessHaptic,
@@ -276,103 +274,19 @@ export default function DiaryEntryForm({
     Keyboard.dismiss();
   };
 
-  // Image Upload Function (Memory Optimized)
-  const uploadImage = async (userId: string, imageUri: string): Promise<string | null> => {
-    console.log('Starting diary image processing and upload for URI:', imageUri);
-    try {
-      // Manipulate Image
-      console.log('Manipulating image...');
-      const manipResult = await manipulateAsync(imageUri, [{ resize: { width: 1024 } }], {
-        compress: 0.7,
-        format: SaveFormat.JPEG,
-      });
-      console.log(
-        'Image manipulated:',
-        manipResult.uri,
-        `(${manipResult.width}x${manipResult.height})`
-      );
-
-      // Check file size before upload to prevent OOM issues
-      const fileInfo = await FileSystem.getInfoAsync(manipResult.uri);
-      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
-        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
-        return null;
-      }
-
-      const extension = 'jpg';
-
-      // Get Supabase session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No valid session for upload');
-      }
-
-      // Get Supabase URL from the client configuration
-      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured');
-      }
-
-      // Construct file path for diary entries
-      const filename = `diary_${plantId}_${Date.now()}.${extension}`;
-      const filePath = `${userId}/${filename}`;
-      console.log('Uploading diary image to Supabase storage at path:', filePath);
-
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/diary_entries/${filePath}`;
-
-      const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
-        httpMethod: 'POST',
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: 'file',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (uploadResult.status !== 200) {
-        const errorText = uploadResult.body || 'Unknown upload error';
-        console.error('Upload failed:', errorText);
-        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
-      }
-      console.log('Diary image uploaded successfully.');
-
-      // Get public URL
-      const { data: urlData } = supabase.storage.from('diary_entries').getPublicUrl(filePath);
-      if (!urlData || !urlData.publicUrl) {
-        console.error('Could not get public URL for diary image path:', filePath);
-        throw new Error('Could not get public URL after upload.');
-      }
-
-      console.log('Diary image public URL:', urlData.publicUrl);
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Error uploading diary image:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
-      return null;
-    }
+  // Image Upload Function using centralized helper
+  const handleImageUpload = async (userId: string, imageUri: string): Promise<string | null> => {
+    console.log('Starting diary image upload for URI:', imageUri);
+    const result = await uploadDiaryImage(userId, imageUri, plantId);
+    return result.success ? result.publicUrl || null : null;
   };
 
   // Function to handle image picking
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setSelectedImageUri(result.assets[0].uri);
-      console.log('Selected Image URI:', result.assets[0].uri);
+    const result = await selectFromGallery();
+    if (result) {
+      setSelectedImageUri(result.uri);
+      console.log('Selected Image URI:', result.uri);
       triggerSuccessHaptic();
     }
   };
@@ -402,9 +316,9 @@ export default function DiaryEntryForm({
       }
       const userId = userData.user.id;
 
-      uploadedImageUrl = await uploadImage(userId, selectedImageUri);
+      uploadedImageUrl = await handleImageUpload(userId, selectedImageUri);
       if (!uploadedImageUrl) {
-        return; // Upload failed, alert shown in uploadImage
+        return; // Upload failed, alert shown in upload helper
       }
       submissionData.image_url = uploadedImageUrl;
     }

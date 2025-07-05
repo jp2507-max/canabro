@@ -3,12 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, isValid } from '@/lib/utils/date';
-import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import {
   TextInput,
@@ -54,6 +51,7 @@ import {
   prepareDataForSupabase,
 } from '../lib/services/sync/strain-sync.service';
 import supabase from '../lib/supabase';
+import { uploadPlantGalleryImage } from '../lib/utils/upload-image';
 import { GrowthStage, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
 
@@ -1102,113 +1100,26 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     updateProgress();
   }, [updateProgress]);
 
-  const processImage = async (uri: string): Promise<string | null> => {
-    try {
-      const manipulatedImage = await manipulateAsync(
-        uri,
-        [{ resize: { width: 800, height: 800 } }],
-        { compress: 0.8, format: SaveFormat.JPEG, base64: false }
-      );
-      return manipulatedImage.uri;
-    } catch (error) {
-      console.error('Error processing image:', error);
-      Alert.alert('Image Error', 'Could not process the selected image.');
-      return null;
-    }
-  };
-
   const pickImage = useCallback(async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+    const result = await selectFromGallery();
+    if (!result) return;
 
-    if (result.canceled || !result.assets || result.assets.length === 0) return;
-
-    const firstAsset = result.assets[0];
-    if (!firstAsset) return;
-
-    const processedUri = await processImage(firstAsset.uri);
-    if (processedUri) setValue('image_url', processedUri, { shouldValidate: true });
+    setValue('image_url', result.uri, { shouldValidate: true });
   }, [setValue]);
 
-  const takePhoto = useCallback(async () => {
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+  const takePhotoHandler = useCallback(async () => {
+    const result = await takePhoto();
+    if (!result) return;
 
-    if (result.canceled || !result.assets || result.assets.length === 0) return;
-
-    const firstAsset = result.assets[0];
-    if (!firstAsset) return;
-
-    const processedUri = await processImage(firstAsset.uri);
-    if (processedUri) setValue('image_url', processedUri, { shouldValidate: true });
+    setValue('image_url', result.uri, { shouldValidate: true });
   }, [setValue]);
 
-  const uploadImage = async (userId: string): Promise<string | null> => {
+  const handleImageUpload = async (userId: string): Promise<string | null> => {
     const imageUri = getValues('image_url');
     if (!imageUri) return null;
 
-    try {
-      // Image was already processed during selection (pickImage/takePhoto) - use as-is
-      // Check file size before upload to prevent OOM issues
-      const fileInfo = await FileSystem.getInfoAsync(imageUri);
-      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
-        // 10MB limit
-        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
-        return null;
-      }
-
-      // Memory-efficient upload using FileSystem instead of fetch().blob()
-      // This streams the file without loading it entirely into memory
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No valid session for upload');
-      }
-
-      // Get Supabase URL from the client configuration (consistent with lib/supabase.ts)
-      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured');
-      }
-
-      const fileName = `${userId}/plant-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`;
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/plant-images/${fileName}`;
-
-      const uploadResult = await FileSystem.uploadAsync(uploadUrl, imageUri, {
-        httpMethod: 'POST',
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: 'file',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (uploadResult.status !== 200) {
-        const errorText = uploadResult.body || 'Unknown upload error';
-        console.error('Upload failed:', errorText);
-        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('plant-images').getPublicUrl(fileName);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Upload Error', 'Could not upload image. Please try again.');
-      return null;
-    }
+    const result = await uploadPlantGalleryImage(userId, imageUri);
+    return result.success ? result.publicUrl || null : null;
   };
 
   const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
@@ -1221,7 +1132,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     try {
       let imageUrl: string | null = null;
       if (data.image_url) {
-        imageUrl = await uploadImage(user.id);
+        imageUrl = await handleImageUpload(user.id);
       }
 
       const plantData: PlantFormProps = {
@@ -1341,7 +1252,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
     switch (FORM_STEPS[currentStepIndex]?.id) {
       case 'photo':
-        return <PhotoStep {...commonProps} takePhoto={takePhoto} pickImage={pickImage} />;
+        return <PhotoStep {...commonProps} takePhoto={takePhotoHandler} pickImage={pickImage} />;
       case 'basicInfo':
         return (
           <BasicInfoStep

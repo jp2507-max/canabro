@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { FlatList, View, RefreshControl, Text } from 'react-native';
+import { View, RefreshControl, Text } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -17,6 +17,7 @@ import CreatePostScreen from '../../components/community/CreatePostScreen';
 import PostItem from '../../components/community/PostItem';
 import type { PostData } from '../../components/community/PostItem';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
+import { AnimatedFlashList } from '../../components/ui/FlashListWrapper';
 import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import { triggerMediumHapticSync } from '../../lib/utils/haptics';
 import type { User } from '../../lib/types/user';
@@ -106,25 +107,31 @@ function CommunityScreenView({
   }, [setShowCreateModal]);
 
   // 🎯 Performance optimized render functions with React.useCallback
-  const keyExtractor = React.useCallback((item: PostData) => item.id, []);
+  const keyExtractor = React.useCallback((item: unknown) => {
+    const post = item as PostData;
+    return post.id;
+  }, []);
 
   const renderItem = React.useCallback(
-    ({ item, index }: { item: PostData; index: number }) => (
-      <Animated.View
-        entering={FadeInDown.delay(index * 50)
-          .duration(400)
-          .springify()}
-        className="px-4">
-        <PostItem
-          post={item}
-          currentUserId={user?.id}
-          onLike={handleLike}
-          onComment={handleCommentPress}
-          onUserPress={() => {}}
-          liking={likingPostId === item.id}
-        />
-      </Animated.View>
-    ),
+    ({ item, index }: { item: unknown; index: number }) => {
+      const post = item as PostData;
+      return (
+        <Animated.View
+          entering={FadeInDown.delay(index * 50)
+            .duration(400)
+            .springify()}
+          className="px-4">
+          <PostItem
+            post={post}
+            currentUserId={user?.id}
+            onLike={handleLike}
+            onComment={handleCommentPress}
+            onUserPress={() => {}}
+            liking={likingPostId === post.id}
+          />
+        </Animated.View>
+      );
+    },
     [user, handleLike, handleCommentPress, likingPostId]
   );
 
@@ -226,25 +233,20 @@ function CommunityScreenView({
         renderErrorState
       ) : (
         <>
-          <FlatList
+          <AnimatedFlashList
             data={posts}
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             ListEmptyComponent={renderEmptyState}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
+            estimatedItemSize={450}
             contentContainerStyle={{
               paddingBottom: 100,
               paddingTop: 8,
             }}
             className="flex-1"
             showsVerticalScrollIndicator={false}
-            // ⚡ Reanimated v3 + FlatList performance optimizations
-            initialNumToRender={8}
-            windowSize={10}
-            maxToRenderPerBatch={5}
-            updateCellsBatchingPeriod={100}
-            removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={isRefreshing}

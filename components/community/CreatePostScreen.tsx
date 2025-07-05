@@ -1,8 +1,5 @@
-import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useCallback, useRef } from 'react';
+import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
 import {
   Modal,
   View,
@@ -22,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { createPost } from '../../lib/services/community-service';
-import supabase from '../../lib/supabase';
+import { uploadPostImage } from '../../lib/utils/upload-image';
 import { triggerLightHaptic, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
 import ThemedText from '../ui/ThemedText';
@@ -292,93 +289,24 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
   // Fix: Ensure canPost is always boolean
   const canPost = Boolean(content.trim().length > 0 || image);
 
-  // Image upload function (simplified - keeping core logic)
-  const uploadImage = async (userId: string, imageUri: string): Promise<string | null> => {
-    try {
-      const manipResult = await manipulateAsync(
-        imageUri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.7, format: SaveFormat.JPEG }
-      );
-
-      const fileInfo = await FileSystem.getInfoAsync(manipResult.uri);
-      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
-        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
-        return null;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No valid session for upload');
-      }
-
-      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured');
-      }
-
-      const filename = `post_${Date.now()}.jpg`;
-      const filePath = `${userId}/${filename}`;
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/posts/${filePath}`;
-
-      const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
-        httpMethod: 'POST',
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: 'file',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (uploadResult.status !== 200) {
-        throw new Error(`Upload failed with status ${uploadResult.status}`);
-      }
-
-      const { data: urlData } = supabase.storage.from('posts').getPublicUrl(filePath);
-      return urlData?.publicUrl || null;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
-      return null;
-    }
+  // Image upload function using centralized helper
+  const handleImageUpload = async (userId: string, imageUri: string): Promise<string | null> => {
+    const result = await uploadPostImage(userId, imageUri);
+    return result.success ? result.publicUrl || null : null;
   };
 
   // Action handlers
   const handleImagePicker = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'Media library permission is needed to select photos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setImage(result.assets[0].uri);
+    const result = await selectFromGallery();
+    if (result) {
+      setImage(result.uri);
     }
   }, []);
 
   const handleCameraPress = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'Camera permission is needed to take photos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setImage(result.assets[0].uri);
+    const result = await takePhoto();
+    if (result) {
+      setImage(result.uri);
     }
   }, []);
 
@@ -389,7 +317,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
     try {
       let imageUrl: string | null = null;
       if (image) {
-        imageUrl = await uploadImage(user.id, image);
+        imageUrl = await handleImageUpload(user.id, image);
         if (!imageUrl) {
           setIsSubmitting(false);
           return;
