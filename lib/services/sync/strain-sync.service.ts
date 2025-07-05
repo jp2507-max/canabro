@@ -1005,7 +1005,12 @@ export function adaptStrainFromDB(dbStrain: any): Strain {
     id: dbStrain.id,
     api_id: dbStrain.api_id,
     name: dbStrain.name,
-    species: dbStrain.species,
+    // MIGRATION TODO (Target: July 18, 2025): Remove species field mapping after UI migration complete
+    // Map Supabase "type" column to legacy `species` field for backward compatibility
+    // This mapping supports components still using the deprecated StrainSpecies enum
+    species: dbStrain.type ?? dbStrain.species,
+    // Preserve explicit `type` field for consumers that migrated to the new name
+    type: dbStrain.type,
     thc: dbStrain.thc_content,
     cbd: dbStrain.cbd_content,
     description: dbStrain.description,
@@ -1061,7 +1066,10 @@ export async function getStrains({
       .range((page - 1) * limit, page * limit - 1);
 
     if (search) query = query.ilike('name', `%${search}%`);
-    if (species) query = query.eq('species', species);
+    // MIGRATION TODO (Target: July 18, 2025): Update parameter name from 'species' to 'type'
+    // The column was renamed from "species" -> "type" in DB. Use the new column while keeping
+    // the function parameter name unchanged for API compatibility.
+    if (species) query = query.eq('type', species);
     if (effect) query = query.ilike('effects', `%${effect}%`);
     if (flavor) query = query.ilike('flavors', `%${flavor}%`);
     if (minThc != null) query = query.gte('thc_content', minThc);

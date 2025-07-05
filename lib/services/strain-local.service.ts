@@ -182,7 +182,7 @@ class StrainLocalService {
   async upsertStrains(strains: Partial<Strain & { id: string }>[]) {
     if (strains.length === 0) return;
 
-    await database.action(async () => {
+    await database.write(async () => {
       // Build a lookup of existing records to minimize find calls
       const ids = strains.map((s) => s.id).filter(Boolean) as string[];
       const existingRecords = ids.length
@@ -215,7 +215,7 @@ class StrainLocalService {
   async deleteStrains(ids: string[]) {
     if (ids.length === 0) return;
 
-    await database.action(async () => {
+    await database.write(async () => {
       const records = await this.collection.query(Q.where('id', Q.oneOf(ids))).fetch();
       const batch = records.map((rec) => rec.prepareDestroyPermanently());
       await database.batch(batch);

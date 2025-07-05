@@ -146,28 +146,44 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       case NotificationType.HARVEST:
         // If we have a plantId, navigate to the plant detail screen
         if (plantId) {
-          router.push({
-            pathname: '/(app)/plant/[id]',
-            params: { id: plantId },
-          });
+          try {
+            router.push({
+              pathname: '/(app)/plant/[id]',
+              params: { id: plantId },
+            });
+          } catch (error) {
+            console.warn('Navigation not ready yet, skipping plant detail navigation:', error);
+          }
         }
         break;
       case NotificationType.TASK_REMINDER:
         // For task reminders, navigate to the plant or diary screen
         if (plantId && taskId) {
           // Navigate to the plant detail screen
-          router.push({
-            pathname: '/(app)/plant/[id]',
-            params: { id: plantId },
-          });
+          try {
+            router.push({
+              pathname: '/(app)/plant/[id]',
+              params: { id: plantId },
+            });
+          } catch (error) {
+            console.warn('Navigation not ready yet, skipping plant detail navigation:', error);
+          }
         } else if (taskId) {
           // Navigate to the diary screen (home tab)
-          router.push('/(app)/(tabs)');
+          try {
+            router.push('/(app)/(tabs)');
+          } catch (error) {
+            console.warn('Navigation not ready yet, skipping tabs navigation:', error);
+          }
         }
         break;
       default:
         // For general notifications, navigate to diary screen (home tab)
-        router.push('/(app)/(tabs)');
+        try {
+          router.push('/(app)/(tabs)');
+        } catch (error) {
+          console.warn('Navigation not ready yet, skipping tabs navigation:', error);
+        }
         break;
     }
   };

@@ -1,14 +1,8 @@
-import { Stack, Redirect } from 'expo-router';
-import { useAuth } from '../../lib/contexts/AuthProvider';
+import { Stack } from 'expo-router';
 
 export default function AuthLayout() {
-  const { user } = useAuth();
-
-  // If already authenticated, send away from auth screens
-  if (user) {
-    return <Redirect href="/(app)/(tabs)" />;
-  }
-
+  // Authentication routing is now handled in the main index.tsx
+  // This layout only renders for unauthenticated users
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />

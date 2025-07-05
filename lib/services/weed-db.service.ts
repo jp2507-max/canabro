@@ -217,6 +217,7 @@ const StrainSchema = z.object({
 const StrainArraySchema = z.array(StrainSchema);
 
 // --- Helper: Map WeedDB API snake_case to camelCase for Strain ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapWeedDbStrain(raw: any): Strain {
   // Helper for determining strain type from genetics info
   const determineStrainType = (genetic?: string): string | undefined => {
@@ -294,7 +295,7 @@ function mapWeedDbStrain(raw: any): Strain {
 // Helper to handle caching and fetching for filter/list endpoints
 async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<Strain[]>> {
   // Create a properly formatted parameters object
-  const formattedParams: Record<string, any> = {};
+  const formattedParams: Record<string, unknown> = {};
 
   // Handle search parameter differently - it needs special treatment
   if (params.search) {
@@ -385,7 +386,7 @@ async function fetchStrainById(id: string): Promise<Strain | null> {
     }
 
     return mapWeedDbStrain(parsed.data);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Error fetching strain by ID ${id}:`, error);
     return null;
   }
@@ -413,14 +414,14 @@ export async function ensureStrainExists(
       return String(response.data.id);
     }
     throw new Error('Failed to create strain');
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If duplicate key error, fetch by name
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     if (
-      error.response &&
-      error.response.data &&
-      (error.response.data.code === '23505' ||
-        (typeof error.response.data.message === 'string' &&
-          error.response.data.message.includes('duplicate key')))
+      typeof (error as any)?.response?.data !== 'undefined' &&
+      ((error as any).response.data.code === '23505' ||
+        (typeof (error as any).response.data.message === 'string' &&
+          (error as any).response.data.message.includes('duplicate key')))
     ) {
       // Try to fetch the existing strain by name
       const found = await fetchStrains({ search: strain.name });
@@ -428,7 +429,8 @@ export async function ensureStrainExists(
       if (match && match.id) return String(match.id);
       throw new Error('Strain exists but could not be found by name');
     }
-    throw error;
+    throw error as Error;
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 }
 
@@ -471,16 +473,22 @@ export const WeedDbService = {
     }
 
     try {
-      // Execute API search with the name parameter
+      // Execute API search with the name parameter (Weed-DB returns fuzzy matches).
       const searchTerm = name.trim().toLowerCase();
-      logger.log(`[DEBUG] Executing API search with term: "${searchTerm}"`);
+      logger.log(`[DEBUG] Executing API search with term: "${searchTerm}" (prefix match)`);
       const result = await fetchStrains({ search: searchTerm });
 
-      logger.log(`[DEBUG] API search returned ${result.data.length} results`);
+      // Filter to prefix-matches only
+      const prefixFiltered = result.data.filter((s: Strain) =>
+        (s.name || '').toLowerCase().startsWith(searchTerm)
+      );
 
-      // If API returned results, use them
-      if (result.data.length > 0) {
-        return result;
+      logger.log(
+        `[DEBUG] API search returned ${result.data.length} results – ${prefixFiltered.length} after prefix filter`
+      );
+
+      if (prefixFiltered.length > 0) {
+        return { ...result, data: prefixFiltered };
       }
 
       // No results from API, use simple client-side name search
@@ -489,9 +497,9 @@ export const WeedDbService = {
       // Fetch a dataset to search within
       const allStrains = await fetchStrains({ limit: 100 });
 
-      // Simple client-side search that only checks strain names
-      const filteredStrains = allStrains.data.filter((strain) =>
-        (strain.name || '').toLowerCase().includes(searchTerm)
+      // Simple client-side search that only checks strain names (prefix)
+      const filteredStrains = allStrains.data.filter((strain: Strain) =>
+        (strain.name || '').toLowerCase().startsWith(searchTerm)
       );
 
       logger.log(`[DEBUG] Client-side name search found ${filteredStrains.length} results`);

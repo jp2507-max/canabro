@@ -52,7 +52,7 @@ interface Strain extends BaseStrain {
 }
 
 interface StrainsViewProps {
-  router: any;
+  router?: { push: (path: string) => void };
   selectedStrainType: 'sativa' | 'indica' | 'hybrid';
   setSelectedStrainType: (type: 'sativa' | 'indica' | 'hybrid') => void;
   searchQuery: string;
@@ -69,9 +69,7 @@ interface StrainsViewProps {
   handleRefresh: () => void;
   favoriteStrainIds: Set<string>;
   onToggleFavorite: (id: string) => void;
-  onStrainHover: (strain: Strain) => void;
   handleLoadMore: () => void;
-  hasMore: boolean;
   isFetchingNextPage: boolean;
 }
 
@@ -79,7 +77,7 @@ const CATEGORIES_NEW = [
   { id: 'sativa', name: 'Sativa', icon: 'white-balance-sunny', emoji: '🌞' },
   { id: 'indica', name: 'Indica', icon: 'moon-waning-crescent', emoji: '🌙' },
   { id: 'hybrid', name: 'Hybrid', icon: 'palette-swatch', emoji: '🧬' },
-];
+] as const;
 
 // ✅ MIGRATED: Simple helper that returns CSS colors for strain types
 const getStrainTypeColor = (type: string) => {
@@ -116,7 +114,7 @@ const StrainCard = memo(
     isFavorite,
     onToggleFavorite,
   }: {
-    item: any;
+    item: Strain;
     onPress?: () => void;
     isFavorite?: boolean;
     onToggleFavorite?: (id: string) => void;
@@ -222,16 +220,8 @@ const StrainCard = memo(
         ? item.description[0]
         : item.description || 'No description available.',
       growDifficulty: item.growDifficulty || null,
-      effects: Array.isArray(item.effects)
-        ? item.effects
-        : Array.isArray(item.effect)
-          ? item.effect
-          : [],
-      flavors: Array.isArray(item.flavors)
-        ? item.flavors
-        : Array.isArray(item.smellAndFlavour)
-          ? item.smellAndFlavour
-          : [],
+      effects: Array.isArray(item.effects) ? item.effects : [],
+      flavors: Array.isArray(item.flavors) ? item.flavors : [],
     };
 
     const safeIsFavorite = isFavorite === true;
@@ -256,7 +246,11 @@ const StrainCard = memo(
         className="mb-8 bg-white dark:bg-zinc-900">
         <View className="-m-4 overflow-hidden rounded-3xl">
           <ExpoImage
-            source={generateCDNImageURL(safeItem.image, 'thumbnail')}
+            source={
+              typeof safeItem.image === 'string'
+                ? generateCDNImageURL(safeItem.image, 'thumbnail')
+                : safeItem.image
+            }
             style={{
               width: width - 32,
               height: 210,
@@ -268,12 +262,12 @@ const StrainCard = memo(
             priority={IMAGE_PRIORITY_HIGH}
             transition={{ duration: IMAGE_TRANSITION_DURATION }}
             placeholder={{ blurhash: PLACEHOLDER_BLUR_HASH }}
-            recyclingKey={String(safeItem.id ?? (safeItem as any)._id)}
+            recyclingKey={String(safeItem.id)}
             accessibilityIgnoresInvertColors
           />
           <View className="absolute left-5 top-5 flex-row items-center rounded-2xl bg-black/50 px-3 py-1">
             <OptimizedIcon
-              name={strainTypeConfig.icon as any}
+              name={strainTypeConfig.icon}
               size={20}
               className="mr-1 text-neutral-50"
             />
@@ -377,6 +371,27 @@ const CategoryChips = memo(
     // Defensive check to ensure CATEGORIES_NEW is an array before mapping
     const safeCategories = Array.isArray(CATEGORIES_NEW) ? CATEGORIES_NEW : [];
 
+    // Wrap onSelect in error handling to prevent context errors
+    const handleCategorySelect = useCallback((categoryId: 'sativa' | 'indica' | 'hybrid') => {
+      try {
+        console.log(`[CategoryChips] Selecting category: ${categoryId}`);
+        
+        // Add a small delay to prevent rapid state changes that might cause context loss
+        const timer = setTimeout(() => {
+          if (typeof onSelect === 'function') {
+            onSelect(categoryId);
+          } else {
+            console.warn('[CategoryChips] onSelect function not available');
+          }
+        }, 50);
+
+        // Return cleanup function
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.error('[CategoryChips] Error in category selection:', error);
+      }
+    }, [onSelect]);
+
     return (
       <ScrollView
         horizontal
@@ -395,7 +410,7 @@ const CategoryChips = memo(
               key={cat.id}
               category={cat}
               isSelected={selected === cat.id}
-              onPress={() => onSelect(cat.id as 'sativa' | 'indica' | 'hybrid')}
+              onPress={() => handleCategorySelect(cat.id as 'sativa' | 'indica' | 'hybrid')}
             />
           );
         })}
@@ -410,7 +425,7 @@ const CategoryChip = memo(
     isSelected,
     onPress,
   }: {
-    category: (typeof CATEGORIES_NEW)[0];
+    category: (typeof CATEGORIES_NEW)[number];
     isSelected: boolean;
     onPress: () => void;
   }) => {
@@ -424,24 +439,53 @@ const CategoryChip = memo(
       };
     });
 
-    // 🎬 Modern gesture handling
+    // 🎬 Modern gesture handling with improved error boundary
     const handlePress = useCallback(() => {
-      triggerMediumHapticSync();
-      onPress();
+      try {
+        triggerMediumHapticSync();
+        
+        // Add defensive check and delay to prevent context issues
+        if (typeof onPress === 'function') {
+          // Small delay to ensure any ongoing state changes complete
+          setTimeout(() => {
+            try {
+              onPress();
+            } catch (error) {
+              console.error('[CategoryChip] Error in delayed onPress:', error);
+            }
+          }, 10);
+        } else {
+          console.warn('[CategoryChip] onPress function not available');
+        }
+      } catch (error) {
+        console.error('[CategoryChip] Error in handlePress:', error);
+      }
     }, [onPress]);
 
     const tapGesture = Gesture.Tap()
       .onBegin(() => {
         'worklet';
-        scale.value = withSpring(0.96);
+        try {
+          scale.value = withSpring(0.96);
+        } catch (error) {
+          console.warn('[CategoryChip] Error in animation onBegin:', error);
+        }
       })
       .onFinalize(() => {
         'worklet';
-        scale.value = withSpring(1);
+        try {
+          scale.value = withSpring(1);
+        } catch (error) {
+          console.warn('[CategoryChip] Error in animation onFinalize:', error);
+        }
       })
       .onEnd(() => {
         'worklet';
-        runOnJS(handlePress)();
+        try {
+          runOnJS(handlePress)();
+        } catch (error) {
+          console.warn('[CategoryChip] Error in runOnJS:', error);
+        }
       });
 
     // ✅ MIGRATED: Get CSS color for strain type
@@ -466,7 +510,7 @@ const CategoryChip = memo(
           accessibilityRole="button"
           accessibilityLabel={`Filter by ${category.name}`}>
           <OptimizedIcon
-            name={category.icon as any}
+            name={category.icon}
             size={20}
             className={
               isSelected ? 'mr-2 text-neutral-50' : `${getStrainClassName(category.id)} mr-2`
@@ -485,7 +529,7 @@ const CategoryChip = memo(
 );
 
 const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
-  router = { push: () => {} },
+  router,
   selectedStrainType = 'sativa',
   setSelectedStrainType = () => {},
   searchQuery = '',
@@ -509,9 +553,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
   handleRefresh = () => {},
   favoriteStrainIds = new Set(),
   onToggleFavorite = () => {},
-  onStrainHover = () => {},
   handleLoadMore = () => {},
-  hasMore = false,
   isFetchingNextPage = false,
 }) => {
   // 🎬 Scroll animations for enhanced UX
@@ -532,19 +574,29 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
 
   const handleStrainPress = useCallback(
     (id: string) => {
-      router.push(`/(app)/catalog/${id}` as any);
+      try {
+        if (router?.push) {
+          router.push(`/(app)/catalog/${id}`);
+        } else {
+          console.warn('[StrainsView] Router not available for navigation');
+        }
+      } catch (error) {
+        console.warn('[StrainsView] Navigation error:', error);
+      }
     },
     [router]
   );
 
   const renderStrainItem = useCallback(
-    ({ item, index }: { item: unknown; index: number }) => {
+    ({ item }: { item: unknown }) => {
       const strain = item as Strain;
+      if (!strain) return null;
+
       return (
         <StrainCard
           item={strain}
-          onPress={() => handleStrainPress(strain.id ?? strain._id)}
-          isFavorite={checkIsFavorite(strain.id ?? strain._id)}
+          onPress={() => handleStrainPress(strain.id ?? strain._id ?? '')}
+          isFavorite={checkIsFavorite(strain.id ?? strain._id ?? '')}
           onToggleFavorite={onToggleFavorite}
         />
       );
@@ -552,19 +604,20 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     [handleStrainPress, onToggleFavorite, favoriteStrainIds]
   );
 
-  const keyExtractor = useCallback((item: any, index: number) => {
+  const keyExtractor = useCallback((item: unknown) => {
+    const strain = item as Strain;
     // Prioritize stable, unique identifiers
-    const id = item.id ?? item._id;
+    const id = strain.id ?? strain._id;
     if (id && typeof id === 'string') {
       return id;
     }
-    
+
     // Deterministic fallback with warning in development
     if (__DEV__) {
-      logger.warn('Using index fallback for strain key', { item, index });
+      logger.warn('Using index fallback for strain key', { item: strain });
     }
-    
-    return `strain-${index}`;
+
+    return `strain-${strain.name || Math.random()}`;
   }, []);
 
   // Function to check if a strain is favorited, accounting for both original ID and UUID
@@ -662,7 +715,17 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
             variant="outlined"
             size="small"
             enableAnimation
-            onPress={() => router.push('/(app)/strains/favorites' as any)}
+            onPress={() => {
+              try {
+                if (router?.push) {
+                  router.push('/(app)/strains/favorites');
+                } else {
+                  console.warn('[StrainsView] Router not available for navigation to favorites');
+                }
+              } catch (error) {
+                console.warn('[StrainsView] Navigation error to favorites:', error);
+              }
+            }}
             className="ml-2">
             <OptimizedIcon name="heart" size={24} className="text-danger-500" />
           </AnimatedCard>
