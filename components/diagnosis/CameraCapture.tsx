@@ -5,8 +5,8 @@ import {
   triggerSuccessHaptic,
   triggerErrorHaptic,
 } from '@/lib/utils/haptics';
-import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { selectFromGallery } from '@/lib/utils/image-picker';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -255,16 +255,10 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onImageCaptured, onClose 
   const pickImage = useCallback(async () => {
     await triggerMediumHaptic();
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets && result.assets.length > 0 && result.assets[0]?.uri) {
+    const result = await selectFromGallery();
+    if (result) {
       await triggerSuccessHaptic();
-      onImageCaptured(result.assets[0].uri);
+      onImageCaptured(result.uri);
     }
   }, [onImageCaptured]);
 

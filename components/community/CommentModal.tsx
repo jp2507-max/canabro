@@ -1,10 +1,7 @@
 // Removed duplicate Ionicons import
 
-import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system'; // Import FileSystem
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; // Import manipulator
-import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
 import {
   Modal,
   View,
@@ -31,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CommentItem from './CommentItem';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
+import { uploadCommentImage } from '../../lib/utils/upload-image';
 import { Comment } from '../../lib/types/community';
 import {
   ImpactFeedbackStyle,
@@ -238,19 +236,9 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
   // Handle taking a photo with the camera
   const handleTakePhoto = async () => {
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Camera permission is needed to take photos.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        setSelectedImage(result.assets[0].uri);
+      const result = await takePhoto();
+      if (result) {
+        setSelectedImage(result.uri);
       }
     } catch (error) {
       console.error('Error taking photo:', error);
@@ -261,27 +249,9 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
   // Handle selecting an image from the gallery
   const handlePickImage = async () => {
     try {
-      // Request permissions
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Please grant camera roll permissions to attach photos.'
-        );
-        return;
-      }
-
-      // Launch image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.8,
-        aspect: [4, 3],
-      });
-
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        setSelectedImage(result.assets[0].uri);
+      const result = await selectFromGallery();
+      if (result) {
+        setSelectedImage(result.uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -303,90 +273,12 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
     );
   };
 
-  // Upload image to Supabase storage using Blob (Memory Efficient Implementation)
-  const uploadImage = async (userId: string, uri: string): Promise<string | null> => {
-    console.log('Starting comment image processing and upload for URI:', uri);
+  // Upload image using centralized helper
+  const handleImageUpload = async (userId: string, uri: string): Promise<string | null> => {
+    setIsUploading(true);
     try {
-      setIsUploading(true);
-
-      // --- Manipulate Image ---
-      console.log('Manipulating comment image...');
-      const manipResult = await manipulateAsync(
-        uri,
-        [{ resize: { width: 1024 } }], // Resize
-        { compress: 0.7, format: SaveFormat.JPEG } // Compress and save as JPEG
-      );
-      console.log(
-        'Comment image manipulated:',
-        manipResult.uri,
-        `(${manipResult.width}x${manipResult.height})`
-      );
-
-      // Check file size before upload to prevent OOM issues
-      const fileInfo = await FileSystem.getInfoAsync(manipResult.uri);
-      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
-        // 10MB limit
-        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
-        return null;
-      }
-
-      // Determine the correct extension
-      const extension = 'jpg';
-
-      // Memory-efficient upload using FileSystem instead of fetch().blob()
-      // This streams the file without loading it entirely into memory
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No valid session for upload');
-      }
-
-      // Get Supabase URL from the client configuration (consistent with lib/supabase.ts)
-      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured');
-      }
-
-      // Use a timestamp and proper extension for the filename within user's comments folder
-      const filename = `comment_${Date.now()}.${extension}`;
-      const filePath = `${userId}/comments/${filename}`; // Store in posts bucket under user/comments/
-      console.log('Uploading comment image to Supabase storage at path:', filePath);
-
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/posts/${filePath}`;
-
-      const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
-        httpMethod: 'POST',
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: 'file',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (uploadResult.status !== 200) {
-        const errorText = uploadResult.body || 'Unknown upload error';
-        console.error('Upload failed:', errorText);
-        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
-      }
-
-      console.log('Comment image uploaded successfully to Supabase.');
-
-      // Get the public URL from the 'posts' bucket
-      const { data: urlData } = supabase.storage.from('posts').getPublicUrl(filePath);
-
-      if (!urlData || !urlData.publicUrl) {
-        console.error('Could not get public URL for comment image path:', filePath);
-        throw new Error('Could not get public URL after comment image upload.');
-      }
-
-      console.log('Comment image public URL:', urlData.publicUrl);
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Error uploading comment image:', error);
-      Alert.alert('Error', 'Failed to upload image. Please try again.');
-      return null; // Indicate failure
+      const result = await uploadCommentImage(userId, uri);
+      return result.success ? result.publicUrl || null : null;
     } finally {
       setIsUploading(false);
     }
@@ -403,9 +295,9 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
       // Upload image if selected BEFORE creating the comment
       let imageUrl: string | null = null;
       if (selectedImage) {
-        imageUrl = await uploadImage(user.id, selectedImage);
+        imageUrl = await handleImageUpload(user.id, selectedImage);
         if (!imageUrl) {
-          // Upload failed, alert shown in uploadImage
+          // Upload failed, alert shown in upload helper
           setIsSubmitting(false);
           return; // Stop submission
         }

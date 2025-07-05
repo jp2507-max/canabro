@@ -5,11 +5,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from '@/lib/utils/date';
-import Constants from 'expo-constants';
-import * as FileSystem from 'expo-file-system';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import {
   TextInput,
@@ -46,6 +43,7 @@ import { Plant } from '@/lib/models/Plant';
 import { findOrCreateLocalStrain } from '@/lib/services/sync/strain-sync.service';
 import { WeedDbService } from '@/lib/services/weed-db.service';
 import supabase from '@/lib/supabase';
+import { uploadPlantImage } from '@/lib/utils/upload-image';
 import {
   GrowthStage as PlantGrowthStage,
   PlantGrowLocation,
@@ -527,57 +525,16 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
   // ✅ Performance optimized image processing to avoid memory issues
   // Following React Native best practices for large image handling
-  const processImage = async (uri: string): Promise<string | null> => {
-    try {
-      setProcessingImage(true);
-      // Resize immediately to 1024px width to manage memory efficiently
-      const manipResult = await manipulateAsync(uri, [{ resize: { width: 1024 } }], {
-        compress: 0.7,
-        format: SaveFormat.JPEG,
-      });
-      return manipResult.uri;
-    } catch (error) {
-      console.error('Error processing image:', error);
-      Alert.alert('Error', 'Failed to process image. Please try a different image.');
-      return null;
-    } finally {
-      setProcessingImage(false);
-    }
-  };
-
   const pickImage = async () => {
     try {
-      console.log('[EditPlantForm] Requesting media library permissions...');
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log('[EditPlantForm] Permission result:', permissionResult);
-
-      if (!permissionResult.granted) {
-        const message = permissionResult.canAskAgain
-          ? 'Photo library access is needed to upload images. Please grant permission in your device settings.'
-          : 'Photo library access was denied. Please enable it in your device settings to select images.';
-        Alert.alert('Permission Required', message);
-        return;
-      }
-
       console.log('[EditPlantForm] Launching image library...');
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-        allowsMultipleSelection: false,
-      });
-
+      const result = await selectFromGallery();
       console.log('[EditPlantForm] Image picker result:', result);
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        console.log('[EditPlantForm] Image selected, processing...');
-        // Process image immediately to prevent memory issues with large gallery images
-        const processedUri = await processImage(result.assets[0].uri);
-        if (processedUri) {
-          setImagePreviewUri(processedUri);
-          setValue('image_url', null, { shouldDirty: true });
-        }
+      if (result) {
+        console.log('[EditPlantForm] Image selected');
+        setImagePreviewUri(result.uri);
+        setValue('image_url', null, { shouldDirty: true });
       }
     } catch (error) {
       console.error('[EditPlantForm] Error picking image:', error);
@@ -588,44 +545,20 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     }
   };
 
-  const takePhoto = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Camera access is needed to take photos.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets && result.assets[0]) {
-      // Process image immediately for consistency
-      const processedUri = await processImage(result.assets[0].uri);
-      if (processedUri) {
-        setImagePreviewUri(processedUri);
-        setValue('image_url', null, { shouldDirty: true });
-      }
+  const takePhotoHandler = async () => {
+    const result = await takePhoto();
+    if (result) {
+      setImagePreviewUri(result.uri);
+      setValue('image_url', null, { shouldDirty: true });
     }
   };
 
-  const uploadImage = async (userId: string): Promise<string | null> => {
+  const handleImageUpload = async (userId: string): Promise<string | null> => {
     if (!imagePreviewUri || imagePreviewUri === (plant.imageUrl ?? null))
       return plant.imageUrl ?? null; // No new image or same image
+    
     setUploadingImage(true);
     try {
-      // Check file size before upload to prevent OOM issues
-      const fileInfo = await FileSystem.getInfoAsync(imagePreviewUri);
-      if (fileInfo.exists && fileInfo.size && fileInfo.size > 10 * 1024 * 1024) {
-        // 10MB limit
-        Alert.alert('File Too Large', 'Please select an image smaller than 10MB.');
-        return plant.imageUrl ?? null;
-      }
-
-      const extension = 'jpg';
-      const filename = `plant_${Date.now()}.${extension}`;
-      const filePath = `${userId}/${filename}`;
-
       // Delete old image if it exists and a new one is being uploaded
       if (plant.imageUrl) {
         try {
@@ -650,46 +583,12 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         }
       }
 
-      // Memory-efficient upload using FileSystem instead of fetch().blob()
-      // This streams the file without loading it entirely into memory
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No valid session for upload');
+      const result = await uploadPlantImage(userId, imagePreviewUri);
+      if (result.success && result.publicUrl) {
+        setValue('image_url', result.publicUrl, { shouldValidate: true, shouldDirty: true });
+        return result.publicUrl;
       }
-
-      // Get Supabase URL from the client configuration (consistent with lib/supabase.ts)
-      const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured');
-      }
-
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/plants/${filePath}`;
-
-      const uploadResult = await FileSystem.uploadAsync(uploadUrl, imagePreviewUri, {
-        httpMethod: 'POST',
-        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: 'file',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (uploadResult.status !== 200) {
-        const errorText = uploadResult.body || 'Unknown upload error';
-        console.error('Upload failed:', errorText);
-        throw new Error(`Upload failed with status ${uploadResult.status}: ${errorText}`);
-      }
-
-      const { data: urlData } = supabase.storage.from('plants').getPublicUrl(filePath);
-      setValue('image_url', urlData.publicUrl, { shouldValidate: true, shouldDirty: true });
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
-      return plant.imageUrl ?? null; // Return old image URL (or null) on failure
+      return plant.imageUrl ?? null; // Return old image URL on failure
     } finally {
       setUploadingImage(false);
     }
@@ -759,7 +658,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       let finalImageUrl: string | null | undefined = data.image_url as string | null; // Initialize with current form value
 
       if (imagePreviewUri && imagePreviewUri !== (plant.imageUrl ?? null)) {
-        finalImageUrl = await uploadImage(user.id);
+        finalImageUrl = await handleImageUpload(user.id);
         if (!finalImageUrl && imagePreviewUri) {
           Alert.alert(
             'Image Upload Failed',
@@ -1147,7 +1046,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
               disabled={processingImage}
             />
             <AnimatedImageButton
-              onPress={takePhoto}
+                                onPress={takePhotoHandler}
               icon="camera-outline"
               label="Camera"
               disabled={processingImage}

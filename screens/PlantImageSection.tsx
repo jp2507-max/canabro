@@ -1,6 +1,6 @@
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
+import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
 import { ActivityIndicator, Image, View, Alert, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -70,32 +70,13 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
 
   async function handleImagePick() {
     try {
-      logger.log('[PlantImageSection] Requesting media library permissions...');
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      logger.log('[PlantImageSection] Permission result:', permissionResult);
-
-      if (!permissionResult.granted) {
-        const message = permissionResult.canAskAgain
-          ? 'Photo library access is needed to upload images. Please grant permission in your device settings.'
-          : 'Photo library access was denied. Please enable it in your device settings to select images.';
-        Alert.alert('Permission Required', message);
-        return;
-      }
-
       logger.log('[PlantImageSection] Launching image library...');
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-        selectionLimit: 1,
-      });
-
+      const result = await selectFromGallery();
       logger.log('[PlantImageSection] Image picker result:', result);
 
-      if (!result.canceled && result.assets?.[0]?.uri) {
+      if (result) {
         logger.log('[PlantImageSection] Image selected, processing...');
-        await processAndSetImage(result.assets[0].uri);
+        await processAndSetImage(result.uri);
       }
     } catch (error) {
       logger.error('[PlantImageSection] Error picking image:', error);
@@ -108,18 +89,9 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
 
   async function handleTakePicture() {
     try {
-      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!cameraPermission || cameraPermission.status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera access is required.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        await processAndSetImage(result.assets[0].uri);
+      const result = await takePhoto();
+      if (result) {
+        await processAndSetImage(result.uri);
       }
     } catch (error) {
       logger.error('Error taking picture:', error);
