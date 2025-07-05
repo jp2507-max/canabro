@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
 import { ActiveFilters } from '@/components/strains/StrainFilterModal';
 import { WeedDbService, weedDbKeys } from '@/lib/services/weed-db.service';
@@ -202,22 +203,7 @@ export function useFilteredStrains(
   });
 }
 
-// Utility: Debounce hook for search inputs
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+// Debounce utility is now imported from the shared hook
 
 /**
  * Prefetches strain data for improved UX

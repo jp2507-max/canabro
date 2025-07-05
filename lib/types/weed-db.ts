@@ -57,10 +57,27 @@ export interface CachedResponse<T> {
   error?: string; // Add error property that was missing
 }
 
+// Interface for paginated API responses
+export interface PaginatedResponse<T> {
+  items: T[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+// Interface for paginated cached responses
+export interface PaginatedCachedResponse<T> {
+  data: PaginatedResponse<T>;
+  isFromCache: boolean;
+  error?: string;
+}
+
 // Type for filter parameters to avoid repetition
 export type StrainFilterParams = {
   page?: number;
   limit?: number;
+  page_size?: number; // Alternative naming for limit
   search?: string;
   growDifficulty?: 'easy' | 'medium' | 'difficult';
   effect?: string;

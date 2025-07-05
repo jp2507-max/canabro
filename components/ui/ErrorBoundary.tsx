@@ -257,3 +257,128 @@ function ErrorDisplay({ error, errorInfo, onRetry }: ErrorDisplayProps) {
     </View>
   );
 }
+
+// Specialized error boundary for navigation context errors
+interface NavigationErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+interface NavigationErrorBoundaryState {
+  hasNavigationError: boolean;
+  error?: Error;
+  retryCount: number;
+}
+
+export class NavigationErrorBoundary extends React.Component<NavigationErrorBoundaryProps, NavigationErrorBoundaryState> {
+  private retryTimer?: NodeJS.Timeout;
+  private maxRetries = 3;
+
+  constructor(props: NavigationErrorBoundaryProps) {
+    super(props);
+    this.state = { 
+      hasNavigationError: false, 
+      retryCount: 0 
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): Partial<NavigationErrorBoundaryState> {
+    // Check if this is a navigation context error
+    if (error.message.includes('navigation context') || 
+        error.message.includes('NavigationContainer')) {
+      return { hasNavigationError: true, error };
+    }
+    
+    // Re-throw other errors to be handled by parent error boundaries
+    throw error;
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[NavigationErrorBoundary] Caught navigation error:', error, errorInfo);
+    
+    // Auto-retry for navigation context errors
+    if (this.state.retryCount < this.maxRetries) {
+      console.log(`[NavigationErrorBoundary] Auto-retrying (${this.state.retryCount + 1}/${this.maxRetries})`);
+      
+      this.retryTimer = setTimeout(() => {
+        this.setState(prevState => ({
+          hasNavigationError: false,
+          error: undefined,
+          retryCount: prevState.retryCount + 1
+        }));
+      }, 1000 * (this.state.retryCount + 1)); // Exponential backoff
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+    }
+  }
+
+  handleManualRetry = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    this.setState({
+      hasNavigationError: false,
+      error: undefined,
+      retryCount: 0
+    });
+  };
+
+  render() {
+    if (this.state.hasNavigationError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      return (
+        <View className="flex-1 items-center justify-center bg-neutral-50 px-6 py-8 dark:bg-neutral-900">
+          <View className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+            {/* Error Icon */}
+            <View className="mb-4 items-center">
+              <View className="bg-status-warning/10 mb-3 rounded-full p-4">
+                <OptimizedIcon name="location-outline" size={32} className="text-status-warning" />
+              </View>
+
+              <Text className="mb-2 text-center text-xl font-bold text-neutral-900 dark:text-white">
+                Navigation Issue
+              </Text>
+
+              <Text className="text-center text-base leading-6 text-neutral-600 dark:text-neutral-400">
+                Navigation context temporarily unavailable.
+              </Text>
+            </View>
+
+            {this.state.retryCount >= this.maxRetries && (
+              <>
+                <Text className="mb-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                  Auto-retry failed. Please try refreshing.
+                </Text>
+
+                <Pressable
+                  onPress={this.handleManualRetry}
+                  className="flex-row items-center justify-center space-x-2 rounded-xl bg-primary-600 px-6 py-4 dark:bg-primary-500 active:bg-primary-700 dark:active:bg-primary-600"
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry navigation"
+                  accessibilityHint="Attempts to restore navigation functionality">
+                  <OptimizedIcon name="refresh" size={18} className="text-white" />
+                  <Text className="ml-2 text-base font-semibold text-white">Retry</Text>
+                </Pressable>
+              </>
+            )}
+
+            {this.state.retryCount < this.maxRetries && (
+              <View className="items-center">
+                <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Attempting to reconnect... ({this.state.retryCount + 1}/{this.maxRetries})
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}

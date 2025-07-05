@@ -44,3 +44,38 @@ export function parseStringArray(value: string | null | undefined): string[] | u
     .filter((s) => s.length > 0);
   return result.length > 0 ? result : undefined;
 }
+
+/**
+ * Generates a stable, deterministic fallback key for React components
+ * when primary keys are missing or invalid. Uses strain properties
+ * to create a consistent identifier.
+ */
+export function generateStableFallbackKey(
+  name?: string,
+  type?: string,
+  genetics?: string,
+  prefix = 'fallback'
+): string {
+  // Create a deterministic key based on available stable properties
+  const keyParts = [
+    name?.toLowerCase().replace(/\s+/g, '-'),
+    type?.toLowerCase(),
+    genetics?.toLowerCase().replace(/\s+/g, '-').substring(0, 20), // Limit genetics length
+  ].filter(Boolean);
+
+  if (keyParts.length === 0) {
+    // If no stable properties available, use a warning prefix
+    return `${prefix}-no-stable-props-${Date.now()}`;
+  }
+
+  // Create a hash-like key from the stable properties
+  const stableKey = keyParts.join('-');
+  return `${prefix}-${stableKey}`;
+}
+
+/**
+ * Validates if a given ID is a valid string identifier
+ */
+export function isValidId(id: unknown): id is string {
+  return typeof id === 'string' && id.length > 0 && id !== 'undefined' && id !== 'null';
+}

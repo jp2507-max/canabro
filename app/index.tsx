@@ -1,24 +1,25 @@
 'use client'; // Mark as a client component
 
 import { Redirect } from 'expo-router';
-import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
-
 import { useAuth } from '../lib/contexts/AuthProvider';
 
-const Index = () => {
+export default function Index() {
   const { user, loading } = useAuth();
 
+  // Show loading state while checking authentication
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-white dark:bg-black">
         <ActivityIndicator size="large" color="#16a34a" />
       </View>
     );
   }
 
-  // Once loading is complete, immediately redirect based on auth state.
-  return <Redirect href={user ? '/(app)/(tabs)' : '/(auth)/login'} />;
-};
+  // Redirect based on authentication status
+  if (user) {
+    return <Redirect href="/(app)/(tabs)" />;
+  }
 
-export default Index;
+  return <Redirect href="/(auth)/login" />;
+}

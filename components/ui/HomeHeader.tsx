@@ -1,7 +1,8 @@
 import React, { memo, useMemo } from 'react';
-import { View } from 'react-native';
+import { View, Pressable, Alert } from 'react-native';
 import Animated, { FadeInDown, FadeInLeft } from 'react-native-reanimated';
 
+import { useAuth } from '../../lib/contexts/AuthProvider';
 import { OptimizedIcon } from './OptimizedIcon';
 import SyncStatus from './SyncStatus';
 import ThemedText from './ThemedText';
@@ -12,6 +13,19 @@ interface HomeHeaderProps {
 }
 
 export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
+  const { signOut } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout? (This is a temporary button for testing)',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Logout', style: 'destructive', onPress: signOut },
+      ]
+    );
+  };
+
   // Memoize greeting and plant count message for performance
   const greetingConfig = useMemo(() => {
     const hour = new Date().getHours();
@@ -83,9 +97,24 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
           </View>
         </Animated.View>
 
-        {/* Right side - Sync status with enhanced styling */}
-        <Animated.View entering={FadeInDown.delay(400).duration(500)} className="ml-4">
+        {/* Right side - Sync status and temporary logout button */}
+        <Animated.View entering={FadeInDown.delay(400).duration(500)} className="ml-4 items-end space-y-2">
           <SyncStatus compact />
+          
+          {/* Temporary logout button for testing */}
+          <Pressable
+            onPress={handleLogout}
+            className="rounded-lg bg-red-500 px-3 py-1.5 shadow-sm"
+            accessible
+            accessibilityLabel="Logout (temporary testing button)"
+            accessibilityRole="button">
+            <View className="flex-row items-center">
+              <OptimizedIcon name="close-outline" size={16} className="text-white" />
+              <ThemedText className="ml-1 text-xs font-medium text-white">
+                Logout
+              </ThemedText>
+            </View>
+          </Pressable>
         </Animated.View>
       </Animated.View>
 

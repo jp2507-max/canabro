@@ -251,7 +251,23 @@ export function FavoriteStrainsScreen() {
     refetch();
   };
 
-  const handleRefresh = () => refetch();
+  const handleRefresh = useCallback(() => refetch(), [refetch]);
+
+  const handleStrainTypeChange = useCallback((type: 'sativa' | 'indica' | 'hybrid') => {
+    setSelectedStrainType(type);
+  }, []);
+
+  // Safe router object
+  const safeRouter = useMemo(() => ({
+    push: (path: string) => {
+      try {
+        router.push(path as never);
+      } catch (error) {
+        console.error('[FavoriteStrainsScreen] Navigation error:', error);
+      }
+    },
+    isReady: true,
+  }), [router]);
 
   const handleToggleFavorite = useCallback(
     async (strain: Strain) => {
@@ -290,9 +306,9 @@ export function FavoriteStrainsScreen() {
   return (
     <ErrorBoundary>
       <StrainsView
-        router={router}
+        router={safeRouter}
         selectedStrainType={selectedStrainType}
-        setSelectedStrainType={setSelectedStrainType}
+        setSelectedStrainType={handleStrainTypeChange}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         isFilterModalVisible={isFilterModalVisible}
@@ -309,10 +325,6 @@ export function FavoriteStrainsScreen() {
         onToggleFavorite={(id) => {
           const strain = strains.find((s) => s.id === id);
           if (strain) handleToggleFavorite(strain);
-        }}
-        onStrainHover={(strain) => {
-          // Handle strain hover if needed
-          logger.log('Strain hovered:', strain.name);
         }}
       />
     </ErrorBoundary>

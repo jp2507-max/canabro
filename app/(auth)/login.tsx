@@ -4,6 +4,7 @@ import { Link } from 'expo-router';
 import React, { useState, useRef } from 'react';
 import {
   View,
+  ScrollView,
   ActivityIndicator,
   Pressable,
   Platform,
@@ -219,109 +220,118 @@ export default function LoginScreen() {
   return (
     <ThemedView variant="default" className="flex-1">
       <SimpleFormWrapper className="flex-1">
-        <View className="flex-1 justify-center px-6">
-          {/* Logo Section */}
-          <Animated.View entering={FadeIn.duration(800)} className="mb-12 items-center">
-            <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg dark:bg-primary-600">
-              <OptimizedIcon name="leaf" size={32} className="text-white" />
-            </View>
-            <ThemedText variant="heading" className="text-4xl font-black tracking-tight">
-              CanaBro
-            </ThemedText>
-            <ThemedText variant="muted" className="mt-2 text-center text-lg">
-              Welcome back to your garden
-            </ThemedText>
-          </Animated.View>
-
-          {/* Development Mode Banner */}
-          {isDevelopment && (
-            <Animated.View
-              entering={SlideInDown.duration(600).delay(200)}
-              className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-100 p-4 dark:border-yellow-800 dark:bg-yellow-900/30">
-              <View className="flex-row items-center">
-                <OptimizedIcon
-                  name="code-working"
-                  size={18}
-                  className="mr-2 text-yellow-800 dark:text-yellow-200"
-                />
-                <ThemedText className="flex-1 text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                  {authConfig.forceDevBypass
-                    ? 'Development mode: Auto-login enabled'
-                    : 'Development mode: Manual login required'}
-                </ThemedText>
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingVertical: 24, // Extra space so inputs are fully visible
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <View className="px-6">
+            {/* Logo Section */}
+            <Animated.View entering={FadeIn.duration(800)} className="mb-12 items-center">
+              <View className="mb-6 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg dark:bg-primary-600">
+                <OptimizedIcon name="leaf" size={32} className="text-white" />
               </View>
+              <ThemedText variant="heading" className="text-4xl font-black tracking-tight">
+                CanaBro
+              </ThemedText>
+              <ThemedText variant="muted" className="mt-2 text-center text-lg">
+                Welcome back to your garden
+              </ThemedText>
             </Animated.View>
-          )}
 
-          {/* Form Section */}
-          <Animated.View entering={FadeInDown.duration(800).delay(400)}>
-            <EnhancedTextInput
-              ref={emailRef}
-              leftIcon="mail"
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isLoading}
-              error={errors.email}
-              onSubmitEditing={() => {
-                if (passwordRef.current) {
-                  passwordRef.current.focus();
-                }
-              }}
-            />
-
-            <EnhancedTextInput
-              ref={passwordRef}
-              leftIcon="lock-closed"
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              editable={!isLoading}
-              error={errors.password}
-              onSubmitEditing={handleLogin}
-            />
-
-            <AnimatedButton
-              title="Sign In"
-              onPress={handleLogin}
-              loading={isLoading}
-              icon="log-in"
-            />
-
-            {showDevOptions && (
-              <AnimatedButton
-                title="Developer Login"
-                onPress={handleDevBypass}
-                loading={isLoading}
-                variant="secondary"
-                icon="code-working"
-              />
+            {/* Development Mode Banner */}
+            {isDevelopment && (
+              <Animated.View
+                entering={SlideInDown.duration(600).delay(200)}
+                className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-100 p-4 dark:border-yellow-800 dark:bg-yellow-900/30">
+                <View className="flex-row items-center">
+                  <OptimizedIcon
+                    name="code-working"
+                    size={18}
+                    className="mr-2 text-yellow-800 dark:text-yellow-200"
+                  />
+                  <ThemedText className="flex-1 text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                    {authConfig.forceDevBypass
+                      ? 'Development mode: Auto-login enabled'
+                      : 'Development mode: Manual login required'}
+                  </ThemedText>
+                </View>
+              </Animated.View>
             )}
-          </Animated.View>
 
-          {/* Footer Link */}
-          <Animated.View
-            entering={FadeInDown.duration(800).delay(600)}
-            className="mt-8 flex-row justify-center">
-            <ThemedText variant="muted" className="text-base">
-              Don't have an account?{' '}
-            </ThemedText>
-            <Link href="/(auth)/register" asChild>
-              <Pressable
-                disabled={isLoading}
-                accessible
-                accessibilityLabel="Go to registration screen"
-                accessibilityRole="link">
-                <ThemedText className="text-base font-semibold text-primary-500 dark:text-primary-400">
-                  Sign Up
-                </ThemedText>
-              </Pressable>
-            </Link>
-          </Animated.View>
-        </View>
+            {/* Form Section */}
+            <Animated.View entering={FadeInDown.duration(600).delay(100)}>
+              <EnhancedTextInput
+                ref={emailRef}
+                leftIcon="mail"
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!isLoading}
+                error={errors.email}
+                onSubmitEditing={() => {
+                  if (passwordRef.current) {
+                    passwordRef.current.focus();
+                  }
+                }}
+              />
+
+              <EnhancedTextInput
+                ref={passwordRef}
+                leftIcon="lock-closed"
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                editable={!isLoading}
+                error={errors.password}
+                onSubmitEditing={handleLogin}
+              />
+
+              <AnimatedButton
+                title="Sign In"
+                onPress={handleLogin}
+                loading={isLoading}
+                icon="log-in"
+              />
+
+              {showDevOptions && (
+                <AnimatedButton
+                  title="Developer Login"
+                  onPress={handleDevBypass}
+                  loading={isLoading}
+                  variant="secondary"
+                  icon="code-working"
+                />
+              )}
+            </Animated.View>
+
+            {/* Footer Link */}
+            <Animated.View
+              entering={FadeInDown.duration(800).delay(600)}
+              className="mt-8 flex-row justify-center">
+              <ThemedText variant="muted" className="text-base">
+                Don't have an account?{' '}
+              </ThemedText>
+              <Link href="/(auth)/register" asChild>
+                <Pressable
+                  disabled={isLoading}
+                  accessible
+                  accessibilityLabel="Go to registration screen"
+                  accessibilityRole="link">
+                  <ThemedText className="text-base font-semibold text-primary-500 dark:text-primary-400">
+                    Sign Up
+                  </ThemedText>
+                </Pressable>
+              </Link>
+            </Animated.View>
+          </View>
+        </ScrollView>
       </SimpleFormWrapper>
     </ThemedView>
   );

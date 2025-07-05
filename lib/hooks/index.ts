@@ -4,6 +4,10 @@ import useWatermelon from './useWatermelon';
  * Export all hooks from a single entry point
  */
 
+// Utility hooks
+export * from './useDebounce';
+export * from './useDebouncedCallback';
+
 // Keyboard and UI hooks
 export * from './keyboard/useEnhancedKeyboard';
 

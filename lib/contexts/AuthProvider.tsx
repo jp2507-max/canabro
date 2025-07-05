@@ -232,11 +232,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Development-only function to bypass Supabase auth for testing
   const devBypassAuth = async () => {
-    // --- Bypass Disabled ---
+    // --- Bypass Disabled --- (TEMPORARILY DISABLED)
+    /* 
     console.warn('devBypassAuth called but is explicitly disabled!');
     return { error: new Error('Development bypass authentication is disabled.') };
-    // --- Original Bypass Logic Commented Out ---
-    /*
+    */
+    // --- Original Bypass Logic Re-enabled for debugging ---
+    
     // Only allow in development environment
     if (!isDevelopment) {
       console.error('Dev bypass auth can only be used in development');
@@ -325,7 +327,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Delay navigation to ensure root layout is mounted
       setTimeout(() => {
         console.trace('🔥 router.replace("/(app)/(tabs)")');
-        router.replace('/(app)/(tabs)' as any);
+        try {
+          router.replace('/(app)/(tabs)' as any);
+        } catch (error) {
+          console.warn('Navigation not ready yet, skipping redirect to tabs:', error);
+        }
       }, 100);
       
       return { error: null };
@@ -333,7 +339,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error in dev bypass auth:', error);
       return { error: error as Error };
     }
-    */
   };
 
   // Sign in with email and password
@@ -375,7 +380,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Navigate to home screen on successful login
       setTimeout(() => {
         console.trace('🔥 router.replace("/(app)/(tabs)")');
-        router.replace('/(app)/(tabs)' as any);
+        try {
+          router.replace('/(app)/(tabs)' as any);
+        } catch (error) {
+          console.warn('Navigation not ready yet, skipping redirect to tabs:', error);
+        }
       }, 100);
 
       // Success, return no error
@@ -405,11 +414,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // If sign up is successful and email confirmation is not required,
       if (data.session) {
         console.trace('🔥 router.replace("/(app)/(tabs)")');
-        router.replace('/(app)/(tabs)' as any);
+        try {
+          router.replace('/(app)/(tabs)' as any);
+        } catch (error) {
+          console.warn('Navigation not ready yet, skipping redirect to tabs:', error);
+        }
       } else {
         // If email confirmation is required, navigate to a confirmation screen
         console.trace('🔥 router.replace("/(auth)/login")');
-        router.replace('/(auth)/login');
+        try {
+          router.replace('/(auth)/login');
+        } catch (error) {
+          console.warn('Navigation not ready yet, skipping redirect to login:', error);
+        }
       }
 
       return { error: null, data: { user: data.user } };
@@ -424,7 +441,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut();
       console.trace('🔥 router.replace("/(auth)/login")');
-      router.replace('/(auth)/login');
+      try {
+        router.replace('/(auth)/login');
+      } catch (error) {
+        console.warn('Navigation not ready yet, skipping redirect to login:', error);
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }

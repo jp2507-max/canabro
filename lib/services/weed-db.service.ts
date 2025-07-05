@@ -6,11 +6,14 @@ import { z } from 'zod';
 import {
   Strain,
   CachedResponse,
+  PaginatedResponse,
+  PaginatedCachedResponse,
   StrainFilterParams,
   RawStrainApiResponse,
   ApiResponseArray,
 } from '../types/weed-db';
 import { logger } from '../config/production';
+import { generateStableFallbackKey, isValidId } from '../utils/string-utils';
 
 // --- Configuration ---
 const BASE_URL = 'https://the-weed-db.p.rapidapi.com/api';
@@ -217,6 +220,7 @@ const StrainSchema = z.object({
 const StrainArraySchema = z.array(StrainSchema);
 
 // --- Helper: Map WeedDB API snake_case to camelCase for Strain ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapWeedDbStrain(raw: any): Strain {
   // Helper for determining strain type from genetics info
   const determineStrainType = (genetic?: string): string | undefined => {
@@ -253,8 +257,22 @@ function mapWeedDbStrain(raw: any): Strain {
     ? raw.description.join('\n\n')
     : raw.description;
 
+  // Ensure we have a valid ID, generate a stable fallback if needed
+  const primaryId = raw._id || raw.id;
+  const validId = isValidId(primaryId) ? String(primaryId) : null;
+  const finalId = validId || generateStableFallbackKey(raw.name, strainType, raw.genetics, 'strain');
+
+  // Log warning if we had to generate a fallback ID
+  if (!validId && __DEV__) {
+    logger.warn('Generated fallback ID for strain without valid primary ID', {
+      originalId: primaryId,
+      fallbackId: finalId,
+      strainName: raw.name,
+    });
+  }
+
   return {
-    id: String(raw._id || raw.id),
+    id: finalId,
     name: raw.name,
     genetics: raw.genetics,
     type: strainType,
@@ -294,7 +312,7 @@ function mapWeedDbStrain(raw: any): Strain {
 // Helper to handle caching and fetching for filter/list endpoints
 async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<Strain[]>> {
   // Create a properly formatted parameters object
-  const formattedParams: Record<string, any> = {};
+  const formattedParams: Record<string, unknown> = {};
 
   // Handle search parameter differently - it needs special treatment
   if (params.search) {
@@ -358,6 +376,125 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
   }
 }
 
+// New function for paginated fetching
+async function fetchStrainsPaginated(params: StrainFilterParams): Promise<PaginatedCachedResponse<Strain>> {
+  // Create a properly formatted parameters object
+  const formattedParams: Record<string, unknown> = {};
+
+  // Handle search parameter differently - it needs special treatment
+  if (params.search) {
+    // The API expects name parameter for search, not search
+    formattedParams.name = params.search;
+    logger.log(`[DEBUG] Search query formatted as name=${params.search}`);
+  }
+
+  // Handle pagination parameters
+  const page = params.page || 1;
+  const pageSize = params.page_size || params.limit || 50;
+  formattedParams.page = page;
+  formattedParams.page_size = pageSize;
+
+  // Add all other parameters
+  Object.entries(params).forEach(([key, value]) => {
+    if (key !== 'search' && key !== 'page' && key !== 'limit' && key !== 'page_size' && value !== undefined && value !== null) {
+      formattedParams[key] = value;
+    }
+  });
+
+  const cacheKey = `strains-paginated-${JSON.stringify(formattedParams)}`;
+  const cachedData = await getFromCache<PaginatedResponse<Strain>>(cacheKey);
+
+  if (cachedData) {
+    logger.log(`[DEBUG] Returning cached paginated data for ${JSON.stringify(formattedParams)}`);
+    return { data: cachedData, isFromCache: true };
+  }
+
+  try {
+    logger.log(`[DEBUG] Fetching paginated strains with params:`, formattedParams);
+    const response = await requestWithRetry<
+      AxiosResponse<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>
+    >(() =>
+      axiosInstance.get<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>('/strains', {
+        params: formattedParams,
+      })
+    );
+
+    // Handle different response formats
+    let paginatedData: PaginatedResponse<Strain>;
+    
+    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'total_count' in response.data) {
+      // API returns paginated format
+      const rawStrains = response.data.items as RawStrainApiResponse[];
+      const parsed = StrainArraySchema.safeParse(rawStrains);
+      
+      if (!parsed.success) {
+        logger.error('Strain API response validation failed:', parsed.error);
+        return { 
+          data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 }, 
+          isFromCache: false, 
+          error: 'Invalid API response' 
+        };
+      }
+
+      const mappedStrains: Strain[] = parsed.data.map(mapWeedDbStrain);
+      
+      paginatedData = {
+        items: mappedStrains,
+        total_count: response.data.total_count,
+        page: response.data.page,
+        page_size: response.data.page_size,
+        total_pages: response.data.total_pages,
+      };
+    } else {
+      // API returns array format - simulate pagination
+      const rawStrains = Array.isArray(response.data)
+        ? (response.data as RawStrainApiResponse[])
+        : 'data' in response.data && Array.isArray(response.data.data)
+          ? (response.data.data as RawStrainApiResponse[])
+          : [];
+
+      const parsed = StrainArraySchema.safeParse(rawStrains);
+      if (!parsed.success) {
+        logger.error('Strain API response validation failed:', parsed.error);
+        return { 
+          data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 }, 
+          isFromCache: false, 
+          error: 'Invalid API response' 
+        };
+      }
+
+      const mappedStrains: Strain[] = parsed.data.map(mapWeedDbStrain);
+      
+      // Simulate pagination on client side as fallback
+      const totalCount = mappedStrains.length;
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedItems = mappedStrains.slice(startIndex, endIndex);
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      paginatedData = {
+        items: paginatedItems,
+        total_count: totalCount,
+        page: page,
+        page_size: pageSize,
+        total_pages: totalPages,
+      };
+    }
+
+    logger.log(`[DEBUG] Mapped ${paginatedData.items.length} strains successfully (page ${paginatedData.page}/${paginatedData.total_pages})`);
+
+    await saveToCache(cacheKey, paginatedData);
+    return { data: paginatedData, isFromCache: false };
+  } catch (error) {
+    logger.error('Error fetching paginated strains:', error);
+    return {
+      data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 },
+      isFromCache: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
 // Helper to handle caching and fetching for single strain endpoint
 async function fetchStrainById(id: string): Promise<Strain | null> {
   try {
@@ -385,10 +522,59 @@ async function fetchStrainById(id: string): Promise<Strain | null> {
     }
 
     return mapWeedDbStrain(parsed.data);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Error fetching strain by ID ${id}:`, error);
     return null;
   }
+}
+
+/**
+ * Type guard to check if an error has a response property with nested data
+ */
+function hasErrorResponse(error: unknown): error is { response: { data: unknown } } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof (error as Record<string, unknown>).response === 'object' &&
+    (error as Record<string, unknown>).response !== null &&
+    'data' in ((error as Record<string, unknown>).response as Record<string, unknown>)
+  );
+}
+
+/**
+ * Type guard to check if error data has a code property
+ */
+function hasErrorCode(data: unknown): data is { code: string } {
+  return typeof data === 'object' && data !== null && 'code' in data && typeof (data as Record<string, unknown>).code === 'string';
+}
+
+/**
+ * Type guard to check if error data has a message property
+ */
+function hasErrorMessage(data: unknown): data is { message: string } {
+  return typeof data === 'object' && data !== null && 'message' in data && typeof (data as Record<string, unknown>).message === 'string';
+}
+
+/**
+ * Safely checks if an error indicates a duplicate key constraint violation
+ */
+function isDuplicateKeyError(error: unknown): boolean {
+  if (!hasErrorResponse(error)) return false;
+  
+  const { data } = error.response;
+  
+  // Check for PostgreSQL duplicate key error code
+  if (hasErrorCode(data) && data.code === '23505') {
+    return true;
+  }
+  
+  // Check for duplicate key message
+  if (hasErrorMessage(data) && data.message.includes('duplicate key')) {
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -413,22 +599,16 @@ export async function ensureStrainExists(
       return String(response.data.id);
     }
     throw new Error('Failed to create strain');
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If duplicate key error, fetch by name
-    if (
-      error.response &&
-      error.response.data &&
-      (error.response.data.code === '23505' ||
-        (typeof error.response.data.message === 'string' &&
-          error.response.data.message.includes('duplicate key')))
-    ) {
+    if (isDuplicateKeyError(error)) {
       // Try to fetch the existing strain by name
       const found = await fetchStrains({ search: strain.name });
       const match = found.data.find((s) => s.name.toLowerCase() === strain.name.toLowerCase());
       if (match && match.id) return String(match.id);
       throw new Error('Strain exists but could not be found by name');
     }
-    throw error;
+    throw error as Error;
   }
 }
 
@@ -471,16 +651,22 @@ export const WeedDbService = {
     }
 
     try {
-      // Execute API search with the name parameter
+      // Execute API search with the name parameter (Weed-DB returns fuzzy matches).
       const searchTerm = name.trim().toLowerCase();
-      logger.log(`[DEBUG] Executing API search with term: "${searchTerm}"`);
+      logger.log(`[DEBUG] Executing API search with term: "${searchTerm}" (prefix match)`);
       const result = await fetchStrains({ search: searchTerm });
 
-      logger.log(`[DEBUG] API search returned ${result.data.length} results`);
+      // Filter to prefix-matches only
+      const prefixFiltered = result.data.filter((s: Strain) =>
+        (s.name || '').toLowerCase().startsWith(searchTerm)
+      );
 
-      // If API returned results, use them
-      if (result.data.length > 0) {
-        return result;
+      logger.log(
+        `[DEBUG] API search returned ${result.data.length} results – ${prefixFiltered.length} after prefix filter`
+      );
+
+      if (prefixFiltered.length > 0) {
+        return { ...result, data: prefixFiltered };
       }
 
       // No results from API, use simple client-side name search
@@ -489,9 +675,9 @@ export const WeedDbService = {
       // Fetch a dataset to search within
       const allStrains = await fetchStrains({ limit: 100 });
 
-      // Simple client-side search that only checks strain names
-      const filteredStrains = allStrains.data.filter((strain) =>
-        (strain.name || '').toLowerCase().includes(searchTerm)
+      // Simple client-side search that only checks strain names (prefix)
+      const filteredStrains = allStrains.data.filter((strain: Strain) =>
+        (strain.name || '').toLowerCase().startsWith(searchTerm)
       );
 
       logger.log(`[DEBUG] Client-side name search found ${filteredStrains.length} results`);
@@ -573,5 +759,45 @@ export const WeedDbService = {
    */
   async filterByType(type: 'sativa' | 'indica' | 'hybrid'): Promise<CachedResponse<Strain[]>> {
     return fetchStrains({ type });
+  },
+
+  /**
+   * Filters strains by type (sativa, indica, hybrid) with pagination.
+   * @param type The strain type.
+   * @param page Page number (default: 1).
+   * @param pageSize Number of items per page (default: 50).
+   * @returns A paginated list of matching strains with caching information.
+   */
+  async filterByTypePaginated(
+    type: 'sativa' | 'indica' | 'hybrid',
+    page = 1,
+    pageSize = 50
+  ): Promise<PaginatedCachedResponse<Strain>> {
+    return fetchStrainsPaginated({ type, page, page_size: pageSize });
+  },
+
+  /**
+   * Searches for strains by name with pagination.
+   * @param query The search query string.
+   * @param page Page number (default: 1).
+   * @param pageSize Number of items per page (default: 50).
+   * @returns A paginated list of matching strains with caching information.
+   */
+  async searchPaginated(
+    query: string,
+    page = 1,
+    pageSize = 50
+  ): Promise<PaginatedCachedResponse<Strain>> {
+    return fetchStrainsPaginated({ search: query, page, page_size: pageSize });
+  },
+
+  /**
+   * Fetches a paginated list of strains with pagination.
+   * @param page Page number (default: 1).
+   * @param pageSize Number of items per page (default: 50).
+   * @returns A paginated list of strains with caching information.
+   */
+  async listPaginated(page = 1, pageSize = 50): Promise<PaginatedCachedResponse<Strain>> {
+    return fetchStrainsPaginated({ page, page_size: pageSize });
   },
 };

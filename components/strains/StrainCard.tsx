@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import React, { memo } from 'react';
 import { View, Text, Pressable, AccessibilityInfo, ViewStyle } from 'react-native';
@@ -19,6 +19,8 @@ interface StrainCardProps {
 const StrainCard = memo<StrainCardProps>(({ strain, index, onToggleFavorite }) => {
   const { colorScheme } = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+
+  const router = useRouter();
 
   // 🎯 Modern gesture animation for main card
   const { gesture: cardGesture, animatedStyle } = useGestureAnimation({
