@@ -229,7 +229,7 @@ export const EnhancedTextInput = forwardRef<TextInput, EnhancedTextInputProps>(
               ref={ref}
               className={`flex-1 text-base font-medium
                 placeholder:text-neutral-400 dark:placeholder:text-neutral-500
-                ${leftIcon ? 'pl-4' : 'pl-4'}
+                ${leftIcon ? 'pl-2' : 'pl-4'}
                 ${rightIcon ? 'pr-2' : 'pr-4'}
                 ${multiline ? 'py-3' : 'py-0'}`}
               placeholder={placeholder}

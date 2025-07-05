@@ -7,6 +7,7 @@ import { ActiveFilters } from '@/components/strains/StrainFilterModal';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { Strain } from '@/lib/types/strain';
 import { Strain as WeedDbStrain } from '@/lib/types/weed-db';
+import { generateStableFallbackKey, isValidId } from '@/lib/utils/string-utils';
 
 interface UseInfiniteStrainsParams {
   search?: string;
@@ -25,12 +26,28 @@ interface StrainQueryResponse {
   hasMore: boolean;
 }
 
+// Constants for pagination
+const MAX_SEARCH_RESULTS_PER_PAGE = 100; // Maximum results per page to prevent memory issues
+const MIN_SEARCH_RESULTS_PER_PAGE = 10; // Minimum results per page for good UX
+
 /**
  * Maps WeedDB strain format to app strain format
+ * Ensures all strains have valid IDs to prevent key extraction issues
  */
 function mapWeedDbStrainToAppStrain(weedDbStrain: WeedDbStrain): Strain {
+  // Ensure we have a valid ID, generate a stable fallback if needed
+  const primaryId = weedDbStrain.id ?? weedDbStrain.api_id ?? weedDbStrain.originalId;
+  const validId = isValidId(primaryId) ? String(primaryId) : null;
+  const finalId = validId || generateStableFallbackKey(
+    weedDbStrain.name,
+    weedDbStrain.type,
+    weedDbStrain.genetics,
+    'strain'
+  );
+
   return {
     ...weedDbStrain,
+    id: finalId, // Ensure ID is always valid
     thc: weedDbStrain.thc ?? undefined,
     cbd: weedDbStrain.cbd ?? undefined,
     species: weedDbStrain.type as Strain['species'],
@@ -104,35 +121,57 @@ export function useInfiniteStrains({
       /* Fetch from WeedDB. We combine filtering params into a single request.
          WeedDbService utilities handle search vs. filter internally. */
 
-      // 1. Search query takes precedence.
+      // 1. Search query takes precedence - now with server-side pagination
       if (debouncedSearch) {
-        const resp = await WeedDbService.search(debouncedSearch);
+        // Calculate intelligent pagination for search results
+        // Use the user's limit but cap it between MIN and MAX for performance
+        const searchPageSize = Math.min(
+          Math.max(limit, MIN_SEARCH_RESULTS_PER_PAGE),
+          MAX_SEARCH_RESULTS_PER_PAGE
+        );
+        
+        const resp = await WeedDbService.searchPaginated(debouncedSearch, pageParam, searchPageSize);
+        
+        // Handle empty search results
+        if (!resp.data || resp.data.items.length === 0) {
+          return {
+            strains: [],
+            total: 0,
+            hasMore: false,
+          };
+        }
+        
+        // Debug logging for pagination
+        console.log(`[useInfiniteStrains] Search pagination: page=${pageParam}, pageSize=${searchPageSize}, total=${resp.data.total_count}, totalPages=${resp.data.total_pages}, returning=${resp.data.items.length} items`);
+        
         return {
-          strains: resp.data.map(mapWeedDbStrainToAppStrain),
-          total: resp.data.length,
-          hasMore: false, // API search endpoint returns all matches at once
+          strains: resp.data.items.map(mapWeedDbStrainToAppStrain),
+          total: resp.data.total_count,
+          hasMore: pageParam < resp.data.total_pages,
         };
       }
 
-      // 2. Type filter (species)
+      // 2. Type filter (species) - Use paginated API
       if (speciesFilter) {
-        const resp = await WeedDbService.filterByType(
-          speciesFilter as 'sativa' | 'indica' | 'hybrid'
+        const resp = await WeedDbService.filterByTypePaginated(
+          speciesFilter as 'sativa' | 'indica' | 'hybrid',
+          pageParam,
+          limit
         );
-        const paginatedData = resp.data.slice((pageParam - 1) * limit, pageParam * limit);
+        
         return {
-          strains: paginatedData.map(mapWeedDbStrainToAppStrain),
-          total: resp.data.length,
-          hasMore: pageParam * limit < resp.data.length,
+          strains: resp.data.items.map(mapWeedDbStrainToAppStrain),
+          total: resp.data.total_count,
+          hasMore: pageParam < resp.data.total_pages,
         };
       }
 
       // 3. Fallback to simple paginated list
-      const resp = await WeedDbService.list(pageParam, limit);
+      const resp = await WeedDbService.listPaginated(pageParam, limit);
       return {
-        strains: resp.data.map(mapWeedDbStrainToAppStrain),
-        total: resp.data.length, // WeedDB API doesn't return global count
-        hasMore: resp.data.length === limit,
+        strains: resp.data.items.map(mapWeedDbStrainToAppStrain),
+        total: resp.data.total_count,
+        hasMore: pageParam < resp.data.total_pages,
       };
     },
     initialPageParam: 1,

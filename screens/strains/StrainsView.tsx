@@ -20,6 +20,7 @@ import {
   IMAGE_TRANSITION_DURATION,
   PLACEHOLDER_BLUR_HASH,
 } from '@/lib/utils/image';
+import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 
 // Local Components
 import placeholderImageSource from '../../assets/images/placeholder.png';
@@ -37,6 +38,7 @@ import { useScrollAnimation, AnimatedCard, useAnimationSequence } from '@/lib/an
 import { StrainEffectType, StrainFlavorType } from '@/lib/types/strain';
 import { Strain as BaseStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
+import { generateStableFallbackKey, isValidId } from '@/lib/utils/string-utils';
 import { logger } from '@/lib/config/production';
 import { FEATURE_FLAGS } from '@/lib/config/featureFlags';
 import { initFPSLogger } from '@/lib/utils/perfLogger';
@@ -371,26 +373,29 @@ const CategoryChips = memo(
     // Defensive check to ensure CATEGORIES_NEW is an array before mapping
     const safeCategories = Array.isArray(CATEGORIES_NEW) ? CATEGORIES_NEW : [];
 
-    // Wrap onSelect in error handling to prevent context errors
+    // Use debounced callback to prevent rapid state changes and context loss
+    const debouncedOnSelect = useDebouncedCallback(
+      (categoryId: 'sativa' | 'indica' | 'hybrid') => {
+        logger.log(`[CategoryChips] Selecting category: ${categoryId}`);
+        
+        if (typeof onSelect === 'function') {
+          onSelect(categoryId);
+        } else {
+          logger.warn('[CategoryChips] onSelect function not available');
+        }
+      },
+      200, // 200ms debounce delay
+      true  // Use startTransition for non-urgent updates
+    );
+
+    // Wrap onSelect in error handling
     const handleCategorySelect = useCallback((categoryId: 'sativa' | 'indica' | 'hybrid') => {
       try {
-        console.log(`[CategoryChips] Selecting category: ${categoryId}`);
-        
-        // Add a small delay to prevent rapid state changes that might cause context loss
-        const timer = setTimeout(() => {
-          if (typeof onSelect === 'function') {
-            onSelect(categoryId);
-          } else {
-            console.warn('[CategoryChips] onSelect function not available');
-          }
-        }, 50);
-
-        // Return cleanup function
-        return () => clearTimeout(timer);
+        debouncedOnSelect(categoryId);
       } catch (error) {
-        console.error('[CategoryChips] Error in category selection:', error);
+        logger.error('[CategoryChips] Error in category selection:', error);
       }
-    }, [onSelect]);
+    }, [debouncedOnSelect]);
 
     return (
       <ScrollView
@@ -401,7 +406,7 @@ const CategoryChips = memo(
         {safeCategories.map((cat) => {
           // Ensure cat is a valid object with all required properties
           if (!cat || typeof cat !== 'object' || !cat.id || !cat.name || !cat.icon || !cat.emoji) {
-            console.error('[ERROR] Invalid category:', cat);
+            logger.error('[ERROR] Invalid category:', cat);
             return null;
           }
 
@@ -444,21 +449,14 @@ const CategoryChip = memo(
       try {
         triggerMediumHapticSync();
         
-        // Add defensive check and delay to prevent context issues
+        // Direct call without setTimeout - debouncing is handled at parent level
         if (typeof onPress === 'function') {
-          // Small delay to ensure any ongoing state changes complete
-          setTimeout(() => {
-            try {
-              onPress();
-            } catch (error) {
-              console.error('[CategoryChip] Error in delayed onPress:', error);
-            }
-          }, 10);
+          onPress();
         } else {
-          console.warn('[CategoryChip] onPress function not available');
+          logger.warn('[CategoryChip] onPress function not available');
         }
       } catch (error) {
-        console.error('[CategoryChip] Error in handlePress:', error);
+        logger.error('[CategoryChip] Error in handlePress:', error);
       }
     }, [onPress]);
 
@@ -468,7 +466,7 @@ const CategoryChip = memo(
         try {
           scale.value = withSpring(0.96);
         } catch (error) {
-          console.warn('[CategoryChip] Error in animation onBegin:', error);
+          logger.warn('[CategoryChip] Error in animation onBegin:', error);
         }
       })
       .onFinalize(() => {
@@ -476,7 +474,7 @@ const CategoryChip = memo(
         try {
           scale.value = withSpring(1);
         } catch (error) {
-          console.warn('[CategoryChip] Error in animation onFinalize:', error);
+          logger.warn('[CategoryChip] Error in animation onFinalize:', error);
         }
       })
       .onEnd(() => {
@@ -484,7 +482,7 @@ const CategoryChip = memo(
         try {
           runOnJS(handlePress)();
         } catch (error) {
-          console.warn('[CategoryChip] Error in runOnJS:', error);
+          logger.warn('[CategoryChip] Error in runOnJS:', error);
         }
       });
 
@@ -578,10 +576,10 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
         if (router?.push) {
           router.push(`/(app)/catalog/${id}`);
         } else {
-          console.warn('[StrainsView] Router not available for navigation');
+          logger.warn('[StrainsView] Router not available for navigation');
         }
       } catch (error) {
-        console.warn('[StrainsView] Navigation error:', error);
+        logger.warn('[StrainsView] Navigation error:', error);
       }
     },
     [router]
@@ -608,16 +606,28 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     const strain = item as Strain;
     // Prioritize stable, unique identifiers
     const id = strain.id ?? strain._id;
-    if (id && typeof id === 'string') {
+    if (isValidId(id)) {
       return id;
     }
 
-    // Deterministic fallback with warning in development
+    // Generate stable, deterministic fallback key based on strain properties
+    const fallbackKey = generateStableFallbackKey(
+      strain.name,
+      strain.type,
+      strain.genetics,
+      'strain'
+    );
+
+    // Log warning in development when using fallback
     if (__DEV__) {
-      logger.warn('Using index fallback for strain key', { item: strain });
+      logger.warn('Using stable fallback key for strain without valid ID', {
+        originalId: id,
+        fallbackKey,
+        strainName: strain.name,
+      });
     }
 
-    return `strain-${strain.name || Math.random()}`;
+    return fallbackKey;
   }, []);
 
   // Function to check if a strain is favorited, accounting for both original ID and UUID
