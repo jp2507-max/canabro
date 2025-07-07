@@ -1,18 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import supabase from '../../supabase';
 import { triggerLightHaptic, triggerMediumHaptic } from '../../utils/haptics';
+import { PostData } from '../../types/community';
 
 interface LikePostParams {
   postId: string;
   userId: string;
   currentlyLiked: boolean;
-}
-
-interface PostData {
-  id: string;
-  user_has_liked: boolean;
-  likes_count: number;
-  [key: string]: any;
 }
 
 export function useLikePost() {

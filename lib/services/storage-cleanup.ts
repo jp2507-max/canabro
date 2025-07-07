@@ -80,7 +80,7 @@ export class StorageCleanupService {
 
     try {
       // Get all user's storage assets from all possible buckets
-      const buckets = ['avatars', 'posts', 'journals', 'plants', 'community-questions', 'community-plant-shares'];
+      const buckets = ['avatars', 'posts', 'journals', 'plants', 'community-questions', 'community-plant-shares', 'plant-images'];
       const userAssets: StorageAsset[] = [];
       
       for (const bucket of buckets) {
@@ -113,11 +113,32 @@ export class StorageCleanupService {
       const referencedAssets = await this.getReferencedAssets(userId);
       const referencedPaths = new Set(referencedAssets.map(asset => asset.path));
 
+      logger.log(`[Storage Cleanup] Found ${referencedPaths.size} referenced asset paths for user ${userId}`);
+      
+      // Debug log first few referenced paths for troubleshooting
+      if (referencedPaths.size > 0) {
+        const samplePaths = Array.from(referencedPaths).slice(0, 3);
+        logger.log(`[Storage Cleanup] Sample referenced paths: ${samplePaths.join(', ')}`);
+      }
+
       // Find orphaned assets (assets not referenced by any post)
       const orphanedAssets = userAssets.filter((asset: StorageAsset & { bucket_id?: string }) => {
-        const assetPath = `${userId}/${asset.name}`;
+        // Validate asset name to prevent undefined/null paths
+        if (!asset.name || typeof asset.name !== 'string') {
+          logger.warn(`[Storage Cleanup] Asset with invalid name found in ${asset.bucket_id || 'unknown'} bucket:`, asset);
+          return false;
+        }
+
+        const assetPath = this.normalizeAssetPath(`${userId}/${asset.name}`);
         const isOrphaned = !referencedPaths.has(assetPath);
         const isOldEnough = this.isAssetOldEnough(asset, this.ORPHAN_AGE_THRESHOLD);
+        
+        // Debug potential false positives
+        if (isOrphaned && isOldEnough) {
+          this.debugAssetPathComparison(assetPath, referencedPaths, userId);
+          logger.log(`[Storage Cleanup] Asset marked as orphaned: ${assetPath}`);
+        }
+        
         return isOrphaned && isOldEnough;
       });
 
@@ -135,11 +156,17 @@ export class StorageCleanupService {
         const batches = this.createBatches(assets, this.BATCH_SIZE);
         
         for (const batch of batches) {
-          const batchPaths = batch.map((asset: StorageAsset) => `${userId}/${asset.name}`);
-          const batchResult = await this.deleteAssetPathsFromBucket(batchPaths, bucket);
-          result.deletedAssets.push(...batchResult.deletedAssets);
-          result.errors.push(...batchResult.errors);
-          result.totalSize += batchResult.totalSize;
+          // Filter out any assets with invalid names and construct valid paths
+          const batchPaths = batch
+            .filter((asset: StorageAsset) => asset.name && typeof asset.name === 'string')
+            .map((asset: StorageAsset) => this.normalizeAssetPath(`${userId}/${asset.name}`));
+          
+          if (batchPaths.length > 0) {
+            const batchResult = await this.deleteAssetPathsFromBucket(batchPaths, bucket);
+            result.deletedAssets.push(...batchResult.deletedAssets);
+            result.errors.push(...batchResult.errors);
+            result.totalSize += batchResult.totalSize;
+          }
         }
       }
 
@@ -177,14 +204,14 @@ export class StorageCleanupService {
       if (postData.image_url && typeof postData.image_url === 'string') {
         const assetPath = this.extractAssetPath(postData.image_url);
         if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
-          assets.push(assetPath);
+          assets.push(this.normalizeAssetPath(assetPath));
         }
       }
 
       // Extract any embedded images from content
       if (postData.content && typeof postData.content === 'string') {
         const embeddedAssets = this.extractEmbeddedAssets(postData.content, userId);
-        assets.push(...embeddedAssets);
+        assets.push(...embeddedAssets.map(path => this.normalizeAssetPath(path)));
       }
 
       return assets;
@@ -214,14 +241,16 @@ export class StorageCleanupService {
           if (post.image_url) {
             const assetPath = this.extractAssetPath(post.image_url);
             if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
-              referencedAssets.push({ path: assetPath, table: 'posts', id: post.id });
+              const normalizedPath = this.normalizeAssetPath(assetPath);
+              referencedAssets.push({ path: normalizedPath, table: 'posts', id: post.id });
             }
           }
           
           if (post.content) {
             const embeddedAssets = this.extractEmbeddedAssets(post.content, userId);
             embeddedAssets.forEach(path => {
-              referencedAssets.push({ path, table: 'posts', id: post.id });
+              const normalizedPath = this.normalizeAssetPath(path);
+              referencedAssets.push({ path: normalizedPath, table: 'posts', id: post.id });
             });
           }
         }
@@ -240,7 +269,8 @@ export class StorageCleanupService {
           if (entry.image_url) {
             const assetPath = this.extractAssetPath(entry.image_url);
             if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
-              referencedAssets.push({ path: assetPath, table: 'journal_entries', id: entry.id });
+              const normalizedPath = this.normalizeAssetPath(assetPath);
+              referencedAssets.push({ path: normalizedPath, table: 'journal_entries', id: entry.id });
             }
           }
         }
@@ -258,7 +288,8 @@ export class StorageCleanupService {
       } else if (profile && profile.avatar_url) {
         const assetPath = this.extractAssetPath(profile.avatar_url);
         if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
-          referencedAssets.push({ path: assetPath, table: 'profiles', id: profile.id });
+          const normalizedPath = this.normalizeAssetPath(assetPath);
+          referencedAssets.push({ path: normalizedPath, table: 'profiles', id: profile.id });
         }
       }
 
@@ -267,6 +298,32 @@ export class StorageCleanupService {
     }
 
     return referencedAssets;
+  }
+
+  /**
+   * Normalize asset paths to ensure consistent comparison
+   * This prevents path format mismatches that could cause valid assets to be marked as orphaned
+   */
+  private normalizeAssetPath(path: string): string {
+    if (!path || typeof path !== 'string') {
+      return '';
+    }
+
+    // Remove any leading/trailing whitespace
+    let normalized = path.trim();
+    
+    // Remove any double slashes (except for protocol)
+    normalized = normalized.replace(/([^:]\/)\/+/g, '$1');
+    
+    // Ensure consistent forward slashes
+    normalized = normalized.replace(/\\/g, '/');
+    
+    // Remove trailing slash if present
+    if (normalized.endsWith('/') && normalized.length > 1) {
+      normalized = normalized.slice(0, -1);
+    }
+    
+    return normalized;
   }
 
   /**
@@ -325,12 +382,23 @@ export class StorageCleanupService {
    * Validate that an asset path belongs to the specified user
    */
   private validateUserAssetPath(assetPath: string, userId: string): boolean {
-    if (!assetPath || !userId) {
+    if (!assetPath || !userId || typeof assetPath !== 'string' || typeof userId !== 'string') {
       return false;
     }
 
+    // Normalize the path for consistent validation
+    const normalizedPath = this.normalizeAssetPath(assetPath);
+    
     // Ensure the asset path starts with the user ID to prevent unauthorized access
-    return assetPath.startsWith(`${userId}/`);
+    const expectedPrefix = `${userId}/`;
+    const pathStartsWithUserId = normalizedPath.startsWith(expectedPrefix);
+    
+    // Additional validation: ensure path doesn't contain suspicious patterns
+    const hasValidStructure = !normalizedPath.includes('..') && // No directory traversal
+                             !normalizedPath.includes('//') && // No double slashes (after normalization)
+                             normalizedPath.length > expectedPrefix.length; // Has actual filename after userId
+    
+    return pathStartsWithUserId && hasValidStructure;
   }
 
   /**
@@ -505,6 +573,25 @@ export class StorageCleanupService {
     }
 
     return result;
+  }
+
+  /**
+   * Debug utility to log asset path comparison details
+   * Helps troubleshoot why valid assets might be marked as orphaned
+   */
+  private debugAssetPathComparison(assetPath: string, referencedPaths: Set<string>, userId: string): void {
+    if (!assetPath.includes('undefined') && !referencedPaths.has(assetPath)) {
+      logger.warn(`[Storage Cleanup] Asset marked as orphaned but may be valid:`, {
+        assetPath,
+        userId,
+        pathLength: assetPath.length,
+        containsUserId: assetPath.includes(userId),
+        similarPaths: Array.from(referencedPaths).filter(refPath => 
+          refPath.includes(assetPath.split('/').pop() || '') ||
+          assetPath.includes(refPath.split('/').pop() || '')
+        ).slice(0, 3)
+      });
+    }
   }
 }
 

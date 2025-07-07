@@ -15,7 +15,7 @@ export function useCommunityQuestions(filters: QuestionFilters = {}) {
         p_limit: PAGE_SIZE,
         p_offset: pageParam * PAGE_SIZE,
         p_category: filters.category || null,
-        p_is_solved: filters.is_solved || null,
+        p_is_solved: filters.is_solved !== undefined ? filters.is_solved : null,
         p_order_by: filters.order_by || 'created_at',
         p_order_direction: filters.order_direction || 'DESC'
       });

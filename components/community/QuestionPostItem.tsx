@@ -19,7 +19,7 @@ import { OptimizedIcon } from '../ui/OptimizedIcon';
 import NetworkResilientImage from '../ui/NetworkResilientImage';
 import UserAvatar from './UserAvatar';
 import TagPill from '../ui/TagPill';
-import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import { usePostActions } from '../../lib/hooks/community/usePostActions';
 import type { CommunityQuestion } from '../../lib/types/community';
 
 dayjs.extend(relativeTime);
@@ -50,25 +50,15 @@ export default function QuestionPostItem({
 
   const isLiked = useMemo(() => question.user_has_liked ?? false, [question.user_has_liked]);
 
-  const handleLike = React.useCallback(async () => {
-    await triggerLightHapticSync();
-    onLike(question.id, isLiked);
-  }, [question.id, isLiked, onLike]);
-
-  const handleComment = React.useCallback(async () => {
-    await triggerLightHapticSync();
-    onComment(question.id);
-  }, [question.id, onComment]);
-
-  const handleUserPress = React.useCallback(() => {
-    onUserPress(question.user_id);
-  }, [question.user_id, onUserPress]);
-
-  const handlePress = React.useCallback(() => {
-    if (onPress) {
-      onPress(question.id);
-    }
-  }, [question.id, onPress]);
+  const { handleLike, handleComment, handleUserPress, handlePress } = usePostActions({
+    postId: question.id,
+    userId: question.user_id,
+    isLiked,
+    onLike,
+    onComment,
+    onUserPress,
+    onPress,
+  });
 
   return (
     <Animated.View

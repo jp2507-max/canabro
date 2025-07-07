@@ -3,8 +3,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CommunityScreenView from './CommunityScreenView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { usePosts } from '../../lib/hooks/community/usePosts';
+import { useInfinitePosts } from '../../lib/hooks/community/usePosts';
 import { useLikePost } from '../../lib/hooks/community/useLikePost';
+import { useDeletePost } from '../../lib/hooks/community/useDeletePost';
 import { useRealTimePostUpdates } from '../../lib/hooks/community/useRealTimeUpdates';
 
 function CommunityScreenContainer() {
@@ -18,14 +19,29 @@ function CommunityScreenContainer() {
 
   // Use React Query hooks for posts and likes
   const { 
-    data: posts = [], 
+    data: queryData,
     isLoading, 
     isRefetching: isRefreshing, 
     error: fetchError,
-    refetch: refetchPosts 
-  } = usePosts({ userId: user?.id });
+    refetch: refetchPosts,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfinitePosts({ userId: user?.id });
+
+  // Flatten the infinite query pages into a single posts array
+  const posts = queryData?.pages.flatMap(page => page) ?? [];
 
   const likeMutation = useLikePost();
+  const deleteMutation = useDeletePost({
+    onSuccess: () => {
+      console.log('Post deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to delete post:', error);
+      // TODO: Show error toast
+    }
+  });
 
   // 🎯 Real-time updates for posts and likes
   useRealTimePostUpdates(user?.id);
@@ -35,9 +51,10 @@ function CommunityScreenContainer() {
   }, [refetchPosts]);
 
   const handleLoadMore = useCallback(() => {
-    // TODO: Implement infinite loading with useInfiniteQuery
-    console.log('Load more posts');
-  }, []);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleLike = useCallback(async (postId: string, currentlyLiked: boolean) => {
     if (!user?.id) return;
@@ -58,6 +75,19 @@ function CommunityScreenContainer() {
     setIsCommentModalVisible(true);
   }, []);
 
+  const handleDeletePost = useCallback(async (postId: string) => {
+    if (!user?.id) return;
+
+    try {
+      await deleteMutation.mutateAsync({
+        postId,
+        userId: user.id
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  }, [user?.id, deleteMutation]);
+
   const handleCloseComments = useCallback(() => {
     setIsCommentModalVisible(false);
     setSelectedPostId(null);
@@ -74,7 +104,7 @@ function CommunityScreenContainer() {
         posts={posts}
         isLoading={isLoading}
         isRefreshing={isRefreshing}
-        isLoadingMore={false}
+        isLoadingMore={isFetchingNextPage}
         fetchError={fetchError?.message || null}
         activeFilter={activeFilter}
         setActiveFilter={setActiveFilter}
@@ -86,11 +116,13 @@ function CommunityScreenContainer() {
         selectedPostId={selectedPostId}
         handleLike={handleLike}
         handleCommentPress={handleCommentPress}
+        handleDeletePost={handleDeletePost}
         handleCloseComments={handleCloseComments}
         handlePostCreated={handlePostCreated}
         handleRefresh={handleRefresh}
         handleLoadMore={handleLoadMore}
         likingPostId={likeMutation.isPending ? likeMutation.variables?.postId || null : null}
+        deletingPostId={deleteMutation.isPending ? deleteMutation.variables?.postId || null : null}
         user={user}
       />
     </SafeAreaView>

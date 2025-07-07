@@ -423,7 +423,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
     } finally {
       setIsSubmitting(false);
     }
-  }, [canPost, user, content, image, onSuccess, onClose]);
+  }, [canPost, user, content, image, onSuccess, onClose, postType, plantName, growthStage, environment]);
 
   const handleReset = () => {
     setContent('');

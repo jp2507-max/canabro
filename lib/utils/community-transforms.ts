@@ -23,7 +23,7 @@ export function transformPostToQuestion(post: PostData): CommunityQuestion {
     priority_level: (post.priority_level || 1) as 1 | 2 | 3 | 4 | 5,
     likes_count: post.likes_count,
     answers_count: post.comments_count || 0,
-    views_count: post.views_count || post.likes_count * 3, // Estimated views
+    views_count: post.views_count ?? 0, // Use actual views count or 0 if unavailable
     user_has_liked: post.user_has_liked,
     username: post.profiles?.username || 'Anonymous',
     avatar_url: post.profiles?.avatar_url || '',

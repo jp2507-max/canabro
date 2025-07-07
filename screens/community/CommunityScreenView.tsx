@@ -50,11 +50,13 @@ interface CommunityScreenViewProps {
   selectedPostId: string | null;
   handleLike: (postId: string, currentlyLiked: boolean) => void;
   handleCommentPress: (postId: string) => void;
+  handleDeletePost?: (postId: string) => void;
   handleCloseComments: () => void;
   handlePostCreated: () => void;
   handleRefresh: () => void;
   handleLoadMore: () => void;
   likingPostId: string | null;
+  deletingPostId?: string | null;
   user: User | null;
 }
 
@@ -74,11 +76,13 @@ function CommunityScreenView({
   selectedPostId,
   handleLike,
   handleCommentPress,
+  handleDeletePost,
   handleCloseComments,
   handlePostCreated,
   handleRefresh,
   handleLoadMore,
   likingPostId,
+  deletingPostId,
   user,
 }: CommunityScreenViewProps) {
   // 🎛️ Post filtering state
@@ -202,14 +206,16 @@ function CommunityScreenView({
               currentUserId={user?.id}
               onLike={handleLike}
               onComment={handleCommentPress}
+              onDelete={handleDeletePost}
               onUserPress={() => {}}
               liking={likingPostId === post.id}
+              deleting={deletingPostId === post.id}
             />
           </Animated.View>
         );
       }
     },
-    [user, handleLike, handleCommentPress, likingPostId]
+    [user, handleLike, handleCommentPress, handleDeletePost, likingPostId, deletingPostId]
   );
 
   // 🎛️ Header component with segmented control

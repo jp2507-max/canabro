@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { PostData, UsePostsParams, CommentWithLikeStatus } from '../../types/posts';
+import { PostData, UsePostsParams, CommentWithLikeStatus } from '../../types/community';
 import supabase from '../../supabase';
 
 export function usePosts({ userId, limit = 10, offset = 0 }: UsePostsParams = {}) {

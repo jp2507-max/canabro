@@ -4,6 +4,7 @@ interface RetryConfig {
   maxDelay: number;
   backoffMultiplier: number;
   jitter: boolean;
+  timeout: number; // Maximum duration for the entire operation in milliseconds
 }
 
 interface SyncOperation {
@@ -11,6 +12,7 @@ interface SyncOperation {
   attempt: number;
   startTime: number;
   lastError?: Error;
+  timeoutId?: NodeJS.Timeout;
 }
 
 export interface ConflictResolution {
@@ -27,6 +29,7 @@ export class SyncRetryService {
     maxDelay: 30000, // 30 seconds
     backoffMultiplier: 2,
     jitter: true,
+    timeout: 300000, // 5 minutes default timeout
   };
 
   private activeOperations = new Map<string, SyncOperation>();
@@ -36,7 +39,7 @@ export class SyncRetryService {
   }
 
   /**
-   * Execute a sync operation with exponential backoff retry logic
+   * Execute a sync operation with exponential backoff retry logic and timeout
    */
   async executeWithRetry<T>(
     operationId: string,
@@ -55,8 +58,32 @@ export class SyncRetryService {
     this.activeOperations.set(operationId, syncOp);
 
     try {
-      return await this.attemptOperation(operationId, operation, finalConfig);
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error(`Operation ${operationId} timed out after ${finalConfig.timeout}ms`));
+        }, finalConfig.timeout);
+        
+        // Store timeout ID for cleanup
+        syncOp.timeoutId = timeoutId;
+      });
+
+      // Race between the operation and timeout
+      const operationPromise = this.attemptOperation(operationId, operation, finalConfig);
+      
+      const result = await Promise.race([operationPromise, timeoutPromise]);
+      
+      // Clear timeout if operation completes successfully
+      if (syncOp.timeoutId) {
+        clearTimeout(syncOp.timeoutId);
+      }
+      
+      return result;
     } finally {
+      // Ensure timeout is cleared on any exit
+      if (syncOp.timeoutId) {
+        clearTimeout(syncOp.timeoutId);
+      }
       this.activeOperations.delete(operationId);
     }
   }
@@ -74,7 +101,7 @@ export class SyncRetryService {
         
         // Log successful operation after retries
         if (syncOp.attempt > 0) {
-          console.log(`Sync operation ${operationId} succeeded after ${syncOp.attempt} retries`);
+          console.warn(`Sync operation ${operationId} succeeded after ${syncOp.attempt} retries`);
         }
         
         return result;

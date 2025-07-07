@@ -524,7 +524,7 @@ export class CommunityService {
     questionId: string, 
     isSolved: boolean
   ): Promise<CommunityQuestion> {
-    return this.updateQuestion(questionId, { is_solved: isSolved });
+    return CommunityService.updateQuestion(questionId, { is_solved: isSolved });
   }
 
   // ========================================
@@ -633,69 +633,56 @@ export class CommunityService {
   // ========================================
 
   /**
+   * Generic helper to toggle likes atomically using database constraints
+   * @param tableName The like table name
+   * @param idField The field name for the target ID (e.g., 'question_id', 'plant_share_id')
+   * @param targetId The ID of the item being liked
+   * @param userId The user performing the like action
+   * @returns Promise<boolean> true if now liked, false if now unliked
+   */
+  private static async toggleLike(
+    tableName: string,
+    idField: string,
+    targetId: string,
+    userId: string
+  ): Promise<boolean> {
+    // First, try to delete the existing like
+    const { data: deletedData, error: deleteError } = await supabase
+      .from(tableName)
+      .delete()
+      .eq(idField, targetId)
+      .eq('user_id', userId)
+      .select('id');
+
+    if (deleteError) throw deleteError;
+
+    // If a like was deleted, return false (now unliked)
+    if (deletedData && deletedData.length > 0) {
+      return false;
+    }
+
+    // If no like was deleted, insert a new like
+    const insertData = { [idField]: targetId, user_id: userId };
+    const { error: insertError } = await supabase
+      .from(tableName)
+      .insert([insertData]);
+
+    if (insertError) throw insertError;
+    return true; // Now liked
+  }
+
+  /**
    * Like/unlike a community question
    */
   static async toggleQuestionLike(questionId: string, userId: string): Promise<boolean> {
-    // Check if already liked
-    const { data: existingLike } = await supabase
-      .from('community_question_likes')
-      .select('id')
-      .eq('question_id', questionId)
-      .eq('user_id', userId)
-      .single();
-
-    if (existingLike) {
-      // Unlike
-      const { error } = await supabase
-        .from('community_question_likes')
-        .delete()
-        .eq('question_id', questionId)
-        .eq('user_id', userId);
-      
-      if (error) throw error;
-      return false; // Now unliked
-    } else {
-      // Like
-      const { error } = await supabase
-        .from('community_question_likes')
-        .insert([{ question_id: questionId, user_id: userId }]);
-      
-      if (error) throw error;
-      return true; // Now liked
-    }
+    return CommunityService.toggleLike('community_question_likes', 'question_id', questionId, userId);
   }
 
   /**
    * Like/unlike a community plant share
    */
   static async togglePlantShareLike(plantShareId: string, userId: string): Promise<boolean> {
-    // Check if already liked
-    const { data: existingLike } = await supabase
-      .from('community_plant_share_likes')
-      .select('id')
-      .eq('plant_share_id', plantShareId)
-      .eq('user_id', userId)
-      .single();
-
-    if (existingLike) {
-      // Unlike
-      const { error } = await supabase
-        .from('community_plant_share_likes')
-        .delete()
-        .eq('plant_share_id', plantShareId)
-        .eq('user_id', userId);
-      
-      if (error) throw error;
-      return false; // Now unliked
-    } else {
-      // Like
-      const { error } = await supabase
-        .from('community_plant_share_likes')
-        .insert([{ plant_share_id: plantShareId, user_id: userId }]);
-      
-      if (error) throw error;
-      return true; // Now liked
-    }
+    return CommunityService.toggleLike('community_plant_share_likes', 'plant_share_id', plantShareId, userId);
   }
 
   // ========================================
@@ -739,7 +726,7 @@ export class CommunityService {
           }
           
           if (storageCleanupResult.deletedAssets.length > 0) {
-            console.log(`[CommunityService] Cleaned up ${storageCleanupResult.deletedAssets.length} storage assets for post ${postId}`);
+            console.warn(`[CommunityService] Cleaned up ${storageCleanupResult.deletedAssets.length} storage assets for post ${postId}`);
           }
 
           // Use the integrity service's safe deletion method
@@ -806,52 +793,30 @@ export class CommunityService {
   }
 
   /**
-   * Batch delete posts (for administrative purposes)
-   */
-  static async batchDeletePosts(postIds: string[], userId: string, isAdmin: boolean = false): Promise<{ success: string[], failed: string[] }> {
-    const results = { success: [] as string[], failed: [] as string[] };
-    
-    for (const postId of postIds) {
-      try {
-        if (isAdmin) {
-          // Admin can delete any post
-          const integrityService = new DataIntegrityService(database);
-          await integrityService.safeDeletePost(postId);
-        } else {
-          // Regular user can only delete their own posts
-          await this.deletePost(postId, userId);
-        }
-        results.success.push(postId);
-      } catch (error) {
-        console.warn(`[CommunityService] Failed to delete post ${postId}:`, error);
-        results.failed.push(postId);
-      }
-    }
-    
-    return results;
-  }
-
-  /**
-   * Soft delete a post (mark as deleted but keep record)
+   * Soft deletes a post (marks as deleted without removing data)
    */
   static async softDeletePost(postId: string, userId: string): Promise<void> {
     try {
-      // Verify the user owns the post
+      // First verify the user owns this post
       const { data: post, error: fetchError } = await supabase
         .from('posts')
         .select('user_id')
         .eq('id', postId)
         .single();
 
-      if (fetchError || !post) {
+      if (fetchError) {
+        throw new Error(`Failed to fetch post: ${fetchError.message}`);
+      }
+
+      if (!post) {
         throw new Error('Post not found');
       }
 
       if (post.user_id !== userId) {
-        throw new Error('Unauthorized: You can only delete your own posts');
+        throw new Error('You can only delete your own posts');
       }
 
-      // Mark as deleted
+      // Mark post as deleted
       const { error } = await supabase
         .from('posts')
         .update({ 
@@ -864,37 +829,38 @@ export class CommunityService {
         throw new Error(`Failed to soft delete post: ${error.message}`);
       }
 
+      console.warn(`Successfully soft deleted post ${postId}`);
     } catch (error) {
-      console.error('[CommunityService] Error soft deleting post:', error);
+      console.error('Error soft deleting post:', error);
       throw error;
     }
   }
 
   /**
-   * Restore a soft-deleted post
+   * Restores a soft deleted post
    */
   static async restorePost(postId: string, userId: string): Promise<void> {
     try {
-      // Verify the user owns the post
+      // First verify the user owns this post
       const { data: post, error: fetchError } = await supabase
         .from('posts')
-        .select('user_id, is_deleted')
+        .select('user_id')
         .eq('id', postId)
         .single();
 
-      if (fetchError || !post) {
+      if (fetchError) {
+        throw new Error(`Failed to fetch post: ${fetchError.message}`);
+      }
+
+      if (!post) {
         throw new Error('Post not found');
       }
 
       if (post.user_id !== userId) {
-        throw new Error('Unauthorized: You can only restore your own posts');
+        throw new Error('You can only restore your own posts');
       }
 
-      if (!post.is_deleted) {
-        throw new Error('Post is not deleted');
-      }
-
-      // Restore the post
+      // Restore post
       const { error } = await supabase
         .from('posts')
         .update({ 
@@ -907,8 +873,9 @@ export class CommunityService {
         throw new Error(`Failed to restore post: ${error.message}`);
       }
 
+      console.warn(`Successfully restored post ${postId}`);
     } catch (error) {
-      console.error('[CommunityService] Error restoring post:', error);
+      console.error('Error restoring post:', error);
       throw error;
     }
   }
