@@ -15,6 +15,8 @@ import { forceResetDatabaseIfNeeded } from '../database/resetUtil';
 import { synchronizeWithServer, loadSyncMetadata } from '../services/sync';
 import { registerBackgroundSyncAsync, setLastActiveUserId } from '../tasks/syncTask'; // Import task functions
 import { deltaSyncStrains } from '../services/sync';
+// Import data integrity service for cleanup on startup
+import { DataIntegrityService } from '../services/data-integrity';
 
 type DatabaseContextType = {
   database: Database;
@@ -78,6 +80,36 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             '[DatabaseProvider] Found previous sync error:',
             syncMetadata.lastSyncError.message
           );
+        }
+
+        // Run data integrity checks after database initialization
+        try {
+          console.log('[DataIntegrity] Running startup integrity checks...');
+          const integrityService = new DataIntegrityService(database);
+          const result = await integrityService.runIntegrityCheck({
+            dryRun: false, // Actually fix issues
+            fixBrokenImages: true,
+            removeOrphanedPosts: true,
+            batchSize: 50,
+          });
+          
+          if (result.cleanedRecords > 0) {
+            console.log(
+              `[DataIntegrity] Cleaned up ${result.cleanedRecords} records on startup:`,
+              {
+                orphanedPosts: result.orphanedPosts,
+                brokenImageReferences: result.brokenImageReferences,
+                invalidUserReferences: result.invalidUserReferences,
+              }
+            );
+          }
+          
+          if (result.errors.length > 0) {
+            console.warn('[DataIntegrity] Errors during startup cleanup:', result.errors);
+          }
+        } catch (integrityError) {
+          console.warn('[DataIntegrity] Failed to run startup integrity checks:', integrityError);
+          // Don't fail app startup for integrity check errors
         }
 
         if (isMounted) {

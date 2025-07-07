@@ -16,20 +16,13 @@ import Animated, {
   cancelAnimation,
   runOnJS,
 } from 'react-native-reanimated';
+import { COMMUNITY_ANIMATION_CONFIG, COMMUNITY_SCALE_VALUES } from '@/lib/types/community';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 
-// 🎯 Production Animation Configurations
-const ANIMATION_CONFIG = {
-  scale: { damping: 15, stiffness: 400 },
-  quick: { damping: 20, stiffness: 500 },
-} as const;
-
-const SCALE_VALUES = {
-  default: 1,
-  pressed: 0.95,
-  badgePressed: 0.9,
-} as const;
+// Using shared animation configurations from community types
+const ANIMATION_CONFIG = COMMUNITY_ANIMATION_CONFIG;
+const SCALE_VALUES = COMMUNITY_SCALE_VALUES;
 
 /**
  * Enhanced UserAvatar component with sophisticated press animations and error handling
@@ -95,7 +88,7 @@ export default function UserAvatar({
   const pressGesture = Gesture.Tap()
     .onBegin(() => {
       'worklet';
-      scale.value = withSpring(SCALE_VALUES.pressed, ANIMATION_CONFIG.scale);
+      scale.value = withSpring(SCALE_VALUES.avatarPress, ANIMATION_CONFIG.scale);
       shadowOpacity.value = withSpring(0.2, ANIMATION_CONFIG.quick);
       if (verified) {
         badgeScale.value = withSpring(SCALE_VALUES.badgePressed, ANIMATION_CONFIG.scale);

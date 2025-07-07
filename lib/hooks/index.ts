@@ -23,3 +23,6 @@ export * from './plants';
 
 // Diary-related hooks
 export * from './diary';
+
+// Community hooks
+export * from './community';

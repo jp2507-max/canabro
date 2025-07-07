@@ -27,6 +27,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CommentItem from './CommentItem';
 import { useAuth } from '../../lib/contexts/AuthProvider';
+import { useComments } from '../../lib/hooks/community/usePosts';
+import { useRealTimeCommentUpdates } from '../../lib/hooks/community/useRealTimeUpdates';
 import supabase from '../../lib/supabase';
 import { uploadCommentImage } from '../../lib/utils/upload-image';
 import { Comment } from '../../lib/types/community';
@@ -155,34 +157,40 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<CommentWithProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [commentsCount, setCommentsCount] = useState(0);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<TextInput>(null);
+
+  // 🎯 Use React Query hooks for comments
+  const { 
+    data: comments = [], 
+    isLoading, 
+    isRefetching: isRefreshing, 
+    refetch: refetchComments 
+  } = useComments({ postId: isVisible ? postId : undefined, userId: user?.id });
+
+  // 🎯 Real-time updates for comments
+  useRealTimeCommentUpdates(isVisible ? postId : undefined, user?.id);
+
+  const commentsCount = comments.length;
 
   // Animation values
   const modalScale = useSharedValue(0.95);
   const modalOpacity = useSharedValue(0);
   const backdropOpacity = useSharedValue(0);
 
-  // Fetch comments when modal becomes visible
+  // Handle modal animations
   useEffect(() => {
     if (isVisible && postId) {
-      fetchComments();
       // Animate modal entrance
       modalScale.value = withSpring(1, SPRING_CONFIG);
       modalOpacity.value = withSpring(1, SPRING_CONFIG);
       backdropOpacity.value = withTiming(1, { duration: 200 });
     } else {
       // Reset when modal is hidden
-      setComments([]);
       setCommentText('');
-      setIsLoading(true);
       // Animate modal exit
       modalScale.value = withSpring(0.95, SPRING_CONFIG);
       modalOpacity.value = withTiming(0, { duration: 150 });
@@ -190,47 +198,9 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
     }
   }, [isVisible, postId]);
 
-  // Fetch comments from Supabase
-  const fetchComments = async () => {
-    if (!postId) return;
-
-    setIsLoading(true);
-    try {
-      const { data, error, count } = await supabase
-        .from('comments')
-        .select(
-          `
-          *,
-          profiles (username, avatar_url)
-        `,
-          { count: 'exact' }
-        )
-        .eq('post_id', postId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Transform data to include profile information
-      const commentsWithProfiles =
-        data?.map((comment) => ({
-          ...comment,
-          profile: comment.profiles as { username: string; avatar_url: string | null },
-        })) || [];
-
-      setComments(commentsWithProfiles);
-      if (count !== null) setCommentsCount(count);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
   // Handle refreshing comments
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchComments();
+    refetchComments();
   };
 
   // Handle taking a photo with the camera
@@ -338,17 +308,12 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
           console.error('Error fetching newly created comment:', fetchError);
           Alert.alert('Warning', 'Comment added, but could not immediately display it.');
         } else if (commentData) {
-          // Add new comment to state - image_url is already set from the atomic operation
-          const newComment: CommentWithProfile = {
-            ...commentData,
-            profile: commentData.profiles as { username: string; avatar_url: string | null },
-            image_url: commentData.image_url, // Already set in the database
-          };
-          setComments((prev) => [newComment, ...prev]);
-          setCommentsCount((prev) => prev + 1);
-
+          // React Query will automatically update the cache via real-time subscriptions
           // Call the callback if provided
           if (onCommentAdded) onCommentAdded();
+          
+          // Manually refetch to ensure immediate update
+          refetchComments();
         }
       } else {
         console.warn('RPC function did not return comment ID.');

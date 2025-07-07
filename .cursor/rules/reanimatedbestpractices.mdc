@@ -1,5 +1,6 @@
 ---
-applyTo: 'Animation, Theming'
+description: Adding Animations
+alwaysApply: false
 ---
 # 🎬 React Native Reanimated Production Guide
 

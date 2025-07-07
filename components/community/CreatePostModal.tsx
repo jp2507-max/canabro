@@ -11,14 +11,13 @@ import Animated, {
   runOnUI,
   runOnJS,
   interpolateColor as rInterpolateColor,
-  WithSpringConfig,
   WithTimingConfig,
 } from 'react-native-reanimated';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
-import { EnhancedKeyboardWrapper } from '../keyboard/EnhancedKeyboardWrapper';
 import { triggerLightHapticSync, triggerMediumHapticSync } from '../../lib/utils/haptics';
+import { COMMUNITY_ANIMATION_CONFIG } from '@/lib/types/community';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { createPost } from '../../lib/services/community-service';
@@ -40,29 +39,6 @@ type CreatePostModalProps = {
   onClose: () => void;
   onCreatePost: () => void;
   onAskQuestion: () => void;
-  modalVariant?: ModalVariant;
-};
-
-// Enhanced modal with A/B testing support
-type ModalVariant = 'legacy' | 'bottomSheet';
-
-// Animation configuration constants
-const SPRING_CONFIG: WithSpringConfig = {
-  damping: 15,
-  stiffness: 300,
-  mass: 0.8,
-};
-
-const QUICK_SPRING: WithSpringConfig = {
-  damping: 15,
-  stiffness: 400,
-  mass: 0.5,
-};
-
-const BOUNCY_SPRING: WithSpringConfig = {
-  damping: 10,
-  stiffness: 200,
-  mass: 1,
 };
 
 const TIMING_CONFIG = {
@@ -72,9 +48,9 @@ const TIMING_CONFIG = {
 };
 
 const ANIMATION_CONFIG = {
-  modal: SPRING_CONFIG,
-  quick: QUICK_SPRING,
-  stagger: BOUNCY_SPRING,
+  modal: COMMUNITY_ANIMATION_CONFIG.card,
+  quick: COMMUNITY_ANIMATION_CONFIG.quick,
+  stagger: COMMUNITY_ANIMATION_CONFIG.button,
 };
 
 /**
@@ -86,13 +62,12 @@ const CreatePostModal = React.memo(function CreatePostModal({
   onClose,
   onCreatePost,
   onAskQuestion,
-  modalVariant = 'bottomSheet',
 }: CreatePostModalProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Memoized user data for performance
-  const userData = useMemo(
+  const _userData = useMemo(
     () => ({
       avatarUrl: user?.user_metadata?.avatar_url,
       userName: user?.user_metadata?.username || user?.email?.split('@')[0] || 'Anonymous',
@@ -101,7 +76,7 @@ const CreatePostModal = React.memo(function CreatePostModal({
   );
 
   // Enhanced error handling with proper error boundaries
-  const handleCreatePost = useCallback(
+  const _handleCreatePost = useCallback(
     async (data: PostData): Promise<void> => {
       if (!user?.id || isSubmitting) {
         throw new Error('User not authenticated or already submitting');
@@ -136,7 +111,7 @@ const CreatePostModal = React.memo(function CreatePostModal({
   );
 
   // Handle questions as posts with question prefix
-  const handleCreateQuestion = useCallback(
+  const _handleCreateQuestion = useCallback(
     async (data: QuestionData): Promise<void> => {
       if (!user?.id || isSubmitting) {
         throw new Error('User not authenticated or already submitting');

@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import UserAvatar from './UserAvatar';
+import PostTypeHeader from './PostTypeHeader';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import NetworkResilientImage from '../ui/NetworkResilientImage';
 import {
@@ -22,28 +23,13 @@ import {
   triggerLightHapticSync,
   triggerMediumHapticSync,
 } from '../../lib/utils/haptics';
+import { 
+  COMMUNITY_ANIMATION_CONFIG, 
+  COMMUNITY_SCALE_VALUES,
+  PostData
+} from '@/lib/types/community';
 
 dayjs.extend(relativeTime);
-
-// Define the expected structure for profile data coming from Supabase
-interface PostAuthor {
-  id: string;
-  username: string | null;
-  avatar_url: string | null;
-}
-
-// Define the expected structure for post data coming from Supabase
-export interface PostData {
-  id: string;
-  content: string;
-  image_url: string | null;
-  created_at: string;
-  likes_count: number;
-  comments_count: number;
-  profiles: PostAuthor | null;
-  user_has_liked: boolean;
-  hasCorruptedImage?: boolean;
-}
 
 // Define the props for the PostItem component
 interface PostItemProps {
@@ -56,22 +42,9 @@ interface PostItemProps {
   liking?: boolean;
 }
 
-// 🎯 Production Animation Configurations - Updated to match UI refinement standards
-const ANIMATION_CONFIG = {
-  card: { damping: 15, stiffness: 400 },
-  button: { damping: 12, stiffness: 500 },
-  like: { damping: 8, stiffness: 300 },
-  image: { damping: 20, stiffness: 500 },
-  quick: { damping: 20, stiffness: 600 },
-} as const;
-
-const SCALE_VALUES = {
-  cardPress: 0.98,
-  buttonPress: 0.9,
-  likePress: 0.85,
-  imagePress: 0.99,
-  likeActive: 1.1,
-} as const;
+// Using shared animation configurations from community types
+const ANIMATION_CONFIG = COMMUNITY_ANIMATION_CONFIG;
+const SCALE_VALUES = COMMUNITY_SCALE_VALUES;
 
 const PostItem: React.FC<PostItemProps> = React.memo(
   ({ post, currentUserId: _currentUserId, onLike, onComment, onUserPress, onImagePress, liking = false }) => {
@@ -292,6 +265,11 @@ const PostItem: React.FC<PostItemProps> = React.memo(
             </View>
           </Pressable>
         </GestureDetector>
+
+        {/* 📋 Post Type Header for Questions & Plant Shares */}
+        <View className="px-5">
+          <PostTypeHeader post={post} />
+        </View>
 
         {/* 📝 Enhanced Post Content with improved typography */}
         {post.content && (

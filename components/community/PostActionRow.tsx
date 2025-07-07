@@ -1,0 +1,194 @@
+/**
+ * PostActionRow - Reusable action buttons for all post types
+ * Eliminates duplicate like/comment/share logic across PostItem components
+ */
+
+import React, { useCallback } from 'react';
+import { View, Pressable, Text } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import { SPRING_CONFIGS, SCALE_VALUES } from '../../lib/constants/animations';
+
+interface PostActionRowProps {
+  likes_count: number;
+  comments_count: number;
+  user_has_liked: boolean;
+  onLike: () => void;
+  onComment: () => void;
+  onDelete?: () => void;
+  liking?: boolean;
+  deleting?: boolean;
+  showDelete?: boolean;
+  accentColor?: 'blue' | 'green' | 'neutral';
+  className?: string;
+}
+
+export default function PostActionRow({
+  likes_count,
+  comments_count,
+  user_has_liked,
+  onLike,
+  onComment,
+  onDelete,
+  liking = false,
+  deleting = false,
+  showDelete = false,
+  accentColor = 'neutral',
+  className = '',
+}: PostActionRowProps) {
+  const likeScale = useSharedValue(1);
+  const commentScale = useSharedValue(1);
+  const deleteScale = useSharedValue(1);
+
+  // Get accent colors based on post type
+  const getAccentColors = () => {
+    switch (accentColor) {
+      case 'blue':
+        return {
+          liked: 'text-blue-500 dark:text-blue-400',
+          unliked: 'text-neutral-500 dark:text-neutral-400',
+        };
+      case 'green':
+        return {
+          liked: 'text-green-500 dark:text-green-400',
+          unliked: 'text-neutral-500 dark:text-neutral-400',
+        };
+      default:
+        return {
+          liked: 'text-red-500 dark:text-red-400',
+          unliked: 'text-neutral-500 dark:text-neutral-400',
+        };
+    }
+  };
+
+  const colors = getAccentColors();
+
+  const animatedLikeStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: likeScale.value }],
+  }));
+
+  const animatedCommentStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: commentScale.value }],
+  }));
+
+  const animatedDeleteStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: deleteScale.value }],
+  }));
+
+  const handleLike = useCallback(async () => {
+    if (liking) return;
+    
+    await triggerLightHapticSync();
+    likeScale.value = withSpring(SCALE_VALUES.likePress, SPRING_CONFIGS.like);
+    setTimeout(() => {
+      likeScale.value = withSpring(user_has_liked ? 1 : SCALE_VALUES.likeActive, SPRING_CONFIGS.like);
+    }, 100);
+    
+    onLike();
+  }, [liking, onLike, user_has_liked, likeScale]);
+
+  const handleComment = useCallback(async () => {
+    await triggerLightHapticSync();
+    commentScale.value = withSpring(SCALE_VALUES.buttonPress, SPRING_CONFIGS.button);
+    setTimeout(() => {
+      commentScale.value = withSpring(1, SPRING_CONFIGS.button);
+    }, 100);
+    
+    onComment();
+  }, [onComment, commentScale]);
+
+  const handleDelete = useCallback(async () => {
+    if (deleting || !onDelete) return;
+    
+    await triggerLightHapticSync();
+    deleteScale.value = withSpring(SCALE_VALUES.buttonPress, SPRING_CONFIGS.button);
+    setTimeout(() => {
+      deleteScale.value = withSpring(1, SPRING_CONFIGS.button);
+    }, 100);
+    
+    onDelete();
+  }, [deleting, onDelete, deleteScale]);
+
+  return (
+    <View className={`flex-row items-center justify-between pt-3 ${className}`}>
+      {/* Like Button */}
+      <Animated.View style={animatedLikeStyle}>
+        <Pressable
+          onPress={handleLike}
+          disabled={liking}
+          className="flex-row items-center"
+          accessibilityRole="button"
+          accessibilityLabel={`${user_has_liked ? 'Unlike' : 'Like'} post`}
+          accessibilityState={{ selected: user_has_liked }}
+        >
+          <OptimizedIcon
+            name={user_has_liked ? 'heart' : 'heart-outline'}
+            size={20}
+            className={user_has_liked ? colors.liked : colors.unliked}
+          />
+          <Text className={`ml-2 text-sm font-medium ${
+            user_has_liked ? colors.liked : colors.unliked
+          }`}>
+            {likes_count}
+          </Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Comment Button */}
+      <Animated.View style={animatedCommentStyle}>
+        <Pressable
+          onPress={handleComment}
+          className="flex-row items-center"
+          accessibilityRole="button"
+          accessibilityLabel={`View ${comments_count} comments`}
+        >
+          <OptimizedIcon
+            name="chatbubble-outline"
+            size={20}
+            className="text-neutral-500 dark:text-neutral-400"
+          />
+          <Text className="ml-2 text-sm font-medium text-neutral-500 dark:text-neutral-400">
+            {comments_count}
+          </Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Share Button */}
+      <Pressable
+        className="flex-row items-center"
+        accessibilityRole="button"
+        accessibilityLabel="Share post"
+      >
+        <OptimizedIcon
+          name="share"
+          size={20}
+          className="text-neutral-500 dark:text-neutral-400"
+        />
+      </Pressable>
+
+      {/* Delete Button (only shown for user's own posts) */}
+      {showDelete && (
+        <Animated.View style={animatedDeleteStyle}>
+          <Pressable
+            onPress={handleDelete}
+            disabled={deleting}
+            className="flex-row items-center"
+            accessibilityRole="button"
+            accessibilityLabel="Delete post"
+          >
+            <OptimizedIcon
+              name={deleting ? "loading1" : "trash-outline"}
+              size={20}
+              className="text-red-500 dark:text-red-400"
+            />
+          </Pressable>
+        </Animated.View>
+      )}
+    </View>
+  );
+}

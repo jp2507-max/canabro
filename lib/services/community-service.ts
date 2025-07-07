@@ -1,5 +1,18 @@
 import supabase from '../supabase';
 import { Post, Comment } from '../types/community'; // Like is unused
+import type { 
+  CommunityQuestion, 
+  CommunityPlantShare, 
+  CreateQuestionData, 
+  CreatePlantShareData,
+  QuestionFilters,
+  PlantShareFilters
+} from '../types/community';
+import { uploadImage } from '../utils/upload-image';
+import { DataIntegrityService } from './sync/data-integrity';
+import { storageCleanupService } from './storage-cleanup';
+import { syncRetryService } from './sync/sync-retry';
+import database from '../database/database';
 
 /**
  * Database post record structure
@@ -68,6 +81,34 @@ export function adaptPostFromDB(dbPost: DBPost): Post {
 /**
  * Fetches community posts with pagination
  */
+/**
+ * Validates and filters posts to remove those with invalid references
+ */
+async function validateAndFilterPosts(posts: Post[]): Promise<Post[]> {
+  if (posts.length === 0) return posts;
+  
+  try {
+    const integrityService = new DataIntegrityService(database);
+    
+    // Filter out posts with broken image URLs
+    const validPosts = posts.filter(post => {
+      if (post.image_url && integrityService.isLikelyBrokenImageUrl(post.image_url)) {
+        console.warn(`[CommunityService] Filtering out post ${post.id} with broken image URL: ${post.image_url}`);
+        return false;
+      }
+      return true;
+    });
+    
+    // TODO: Cross-reference with WatermelonDB for additional validation if needed
+    // For now, we're just filtering broken image URLs in the Supabase data
+    
+    return validPosts;
+  } catch (error) {
+    console.warn('[CommunityService] Error during post validation, returning original posts:', error);
+    return posts; // Return original posts if validation fails
+  }
+}
+
 export async function getPosts({
   page = 1,
   limit = 10,
@@ -110,8 +151,11 @@ export async function getPosts({
       };
     });
 
+    // Apply data validation to filter out posts with invalid references
+    const validatedPosts = await validateAndFilterPosts(posts);
+
     return {
-      posts,
+      posts: validatedPosts,
       total: count || 0,
       hasMore: count ? page * limit < count : false,
     };
@@ -394,5 +438,511 @@ export async function addComment(comment: {
   } catch (error) {
     console.error('Error adding comment:', error);
     return null;
+  }
+}
+
+/**
+ * Enhanced Community Service with new data models (Task 1.4)
+ * 
+ * 🏗️ **Architecture Evolution:**
+ * - **Old system**: Generic `posts` table with mixed content types
+ * - **New system**: Dedicated tables for `community_questions` and `community_plant_shares`
+ * - **Storage buckets**: `community-questions` and `community-plant-shares` (replacing generic `posts` bucket)
+ * 
+ * 📦 **Image Upload Strategy:**
+ * - Uses standardized `upload-image.ts` utility for all uploads
+ * - Provides proper validation, compression, and error handling
+ * - Supports mobile-friendly `imageUri` approach vs File objects
+ * 
+ * 🔄 **Migration Notes:**
+ * - Legacy `posts` functions remain for backward compatibility
+ * - New community features use dedicated question/plant-share services
+ * - All new uploads use `community-questions` and `community-plant-shares` buckets
+ */
+export class CommunityService {
+  // ========================================
+  // 🚀 COMMUNITY QUESTIONS
+  // ========================================
+
+  /**
+   * Fetch community questions with filtering and pagination
+   */
+  static async getQuestions(
+    page: number = 0,
+    limit: number = 10,
+    filters: QuestionFilters = {}
+  ): Promise<CommunityQuestion[]> {
+    const { data, error } = await supabase.rpc('get_community_questions', {
+      p_limit: limit,
+      p_offset: page * limit,
+      p_category: filters.category || null,
+      p_is_solved: filters.is_solved || null,
+      p_order_by: filters.order_by || 'created_at',
+      p_order_direction: filters.order_direction || 'DESC'
+    });
+
+    if (error) throw error;
+    return data as CommunityQuestion[];
+  }
+
+  /**
+   * Create a new community question
+   */
+  static async createQuestion(data: CreateQuestionData): Promise<CommunityQuestion> {
+    const { data: result, error } = await supabase
+      .from('community_questions')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return result as CommunityQuestion;
+  }
+
+  /**
+   * Update a community question
+   */
+  static async updateQuestion(
+    questionId: string, 
+    updates: Partial<CommunityQuestion>
+  ): Promise<CommunityQuestion> {
+    const { data, error } = await supabase
+      .from('community_questions')
+      .update(updates)
+      .eq('id', questionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as CommunityQuestion;
+  }
+
+  /**
+   * Mark a question as solved/unsolved
+   */
+  static async updateQuestionSolved(
+    questionId: string, 
+    isSolved: boolean
+  ): Promise<CommunityQuestion> {
+    return this.updateQuestion(questionId, { is_solved: isSolved });
+  }
+
+  // ========================================
+  // 🚀 COMMUNITY PLANT SHARES
+  // ========================================
+
+  /**
+   * Fetch community plant shares with filtering and pagination
+   */
+  static async getPlantShares(
+    page: number = 0,
+    limit: number = 10,
+    filters: PlantShareFilters = {}
+  ): Promise<CommunityPlantShare[]> {
+    const { data, error } = await supabase.rpc('get_community_plant_shares', {
+      p_limit: limit,
+      p_offset: page * limit,
+      p_growth_stage: filters.growth_stage || null,
+      p_environment: filters.environment || null,
+      p_order_by: filters.order_by || 'created_at',
+      p_order_direction: filters.order_direction || 'DESC'
+    });
+
+    if (error) throw error;
+    return data as CommunityPlantShare[];
+  }
+
+  /**
+   * Create a new community plant share
+   */
+  static async createPlantShare(data: CreatePlantShareData): Promise<CommunityPlantShare> {
+    const { data: result, error } = await supabase
+      .from('community_plant_shares')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return result as CommunityPlantShare;
+  }
+
+  /**
+   * Update a community plant share
+   */
+  static async updatePlantShare(
+    plantShareId: string, 
+    updates: Partial<CommunityPlantShare>
+  ): Promise<CommunityPlantShare> {
+    const { data, error } = await supabase
+      .from('community_plant_shares')
+      .update(updates)
+      .eq('id', plantShareId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as CommunityPlantShare;
+  }
+
+  // ========================================
+  // 🚀 IMAGE UPLOAD HELPERS
+  // ========================================
+
+  /**
+   * Upload image for community question using our standardized upload utility
+   */
+  static async uploadQuestionImage(userId: string, imageUri: string, questionId?: string): Promise<string> {
+    const result = await uploadImage({
+      bucket: 'community-questions',
+      userId,
+      imageUri,
+      filenamePrefix: questionId ? `question_${questionId}` : 'question',
+    });
+
+    if (!result.success) {
+      throw new Error(result.error?.message || 'Failed to upload question image');
+    }
+
+    return result.publicUrl!;
+  }
+
+  /**
+   * Upload multiple images for plant share using our standardized upload utility
+   */
+  static async uploadPlantShareImages(userId: string, imageUris: string[], plantShareId?: string): Promise<string[]> {
+    const uploadPromises = imageUris.map(async (imageUri, index) => {
+      const result = await uploadImage({
+        bucket: 'community-plant-shares',
+        userId,
+        imageUri,
+        filenamePrefix: plantShareId ? `share_${plantShareId}_${index}` : `share_${index}`,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error?.message || `Failed to upload plant share image ${index + 1}`);
+      }
+
+      return result.publicUrl!;
+    });
+
+    return Promise.all(uploadPromises);
+  }
+
+  // ========================================
+  // 🚀 LIKE MANAGEMENT
+  // ========================================
+
+  /**
+   * Like/unlike a community question
+   */
+  static async toggleQuestionLike(questionId: string, userId: string): Promise<boolean> {
+    // Check if already liked
+    const { data: existingLike } = await supabase
+      .from('community_question_likes')
+      .select('id')
+      .eq('question_id', questionId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingLike) {
+      // Unlike
+      const { error } = await supabase
+        .from('community_question_likes')
+        .delete()
+        .eq('question_id', questionId)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      return false; // Now unliked
+    } else {
+      // Like
+      const { error } = await supabase
+        .from('community_question_likes')
+        .insert([{ question_id: questionId, user_id: userId }]);
+      
+      if (error) throw error;
+      return true; // Now liked
+    }
+  }
+
+  /**
+   * Like/unlike a community plant share
+   */
+  static async togglePlantShareLike(plantShareId: string, userId: string): Promise<boolean> {
+    // Check if already liked
+    const { data: existingLike } = await supabase
+      .from('community_plant_share_likes')
+      .select('id')
+      .eq('plant_share_id', plantShareId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingLike) {
+      // Unlike
+      const { error } = await supabase
+        .from('community_plant_share_likes')
+        .delete()
+        .eq('plant_share_id', plantShareId)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      return false; // Now unliked
+    } else {
+      // Like
+      const { error } = await supabase
+        .from('community_plant_share_likes')
+        .insert([{ plant_share_id: plantShareId, user_id: userId }]);
+      
+      if (error) throw error;
+      return true; // Now liked
+    }
+  }
+
+  // ========================================
+  // 🗑️ DELETION & CLEANUP
+  // ========================================
+
+  /**
+   * Safely delete a post with comprehensive cleanup
+   */
+  static async deletePost(postId: string, userId: string): Promise<void> {
+    try {
+      // Verify the user owns the post
+      const { data: post, error: fetchError } = await supabase
+        .from('posts')
+        .select('user_id, image_url')
+        .eq('id', postId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch post: ${fetchError.message}`);
+      }
+
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
+      if (post.user_id !== userId) {
+        throw new Error('Unauthorized: You can only delete your own posts');
+      }
+
+      // Use retry service for reliable deletion with storage cleanup
+      await syncRetryService.executeWithRetry(
+        `delete_post_${postId}_${Date.now()}`,
+        async () => {
+          // Clean up storage assets first
+          const storageCleanupResult = await storageCleanupService.cleanupPostAssets(postId, userId);
+          
+          if (storageCleanupResult.errors.length > 0) {
+            console.warn(`[CommunityService] Storage cleanup errors for post ${postId}:`, storageCleanupResult.errors);
+            // Don't fail the deletion if storage cleanup has issues
+          }
+          
+          if (storageCleanupResult.deletedAssets.length > 0) {
+            console.log(`[CommunityService] Cleaned up ${storageCleanupResult.deletedAssets.length} storage assets for post ${postId}`);
+          }
+
+          // Use the integrity service's safe deletion method
+          const integrityService = new DataIntegrityService(database);
+          await integrityService.safeDeletePost(postId);
+        },
+        'push',
+        { maxRetries: 3, baseDelay: 2000 } // Custom retry config for deletions
+      );
+      
+    } catch (error) {
+      console.error('[CommunityService] Error deleting post:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Safely delete a comment with validation
+   */
+  static async deleteComment(commentId: string, userId: string): Promise<void> {
+    try {
+      // Verify the user owns the comment
+      const { data: comment, error: fetchError } = await supabase
+        .from('comments')
+        .select('user_id, post_id')
+        .eq('id', commentId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch comment: ${fetchError.message}`);
+      }
+
+      if (!comment) {
+        throw new Error('Comment not found');
+      }
+
+      if (comment.user_id !== userId) {
+        throw new Error('Unauthorized: You can only delete your own comments');
+      }
+
+      // Delete the comment
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) {
+        throw new Error(`Failed to delete comment: ${error.message}`);
+      }
+
+      // Update the parent post's comment count
+      const { error: updateError } = await supabase.rpc('decrement_comment_count', {
+        post_id: comment.post_id
+      });
+
+      if (updateError) {
+        console.warn('[CommunityService] Failed to update comment count:', updateError);
+      }
+
+    } catch (error) {
+      console.error('[CommunityService] Error deleting comment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch delete posts (for administrative purposes)
+   */
+  static async batchDeletePosts(postIds: string[], userId: string, isAdmin: boolean = false): Promise<{ success: string[], failed: string[] }> {
+    const results = { success: [] as string[], failed: [] as string[] };
+    
+    for (const postId of postIds) {
+      try {
+        if (isAdmin) {
+          // Admin can delete any post
+          const integrityService = new DataIntegrityService(database);
+          await integrityService.safeDeletePost(postId);
+        } else {
+          // Regular user can only delete their own posts
+          await this.deletePost(postId, userId);
+        }
+        results.success.push(postId);
+      } catch (error) {
+        console.warn(`[CommunityService] Failed to delete post ${postId}:`, error);
+        results.failed.push(postId);
+      }
+    }
+    
+    return results;
+  }
+
+  /**
+   * Soft delete a post (mark as deleted but keep record)
+   */
+  static async softDeletePost(postId: string, userId: string): Promise<void> {
+    try {
+      // Verify the user owns the post
+      const { data: post, error: fetchError } = await supabase
+        .from('posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+
+      if (fetchError || !post) {
+        throw new Error('Post not found');
+      }
+
+      if (post.user_id !== userId) {
+        throw new Error('Unauthorized: You can only delete your own posts');
+      }
+
+      // Mark as deleted
+      const { error } = await supabase
+        .from('posts')
+        .update({ 
+          is_deleted: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', postId);
+
+      if (error) {
+        throw new Error(`Failed to soft delete post: ${error.message}`);
+      }
+
+    } catch (error) {
+      console.error('[CommunityService] Error soft deleting post:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore a soft-deleted post
+   */
+  static async restorePost(postId: string, userId: string): Promise<void> {
+    try {
+      // Verify the user owns the post
+      const { data: post, error: fetchError } = await supabase
+        .from('posts')
+        .select('user_id, is_deleted')
+        .eq('id', postId)
+        .single();
+
+      if (fetchError || !post) {
+        throw new Error('Post not found');
+      }
+
+      if (post.user_id !== userId) {
+        throw new Error('Unauthorized: You can only restore your own posts');
+      }
+
+      if (!post.is_deleted) {
+        throw new Error('Post is not deleted');
+      }
+
+      // Restore the post
+      const { error } = await supabase
+        .from('posts')
+        .update({ 
+          is_deleted: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', postId);
+
+      if (error) {
+        throw new Error(`Failed to restore post: ${error.message}`);
+      }
+
+    } catch (error) {
+      console.error('[CommunityService] Error restoring post:', error);
+      throw error;
+    }
+  }
+
+  // ========================================
+  // 🚀 ANALYTICS & STATS
+  // ========================================
+
+  /**
+   * Get community statistics
+   */
+  static async getCommunityStats(): Promise<{
+    totalQuestions: number;
+    totalPlantShares: number;
+    solvedQuestions: number;
+    featuredPlantShares: number;
+  }> {
+    const [
+      { count: totalQuestions },
+      { count: totalPlantShares },
+      { count: solvedQuestions },
+      { count: featuredPlantShares }
+    ] = await Promise.all([
+      supabase.from('community_questions').select('*', { count: 'exact', head: true }),
+      supabase.from('community_plant_shares').select('*', { count: 'exact', head: true }),
+      supabase.from('community_questions').select('*', { count: 'exact', head: true }).eq('is_solved', true),
+      supabase.from('community_plant_shares').select('*', { count: 'exact', head: true }).eq('is_featured', true)
+    ]);
+
+    return {
+      totalQuestions: totalQuestions || 0,
+      totalPlantShares: totalPlantShares || 0,
+      solvedQuestions: solvedQuestions || 0,
+      featuredPlantShares: featuredPlantShares || 0
+    };
   }
 }

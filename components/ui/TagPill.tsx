@@ -14,9 +14,11 @@ interface TagPillProps {
   text: string;
   onPress?: () => void;
   selected?: boolean;
-  variant?: 'default' | 'strain' | 'category';
+  variant?: 'default' | 'strain' | 'category' | 'blue' | 'green' | 'neutral';
+  size?: 'small' | 'medium';
   disabled?: boolean;
   enableHaptics?: boolean;
+  className?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -26,8 +28,10 @@ export function TagPill({
   onPress,
   selected = false,
   variant = 'default',
+  size = 'medium',
   disabled = false,
   enableHaptics = true,
+  className = '',
 }: TagPillProps) {
   // Shared values for animations
   const scale = useSharedValue(1);
@@ -92,14 +96,22 @@ export function TagPill({
     if (selected) {
       switch (variant) {
         case 'strain':
+        case 'green':
           return 'bg-green-500';
         case 'category':
+        case 'blue':
           return 'bg-blue-500';
+        case 'neutral':
+          return 'bg-neutral-500';
         default:
           return 'bg-indigo-500';
       }
     }
     return 'bg-neutral-200 dark:bg-neutral-700';
+  };
+
+  const getSizeClasses = () => {
+    return size === 'small' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-xs';
   };
 
   const getTextClasses = () => {
@@ -115,9 +127,11 @@ export function TagPill({
       disabled={disabled}
       style={animatedStyle}
       className={`
-        mr-2 rounded-full px-3 py-1.5 
+        mr-2 rounded-full
+        ${getSizeClasses()}
         ${getVariantClasses()}
         ${disabled ? 'opacity-50' : ''}
+        ${className}
         transition-colors duration-200
       `}
       accessible
@@ -129,7 +143,7 @@ export function TagPill({
       accessibilityLabel={`${text} tag${selected ? ', selected' : ''}`}
       accessibilityHint={onPress ? 'Tap to toggle selection' : undefined}>
       <Animated.View>
-        <ThemedText className={`text-xs font-medium ${getTextClasses()}`} style={textAnimatedStyle}>
+        <ThemedText className={`font-medium ${getTextClasses()}`} style={textAnimatedStyle}>
           {text}
         </ThemedText>
       </Animated.View>

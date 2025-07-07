@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { View, RefreshControl, Text } from 'react-native';
 import Animated, {
   FadeIn,
@@ -14,22 +14,34 @@ import Animated, {
 import CommentModal from '../../components/community/CommentModal';
 import CreatePostModal from '../../components/community/CreatePostModal';
 import CreatePostScreen from '../../components/community/CreatePostScreen';
+import {
+  CommunitySegmentedControl,
+  QuestionPostItem,
+  PlantSharePostItem,
+  ContextAwareFAB,
+} from '../../components/community';
 import PostItem from '../../components/community/PostItem';
-import type { PostData } from '../../components/community/PostItem';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import { AnimatedFlashList } from '../../components/ui/FlashListWrapper';
 import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import { triggerMediumHapticSync } from '../../lib/utils/haptics';
 import type { User } from '../../lib/types/user';
+import type { ContentType, PostData } from '../../lib/types/community';
+import { 
+  transformPostToQuestion, 
+  transformPostToPlantShare, 
+  isQuestionPost, 
+  isPlantSharePost 
+} from '../../lib/utils/community-transforms';
 
 interface CommunityScreenViewProps {
   posts: PostData[];
   isLoading: boolean;
   isRefreshing: boolean;
-  _isLoadingMore: boolean;
+  isLoadingMore: boolean;
   fetchError: string | null;
-  _activeFilter: 'trending' | 'following';
-  _setActiveFilter: (filter: 'trending' | 'following') => void;
+  activeFilter: 'trending' | 'following';
+  setActiveFilter: (filter: 'trending' | 'following') => void;
   showCreateModal: boolean;
   setShowCreateModal: (show: boolean) => void;
   showCreateScreen: boolean;
@@ -50,10 +62,10 @@ function CommunityScreenView({
   posts,
   isLoading,
   isRefreshing,
-  _isLoadingMore,
+  isLoadingMore: _isLoadingMore,
   fetchError,
-  _activeFilter,
-  _setActiveFilter,
+  activeFilter: _activeFilter,
+  setActiveFilter: _setActiveFilter,
   showCreateModal,
   setShowCreateModal,
   showCreateScreen,
@@ -69,6 +81,36 @@ function CommunityScreenView({
   likingPostId,
   user,
 }: CommunityScreenViewProps) {
+  // 🎛️ Post filtering state
+  const [activePostFilter, setActivePostFilter] = useState<ContentType | 'all'>('all');
+  
+  // 🎯 Post type state for create screen
+  const [selectedPostType, setSelectedPostType] = useState<'question' | 'plant_share' | null>(null);
+
+  // 🎯 Filter posts based on active filter
+  const filteredPosts = useMemo(() => {
+    if (activePostFilter === 'all') {
+      return posts;
+    }
+    
+    return posts.filter(post => {
+      // Default post_type to 'general' for existing posts
+      const postType = post.post_type || 'general';
+      
+      if (activePostFilter === 'questions') {
+        return postType === 'question';
+      }
+      if (activePostFilter === 'plant_shares') {
+        return postType === 'plant_share';
+      }
+      return true;
+    });
+  }, [posts, activePostFilter]);
+
+  // 🎯 Handle filter selection
+  const handleFilterChange = (key: ContentType | 'all') => {
+    setActivePostFilter(key);
+  };
   // 🎬 Enhanced Animation System with Entrance Sequences
   const containerOpacity = useSharedValue(0);
   const fabScale = useSharedValue(0);
@@ -99,7 +141,7 @@ function CommunityScreenView({
     };
   }, []);
 
-  // 🎯 Enhanced FAB press handler with haptic feedback
+  // 🎯 Enhanced FAB press handler with context-aware behavior
   const handleFabPress = React.useCallback(() => {
     // Handle haptic feedback safely
     triggerMediumHapticSync();
@@ -115,25 +157,71 @@ function CommunityScreenView({
   const renderItem = React.useCallback(
     ({ item, index }: { item: unknown; index: number }) => {
       const post = item as PostData;
-      return (
-        <Animated.View
-          entering={FadeInDown.delay(index * 50)
-            .duration(400)
-            .springify()}
-          className="px-4">
-          <PostItem
-            post={post}
-            currentUserId={user?.id}
-            onLike={handleLike}
-            onComment={handleCommentPress}
-            onUserPress={() => {}}
-            liking={likingPostId === post.id}
-          />
-        </Animated.View>
-      );
+      
+      // Determine post type and render appropriate component
+      if (isQuestionPost(post)) {
+        const question = transformPostToQuestion(post);
+
+        return (
+          <Animated.View
+            entering={FadeInDown.delay(index * 50).duration(400).springify()}
+          >
+            <QuestionPostItem
+              question={question}
+              onLike={handleLike}
+              onComment={handleCommentPress}
+              onUserPress={() => {}}
+              liking={likingPostId === post.id}
+            />
+          </Animated.View>
+        );
+      } else if (isPlantSharePost(post)) {
+        const plantShare = transformPostToPlantShare(post);
+
+        return (
+          <Animated.View
+            entering={FadeInDown.delay(index * 50).duration(400).springify()}
+          >
+            <PlantSharePostItem
+              plantShare={plantShare}
+              onLike={handleLike}
+              onComment={handleCommentPress}
+              onUserPress={() => {}}
+              liking={likingPostId === post.id}
+            />
+          </Animated.View>
+        );
+      } else {
+        // Fallback to generic PostItem for other types
+        return (
+          <Animated.View
+            entering={FadeInDown.delay(index * 50).duration(400).springify()}
+            className="px-4">
+            <PostItem
+              post={post}
+              currentUserId={user?.id}
+              onLike={handleLike}
+              onComment={handleCommentPress}
+              onUserPress={() => {}}
+              liking={likingPostId === post.id}
+            />
+          </Animated.View>
+        );
+      }
     },
     [user, handleLike, handleCommentPress, likingPostId]
   );
+
+  // 🎛️ Header component with segmented control
+  const ListHeaderComponent = React.useMemo(() => (
+    <View className="px-4 pb-4">
+      <CommunitySegmentedControl
+        activeSegment={activePostFilter}
+        onSegmentChange={handleFilterChange}
+        className="mb-2"
+      />
+    </View>
+  ), [activePostFilter, handleFilterChange]);
 
   const renderEmptyState = useMemo(
     () => (
@@ -160,12 +248,9 @@ function CommunityScreenView({
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(800).duration(500)}>
-          <FloatingActionButton
+          <ContextAwareFAB
+            activeFilter={activePostFilter}
             onPress={handleFabPress}
-            iconName="add"
-            size={56}
-            className="bg-primary-500 dark:bg-primary-600"
-            accessibilityLabel="Create Post"
           />
         </Animated.View>
       </Animated.View>
@@ -234,10 +319,11 @@ function CommunityScreenView({
       ) : (
         <>
           <AnimatedFlashList
-            data={posts}
+            data={filteredPosts}
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             ListEmptyComponent={renderEmptyState}
+            ListHeaderComponent={ListHeaderComponent}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
             estimatedItemSize={450}
@@ -259,15 +345,12 @@ function CommunityScreenView({
             }
           />
 
-          {/* 🚀 Enhanced Floating Action Button with Sophisticated Animations */}
-          {posts.length > 0 && (
+          {/* 🚀 Enhanced Context-Aware FAB */}
+          {filteredPosts.length > 0 && (
             <Animated.View style={animatedFabStyle} className="absolute bottom-20 right-6">
-              <FloatingActionButton
+              <ContextAwareFAB
+                activeFilter={activePostFilter}
                 onPress={handleFabPress}
-                iconName="add"
-                size={56}
-                className="bg-primary-500 shadow-lg shadow-primary-500/25 dark:bg-primary-600"
-                accessibilityLabel="Create new post"
               />
             </Animated.View>
           )}
@@ -280,10 +363,12 @@ function CommunityScreenView({
         onClose={() => setShowCreateModal(false)}
         onCreatePost={() => {
           setShowCreateModal(false);
+          setSelectedPostType('plant_share');
           setShowCreateScreen(true);
         }}
         onAskQuestion={() => {
           setShowCreateModal(false);
+          setSelectedPostType('question');
           setShowCreateScreen(true);
         }}
       />
@@ -291,8 +376,12 @@ function CommunityScreenView({
       {/* Create Post Screen */}
       <CreatePostScreen
         visible={showCreateScreen}
-        onClose={() => setShowCreateScreen(false)}
+        onClose={() => {
+          setShowCreateScreen(false);
+          setSelectedPostType(null);
+        }}
         onSuccess={handlePostCreated}
+        postType={selectedPostType}
       />
 
       {/* Comment Modal */}

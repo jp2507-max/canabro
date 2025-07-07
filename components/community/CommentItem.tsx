@@ -20,6 +20,7 @@ import Animated, {
 
 import { useButtonAnimation } from '../../lib/animations/useButtonAnimation';
 import { useCardAnimation } from '../../lib/animations/useCardAnimation';
+import { useCommentLike } from '../../lib/hooks/community/useCommentLike';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
@@ -32,6 +33,8 @@ interface CommentItemProps {
       avatar_url: string | null;
     };
     image_url?: string | null;
+    user_has_liked?: boolean;
+    likes_count?: number;
   };
   currentUserId?: string;
   onReply?: (commentId: string, username: string) => void;
@@ -107,10 +110,10 @@ export default React.memo(function CommentItem({
   const translateY = useSharedValue(30); // Entrance animation
   const opacity = useSharedValue(0); // Fade in effect
   const elevationValue = useSharedValue(2); // Dynamic elevation
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(comment.likes_count || 0);
-  const [isLiking, setIsLiking] = useState(false);
-
+  
+  // 🎯 Use React Query hook for comment likes
+  const commentLikeMutation = useCommentLike();
+  
   const [userProfile, setUserProfile] = useState(
     comment.profile || {
       username: 'Unknown User',
@@ -178,91 +181,29 @@ export default React.memo(function CommentItem({
   }, [comment.profile, comment.user_id]);
 
   /**
-   * Handle liking/unliking a comment with optimistic updates and rollback
-   * Provides immediate feedback while preventing race conditions
+   * Handle liking/unliking a comment using React Query hook
+   * Provides immediate feedback with optimistic updates
    */
   const handleLikeToggle = async () => {
-    if (isLiking || !currentUserId) return;
+    if (commentLikeMutation.isPending || !currentUserId) return;
 
-    setIsLiking(true);
-
-    // Store previous state for potential rollback
-    const previousLiked = isLiked;
-    const previousCount = likesCount;
-
-    // Optimistic update - immediate UI feedback
-    const newLikedState = !isLiked;
-    setIsLiked(newLikedState);
-    setLikesCount((prev) => (newLikedState ? prev + 1 : Math.max(0, prev - 1)));
+    const currentlyLiked = comment.user_has_liked || false;
 
     try {
-      if (previousLiked) {
-        // Unlike the comment
-        const { error } = await supabase
-          .from('comment_likes')
-          .delete()
-          .eq('comment_id', comment.id)
-          .eq('user_id', currentUserId);
-
-        if (error) throw error;
-      } else {
-        // Like the comment
-        const { error } = await supabase.from('comment_likes').insert({
-          comment_id: comment.id,
-          user_id: currentUserId,
-        });
-
-        if (error) throw error;
-      }
-
-      // Optional: Verify final state with server to ensure consistency
-      // This could be done periodically or on focus for critical applications
+      await commentLikeMutation.mutateAsync({
+        commentId: comment.id,
+        userId: currentUserId,
+        currentlyLiked,
+      });
     } catch (error) {
-      console.error('Error toggling like:', error);
-
-      // Rollback to previous state on error
-      setIsLiked(previousLiked);
-      setLikesCount(previousCount);
-
-      // Enhanced error feedback
-      triggerErrorHaptic();
-    } finally {
-      setIsLiking(false);
+      console.error('Error toggling comment like:', error);
+      await triggerErrorHaptic();
     }
   };
 
-  // Check if the user has liked this comment when the component mounts
-  useEffect(() => {
-    if (!currentUserId || !comment.id) return;
-
-    const checkLikeStatus = async () => {
-      try {
-        // Use the RPC function to check if user has liked this comment
-        const { data, error } = await supabase.rpc('has_user_liked_comment', {
-          p_comment_id: comment.id,
-          p_user_id: currentUserId,
-        });
-
-        if (error) throw error;
-        setIsLiked(data || false);
-
-        // Get the current likes count
-        const { data: likesData, error: likesError } = await supabase.rpc(
-          'get_comment_likes_count',
-          {
-            comment_id: comment.id,
-          }
-        );
-
-        if (likesError) throw likesError;
-        setLikesCount(likesData || 0);
-      } catch (error) {
-        console.error('Error checking like status:', error);
-      }
-    };
-
-    checkLikeStatus();
-  }, [comment.id, currentUserId]);
+  // Like state comes from the comment prop (fetched with like status)
+  const isLiked = comment.user_has_liked || false;
+  const likesCount = comment.likes_count || 0;
 
   /**
    * Handle replying to a comment
@@ -316,7 +257,7 @@ export default React.memo(function CommentItem({
 
   // 🎯 Modern gesture handlers using Gesture.Tap() API
   const likeGesture = Gesture.Tap()
-    .enabled(!isLiking && !!currentUserId)
+    .enabled(!commentLikeMutation.isPending && !!currentUserId)
     .onBegin(() => {
       'worklet';
       // Enhanced animation with sequence for premium feel

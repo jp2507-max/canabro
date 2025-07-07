@@ -6,24 +6,92 @@ import { Database } from '@nozbe/watermelondb';
 import type { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
 import { synchronize } from '@nozbe/watermelondb/sync';
 
+// Import proper types for strain handling
+import type { Strain, StrainDifficulty } from '@/lib/types/strain';
+
+// Import retry and conflict resolution services
+import { syncRetryService, type ConflictResolution } from './sync-retry';
+
+// Type definitions for better type safety
+interface SyncRecord {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface ValidatedRecord {
+  id: string;
+  [key: string]: unknown;
+}
+
+// Enhanced sync response type that includes conflict resolutions
+interface EnhancedSyncResponse {
+  changes: Record<string, { created: unknown[]; updated: unknown[]; deleted: string[] }>;
+  timestamp: number;
+  conflict_resolutions?: ConflictResolution[];
+}
+
+// Type for records that need to be cleaned and processed
+interface ProcessableRecord {
+  id: string;
+  [key: string]: unknown;
+}
+
+// Type for media-containing records
+interface MediaRecord {
+  id: string;
+  images?: string[];
+  media?: unknown[];
+  image?: string;
+  image_url?: string;
+  avatar?: string;
+  avatar_url?: string;
+  thumbnail?: string;
+  [key: string]: unknown;
+}
+
+// Type for plant records in logging
+interface PlantLogRecord {
+  id: string;
+  name: string;
+  strain?: string;
+  strainId?: string;
+  strain_id?: string;
+  [key: string]: unknown;
+}
+
 import { handleTableConflicts, getPriorityForTable } from './conflict-resolver';
 import { sanitizeRecord, isValidUuid } from './data-sanitizer';
+import { DataIntegrityService } from './data-integrity';
 import { ensureStrainExistsForSync } from './ensure-strain-exists';
 import { getSyncLogger, persistSyncMetadata, updateSyncMetrics } from './metrics';
+import { logger } from '@/lib/config/production';
 import { getNetworkStatus, getSyncConfig } from './network-manager';
-import { validatePlantRecord } from './record-validator';
-import { loadStrainFromDatabase } from './strain-loader';
+import { validatePlantRecord, type PlantRecord } from './record-validator';
+import { loadStrainFromDatabase, type StrainObject } from './strain-loader';
 import { SYNC_CONSTANTS } from './types';
 import { executeRpcWithRetry, syncMutex } from './utils';
+
+// Helper function to safely convert DirtyRaw to ValidatedRecord
+function convertToValidatedRecord(record: unknown): ValidatedRecord {
+  if (record === null || record === undefined) {
+    throw new Error('Record cannot be null or undefined');
+  }
+  const recordObj = record as Record<string, unknown>;
+  const id = recordObj.id;
+  if (typeof id !== 'string') {
+    throw new Error('Record must have a string id');
+  }
+  return { id, ...recordObj };
+}
 
 /**
  * Accepts a partial strain-like object and normalises `effects`/`flavors`
  * so they are always `string[] | undefined`.
  */
-function normaliseStrainArrays<T extends { effects?: any; flavors?: any }>(
+function normaliseStrainArrays<T extends { effects?: string[] | string; flavors?: string[] | string }>(
   strain: T
 ): T & { effects?: string[]; flavors?: string[] } {
-  const normalise = (value: any): string[] | undefined => {
+  const normalise = (value: string[] | string | undefined): string[] | undefined => {
     if (Array.isArray(value)) return value.filter((v) => typeof v === 'string');
     if (typeof value === 'string') {
       try {
@@ -83,7 +151,7 @@ export async function synchronizeWithServer(
     const shouldLog = callTimestamp - lastSyncAttemptLogTime > 5000; // Only log once every 5 seconds
 
     if (shouldLog) {
-      console.log(
+      logger.log(
         `[Sync Service @ ${callTimestamp}] Sync throttled. Next sync available in ${Math.ceil((SYNC_CONSTANTS.MIN_SYNC_INTERVAL_MS - (callTimestamp - lastSuccessfulSyncTime)) / 1000)}s. (${recentSyncAttempts} attempts since last log)`
       );
       lastSyncAttemptLogTime = callTimestamp;
@@ -92,32 +160,32 @@ export async function synchronizeWithServer(
     return false;
   }
 
-  console.log(`[Sync Service Entry @ ${callTimestamp}] Attempting to acquire sync lock...`);
+  logger.log(`[Sync Service Entry @ ${callTimestamp}] Attempting to acquire sync lock...`);
 
   // Get network status and adapt sync behavior
   const networkStatus = await getNetworkStatus();
   if (!networkStatus.isOnline) {
-    console.log(`[Sync Service @ ${callTimestamp}] No internet connection, skipping sync.`);
+    logger.log(`[Sync Service @ ${callTimestamp}] No internet connection, skipping sync.`);
     return false;
   }
 
   // Get sync configuration based on network conditions
   const syncConfig = await getSyncConfig(forceSync);
   if (syncConfig.tablesToSync.length === 0) {
-    console.log(`[Sync Service @ ${callTimestamp}] No tables to sync based on network conditions.`);
+    logger.log(`[Sync Service @ ${callTimestamp}] No tables to sync based on network conditions.`);
     return false;
   }
 
-  console.log(
+  logger.log(
     `[Sync Service @ ${callTimestamp}] Network status: ${networkStatus.type}, metered: ${networkStatus.isMetered}`
   );
-  console.log(
+  logger.log(
     `[Sync Service @ ${callTimestamp}] Sync config: ${syncConfig.tablesToSync.length} tables, batch size: ${syncConfig.batchSize}`
   );
 
   // Check if the mutex is already locked
   if (syncMutex.isLocked()) {
-    console.log(
+    logger.log(
       `[Sync Service @ ${callTimestamp}] Sync already in progress, skipping this attempt.`
     );
     return false; // Indicate that sync didn't run due to concurrency
@@ -149,7 +217,7 @@ export async function synchronizeWithServer(
       const useTurboMode = isFirstSync && syncIsEmpty === 'true';
 
       if (useTurboMode) {
-        console.log('[Sync Service] Using Turbo mode for first sync');
+        logger.log('[Sync Service] Using Turbo mode for first sync');
       }
 
       const syncLog = getSyncLogger().newLog(); // Create a new log entry
@@ -161,21 +229,58 @@ export async function synchronizeWithServer(
           const lastPulledAtISO = lastPulledAt ? new Date(lastPulledAt).toISOString() : null;
 
           try {
-            // Add networkType and tablesToSync info to improve server-side handling
-            const data = await executeRpcWithRetry('sync_pull', {
-              last_pulled_at: lastPulledAtISO,
-              schema_version: schemaVersion,
-              user_id: userId,
-              migration: migration ? migration : null,
-              use_turbo: useTurboMode,
-              network_type: networkStatus.type,
-              tables_to_sync: syncConfig.tablesToSync,
-              include_media: syncConfig.includeMedia,
-            });
+            // Use retry service with conflict resolution for sync pull
+            const data = await syncRetryService.executeWithRetry(
+              `sync_pull_${userId}_${Date.now()}`,
+              async () => {
+                // Try the enhanced sync function first for conflict resolution
+                try {
+                  return await executeRpcWithRetry('sync_pull_with_conflict_resolution', {
+                    last_pulled_at: lastPulledAtISO,
+                    schema_version: schemaVersion,
+                    user_id: userId,
+                    migration: migration ? migration : null,
+                    use_turbo: useTurboMode,
+                    tables_to_sync: syncConfig.tablesToSync,
+                    include_media: syncConfig.includeMedia,
+                  });
+                } catch (error) {
+                  // Fallback to regular sync_pull if enhanced version is not available
+                  logger.log('[Sync Service] Enhanced sync not available, falling back to regular sync');
+                  return await executeRpcWithRetry('sync_pull', {
+                    last_pulled_at: lastPulledAtISO,
+                    schema_version: schemaVersion,
+                    user_id: userId,
+                    migration: migration ? migration : null,
+                    use_turbo: useTurboMode,
+                    tables_to_sync: syncConfig.tablesToSync,
+                    include_media: syncConfig.includeMedia,
+                  });
+                }
+              },
+              'pull'
+            ) as EnhancedSyncResponse;
+
+            // Process conflict resolutions if available
+            if (data.conflict_resolutions && data.conflict_resolutions.length > 0) {
+              const { kept, deleted, conflicts } = syncRetryService.processConflictResolutions(data.conflict_resolutions);
+              
+              if (kept.length > 0) {
+                logger.log(`[Sync Service] Conflict resolution: ${kept.length} records kept due to local modifications`);
+              }
+              
+              if (deleted.length > 0) {
+                logger.log(`[Sync Service] Conflict resolution: ${deleted.length} records deleted due to server deletions`);
+              }
+              
+              if (conflicts.length > 0) {
+                logger.warn(`[Sync Service] Unresolved conflicts: ${conflicts.length} records need manual resolution`);
+              }
+            }
 
             if (useTurboMode) {
               // For turbo mode, return the raw JSON string without parsing
-              console.log(`[Turbo Sync] Received turbo sync data`);
+              logger.log(`[Turbo Sync] Received turbo sync data`);
               const json = data ? JSON.stringify(data) : '{}'; // Ensure empty object is a string
               return { syncJson: json };
             } else {
@@ -356,7 +461,7 @@ export async function synchronizeWithServer(
                       const updatedFromServer = tableChanges?.updated || [];
                       const deletedIds = tableChanges?.deleted || [];
 
-                      const mapAndCleanRecord = (record: unknown): Record<string, any> | null => {
+                      const mapAndCleanRecord = (record: unknown): ProcessableRecord | null => {
                         if (typeof record !== 'object' || !record || Array.isArray(record)) {
                           // console.warn(`[Sync Clean] Skipping invalid record in ${table}: not an object`, record);
                           return null;
@@ -368,7 +473,7 @@ export async function synchronizeWithServer(
                           // console.warn(`[Sync Clean] Skipping invalid record in ${table}: missing or invalid id`, cleaned);
                           return null;
                         }
-                        return cleaned;
+                        return cleaned as ProcessableRecord;
                       };
 
                       const cleanedCreated = createdFromServer
@@ -379,8 +484,8 @@ export async function synchronizeWithServer(
                         .filter(Boolean);
 
                       ensuredChanges[table] = {
-                        created: cleanedCreated as any[],
-                        updated: cleanedUpdated as any[],
+                        created: cleanedCreated as ProcessableRecord[],
+                        updated: cleanedUpdated as ProcessableRecord[],
                         deleted: deletedIds,
                       };
                     } catch (validationError) {
@@ -408,27 +513,29 @@ export async function synchronizeWithServer(
         },
         pushChanges: async ({ changes, lastPulledAt }) => {
           // Cache to prevent N+1 queries when multiple plants reference the same strain
-          const strainCache = new Map<string, any>();
+          const strainCache = new Map<string, StrainObject>();
           let cacheHits = 0;
           let cacheMisses = 0;
 
           // Cached strain loader to avoid hitting the database multiple times for the same strain
-          async function getStrainFromCache(strainId: string) {
+          async function getStrainFromCache(strainId: string): Promise<StrainObject | null> {
             if (!strainCache.has(strainId)) {
-              console.log(`[Sync] Loading strain ${strainId} from database (cache miss)`);
+              logger.log(`[Sync] Loading strain ${strainId} from database (cache miss)`);
               const strain = await loadStrainFromDatabase(database, strainId);
-              strainCache.set(strainId, strain);
+              if (strain) {
+                strainCache.set(strainId, strain);
+              }
               cacheMisses++;
             } else {
-              console.log(`[Sync] Using cached strain ${strainId} (cache hit)`);
+              logger.log(`[Sync] Using cached strain ${strainId} (cache hit)`);
               cacheHits++;
             }
-            return strainCache.get(strainId);
+            return strainCache.get(strainId) || null;
           }
 
           // Helper to ensure strain exists before syncing a plant
-          async function ensureStrainForPlantRecord(plant: Record<string, any>) {
-            console.log(
+          async function ensureStrainForPlantRecord(plant: PlantRecord) {
+            logger.log(
               `[Sync] ensureStrainForPlantRecord called for plant "${plant?.name}" (ID: ${plant?.id})`
             );
 
@@ -436,7 +543,7 @@ export async function synchronizeWithServer(
             const strainId = plant?.strain_id || plant?.strainId;
 
             if (plant && strainId) {
-              console.log(`[Sync] Plant has strain_id/strainId: ${strainId}`);
+              logger.log(`[Sync] Plant has strain_id/strainId: ${strainId}`);
 
               if (plant.strainObj) {
                 // Use the attached strain object
@@ -447,7 +554,11 @@ export async function synchronizeWithServer(
 
                 // Normalize effects and flavors arrays and ensure proper typing
                 const strainDataForSync = normaliseStrainArrays({ ...plant.strainObj });
-                await ensureStrainExistsForSync(strainDataForSync);
+                // Convert difficulty field to proper type if it exists
+                if (strainDataForSync.difficulty && typeof strainDataForSync.difficulty === 'string') {
+                  strainDataForSync.difficulty = strainDataForSync.difficulty as StrainDifficulty;
+                }
+                await ensureStrainExistsForSync(strainDataForSync as Strain);
               } else {
                 // If strainObj is missing but we have strain_id, try to load the strain from WatermelonDB
                 try {
@@ -477,7 +588,7 @@ export async function synchronizeWithServer(
                     }
 
                     // Convert StrainObject to Strain format with proper field mapping
-                    const strainData = {
+                    const strainData: Partial<Strain> = {
                       id: strainObj.id,
                       name: strainObj.name,
                       description: strainObj.description,
@@ -489,6 +600,7 @@ export async function synchronizeWithServer(
                       cbd_percentage: strainObj.cbd_content,
                       floweringTime: String(strainObj.flowering_time || ''),
                       growDifficulty: strainObj.difficulty,
+                      difficulty: strainObj.difficulty as StrainDifficulty | undefined,
                       yieldIndoor: strainObj.yield_indoor,
                       yieldOutdoor: strainObj.yield_outdoor,
                       effects: strainObj.effects,
@@ -497,7 +609,7 @@ export async function synchronizeWithServer(
 
                     // Normalize effects and flavors arrays and ensure proper typing
                     const formattedStrain = normaliseStrainArrays(strainData);
-                    await ensureStrainExistsForSync(formattedStrain);
+                    await ensureStrainExistsForSync(formattedStrain as Strain);
                   } else {
                     console.warn(
                       `[Sync] No strain found in WatermelonDB for ID ${strainId}, plant sync may fail`
@@ -537,12 +649,13 @@ export async function synchronizeWithServer(
               console.log(
                 `[Sync Push] Processing ${plantChanges.created.length} new plant records`
               );
-              plantChanges.created.forEach((plant: Record<string, any>) => {
+              plantChanges.created.forEach((plant) => {
+                const plantRecord = plant as PlantLogRecord;
                 console.log(
-                  `[Plant Create] ID: ${plant.id}, Name: ${plant.name}, ` +
-                    `Strain: ${plant.strain || 'N/A'}, ` +
-                    `StrainId: ${plant.strainId || 'N/A'}, ` +
-                    `strain_id: ${plant.strain_id || 'N/A'}`
+                  `[Plant Create] ID: ${plantRecord.id}, Name: ${plantRecord.name}, ` +
+                    `Strain: ${plantRecord.strain || 'N/A'}, ` +
+                    `StrainId: ${plantRecord.strainId || 'N/A'}, ` +
+                    `strain_id: ${plantRecord.strain_id || 'N/A'}`
                 );
               });
             }
@@ -552,12 +665,13 @@ export async function synchronizeWithServer(
               console.log(
                 `[Sync Push] Processing ${plantChanges.updated.length} updated plant records`
               );
-              plantChanges.updated.forEach((plant: Record<string, any>) => {
+              plantChanges.updated.forEach((plant) => {
+                const plantRecord = plant as PlantLogRecord;
                 console.log(
-                  `[Plant Update] ID: ${plant.id}, Name: ${plant.name}, ` +
-                    `Strain: ${plant.strain || 'N/A'}, ` +
-                    `StrainId: ${plant.strainId || 'N/A'}, ` +
-                    `strain_id: ${plant.strain_id || 'N/A'}`
+                  `[Plant Update] ID: ${plantRecord.id}, Name: ${plantRecord.name}, ` +
+                    `Strain: ${plantRecord.strain || 'N/A'}, ` +
+                    `StrainId: ${plantRecord.strainId || 'N/A'}, ` +
+                    `strain_id: ${plantRecord.strain_id || 'N/A'}`
                 );
               });
             } else {
@@ -603,12 +717,36 @@ export async function synchronizeWithServer(
               }
 
               // Apply strict validation before sanitizing records
-              let validCreated = [];
-              let validUpdated = [];
+              let validCreated: ValidatedRecord[] = [];
+              let validUpdated: ValidatedRecord[] = [];
+
+              // Run pre-sync data integrity validation
+              try {
+                const integrityService = new DataIntegrityService(database);
+                const allRecords = [
+                  ...(tableChanges.created || []),
+                  ...(tableChanges.updated || [])
+                ];
+                
+                if (allRecords.length > 0) {
+                  // Type cast to SyncRecord for validation
+                  const syncRecords = allRecords.map(record => ({ id: record.id, ...record })) as SyncRecord[];
+                  const validationResult = await integrityService.validatePreSync(syncRecords, tableName);
+                  if (!validationResult.isValid) {
+                    logger.warn(`[Push] Pre-sync validation failed for ${tableName}:`, validationResult.errors);
+                  }
+                  if (validationResult.warnings.length > 0) {
+                    logger.warn(`[Push] Pre-sync validation warnings for ${tableName}:`, validationResult.warnings);
+                  }
+                }
+              } catch (preSyncError) {
+                logger.warn(`[Push] Pre-sync validation error for ${tableName}:`, preSyncError);
+                // Don't fail sync if pre-validation fails
+              }
 
               try {
                 // Validate created records
-                for (const record of tableChanges.created || ([] as Record<string, any>[])) {
+                for (const record of tableChanges.created || ([] as ValidatedRecord[])) {
                   try {
                     if (typeof record !== 'object' || !record || Array.isArray(record)) {
                       console.warn(`[Push] Invalid created record in ${tableName}: Not an object`);
@@ -626,7 +764,7 @@ export async function synchronizeWithServer(
                       continue;
                     }
 
-                    validCreated.push(cleaned);
+                    validCreated.push(cleaned as ValidatedRecord);
                   } catch (recordError) {
                     console.warn(
                       `[Push] Error validating created record in ${tableName}:`,
@@ -636,7 +774,7 @@ export async function synchronizeWithServer(
                 }
 
                 // Validate updated records
-                for (const record of tableChanges.updated || ([] as Record<string, any>[])) {
+                for (const record of tableChanges.updated || []) {
                   try {
                     if (typeof record !== 'object' || !record || Array.isArray(record)) {
                       console.warn(`[Push] Invalid updated record in ${tableName}: Not an object`);
@@ -654,7 +792,7 @@ export async function synchronizeWithServer(
                       continue;
                     }
 
-                    validUpdated.push(cleaned);
+                    validUpdated.push(cleaned as ValidatedRecord);
                   } catch (recordError) {
                     console.warn(
                       `[Push] Error validating updated record in ${tableName}:`,
@@ -665,8 +803,8 @@ export async function synchronizeWithServer(
               } catch (validationError) {
                 console.error(`[Push] Validation error for ${tableName}:`, validationError);
                 // Fall back to entire arrays in case of overall validation failure
-                validCreated = tableChanges.created || [];
-                validUpdated = tableChanges.updated || [];
+                validCreated = (tableChanges.created || []).map(convertToValidatedRecord);
+                validUpdated = (tableChanges.updated || []).map(convertToValidatedRecord);
               }
 
               // Sanitize records after validation with special handling for plants
@@ -676,9 +814,9 @@ export async function synchronizeWithServer(
                 sanitizedCreated = [];
                 sanitizedUpdated = [];
                 for (const record of validCreated) {
-                  // Type assertion: DirtyRaw should contain the plant data with id and name
+                  // Type assertion: ValidatedRecord should contain the plant data with id and name
                   const validatedPlantRecord = await validatePlantRecord(
-                    record as any,
+                    record as PlantRecord,
                     database,
                     strainCache
                   );
@@ -686,32 +824,32 @@ export async function synchronizeWithServer(
                   await ensureStrainForPlantRecord(validatedPlantRecord);
                   const sanitized = sanitizeRecord(validatedPlantRecord, tableName);
                   // Log the outgoing plant payload for Supabase sync
-                  console.log(
+                  logger.log(
                     '[Sync] Outgoing plant payload (created):',
                     JSON.stringify(sanitized, null, 2)
                   );
                   sanitizedCreated.push(sanitized);
                 }
                 for (const record of validUpdated) {
-                  // Type assertion: DirtyRaw should contain the plant data with id and name
+                  // Type assertion: ValidatedRecord should contain the plant data with id and name
                   const validatedPlantRecord = await validatePlantRecord(
-                    record as any,
+                    record as PlantRecord,
                     database,
                     strainCache
                   );
                   await ensureStrainForPlantRecord(validatedPlantRecord);
                   const sanitized = sanitizeRecord(validatedPlantRecord, tableName);
-                  console.log(
+                  logger.log(
                     '[Sync] Outgoing plant payload (updated):',
                     JSON.stringify(sanitized, null, 2)
                   );
                   sanitizedUpdated.push(sanitized);
                 }
               } else {
-                sanitizedCreated = validCreated.map((record: Record<string, any>) =>
+                sanitizedCreated = validCreated.map((record: ProcessableRecord) =>
                   sanitizeRecord(record, tableName)
                 );
-                sanitizedUpdated = validUpdated.map((record: Record<string, any>) =>
+                sanitizedUpdated = validUpdated.map((record: ProcessableRecord) =>
                   sanitizeRecord(record, tableName)
                 );
               }
@@ -720,10 +858,7 @@ export async function synchronizeWithServer(
               // Skip media-heavy content if configured
               if (!syncConfig.includeMedia) {
                 // Simplify media fields to reduce payload size
-                for (const record of [...sanitizedCreated, ...sanitizedUpdated] as Record<
-                  string,
-                  any
-                >[]) {
+                for (const record of [...sanitizedCreated, ...sanitizedUpdated] as MediaRecord[]) {
                   // Handle common media field patterns
                   if (record.images && Array.isArray(record.images) && record.images.length > 0) {
                     // Just keep references, not actual base64 data
@@ -735,7 +870,7 @@ export async function synchronizeWithServer(
                   }
 
                   if (record.media && Array.isArray(record.media) && record.media.length > 0) {
-                    record.media = record.media.map((item: string) =>
+                    record.media = record.media.map((item: unknown) =>
                       typeof item === 'string' && item.startsWith('data:')
                         ? 'media-ref:' + record.id
                         : item
@@ -776,12 +911,16 @@ export async function synchronizeWithServer(
                     },
                   };
 
-                  await executeRpcWithRetry('sync_push', {
-                    changes: batchChanges,
-                    last_pulled_at: formattedLastPulledAt,
-                    user_id: userId,
-                    network_type: networkStatus.type,
-                  });
+                  await syncRetryService.executeWithRetry(
+                    `sync_push_${tableName}_created_batch_${i}_${Date.now()}`,
+                    () => executeRpcWithRetry('sync_push', {
+                      changes: batchChanges,
+                      last_pulled_at: formattedLastPulledAt,
+                      user_id: userId,
+                      network_type: networkStatus.type,
+                    }),
+                    'push'
+                  );
 
                   console.log(
                     `[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} created records`
@@ -809,12 +948,16 @@ export async function synchronizeWithServer(
                     },
                   };
 
-                  await executeRpcWithRetry('sync_push', {
-                    changes: batchChanges,
-                    last_pulled_at: formattedLastPulledAt,
-                    user_id: userId,
-                    network_type: networkStatus.type,
-                  });
+                  await syncRetryService.executeWithRetry(
+                    `sync_push_${tableName}_updated_batch_${i}_${Date.now()}`,
+                    () => executeRpcWithRetry('sync_push', {
+                      changes: batchChanges,
+                      last_pulled_at: formattedLastPulledAt,
+                      user_id: userId,
+                      network_type: networkStatus.type,
+                    }),
+                    'push'
+                  );
 
                   console.log(
                     `[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} updated records`
@@ -831,12 +974,16 @@ export async function synchronizeWithServer(
                   },
                 };
 
-                await executeRpcWithRetry('sync_push', {
-                  changes: tableSanitizedChanges,
-                  last_pulled_at: formattedLastPulledAt,
-                  user_id: userId,
-                  network_type: networkStatus.type,
-                });
+                await syncRetryService.executeWithRetry(
+                  `sync_push_${tableName}_${Date.now()}`,
+                  () => executeRpcWithRetry('sync_push', {
+                    changes: tableSanitizedChanges,
+                    last_pulled_at: formattedLastPulledAt,
+                    user_id: userId,
+                    network_type: networkStatus.type,
+                  }),
+                  'push'
+                );
               }
             }
 
@@ -917,6 +1064,49 @@ export async function synchronizeWithServer(
 
       console.log(`Sync completed successfully in ${syncDuration.toFixed(0)}ms`);
       lastSuccessfulSyncTime = Date.now();
+
+      // Run data integrity checks after successful sync
+      try {
+        const integrityService = new DataIntegrityService(database);
+        const integrityResult = await integrityService.performIntegrityCheck(userId);
+        
+        if (integrityResult.fixedCount > 0) {
+          logger.log(`[Sync] Data integrity check fixed ${integrityResult.fixedCount} issues`);
+        }
+        
+        if (integrityResult.errors.length > 0) {
+          console.warn('[Sync] Data integrity check found errors:', integrityResult.errors);
+          
+          // If there are errors, trigger cleanup of orphaned local records
+          try {
+            const { DataIntegrityService: SyncDataIntegrityService } = await import('./data-integrity');
+            const syncIntegrityService = new SyncDataIntegrityService(database);
+            const cleanupResult = await syncIntegrityService.cleanupOrphanedLocalRecords(userId);
+            
+            if (cleanupResult.cleaned > 0) {
+              logger.log(`[Sync] Cleaned up ${cleanupResult.cleaned} orphaned local records`);
+            }
+            
+            if (cleanupResult.errors.length > 0) {
+              console.warn('[Sync] Orphaned record cleanup errors:', cleanupResult.errors);
+            }
+          } catch (cleanupError) {
+            console.warn('[Sync] Failed to cleanup orphaned local records:', cleanupError);
+          }
+        }
+        
+        // Clean up orphaned storage assets periodically (every 10th successful sync)
+        const syncCount = (lastSuccessfulSyncTime / SYNC_CONSTANTS.MIN_SYNC_INTERVAL_MS) % 10;
+        if (Math.floor(syncCount) === 0) {
+          const cleanedAssets = await integrityService.cleanupOrphanedStorageAssets(userId);
+          if (cleanedAssets > 0) {
+            logger.log(`[Sync] Cleaned up ${cleanedAssets} orphaned storage assets`);
+          }
+        }
+      } catch (integrityError) {
+        console.warn('[Sync] Data integrity check failed:', integrityError);
+        // Don't fail the sync if integrity check fails
+      }
 
       // Persist sync metadata for fault tolerance
       const latestLog = getSyncLogger().logs[0];
