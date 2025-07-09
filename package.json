@@ -115,7 +115,7 @@
     "querystring-es3": "^0.2.1",
     "react": "19.0.0",
     "react-hook-form": "^7.55.0",
-    "react-native": "0.79.5",
+    "react-native": "0.74.3",
     "react-native-bottom-tabs": "^0.9.2",
     "react-native-fetch-api": "^3.0.0",
     "react-native-gesture-handler": "~2.24.0",
