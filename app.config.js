@@ -26,6 +26,7 @@ export default {
       'expo-secure-store',
       'expo-task-manager', // Required for background tasks
       'expo-background-task', // Add this back for the new background task library
+      'expo-localization',
       [
         'expo-notifications',
         {

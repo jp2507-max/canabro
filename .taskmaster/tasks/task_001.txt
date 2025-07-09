@@ -1,0 +1,3618 @@
+# Task ID: 1
+# Title: Finalize and Productionize Community Screen
+# Status: in-progress
+# Dependencies: None
+# Priority: medium
+# Description: Prepare the community screen for production by finalizing UI design, implementing core functionality for question and plant sharing sections, adding robust error handling, optimizing performance, and ensuring accessibility compliance.
+# Details:
+1. Review and refine the UI design for both the 'Ask Questions' and 'Share Plants' sections, applying established UI principles such as hierarchy, contrast, consistency, and proximity. Use Figma or a similar tool to ensure visual clarity and scannability[1][3].
+2. Implement all required functionality, including posting questions, sharing plants, and browsing community content. Ensure forms are optimized for minimal input and provide effective feedback for user actions[1].
+3. Integrate comprehensive error handling for all user interactions, including form validation, network failures, and unexpected errors. Display clear, actionable error messages.
+4. Optimize performance by minimizing unnecessary re-renders, lazy-loading content, and optimizing images or media uploads.
+5. Ensure accessibility compliance by following WCAG guidelines: provide alternative text, sufficient color contrast, keyboard navigation, and compatibility with assistive technologies[3].
+6. Conduct usability testing with real users to validate design and interaction flows, iterating based on feedback[1].
+
+# Test Strategy:
+- Verify that all UI elements are visually consistent, accessible, and meet design specifications.
+- Test all core functionalities: posting questions, sharing plants, and browsing content, including edge cases and error scenarios.
+- Use automated and manual accessibility testing tools to confirm WCAG compliance (color contrast, keyboard navigation, screen reader support).
+- Perform performance profiling to ensure smooth interactions and fast load times.
+- Conduct user acceptance testing with a diverse group of users to validate usability and gather feedback for final adjustments.
+
+# Subtasks:
+## 1. UI Design Discussion - Community Screen Layout Options [done]
+### Dependencies: None
+### Description: Research and discuss different UI layout options for the community screen's two main sections (Ask Question & Share Plant). Explore design patterns from Mobbin Pro and other social/community apps to determine the best user experience approach.
+### Details:
+Key considerations:
+1. **Layout Options to Explore:**
+   - Tabbed interface (Ask Questions / Share Plants)
+   - Segmented control at top
+   - Floating action button with modal selection
+   - Bottom sheet with action selection
+   - Card-based layout with prominent CTAs
+   - Feed-style with inline create options
+
+2. **Research Sources:**
+   - Mobbin Pro inspiration for community/social screens
+   - Popular apps: Reddit, Discord, Instagram, Plant Parent, etc.
+   - Cannabis community apps for domain-specific patterns
+
+3. **Design Decisions to Make:**
+   - Primary navigation pattern
+   - Visual hierarchy and information architecture
+   - Accessibility considerations
+   - Mobile-first responsive design
+   - Dark/light theme compatibility
+   - Onboarding/empty states
+
+4. **Deliverables:**
+   - 3-5 UI mockup options with pros/cons
+   - Recommended approach with rationale
+   - Implementation complexity assessment
+   - User flow diagrams for each option
+<info added on 2025-07-05T20:18:58.615Z>
+**Research Findings - 5 UI Pattern Options Analyzed:**
+
+**Option 1: Tabbed Interface with Floating Action Button**
+- Layout: Top segmented control with "Ask Questions" and "Share Plants" tabs
+- Action: Primary FAB for main action (changes based on active tab)
+- Pros: Clear separation, familiar pattern, easy switching
+- Cons: Requires two taps for cross-posting
+- Examples: Similar to Instagram Stories/Reels tabs
+
+**Option 2: Unified Feed with Contextual Creation**
+- Layout: Single feed showing both content types with visual differentiation
+- Action: Inline input at top ("What's growing?" / "Ask the community...")
+- Pros: Seamless browsing, encourages engagement, less cognitive load
+- Cons: May feel cluttered, harder to filter content types
+- Examples: Similar to Reddit or Twitter feed approach
+
+**Option 3: Bottom Sheet Action Selector**
+- Layout: Main community feed with single FAB
+- Action: FAB opens bottom sheet with "Ask Question" and "Share Plant" options
+- Pros: Clean main interface, discoverable actions, space-efficient
+- Cons: Extra step to create content, may hide secondary action
+- Examples: Similar to Google Drive or Notion mobile apps
+
+**Option 4: Card-Based Dashboard**
+- Layout: Two prominent cards/sections on main screen
+- Action: Each card is a large, tappable area with preview content
+- Pros: Very clear call-to-action, great for onboarding, visual hierarchy
+- Cons: Less space for feed content, may feel static
+- Examples: Similar to banking apps or plant care dashboard layouts
+
+**Option 5: Horizontal Scrollable Categories**
+- Layout: Horizontal scroll of content types at top, feed below
+- Action: Tap category to filter feed, plus icon in each category
+- Pros: Scalable for more content types, maintains context
+- Cons: Horizontal scroll can be missed, complex navigation
+- Examples: Similar to Spotify or Netflix category browsing
+
+**Final Recommendation: Option 1 (Tabbed Interface + Context-Aware FAB)**
+Based on research from PlantIn, Plant Parent, and Leafly patterns, this approach offers:
+- Segmented control for "Questions" and "Plants" tabs
+- Context-aware FAB that changes icon/color based on active tab
+- Card-based feed with rich media support
+- Inline input prompts within each tab to encourage posting
+- Visual differentiation (icons, colors) between question and plant posts
+
+This solution balances discoverability, ease of use, and follows proven patterns from successful plant/cannabis community applications.
+</info added on 2025-07-05T20:18:58.615Z>
+<info added on 2025-07-05T20:21:27.139Z>
+**Implementation Strategy - Building on Existing Foundation:**
+
+**Phase 1: Enhanced Post Types (Week 1)**
+- Extend existing post data model to include type field ('question' | 'plant_share')
+- Add structured fields for questions (title, tags, category)
+- Add plant-specific fields (plant_name, growth_stage, care_tips)
+- Update CreatePostModal to route to different creation flows
+- Modify PostItem component to render different layouts based on post type
+
+**Phase 2: Visual Differentiation (Week 1-2)**
+- Add post type indicators (question mark icon for questions, leaf icon for plants)
+- Implement different card layouts:
+  - Question posts: prominent title, description preview, answer count badge
+  - Plant posts: plant name header, growth stage tag, image gallery
+- Update color scheme: questions use blue accent, plants use green accent
+- Add visual hierarchy improvements to existing card design
+
+**Phase 3: Content Filtering (Week 2)**
+- Add segmented control component above existing feed
+- Options: "All Posts" | "Questions" | "Plant Shares"
+- Implement client-side filtering of existing FlashList data
+- Maintain current infinite scroll and pull-to-refresh functionality
+- Add filter state management to existing community screen logic
+
+**Phase 4: Enhanced Creation Flows (Week 2-3)**
+- Split CreatePostScreen into QuestionCreationScreen and PlantShareScreen
+- Question form: title input, description, tag selection, optional image upload
+- Plant share form: plant selector, growth stage picker, care notes, multiple images
+- Keep existing modal selection pattern but route to specialized screens
+- Maintain current haptic feedback and animation patterns
+
+**Technical Implementation Notes:**
+- Leverage existing Reanimated v3 setup for smooth transitions
+- Extend current NativeWind theming for new post type styles
+- Build on existing FlashList performance optimizations
+- Maintain current accessibility patterns and error handling
+- Use existing state management patterns for new features
+
+**Estimated Timeline:** 2-3 weeks to enhance existing implementation vs 4-6 weeks for complete rebuild
+</info added on 2025-07-05T20:21:27.139Z>
+<info added on 2025-07-05T20:32:13.934Z>
+**Detailed Implementation Plan - Community Screen Enhancement:**
+
+**Database Schema Updates:**
+```sql
+-- Migration script for post type enhancement
+ALTER TABLE posts ADD COLUMN post_type VARCHAR(20) DEFAULT 'general' CHECK (post_type IN ('question', 'plant_share', 'general'));
+ALTER TABLE posts ADD COLUMN title TEXT;
+ALTER TABLE posts ADD COLUMN category VARCHAR(50);
+ALTER TABLE posts ADD COLUMN tags TEXT[];
+ALTER TABLE posts ADD COLUMN plant_name TEXT;
+ALTER TABLE posts ADD COLUMN growth_stage VARCHAR(50) CHECK (growth_stage IN ('seedling', 'vegetative', 'flowering', 'harvest', 'curing'));
+ALTER TABLE posts ADD COLUMN care_tips TEXT;
+
+-- Create indexes for filtering performance
+CREATE INDEX idx_posts_type ON posts(post_type);
+CREATE INDEX idx_posts_category ON posts(category) WHERE category IS NOT NULL;
+```
+
+**Component Architecture Enhancements:**
+
+**Enhanced PostData Interface:**
+```typescript
+interface PostData {
+  id: string;
+  post_type: 'question' | 'plant_share' | 'general';
+  title?: string;
+  category?: string;
+  tags?: string[];
+  plant_name?: string;
+  growth_stage?: 'seedling' | 'vegetative' | 'flowering' | 'harvest' | 'curing';
+  care_tips?: string;
+  user_id: string;
+  content: string;
+  image_url?: string;
+  plant_id?: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+}
+```
+
+**Segmented Control Implementation:**
+- Position above existing FlashList with 16px horizontal margin
+- Options: "All Posts" | "Questions" | "Plant Shares"
+- Use NativeWind classes: `mx-4 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg`
+- Implement smooth transition animations using existing Reanimated v3 setup
+
+**Context-Aware FAB Enhancement:**
+- Dynamic icon switching: question-circle for questions tab, leaf for plants tab, plus for all posts
+- Color adaptation: blue accent (#3B82F6) for questions, green accent (#10B981) for plants
+- Maintain existing haptic feedback and scale animations
+- Position remains fixed at bottom-right with existing shadow and elevation
+
+**Enhanced PostItem Component Layouts:**
+
+**Question Post Layout:**
+- Header: Question icon + "Question" badge + category tag
+- Title: Bold, larger font size (18px) with 2-line truncation
+- Content: Description preview with "Read more" expansion
+- Footer: Answer count badge + existing like/comment counts
+- Color scheme: Blue accent borders and icons
+
+**Plant Share Post Layout:**
+- Header: Leaf icon + plant name + growth stage badge
+- Content: Care tips preview with expandable section
+- Image gallery: Enhanced to support multiple plant photos
+- Footer: Growth stage indicator + existing engagement metrics
+- Color scheme: Green accent borders and icons
+
+**Creation Flow Enhancements:**
+
+**Enhanced CreatePostModal:**
+- Three-option bottom sheet: "Ask Question" | "Share Plant" | "General Post"
+- Each option includes descriptive subtitle and appropriate icon
+- Smooth slide-up animation using existing modal patterns
+
+**QuestionCreationScreen Components:**
+- Title input with character limit (100 chars)
+- Category dropdown: General, Growing Tips, Troubleshooting, Strain Info, Equipment
+- Tag input with autocomplete suggestions
+- Description field using existing EnhancedTextInput
+- Optional image upload maintaining current functionality
+
+**PlantShareCreationScreen Components:**
+- Plant name input with autocomplete from user's plant collection
+- Growth stage picker with visual indicators
+- Care tips rich text editor
+- Multiple image upload with drag-to-reorder functionality
+- Integration with existing plant_id relationships
+
+**Performance Optimizations:**
+- Client-side filtering using useMemo for post type arrays
+- Maintain existing FlashList estimatedItemSize (120px base + dynamic content)
+- Preserve pull-to-refresh and infinite scroll patterns
+- Add post type to cache keys for efficient data management
+
+**Accessibility Enhancements:**
+- Screen reader labels: "Question post by [username]" vs "Plant share by [username]"
+- Semantic roles for segmented control and post type indicators
+- Keyboard navigation support for all interactive elements
+- High contrast mode compatibility for post type color coding
+
+**Implementation Timeline:**
+- Week 1: Database migration + basic post type support
+- Week 2: UI enhancements + segmented control + enhanced PostItem
+- Week 3: Creation flows + specialized screens + testing
+- Total: 2-3 weeks leveraging existing architecture vs 4-6 weeks for rebuild
+
+**Testing Strategy:**
+- Unit tests for post type filtering logic
+- Integration tests for creation flows
+- Accessibility testing with screen readers
+- Performance testing with mixed post type feeds
+- Migration testing with existing post data
+
+This implementation maintains backward compatibility while systematically enhancing the community experience with proper question and plant sharing functionality.
+</info added on 2025-07-05T20:32:13.934Z>
+
+## 2. Implement Like Feature and Enhanced Comments with Supabase Backend [done]
+### Dependencies: 1.1
+### Description: Build complete like functionality and enhanced comment system with proper Supabase database tables, RLS policies, and real-time updates. Includes database schema design, API implementation, and UI enhancements.
+### Details:
+## **Database Schema Requirements:**
+
+### **1. Likes Table (`post_likes`)**
+```sql
+- id: uuid (primary key)
+- post_id: uuid (foreign key to posts.id)
+- user_id: uuid (foreign key to auth.users.id)
+- created_at: timestamp with time zone
+- updated_at: timestamp with time zone
+- UNIQUE constraint on (post_id, user_id)
+```
+
+### **2. Comments Table (`post_comments`)**
+```sql
+- id: uuid (primary key)
+- post_id: uuid (foreign key to posts.id)
+- user_id: uuid (foreign key to auth.users.id)
+- content: text (not null)
+- image_url: text (optional)
+- parent_comment_id: uuid (for nested replies, foreign key to post_comments.id)
+- created_at: timestamp with time zone
+- updated_at: timestamp with time zone
+- deleted_at: timestamp with time zone (soft delete)
+```
+
+### **3. Comment Likes Table (`comment_likes`)**
+```sql
+- id: uuid (primary key)
+- comment_id: uuid (foreign key to post_comments.id)
+- user_id: uuid (foreign key to auth.users.id)
+- created_at: timestamp with time zone
+- UNIQUE constraint on (comment_id, user_id)
+```
+
+## **Backend Implementation Tasks:**
+
+### **Database Setup:**
+1. Create migration files for all tables
+2. Set up Row Level Security (RLS) policies
+3. Create database functions for like/unlike operations
+4. Add triggers for real-time updates
+5. Create indexes for performance optimization
+
+### **API Functions:**
+1. `toggle_post_like(post_id, user_id)` - RPC function
+2. `toggle_comment_like(comment_id, user_id)` - RPC function
+3. `get_post_with_likes_count(post_id)` - View/function
+4. `get_comments_with_likes(post_id)` - View/function
+5. Real-time subscriptions for likes and comments
+
+## **Frontend Implementation Tasks:**
+
+### **Like Feature:**
+1. Update PostItem component with functional like button
+2. Add optimistic updates for immediate UI feedback
+3. Implement like count display with animations
+4. Add haptic feedback for like interactions
+5. Handle like state persistence and error recovery
+
+### **Enhanced Comments:**
+1. Upgrade CommentModal with proper comment creation
+2. Add comment threading/replies support
+3. Implement comment like functionality
+4. Add image support for comments
+5. Real-time comment updates
+6. Comment editing and deletion (soft delete)
+
+### **UI/UX Enhancements:**
+1. Like animation (heart fill/unfill with bounce)
+2. Comment count badges
+3. Loading states for all interactions
+4. Error handling and retry mechanisms
+5. Accessibility improvements (screen reader support)
+
+## **Technical Considerations:**
+
+### **Performance:**
+- Use React Query for caching and optimistic updates
+- Implement proper pagination for comments
+- Add debouncing for rapid like/unlike actions
+- Optimize database queries with proper indexes
+
+### **Real-time Features:**
+- Supabase real-time subscriptions for live updates
+- Handle connection drops and reconnection
+- Conflict resolution for concurrent operations
+
+### **Data Integrity:**
+- Prevent duplicate likes with database constraints
+- Soft delete for comments to maintain thread integrity
+- Proper foreign key relationships and cascading
+
+## **Testing Requirements:**
+1. Unit tests for like/unlike functions
+2. Integration tests for comment CRUD operations
+3. Real-time subscription testing
+4. Performance testing with large datasets
+5. Error handling and edge case testing
+
+## **Deliverables:**
+1. Complete database schema with migrations
+2. Functional like system with real-time updates
+3. Enhanced comment system with threading
+4. Proper error handling and loading states
+5. Comprehensive testing coverage
+6. Documentation for API endpoints and usage
+<info added on 2025-07-05T20:25:50.848Z>
+## **✅ GREAT NEWS: Database Schema Already Exists!**
+
+After checking your Supabase database, I found that **most of the required tables are already implemented**:
+
+### **✅ Already Implemented Tables:**
+
+1. **`likes` table** - Complete with:
+   - `id` (uuid, primary key)
+   - `post_id` (uuid, foreign key to posts.id)
+   - `user_id` (uuid, foreign key to profiles.id)
+   - `created_at` (timestamp)
+   - Proper foreign key relationships
+   - RLS enabled ✅
+
+2. **`comments` table** - Complete with:
+   - `id` (uuid, primary key)
+   - `post_id` (uuid, foreign key to posts.id)
+   - `user_id` (uuid, foreign key to profiles.id)
+   - `content` (text, not null)
+   - `image_url` (text, optional) ✅
+   - `created_at` & `updated_at` (timestamps)
+   - Proper foreign key relationships
+   - RLS enabled ✅
+
+3. **`comment_likes` table** - Complete with:
+   - `id` (uuid, primary key)
+   - `comment_id` (uuid, foreign key to comments.id)
+   - `user_id` (uuid, foreign key to auth.users.id)
+   - `created_at` (timestamp)
+   - Proper foreign key relationships
+   - RLS enabled ✅
+
+4. **`posts` table** - Has counters:
+   - `likes_count` (integer, default 0) ✅
+   - `comments_count` (integer, default 0) ✅
+
+5. **`notifications` table** - Ready for like/comment notifications:
+   - `related_post_id` & `related_comment_id` fields ✅
+
+### **🔧 What We Need to Implement:**
+
+Since the database schema is already perfect, we now focus on **frontend implementation**:
+
+#### **Frontend Tasks (Updated Priority):**
+
+1. **Post Like Functionality:**
+   - Update PostItem component to use functional like button
+   - Implement `useLikeMutation` hook with optimistic updates
+   - Add like count display with smooth animations
+   - Add haptic feedback for like interactions
+   - Handle like state persistence and error recovery
+
+2. **Comment Like Functionality:**
+   - Update CommentItem component with like button
+   - Implement `useCommentLikeMutation` hook
+   - Add like count display for comments
+   - Real-time like updates
+
+3. **Enhanced Comment System:**
+   - Fix CommentModal to properly create comments
+   - Add real-time comment updates
+   - Implement comment pagination
+   - Add comment editing/deletion (soft delete ready)
+   - Add comment threading support (parent_comment_id exists)
+
+4. **Database Functions (May Need Creation):**
+   - `toggle_post_like(post_id, user_id)` RPC function
+   - `toggle_comment_like(comment_id, user_id)` RPC function
+   - Triggers to update like/comment counts
+   - Real-time subscription setup
+
+5. **UI/UX Enhancements:**
+   - Heart animation (fill/unfill with bounce effect)
+   - Loading states for all interactions
+   - Error handling with retry mechanisms
+   - Accessibility improvements
+
+### **🚀 Ready to Start Implementation:**
+
+The database foundation is solid! We can immediately begin implementing the frontend functionality and any missing database functions. This significantly reduces the scope and complexity of this task.
+
+**Next Steps:**
+1. Check existing database functions/triggers
+2. Implement frontend like functionality
+3. Enhance comment system
+4. Add real-time subscriptions
+5. Polish UI/UX with animations and feedback
+</info added on 2025-07-05T20:25:50.848Z>
+<info added on 2025-07-05T20:35:02.851Z>
+## **🔍 Database Functions & RLS Analysis Required**
+
+### **Next Critical Steps:**
+
+**Immediate Database Verification:**
+1. Check existing RLS (Row Level Security) policies on all tables
+2. Verify if RPC functions for like/unlike operations exist
+3. Test current database triggers for count maintenance
+4. Confirm real-time subscription capabilities are enabled
+
+**Frontend Integration Points to Verify:**
+1. Current PostItem component's like button implementation
+2. Existing React Query hooks and mutation setup
+3. CommentModal's current database integration
+4. Real-time subscription setup in existing codebase
+
+### **Accelerated Implementation Timeline:**
+
+**Week 1 - Core Functionality:**
+- Day 1-2: Database function verification and creation if needed
+- Day 3-4: PostItem like functionality with real database integration
+- Day 5-7: CommentModal upgrade with real comment creation/display
+
+**Week 2 - Enhanced Features:**
+- Day 1-3: Comment like functionality implementation
+- Day 4-5: Real-time updates and subscriptions
+- Day 6-7: Image comment support and UI polish
+
+**Week 3 - Advanced & Polish:**
+- Day 1-2: Comment threading (add parent_comment_id if missing)
+- Day 3-4: Notification system integration
+- Day 5-7: Performance optimization and comprehensive testing
+
+### **Risk Mitigation:**
+- Existing schema reduces database migration risks
+- Focus shifts to frontend integration challenges
+- Real-time functionality may need Supabase configuration verification
+- Comment threading may require minor schema addition
+
+This infrastructure discovery transforms the project from "build from scratch" to "integrate and enhance existing foundation" - significantly reducing complexity and timeline.
+</info added on 2025-07-05T20:35:02.851Z>
+<info added on 2025-07-05T20:38:24.337Z>
+## **🎯 IMPLEMENTATION PLAN - READY TO EXECUTE**
+
+### **Phase 1: React Query Infrastructure (Days 1-3)**
+
+**Priority Tasks:**
+1. **Create Custom Hooks:**
+   - `usePosts(limit, offset)` - Replace manual post fetching
+   - `useCreatePost()` - Handle post creation with optimistic updates
+   - `useLikePost(postId)` - Connect to existing `like_post`/`unlike_post` RPC
+   - `useComments(postId)` - Real-time comment fetching
+   - `useCreateComment()` - Connect to existing `create_comment` RPC
+
+2. **Optimistic Updates Setup:**
+   - Immediate UI feedback for likes (heart animation triggers instantly)
+   - Instant comment appearance before server confirmation
+   - Proper rollback handling on network failures
+   - Cache invalidation strategies for data consistency
+
+3. **Error Handling Enhancement:**
+   - Network retry logic with exponential backoff
+   - User-friendly error messages
+   - Offline state detection and queuing
+   - Connection status indicators
+
+### **Phase 2: Like System Integration (Days 4-5)**
+
+**Implementation Tasks:**
+1. **PostItem Like Button Connection:**
+   - Wire existing animated like button to `useLikePost` hook
+   - Implement optimistic like count updates
+   - Add haptic feedback on successful like/unlike
+   - Handle rapid tap prevention (debouncing)
+
+2. **Real-time Like Updates:**
+   - Subscribe to `likes` table changes via Supabase realtime
+   - Update like counts across all post instances
+   - Handle concurrent like/unlike operations
+   - Maintain animation state consistency
+
+### **Phase 3: Comment System Enhancement (Days 6-8)**
+
+**Core Features:**
+1. **Comment Like Functionality:**
+   - Add like button to CommentItem component
+   - Create `useCommentLike(commentId)` hook
+   - Connect to existing `comment_likes` table
+   - Implement comment like animations
+
+2. **Comment Threading:**
+   - Utilize existing `parent_comment_id` field
+   - Add reply functionality to comments
+   - Implement nested comment display
+   - Add proper indentation and threading UI
+
+3. **Real-time Comment Updates:**
+   - Subscribe to `comments` table changes
+   - Live comment appearance without refresh
+   - Handle comment editing and soft deletion
+   - Maintain scroll position during updates
+
+### **Phase 4: Real-time & Polish (Days 9-10)**
+
+**Advanced Features:**
+1. **Supabase Real-time Setup:**
+   - Configure real-time subscriptions for all relevant tables
+   - Handle connection drops and reconnection
+   - Implement proper cleanup on component unmount
+   - Add connection status indicators
+
+2. **Performance Optimization:**
+   - Implement proper pagination for comments
+   - Add virtual scrolling for large comment threads
+   - Optimize re-renders with React.memo
+   - Add proper loading skeletons
+
+3. **Final Polish:**
+   - Accessibility improvements (screen reader support)
+   - Animation performance optimization
+   - Comprehensive error boundary implementation
+   - User experience testing and refinement
+
+### **🔧 TECHNICAL IMPLEMENTATION NOTES**
+
+**React Query Configuration:**
+- Use `staleTime` and `cacheTime` for optimal performance
+- Implement proper query key strategies for cache invalidation
+- Set up global error handling for mutations
+- Configure retry logic for network failures
+
+**Supabase Integration:**
+- Leverage existing RPC functions without modification
+- Use proper TypeScript interfaces for all data operations
+- Implement proper subscription cleanup to prevent memory leaks
+- Handle authentication state changes gracefully
+
+**Animation Considerations:**
+- Maintain existing Reanimated v3 animations
+- Ensure animations don't block UI interactions
+- Add proper animation cleanup on component unmount
+- Optimize animation performance for lower-end devices
+
+### **📋 DELIVERABLES CHECKLIST**
+
+**Week 1 Completion:**
+- [ ] React Query hooks fully implemented and tested
+- [ ] Like functionality connected and working with real-time updates
+- [ ] Comment system enhanced with like functionality
+- [ ] Real-time subscriptions active and stable
+- [ ] Performance optimized and tested
+- [ ] Comprehensive error handling implemented
+- [ ] User experience polished and accessible
+
+**Success Metrics:**
+- Like/unlike operations complete within 100ms (optimistic)
+- Comments appear in real-time across all connected clients
+- Zero data inconsistencies under normal operation
+- Proper offline/online state handling
+- Smooth animations at 60fps on target devices
+- Full accessibility compliance for screen readers
+
+This implementation plan transforms the Community Screen from a static display into a fully interactive, real-time social platform leveraging the complete backend infrastructure already in place.
+</info added on 2025-07-05T20:38:24.337Z>
+
+## 3. Phase 1: Database Schema & Server-Side Infrastructure [done]
+### Dependencies: None
+### Description: Create separate database tables for questions and plant sharing posts with server-side filtering capabilities, including proper RLS policies and optimized queries.
+### Details:
+## **Database Architecture - Separate Tables Approach**
+
+### **1. Questions Table (`community_questions`)**
+```sql
+CREATE TABLE community_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL CHECK (length(title) >= 5 AND length(title) <= 200),
+  content TEXT NOT NULL CHECK (length(content) >= 10),
+  category VARCHAR(50) CHECK (category IN ('general', 'growing_tips', 'troubleshooting', 'strain_info', 'equipment', 'harvest', 'nutrients')),
+  tags TEXT[] DEFAULT '{}',
+  image_url TEXT,
+  is_solved BOOLEAN DEFAULT FALSE,
+  priority_level INTEGER DEFAULT 1 CHECK (priority_level BETWEEN 1 AND 5),
+  likes_count INTEGER DEFAULT 0,
+  answers_count INTEGER DEFAULT 0,
+  views_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Indexes for performance
+CREATE INDEX idx_questions_user_id ON community_questions(user_id);
+CREATE INDEX idx_questions_category ON community_questions(category);
+CREATE INDEX idx_questions_created_at ON community_questions(created_at DESC);
+CREATE INDEX idx_questions_likes_count ON community_questions(likes_count DESC);
+CREATE INDEX idx_questions_tags ON community_questions USING GIN(tags);
+CREATE INDEX idx_questions_is_solved ON community_questions(is_solved);
+```
+
+### **2. Plant Shares Table (`community_plant_shares`)**
+```sql
+CREATE TABLE community_plant_shares (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  plant_id UUID REFERENCES plants(id) ON DELETE SET NULL,
+  plant_name TEXT NOT NULL,
+  strain_name TEXT,
+  growth_stage VARCHAR(50) CHECK (growth_stage IN ('seedling', 'vegetative', 'flowering', 'harvest', 'curing')) DEFAULT 'vegetative',
+  content TEXT NOT NULL CHECK (length(content) >= 10),
+  care_tips TEXT,
+  growing_medium VARCHAR(50) CHECK (growing_medium IN ('soil', 'hydroponic', 'coco_coir', 'rockwool', 'perlite', 'other')),
+  environment VARCHAR(50) CHECK (environment IN ('indoor', 'outdoor', 'greenhouse', 'mixed')),
+  images_urls TEXT[] DEFAULT '{}',
+  is_featured BOOLEAN DEFAULT FALSE,
+  likes_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  shares_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Indexes for performance
+CREATE INDEX idx_plant_shares_user_id ON community_plant_shares(user_id);
+CREATE INDEX idx_plant_shares_plant_id ON community_plant_shares(plant_id);
+CREATE INDEX idx_plant_shares_growth_stage ON community_plant_shares(growth_stage);
+CREATE INDEX idx_plant_shares_created_at ON community_plant_shares(created_at DESC);
+CREATE INDEX idx_plant_shares_likes_count ON community_plant_shares(likes_count DESC);
+CREATE INDEX idx_plant_shares_environment ON community_plant_shares(environment);
+```
+
+### **3. Separate Storage Buckets**
+```sql
+-- Create separate storage buckets for different content types
+INSERT INTO storage.buckets (id, name, public) VALUES 
+  ('community-questions', 'community-questions', true),
+  ('community-plant-shares', 'community-plant-shares', true);
+
+-- RLS policies for storage buckets
+CREATE POLICY "Users can upload question images" ON storage.objects FOR INSERT 
+  WITH CHECK (bucket_id = 'community-questions' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can upload plant share images" ON storage.objects FOR INSERT 
+  WITH CHECK (bucket_id = 'community-plant-shares' AND auth.uid()::text = (storage.foldername(name))[1]);
+```
+
+### **4. Interaction Tables (Unified)**
+```sql
+-- Question Likes
+CREATE TABLE community_question_likes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question_id UUID NOT NULL REFERENCES community_questions(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(question_id, user_id)
+);
+
+-- Plant Share Likes
+CREATE TABLE community_plant_share_likes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plant_share_id UUID NOT NULL REFERENCES community_plant_shares(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(plant_share_id, user_id)
+);
+
+-- Question Answers (Comments)
+CREATE TABLE community_question_answers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question_id UUID NOT NULL REFERENCES community_questions(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL CHECK (length(content) >= 5),
+  image_url TEXT,
+  is_accepted BOOLEAN DEFAULT FALSE,
+  is_helpful BOOLEAN DEFAULT FALSE,
+  likes_count INTEGER DEFAULT 0,
+  parent_answer_id UUID REFERENCES community_question_answers(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Plant Share Comments
+CREATE TABLE community_plant_share_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plant_share_id UUID NOT NULL REFERENCES community_plant_shares(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL CHECK (length(content) >= 5),
+  image_url TEXT,
+  likes_count INTEGER DEFAULT 0,
+  parent_comment_id UUID REFERENCES community_plant_share_comments(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  deleted_at TIMESTAMP WITH TIME ZONE
+);
+```
+
+### **5. RLS Policies**
+```sql
+-- Questions policies
+ALTER TABLE community_questions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view all questions" ON community_questions FOR SELECT USING (deleted_at IS NULL);
+CREATE POLICY "Users can create questions" ON community_questions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own questions" ON community_questions FOR UPDATE USING (auth.uid() = user_id);
+
+-- Plant shares policies
+ALTER TABLE community_plant_shares ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view all plant shares" ON community_plant_shares FOR SELECT USING (deleted_at IS NULL);
+CREATE POLICY "Users can create plant shares" ON community_plant_shares FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own plant shares" ON community_plant_shares FOR UPDATE USING (auth.uid() = user_id);
+```
+
+### **6. Database Functions for Server-Side Filtering**
+```sql
+-- Get paginated questions with filtering
+CREATE OR REPLACE FUNCTION get_community_questions(
+  p_limit INTEGER DEFAULT 10,
+  p_offset INTEGER DEFAULT 0,
+  p_category TEXT DEFAULT NULL,
+  p_is_solved BOOLEAN DEFAULT NULL,
+  p_order_by TEXT DEFAULT 'created_at',
+  p_order_direction TEXT DEFAULT 'DESC'
+) RETURNS TABLE (
+  id UUID,
+  user_id UUID,
+  title TEXT,
+  content TEXT,
+  category TEXT,
+  tags TEXT[],
+  image_url TEXT,
+  is_solved BOOLEAN,
+  likes_count INTEGER,
+  answers_count INTEGER,
+  views_count INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE,
+  username TEXT,
+  avatar_url TEXT,
+  user_has_liked BOOLEAN
+) LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    q.id,
+    q.user_id,
+    q.title,
+    q.content,
+    q.category::TEXT,
+    q.tags,
+    q.image_url,
+    q.is_solved,
+    q.likes_count,
+    q.answers_count,
+    q.views_count,
+    q.created_at,
+    p.username,
+    p.avatar_url,
+    COALESCE(ql.user_id IS NOT NULL, FALSE) AS user_has_liked
+  FROM community_questions q
+  LEFT JOIN profiles p ON q.user_id = p.id
+  LEFT JOIN community_question_likes ql ON q.id = ql.question_id AND ql.user_id = auth.uid()
+  WHERE 
+    q.deleted_at IS NULL
+    AND (p_category IS NULL OR q.category = p_category)
+    AND (p_is_solved IS NULL OR q.is_solved = p_is_solved)
+  ORDER BY 
+    CASE WHEN p_order_by = 'created_at' AND p_order_direction = 'DESC' THEN q.created_at END DESC,
+    CASE WHEN p_order_by = 'likes_count' AND p_order_direction = 'DESC' THEN q.likes_count END DESC,
+    CASE WHEN p_order_by = 'answers_count' AND p_order_direction = 'DESC' THEN q.answers_count END DESC
+  LIMIT p_limit OFFSET p_offset;
+END;
+$$;
+
+-- Get paginated plant shares with filtering
+CREATE OR REPLACE FUNCTION get_community_plant_shares(
+  p_limit INTEGER DEFAULT 10,
+  p_offset INTEGER DEFAULT 0,
+  p_growth_stage TEXT DEFAULT NULL,
+  p_environment TEXT DEFAULT NULL,
+  p_order_by TEXT DEFAULT 'created_at',
+  p_order_direction TEXT DEFAULT 'DESC'
+) RETURNS TABLE (
+  id UUID,
+  user_id UUID,
+  plant_id UUID,
+  plant_name TEXT,
+  strain_name TEXT,
+  growth_stage TEXT,
+  content TEXT,
+  care_tips TEXT,
+  growing_medium TEXT,
+  environment TEXT,
+  images_urls TEXT[],
+  is_featured BOOLEAN,
+  likes_count INTEGER,
+  comments_count INTEGER,
+  shares_count INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE,
+  username TEXT,
+  avatar_url TEXT,
+  user_has_liked BOOLEAN
+) LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    ps.id,
+    ps.user_id,
+    ps.plant_id,
+    ps.plant_name,
+    ps.strain_name,
+    ps.growth_stage::TEXT,
+    ps.content,
+    ps.care_tips,
+    ps.growing_medium::TEXT,
+    ps.environment::TEXT,
+    ps.images_urls,
+    ps.is_featured,
+    ps.likes_count,
+    ps.comments_count,
+    ps.shares_count,
+    ps.created_at,
+    p.username,
+    p.avatar_url,
+    COALESCE(psl.user_id IS NOT NULL, FALSE) AS user_has_liked
+  FROM community_plant_shares ps
+  LEFT JOIN profiles p ON ps.user_id = p.id
+  LEFT JOIN community_plant_share_likes psl ON ps.id = psl.plant_share_id AND psl.user_id = auth.uid()
+  WHERE 
+    ps.deleted_at IS NULL
+    AND (p_growth_stage IS NULL OR ps.growth_stage = p_growth_stage)
+    AND (p_environment IS NULL OR ps.environment = p_environment)
+  ORDER BY 
+    CASE WHEN p_order_by = 'created_at' AND p_order_direction = 'DESC' THEN ps.created_at END DESC,
+    CASE WHEN p_order_by = 'likes_count' AND p_order_direction = 'DESC' THEN ps.likes_count END DESC,
+    CASE WHEN p_order_by = 'comments_count' AND p_order_direction = 'DESC' THEN ps.comments_count END DESC
+  LIMIT p_limit OFFSET p_offset;
+END;
+$$;
+```
+
+### **7. Triggers for Count Maintenance**
+```sql
+-- Update question answer counts
+CREATE OR REPLACE FUNCTION update_question_answers_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE community_questions 
+    SET answers_count = answers_count + 1 
+    WHERE id = NEW.question_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE community_questions 
+    SET answers_count = answers_count - 1 
+    WHERE id = OLD.question_id;
+    RETURN OLD;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_question_answers_count
+  AFTER INSERT OR DELETE ON community_question_answers
+  FOR EACH ROW EXECUTE FUNCTION update_question_answers_count();
+```
+
+## **Implementation Tasks:**
+
+### **Migration Strategy:**
+1. Create all new tables and functions
+2. Set up proper RLS policies
+3. Create storage buckets and policies
+4. Add database triggers for count maintenance
+5. Test server-side filtering functions
+6. Verify performance with proper indexing
+
+### **API Integration:**
+1. Update Supabase client to use new table structure
+2. Create TypeScript interfaces for new data models
+3. Implement server-side filtering API calls
+4. Add proper error handling for new endpoints
+5. Test real-time subscriptions for new tables
+
+### **Performance Considerations:**
+- Separate tables allow for optimized queries per content type
+- Dedicated indexes for each table's specific use cases
+- Server-side filtering reduces client-side processing
+- Proper pagination support for large datasets
+- Efficient storage bucket organization
+
+**Timeline: 3-4 days**
+**Dependencies: None**
+**Deliverables: Complete database schema, RLS policies, server-side filtering functions, storage buckets**
+
+## 4. Phase 2: TypeScript Interfaces & React Query Integration [done]
+### Dependencies: 1.3
+### Description: Create TypeScript interfaces for new data models and implement React Query hooks for server-side filtering, optimistic updates, and real-time subscriptions.
+### Details:
+## **TypeScript Interface Definitions**
+
+### **1. Core Data Models**
+```typescript
+// lib/types/community.ts
+
+export interface CommunityQuestion {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  category: QuestionCategory;
+  tags: string[];
+  image_url?: string;
+  is_solved: boolean;
+  priority_level: 1 | 2 | 3 | 4 | 5;
+  likes_count: number;
+  answers_count: number;
+  views_count: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+  // Joined fields from server function
+  username?: string;
+  avatar_url?: string;
+  user_has_liked?: boolean;
+}
+
+export interface CommunityPlantShare {
+  id: string;
+  user_id: string;
+  plant_id?: string;
+  plant_name: string;
+  strain_name?: string;
+  growth_stage: GrowthStage;
+  content: string;
+  care_tips?: string;
+  growing_medium?: GrowingMedium;
+  environment?: Environment;
+  images_urls: string[];
+  is_featured: boolean;
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+  // Joined fields from server function
+  username?: string;
+  avatar_url?: string;
+  user_has_liked?: boolean;
+}
+
+export interface QuestionAnswer {
+  id: string;
+  question_id: string;
+  user_id: string;
+  content: string;
+  image_url?: string;
+  is_accepted: boolean;
+  is_helpful: boolean;
+  likes_count: number;
+  parent_answer_id?: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+  // Joined fields
+  username?: string;
+  avatar_url?: string;
+  user_has_liked?: boolean;
+}
+
+export interface PlantShareComment {
+  id: string;
+  plant_share_id: string;
+  user_id: string;
+  content: string;
+  image_url?: string;
+  likes_count: number;
+  parent_comment_id?: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string;
+  // Joined fields
+  username?: string;
+  avatar_url?: string;
+  user_has_liked?: boolean;
+}
+
+// Enums and types
+export type QuestionCategory = 
+  | 'general' 
+  | 'growing_tips' 
+  | 'troubleshooting' 
+  | 'strain_info' 
+  | 'equipment' 
+  | 'harvest' 
+  | 'nutrients';
+
+export type GrowthStage = 
+  | 'seedling' 
+  | 'vegetative' 
+  | 'flowering' 
+  | 'harvest' 
+  | 'curing';
+
+export type GrowingMedium = 
+  | 'soil' 
+  | 'hydroponic' 
+  | 'coco_coir' 
+  | 'rockwool' 
+  | 'perlite' 
+  | 'other';
+
+export type Environment = 
+  | 'indoor' 
+  | 'outdoor' 
+  | 'greenhouse' 
+  | 'mixed';
+
+export type ContentType = 'questions' | 'plant_shares';
+
+// Filter interfaces
+export interface QuestionFilters {
+  category?: QuestionCategory;
+  is_solved?: boolean;
+  order_by?: 'created_at' | 'likes_count' | 'answers_count';
+  order_direction?: 'ASC' | 'DESC';
+}
+
+export interface PlantShareFilters {
+  growth_stage?: GrowthStage;
+  environment?: Environment;
+  order_by?: 'created_at' | 'likes_count' | 'comments_count';
+  order_direction?: 'ASC' | 'DESC';
+}
+
+// Creation interfaces
+export interface CreateQuestionData {
+  title: string;
+  content: string;
+  category: QuestionCategory;
+  tags?: string[];
+  image_url?: string;
+  priority_level?: 1 | 2 | 3 | 4 | 5;
+}
+
+export interface CreatePlantShareData {
+  plant_id?: string;
+  plant_name: string;
+  strain_name?: string;
+  growth_stage: GrowthStage;
+  content: string;
+  care_tips?: string;
+  growing_medium?: GrowingMedium;
+  environment?: Environment;
+  images_urls?: string[];
+}
+
+export interface CreateAnswerData {
+  question_id: string;
+  content: string;
+  image_url?: string;
+  parent_answer_id?: string;
+}
+
+export interface CreateCommentData {
+  plant_share_id: string;
+  content: string;
+  image_url?: string;
+  parent_comment_id?: string;
+}
+```
+
+### **2. React Query Hook Implementation**
+```typescript
+// lib/hooks/community/useCommunityQuestions.ts
+
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../../supabase';
+import type { CommunityQuestion, QuestionFilters, CreateQuestionData } from '../../types/community';
+
+const PAGE_SIZE = 10;
+
+export function useCommunityQuestions(filters: QuestionFilters = {}) {
+  return useInfiniteQuery({
+    queryKey: ['community-questions', filters],
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data, error } = await supabase.rpc('get_community_questions', {
+        p_limit: PAGE_SIZE,
+        p_offset: pageParam * PAGE_SIZE,
+        p_category: filters.category || null,
+        p_is_solved: filters.is_solved || null,
+        p_order_by: filters.order_by || 'created_at',
+        p_order_direction: filters.order_direction || 'DESC'
+      });
+
+      if (error) throw error;
+      return data as CommunityQuestion[];
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === PAGE_SIZE ? allPages.length : undefined;
+    },
+    initialPageParam: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+export function useCreateQuestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateQuestionData) => {
+      const { data: result, error } = await supabase
+        .from('community_questions')
+        .insert([data])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result as CommunityQuestion;
+    },
+    onSuccess: (newQuestion) => {
+      // Invalidate and refetch questions
+      queryClient.invalidateQueries({ queryKey: ['community-questions'] });
+      
+      // Optionally add to cache for immediate feedback
+      queryClient.setQueryData(['community-questions'], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: CommunityQuestion[], index: number) => 
+            index === 0 ? [newQuestion, ...page] : page
+          )
+        };
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating question:', error);
+    }
+  });
+}
+
+export function useLikeQuestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ questionId, isLiked }: { questionId: string; isLiked: boolean }) => {
+      if (isLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from('community_question_likes')
+          .delete()
+          .eq('question_id', questionId)
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+        
+        if (error) throw error;
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('community_question_likes')
+          .insert([{
+            question_id: questionId,
+            user_id: (await supabase.auth.getUser()).data.user?.id
+          }]);
+        
+        if (error) throw error;
+      }
+    },
+    onMutate: async ({ questionId, isLiked }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['community-questions'] });
+
+      // Snapshot previous value
+      const previousQuestions = queryClient.getQueryData(['community-questions']);
+
+      // Optimistically update
+      queryClient.setQueryData(['community-questions'], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: CommunityQuestion[]) =>
+            page.map((question) =>
+              question.id === questionId
+                ? {
+                    ...question,
+                    user_has_liked: !isLiked,
+                    likes_count: isLiked ? question.likes_count - 1 : question.likes_count + 1
+                  }
+                : question
+            )
+          )
+        };
+      });
+
+      return { previousQuestions };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousQuestions) {
+        queryClient.setQueryData(['community-questions'], context.previousQuestions);
+      }
+    },
+    onSettled: () => {
+      // Refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['community-questions'] });
+    }
+  });
+}
+```
+
+### **3. Plant Share Hooks**
+```typescript
+// lib/hooks/community/useCommunityPlantShares.ts
+
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../../supabase';
+import type { CommunityPlantShare, PlantShareFilters, CreatePlantShareData } from '../../types/community';
+
+const PAGE_SIZE = 10;
+
+export function useCommunityPlantShares(filters: PlantShareFilters = {}) {
+  return useInfiniteQuery({
+    queryKey: ['community-plant-shares', filters],
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data, error } = await supabase.rpc('get_community_plant_shares', {
+        p_limit: PAGE_SIZE,
+        p_offset: pageParam * PAGE_SIZE,
+        p_growth_stage: filters.growth_stage || null,
+        p_environment: filters.environment || null,
+        p_order_by: filters.order_by || 'created_at',
+        p_order_direction: filters.order_direction || 'DESC'
+      });
+
+      if (error) throw error;
+      return data as CommunityPlantShare[];
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === PAGE_SIZE ? allPages.length : undefined;
+    },
+    initialPageParam: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+export function useCreatePlantShare() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreatePlantShareData) => {
+      const { data: result, error } = await supabase
+        .from('community_plant_shares')
+        .insert([data])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result as CommunityPlantShare;
+    },
+    onSuccess: (newPlantShare) => {
+      queryClient.invalidateQueries({ queryKey: ['community-plant-shares'] });
+      
+      queryClient.setQueryData(['community-plant-shares'], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: CommunityPlantShare[], index: number) => 
+            index === 0 ? [newPlantShare, ...page] : page
+          )
+        };
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating plant share:', error);
+    }
+  });
+}
+
+export function useLikePlantShare() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ plantShareId, isLiked }: { plantShareId: string; isLiked: boolean }) => {
+      if (isLiked) {
+        const { error } = await supabase
+          .from('community_plant_share_likes')
+          .delete()
+          .eq('plant_share_id', plantShareId)
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('community_plant_share_likes')
+          .insert([{
+            plant_share_id: plantShareId,
+            user_id: (await supabase.auth.getUser()).data.user?.id
+          }]);
+        
+        if (error) throw error;
+      }
+    },
+    onMutate: async ({ plantShareId, isLiked }) => {
+      await queryClient.cancelQueries({ queryKey: ['community-plant-shares'] });
+
+      const previousPlantShares = queryClient.getQueryData(['community-plant-shares']);
+
+      queryClient.setQueryData(['community-plant-shares'], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: CommunityPlantShare[]) =>
+            page.map((plantShare) =>
+              plantShare.id === plantShareId
+                ? {
+                    ...plantShare,
+                    user_has_liked: !isLiked,
+                    likes_count: isLiked ? plantShare.likes_count - 1 : plantShare.likes_count + 1
+                  }
+                : plantShare
+            )
+          )
+        };
+      });
+
+      return { previousPlantShares };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousPlantShares) {
+        queryClient.setQueryData(['community-plant-shares'], context.previousPlantShares);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['community-plant-shares'] });
+    }
+  });
+}
+```
+
+### **4. Real-time Subscription Hooks**
+```typescript
+// lib/hooks/community/useRealtimeCommunity.ts
+
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../../supabase';
+import type { CommunityQuestion, CommunityPlantShare } from '../../types/community';
+
+export function useRealtimeCommunityQuestions() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('community-questions')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'community_questions'
+        },
+        (payload) => {
+          const newQuestion = payload.new as CommunityQuestion;
+          
+          // Add to cache
+          queryClient.setQueryData(['community-questions'], (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page: CommunityQuestion[], index: number) => 
+                index === 0 ? [newQuestion, ...page] : page
+              )
+            };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'community_questions'
+        },
+        (payload) => {
+          const updatedQuestion = payload.new as CommunityQuestion;
+          
+          // Update in cache
+          queryClient.setQueryData(['community-questions'], (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page: CommunityQuestion[]) =>
+                page.map((question) =>
+                  question.id === updatedQuestion.id ? updatedQuestion : question
+                )
+              )
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+}
+
+export function useRealtimeCommunityPlantShares() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('community-plant-shares')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'community_plant_shares'
+        },
+        (payload) => {
+          const newPlantShare = payload.new as CommunityPlantShare;
+          
+          queryClient.setQueryData(['community-plant-shares'], (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page: CommunityPlantShare[], index: number) => 
+                index === 0 ? [newPlantShare, ...page] : page
+              )
+            };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'community_plant_shares'
+        },
+        (payload) => {
+          const updatedPlantShare = payload.new as CommunityPlantShare;
+          
+          queryClient.setQueryData(['community-plant-shares'], (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page: CommunityPlantShare[]) =>
+                page.map((plantShare) =>
+                  plantShare.id === updatedPlantShare.id ? updatedPlantShare : plantShare
+                )
+              )
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+}
+```
+
+### **5. Service Layer Integration**
+```typescript
+// lib/services/community-service.ts
+
+import { supabase } from '../supabase';
+import type { 
+  CommunityQuestion, 
+  CommunityPlantShare, 
+  CreateQuestionData, 
+  CreatePlantShareData,
+  QuestionFilters,
+  PlantShareFilters
+} from '../types/community';
+
+export class CommunityService {
+  // Questions
+  static async getQuestions(
+    page: number = 0,
+    limit: number = 10,
+    filters: QuestionFilters = {}
+  ): Promise<CommunityQuestion[]> {
+    const { data, error } = await supabase.rpc('get_community_questions', {
+      p_limit: limit,
+      p_offset: page * limit,
+      p_category: filters.category || null,
+      p_is_solved: filters.is_solved || null,
+      p_order_by: filters.order_by || 'created_at',
+      p_order_direction: filters.order_direction || 'DESC'
+    });
+
+    if (error) throw error;
+    return data as CommunityQuestion[];
+  }
+
+  static async createQuestion(data: CreateQuestionData): Promise<CommunityQuestion> {
+    const { data: result, error } = await supabase
+      .from('community_questions')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return result as CommunityQuestion;
+  }
+
+  // Plant Shares
+  static async getPlantShares(
+    page: number = 0,
+    limit: number = 10,
+    filters: PlantShareFilters = {}
+  ): Promise<CommunityPlantShare[]> {
+    const { data, error } = await supabase.rpc('get_community_plant_shares', {
+      p_limit: limit,
+      p_offset: page * limit,
+      p_growth_stage: filters.growth_stage || null,
+      p_environment: filters.environment || null,
+      p_order_by: filters.order_by || 'created_at',
+      p_order_direction: filters.order_direction || 'DESC'
+    });
+
+    if (error) throw error;
+    return data as CommunityPlantShare[];
+  }
+
+  static async createPlantShare(data: CreatePlantShareData): Promise<CommunityPlantShare> {
+    const { data: result, error } = await supabase
+      .from('community_plant_shares')
+      .insert([data])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return result as CommunityPlantShare;
+  }
+
+  // Image Upload Helpers
+  static async uploadQuestionImage(file: File, questionId: string): Promise<string> {
+    const fileName = `${questionId}/${Date.now()}.jpg`;
+    const { data, error } = await supabase.storage
+      .from('community-questions')
+      .upload(fileName, file);
+
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('community-questions')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  }
+
+  static async uploadPlantShareImages(files: File[], plantShareId: string): Promise<string[]> {
+    const uploadPromises = files.map(async (file, index) => {
+      const fileName = `${plantShareId}/${Date.now()}_${index}.jpg`;
+      const { data, error } = await supabase.storage
+        .from('community-plant-shares')
+        .upload(fileName, file);
+
+      if (error) throw error;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('community-plant-shares')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    });
+
+    return Promise.all(uploadPromises);
+  }
+}
+```
+
+## **Implementation Tasks:**
+
+### **File Structure:**
+1. Create `lib/types/community.ts` with all interfaces
+2. Create `lib/hooks/community/` directory with React Query hooks
+3. Update `lib/services/community-service.ts` with new methods
+4. Add real-time subscription hooks
+5. Update existing components to use new types
+
+### **Testing Strategy:**
+1. Unit tests for all React Query hooks
+2. Integration tests for server-side filtering
+3. Real-time subscription testing
+4. Optimistic update testing
+5. Error handling and retry logic testing
+
+### **Performance Considerations:**
+- Proper React Query cache management
+- Optimistic updates for immediate UI feedback
+- Debounced search and filtering
+- Efficient real-time subscription cleanup
+- Memory leak prevention
+
+**Timeline: 2-3 days**
+**Dependencies: Phase 1 (Database Schema)**
+**Deliverables: Complete TypeScript interfaces, React Query hooks, service layer integration, real-time subscriptions**
+<info added on 2025-07-06T09:23:29.878Z>
+✅ COMPLETED: Image Upload Refactoring
+
+What was accomplished:
+- Updated all community image upload logic to use the new `lib/utils/upload-image.ts` utility, consolidating storage buckets and standardizing upload flows for questions, plant shares, and comments.
+- Removed deprecated `posts` bucket and migrated to `community-questions` and `community-plant-shares` buckets.
+- Added convenience functions for uploading question, plant share, and comment images, supporting both web and mobile (`imageUri`) workflows.
+- Refactored `CommunityService` to delegate all image uploads to the new utility, ensuring DRY principles and consistent error handling.
+- Implemented validation, compression, and mobile-optimized image handling.
+- Maintained backward compatibility and provided documentation for the transition.
+
+Technical Benefits:
+- Eliminated duplicate upload code and improved maintainability.
+- Enhanced error handling and validation for all community image uploads.
+- Optimized for mobile performance and compatibility.
+- Ensured consistent upload patterns and validations across the community feature set.
+
+Files Modified:
+- `lib/utils/upload-image.ts` (new buckets, convenience functions)
+- `lib/services/community-service.ts` (refactored to use upload utility)
+
+The community image upload system is now fully consolidated and ready for UI integration.
+</info added on 2025-07-06T09:23:29.878Z>
+
+## 5. Phase 3: UI Components & Visual Differentiation [done]
+### Dependencies: 1.4
+### Description: Implement segmented control for content filtering, enhanced PostItem components with visual differentiation for questions vs plant shares, and context-aware FAB with dynamic styling.
+### Details:
+## **Segmented Control Implementation**
+
+### **1. CommunitySegmentedControl Component**
+```typescript
+// components/community/CommunitySegmentedControl.tsx
+
+import React, { useCallback } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolateColor,
+  runOnJS,
+} from 'react-native-reanimated';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import type { ContentType } from '../../lib/types/community';
+
+interface CommunitySegmentedControlProps {
+  activeSegment: ContentType | 'all';
+  onSegmentChange: (segment: ContentType | 'all') => void;
+  className?: string;
+}
+
+const SEGMENTS = [
+  { key: 'all' as const, label: 'All Posts', icon: 'apps-outline' },
+  { key: 'questions' as const, label: 'Questions', icon: 'help-circle-outline' },
+  { key: 'plant_shares' as const, label: 'Plant Shares', icon: 'leaf-outline' },
+] as const;
+
+export default function CommunitySegmentedControl({
+  activeSegment,
+  onSegmentChange,
+  className = '',
+}: CommunitySegmentedControlProps) {
+  const slidePosition = useSharedValue(0);
+
+  // Calculate slide position based on active segment
+  React.useEffect(() => {
+    const segmentIndex = SEGMENTS.findIndex(s => s.key === activeSegment);
+    slidePosition.value = withSpring(segmentIndex, {
+      damping: 20,
+      stiffness: 400,
+    });
+  }, [activeSegment, slidePosition]);
+
+  const animatedSliderStyle = useAnimatedStyle(() => {
+    const translateX = slidePosition.value * (100 / SEGMENTS.length);
+    
+    return {
+      transform: [{ translateX: `${translateX}%` }],
+      width: `${100 / SEGMENTS.length}%`,
+    };
+  });
+
+  const handleSegmentPress = useCallback((segment: ContentType | 'all') => {
+    triggerLightHapticSync();
+    onSegmentChange(segment);
+  }, [onSegmentChange]);
+
+  return (
+    <View className={`mx-4 mb-4 ${className}`}>
+      <View className="relative bg-neutral-100 dark:bg-neutral-800 rounded-xl p-1">
+        {/* Animated Slider Background */}
+        <Animated.View
+          style={animatedSliderStyle}
+          className="absolute top-1 bottom-1 bg-white dark:bg-neutral-700 rounded-lg shadow-sm"
+        />
+        
+        {/* Segment Buttons */}
+        <View className="flex-row">
+          {SEGMENTS.map((segment) => {
+            const isActive = activeSegment === segment.key;
+            
+            return (
+              <Pressable
+                key={segment.key}
+                onPress={() => handleSegmentPress(segment.key)}
+                className="flex-1 flex-row items-center justify-center py-3 px-2"
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${segment.label}`}
+                accessibilityState={{ selected: isActive }}
+              >
+                <OptimizedIcon
+                  name={segment.icon}
+                  size={16}
+                  className={`mr-2 ${
+                    isActive 
+                      ? segment.key === 'questions' 
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : segment.key === 'plant_shares'
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-neutral-700 dark:text-neutral-300'
+                      : 'text-neutral-500 dark:text-neutral-400'
+                  }`}
+                />
+                <Text
+                  className={`text-sm font-medium ${
+                    isActive
+                      ? segment.key === 'questions'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : segment.key === 'plant_shares'
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-neutral-700 dark:text-neutral-300'
+                      : 'text-neutral-500 dark:text-neutral-400'
+                  }`}
+                  numberOfLines={1}
+                >
+                  {segment.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+}
+```
+
+### **2. Enhanced PostItem Components**
+```typescript
+// components/community/QuestionPostItem.tsx
+
+import React, { useMemo } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+import { OptimizedIcon } from '../ui/OptimizedIcon';
+import NetworkResilientImage from '../ui/NetworkResilientImage';
+import UserAvatar from './UserAvatar';
+import TagPill from '../ui/TagPill';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import type { CommunityQuestion } from '../../lib/types/community';
+
+dayjs.extend(relativeTime);
+
+interface QuestionPostItemProps {
+  question: CommunityQuestion;
+  currentUserId?: string;
+  onLike: (questionId: string, currentlyLiked: boolean) => void;
+  onComment: (questionId: string) => void;
+  onUserPress: (userId: string) => void;
+  onPress?: (questionId: string) => void;
+  liking?: boolean;
+}
+
+export default function QuestionPostItem({
+  question,
+  currentUserId,
+  onLike,
+  onComment,
+  onUserPress,
+  onPress,
+  liking = false,
+}: QuestionPostItemProps) {
+  const displayName = useMemo(
+    () => question.username || `User ${question.user_id.slice(0, 8)}`,
+    [question.username, question.user_id]
+  );
+
+  const timeAgo = useMemo(() => dayjs(question.created_at).fromNow(), [question.created_at]);
+
+  const isLiked = useMemo(() => question.user_has_liked, [question.user_has_liked]);
+
+  const handleLike = React.useCallback(async () => {
+    await triggerLightHapticSync();
+    onLike(question.id, isLiked);
+  }, [question.id, isLiked, onLike]);
+
+  const handleComment = React.useCallback(async () => {
+    await triggerLightHapticSync();
+    onComment(question.id);
+  }, [question.id, onComment]);
+
+  const handleUserPress = React.useCallback(() => {
+    onUserPress(question.user_id);
+  }, [question.user_id, onUserPress]);
+
+  const handlePress = React.useCallback(() => {
+    if (onPress) {
+      onPress(question.id);
+    }
+  }, [question.id, onPress]);
+
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(300).springify()}
+      className="bg-white dark:bg-neutral-900 rounded-2xl mx-4 mb-4 shadow-sm border border-blue-100 dark:border-blue-900/30"
+    >
+      <Pressable
+        onPress={handlePress}
+        className="p-4"
+        accessibilityRole="button"
+        accessibilityLabel={`Question: ${question.title}`}
+      >
+        {/* Header */}
+        <View className="flex-row items-center mb-3">
+          <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full mr-3">
+            <OptimizedIcon
+              name="help-circle"
+              size={14}
+              className="text-blue-600 dark:text-blue-400 mr-1"
+            />
+            <Text className="text-xs font-medium text-blue-600 dark:text-blue-400">
+              Question
+            </Text>
+          </View>
+
+          {question.category && (
+            <View className="bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-full">
+              <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-400 capitalize">
+                {question.category.replace('_', ' ')}
+              </Text>
+            </View>
+          )}
+
+          {question.is_solved && (
+            <View className="ml-2 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+              <OptimizedIcon
+                name="checkmark-circle"
+                size={14}
+                className="text-green-600 dark:text-green-400"
+              />
+            </View>
+          )}
+        </View>
+
+        {/* Author Row */}
+        <View className="flex-row items-center mb-3">
+          <Pressable onPress={handleUserPress} className="flex-row items-center flex-1">
+            <UserAvatar
+              uri={question.avatar_url}
+              size={32}
+              className="mr-3"
+            />
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {displayName}
+              </Text>
+              <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                {timeAgo}
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+
+        {/* Title */}
+        <Text className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-2 leading-6">
+          {question.title}
+        </Text>
+
+        {/* Content Preview */}
+        <Text 
+          className="text-sm text-neutral-600 dark:text-neutral-400 mb-3 leading-5"
+          numberOfLines={3}
+        >
+          {question.content}
+        </Text>
+
+        {/* Tags */}
+        {question.tags && question.tags.length > 0 && (
+          <View className="flex-row flex-wrap mb-3">
+            {question.tags.slice(0, 3).map((tag, index) => (
+              <TagPill
+                key={index}
+                text={tag}
+                variant="blue"
+                size="small"
+                className="mr-2 mb-1"
+              />
+            ))}
+            {question.tags.length > 3 && (
+              <Text className="text-xs text-neutral-500 dark:text-neutral-400 self-center">
+                +{question.tags.length - 3} more
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Image */}
+        {question.image_url && (
+          <View className="mb-3 rounded-xl overflow-hidden">
+            <NetworkResilientImage
+              source={{ uri: question.image_url }}
+              className="w-full h-48"
+              resizeMode="cover"
+            />
+          </View>
+        )}
+
+        {/* Action Buttons */}
+        <View className="flex-row items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
+          <View className="flex-row items-center">
+            <Pressable
+              onPress={handleLike}
+              disabled={liking}
+              className="flex-row items-center mr-6"
+              accessibilityRole="button"
+              accessibilityLabel={isLiked ? 'Unlike question' : 'Like question'}
+            >
+              <OptimizedIcon
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={20}
+                className={isLiked ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}
+              />
+              <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400 ml-1">
+                {question.likes_count}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleComment}
+              className="flex-row items-center mr-6"
+              accessibilityRole="button"
+              accessibilityLabel="View answers"
+            >
+              <OptimizedIcon
+                name="chatbubble-outline"
+                size={20}
+                className="text-neutral-500 dark:text-neutral-400"
+              />
+              <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400 ml-1">
+                {question.answers_count} {question.answers_count === 1 ? 'answer' : 'answers'}
+              </Text>
+            </Pressable>
+
+            <View className="flex-row items-center">
+              <OptimizedIcon
+                name="eye-outline"
+                size={20}
+                className="text-neutral-500 dark:text-neutral-400"
+              />
+              <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400 ml-1">
+                {question.views_count}
+              </Text>
+            </View>
+          </View>
+
+          {question.priority_level > 3 && (
+            <View className="bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">
+              <Text className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                Urgent
+              </Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+```
+
+```typescript
+// components/community/PlantSharePostItem.tsx
+
+import React, { useMemo } from 'react';
+import { View, Text, Pressable, ScrollView } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+import { OptimizedIcon } from '../ui/OptimizedIcon';
+import NetworkResilientImage from '../ui/NetworkResilientImage';
+import UserAvatar from './UserAvatar';
+import TagPill from '../ui/TagPill';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import type { CommunityPlantShare } from '../../lib/types/community';
+
+dayjs.extend(relativeTime);
+
+interface PlantSharePostItemProps {
+  plantShare: CommunityPlantShare;
+  currentUserId?: string;
+  onLike: (plantShareId: string, currentlyLiked: boolean) => void;
+  onComment: (plantShareId: string) => void;
+  onUserPress: (userId: string) => void;
+  onPress?: (plantShareId: string) => void;
+  liking?: boolean;
+}
+
+export default function PlantSharePostItem({
+  plantShare,
+  currentUserId,
+  onLike,
+  onComment,
+  onUserPress,
+  onPress,
+  liking = false,
+}: PlantSharePostItemProps) {
+  const displayName = useMemo(
+    () => plantShare.username || `User ${plantShare.user_id.slice(0, 8)}`,
+    [plantShare.username, plantShare.user_id]
+  );
+
+  const timeAgo = useMemo(() => dayjs(plantShare.created_at).fromNow(), [plantShare.created_at]);
+
+  const isLiked = useMemo(() => plantShare.user_has_liked, [plantShare.user_has_liked]);
+
+  const growthStageColor = useMemo(() => {
+    switch (plantShare.growth_stage) {
+      case 'seedling': return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300';
+      case 'vegetative': return 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300';
+      case 'flowering': return 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300';
+      case 'harvest': return 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300';
+      case 'curing': return 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300';
+      default: return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300';
+    }
+  }, [plantShare.growth_stage]);
+
+  const handleLike = React.useCallback(async () => {
+    await triggerLightHapticSync();
+    onLike(plantShare.id, isLiked);
+  }, [plantShare.id, isLiked, onLike]);
+
+  const handleComment = React.useCallback(async () => {
+    await triggerLightHapticSync();
+    onComment(plantShare.id);
+  }, [plantShare.id, onComment]);
+
+  const handleUserPress = React.useCallback(() => {
+    onUserPress(plantShare.user_id);
+  }, [plantShare.user_id, onUserPress]);
+
+  const handlePress = React.useCallback(() => {
+    if (onPress) {
+      onPress(plantShare.id);
+    }
+  }, [plantShare.id, onPress]);
+
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(300).springify()}
+      className="bg-white dark:bg-neutral-900 rounded-2xl mx-4 mb-4 shadow-sm border border-green-100 dark:border-green-900/30"
+    >
+      <Pressable
+        onPress={handlePress}
+        className="p-4"
+        accessibilityRole="button"
+        accessibilityLabel={`Plant share: ${plantShare.plant_name}`}
+      >
+        {/* Header */}
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-center">
+            <View className="flex-row items-center bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full mr-3">
+              <OptimizedIcon
+                name="leaf"
+                size={14}
+                className="text-green-600 dark:text-green-400 mr-1"
+              />
+              <Text className="text-xs font-medium text-green-600 dark:text-green-400">
+                Plant Share
+              </Text>
+            </View>
+
+            <View className={`px-2 py-1 rounded-full ${growthStageColor}`}>
+              <Text className="text-xs font-medium capitalize">
+                {plantShare.growth_stage}
+              </Text>
+            </View>
+          </View>
+
+          {plantShare.is_featured && (
+            <View className="bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
+              <OptimizedIcon
+                name="star"
+                size={14}
+                className="text-yellow-600 dark:text-yellow-400"
+              />
+            </View>
+          )}
+        </View>
+
+        {/* Author Row */}
+        <View className="flex-row items-center mb-3">
+          <Pressable onPress={handleUserPress} className="flex-row items-center flex-1">
+            <UserAvatar
+              uri={plantShare.avatar_url}
+              size={32}
+              className="mr-3"
+            />
+            <View className="flex-1">
+              <Text className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {displayName}
+              </Text>
+              <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                {timeAgo}
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+
+        {/* Plant Info */}
+        <View className="mb-3">
+          <Text className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-1">
+            {plantShare.plant_name}
+          </Text>
+          {plantShare.strain_name && (
+            <Text className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+              {plantShare.strain_name}
+            </Text>
+          )}
+        </View>
+
+        {/* Content */}
+        <Text 
+          className="text-sm text-neutral-600 dark:text-neutral-400 mb-3 leading-5"
+          numberOfLines={3}
+        >
+          {plantShare.content}
+        </Text>
+
+        {/* Care Tips Preview */}
+        {plantShare.care_tips && (
+          <View className="bg-green-50 dark:bg-green-900/10 p-3 rounded-xl mb-3">
+            <Text className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">
+              💡 Care Tips
+            </Text>
+            <Text 
+              className="text-sm text-green-600 dark:text-green-400"
+              numberOfLines={2}
+            >
+              {plantShare.care_tips}
+            </Text>
+          </View>
+        )}
+
+        {/* Environment & Medium Tags */}
+        <View className="flex-row flex-wrap mb-3">
+          {plantShare.environment && (
+            <TagPill
+              text={plantShare.environment}
+              variant="green"
+              size="small"
+              className="mr-2 mb-1"
+            />
+          )}
+          {plantShare.growing_medium && (
+            <TagPill
+              text={plantShare.growing_medium.replace('_', ' ')}
+              variant="neutral"
+              size="small"
+              className="mr-2 mb-1"
+            />
+          )}
+        </View>
+
+        {/* Image Gallery */}
+        {plantShare.images_urls && plantShare.images_urls.length > 0 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            className="mb-3"
+            contentContainerStyle={{ paddingRight: 16 }}
+          >
+            {plantShare.images_urls.map((imageUrl, index) => (
+              <View key={index} className="mr-3 rounded-xl overflow-hidden">
+                <NetworkResilientImage
+                  source={{ uri: imageUrl }}
+                  className="w-32 h-32"
+                  resizeMode="cover"
+                />
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Action Buttons */}
+        <View className="flex-row items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
+          <View className="flex-row items-center">
+            <Pressable
+              onPress={handleLike}
+              disabled={liking}
+              className="flex-row items-center mr-6"
+              accessibilityRole="button"
+              accessibilityLabel={isLiked ? 'Unlike plant share' : 'Like plant share'}
+            >
+              <OptimizedIcon
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={20}
+                className={isLiked ? 'text-red-500' : 'text-neutral-500 dark:text-neutral-400'}
+              />
+              <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400 ml-1">
+                {plantShare.likes_count}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleComment}
+              className="flex-row items-center mr-6"
+              accessibilityRole="button"
+              accessibilityLabel="View comments"
+            >
+              <OptimizedIcon
+                name="chatbubble-outline"
+                size={20}
+                className="text-neutral-500 dark:text-neutral-400"
+              />
+              <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400 ml-1">
+                {plantShare.comments_count}
+              </Text>
+            </Pressable>
+
+            <View className="flex-row items-center">
+              <OptimizedIcon
+                name="share-outline"
+                size={20}
+                className="text-neutral-500 dark:text-neutral-400"
+              />
+              <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400 ml-1">
+                {plantShare.shares_count}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+```
+
+### **3. Context-Aware FAB Component**
+```typescript
+// components/community/ContextAwareFAB.tsx
+
+import React, { useMemo } from 'react';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolateColor,
+} from 'react-native-reanimated';
+
+import FloatingActionButton from '../ui/FloatingActionButton';
+import { triggerMediumHapticSync } from '../../lib/utils/haptics';
+import type { ContentType } from '../../lib/types/community';
+
+interface ContextAwareFABProps {
+  activeFilter: ContentType | 'all';
+  onPress: () => void;
+  className?: string;
+}
+
+export default function ContextAwareFAB({
+  activeFilter,
+  onPress,
+  className = '',
+}: ContextAwareFABProps) {
+  const colorTransition = useSharedValue(0);
+
+  // Update color transition based on active filter
+  React.useEffect(() => {
+    switch (activeFilter) {
+      case 'questions':
+        colorTransition.value = withSpring(1, { damping: 20, stiffness: 400 });
+        break;
+      case 'plant_shares':
+        colorTransition.value = withSpring(2, { damping: 20, stiffness: 400 });
+        break;
+      default:
+        colorTransition.value = withSpring(0, { damping: 20, stiffness: 400 });
+        break;
+    }
+  }, [activeFilter, colorTransition]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      colorTransition.value,
+      [0, 1, 2],
+      ['#10b981', '#3b82f6', '#10b981'] // green, blue, green
+    );
+
+    return {
+      backgroundColor,
+    };
+  });
+
+  const { icon, accessibilityLabel } = useMemo(() => {
+    switch (activeFilter) {
+      case 'questions':
+        return {
+          icon: 'help-circle-outline' as const,
+          accessibilityLabel: 'Ask a question',
+        };
+      case 'plant_shares':
+        return {
+          icon: 'leaf-outline' as const,
+          accessibilityLabel: 'Share a plant',
+        };
+      default:
+        return {
+          icon: 'add' as const,
+          accessibilityLabel: 'Create new post',
+        };
+    }
+  }, [activeFilter]);
+
+  const handlePress = React.useCallback(async () => {
+    await triggerMediumHapticSync();
+    onPress();
+  }, [onPress]);
+
+  return (
+    <Animated.View style={animatedStyle} className={`rounded-full ${className}`}>
+      <FloatingActionButton
+        onPress={handlePress}
+        iconName={icon}
+        size={56}
+        className="bg-transparent shadow-lg"
+        accessibilityLabel={accessibilityLabel}
+      />
+    </Animated.View>
+  );
+}
+```
+
+### **4. Updated CommunityScreenView Integration**
+```typescript
+// screens/community/CommunityScreenView.tsx (Updated sections)
+
+// Add to imports
+import CommunitySegmentedControl from '../../components/community/CommunitySegmentedControl';
+import QuestionPostItem from '../../components/community/QuestionPostItem';
+import PlantSharePostItem from '../../components/community/PlantSharePostItem';
+import ContextAwareFAB from '../../components/community/ContextAwareFAB';
+
+// Add to props interface
+interface CommunityScreenViewProps {
+  // ... existing props
+  activeContentFilter: ContentType | 'all';
+  onContentFilterChange: (filter: ContentType | 'all') => void;
+  questions: CommunityQuestion[];
+  plantShares: CommunityPlantShare[];
+  // ... rest of props
+}
+
+// Update renderItem function
+const renderItem = React.useCallback(
+  ({ item, index }: { item: unknown; index: number }) => {
+    // Determine if item is question or plant share based on data structure
+    const hasTitle = 'title' in (item as any);
+    
+    if (hasTitle) {
+      const question = item as CommunityQuestion;
+      return (
+        <Animated.View
+          entering={FadeInDown.delay(index * 50).duration(400).springify()}
+        >
+          <QuestionPostItem
+            question={question}
+            currentUserId={user?.id}
+            onLike={handleLikeQuestion}
+            onComment={handleCommentQuestion}
+            onUserPress={handleUserPress}
+            liking={likingPostId === question.id}
+          />
+        </Animated.View>
+      );
+    } else {
+      const plantShare = item as CommunityPlantShare;
+      return (
+        <Animated.View
+          entering={FadeInDown.delay(index * 50).duration(400).springify()}
+        >
+          <PlantSharePostItem
+            plantShare={plantShare}
+            currentUserId={user?.id}
+            onLike={handleLikePlantShare}
+            onComment={handleCommentPlantShare}
+            onUserPress={handleUserPress}
+            liking={likingPostId === plantShare.id}
+          />
+        </Animated.View>
+      );
+    }
+  },
+  [user, handleLikeQuestion, handleLikePlantShare, handleCommentQuestion, handleCommentPlantShare, handleUserPress, likingPostId]
+);
+
+// Update main render with segmented control
+return (
+  <Animated.View style={animatedContainerStyle} className="flex-1 bg-neutral-50 dark:bg-black">
+    {isLoading && combinedData.length === 0 ? (
+      renderLoadingState
+    ) : fetchError && combinedData.length === 0 ? (
+      renderErrorState
+    ) : (
+      <>
+        {/* Segmented Control */}
+        <CommunitySegmentedControl
+          activeSegment={activeContentFilter}
+          onSegmentChange={onContentFilterChange}
+          className="pt-2"
+        />
+
+        <AnimatedFlashList
+          data={combinedData}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          ListEmptyComponent={renderEmptyState}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          estimatedItemSize={450}
+          contentContainerStyle={{
+            paddingBottom: 100,
+          }}
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={['#10b981']}
+              tintColor="#10b981"
+              progressBackgroundColor="transparent"
+              className="bg-transparent"
+            />
+          }
+        />
+
+        {/* Context-Aware FAB */}
+        {combinedData.length > 0 && (
+          <Animated.View style={animatedFabStyle} className="absolute bottom-20 right-6">
+            <ContextAwareFAB
+              activeFilter={activeContentFilter}
+              onPress={handleFabPress}
+            />
+          </Animated.View>
+        )}
+      </>
+    )}
+
+    {/* ... rest of modals */}
+  </Animated.View>
+);
+```
+
+## **Implementation Tasks:**
+
+### **Component Updates:**
+1. Create CommunitySegmentedControl with smooth animations
+2. Build QuestionPostItem with blue accent styling
+3. Build PlantSharePostItem with green accent styling
+4. Implement ContextAwareFAB with dynamic icons and colors
+5. Update CommunityScreenView to integrate all new components
+
+### **Data Flow Integration:**
+1. Add content filtering logic to container
+2. Combine questions and plant shares data for unified feed
+3. Implement proper sorting and pagination
+4. Add optimistic updates for likes
+5. Handle real-time updates for new content
+
+### **Styling & Animations:**
+1. Consistent color scheme (blue for questions, green for plants)
+2. Smooth transitions between filter states
+3. Enhanced visual hierarchy for different content types
+4. Proper accessibility labels and states
+5. Dark mode compatibility
+
+**Timeline: 3-4 days**
+**Dependencies: Phase 2 (TypeScript & React Query)**
+**Deliverables: Complete UI components, visual differentiation, segmented control, context-aware FAB**
+
+## 6. Phase 4: Creation Flows & Specialized Screens [pending]
+### Dependencies: 1.5
+### Description: Implement specialized creation screens for questions and plant shares, enhanced modal selection flow, form validation, image upload integration, and plant collection integration.
+### Details:
+## **Enhanced Modal Selection Flow**
+
+### **1. Enhanced CreatePostModal Component**
+```typescript
+// components/community/CreatePostModal.tsx (Enhanced)
+
+import React, { useCallback } from 'react';
+import { View, Text, Pressable, Modal } from 'react-native';
+import Animated, {
+  FadeInDown,
+  FadeOutDown,
+  SlideInDown,
+  SlideOutDown,
+} from 'react-native-reanimated';
+
+import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
+
+interface CreatePostModalProps {
+  isVisible: boolean;
+  onClose: () => void;
+  onCreateQuestion: () => void;
+  onCreatePlantShare: () => void;
+  onCreateGeneralPost: () => void;
+}
+
+const POST_OPTIONS = [
+  {
+    key: 'question',
+    title: 'Ask a Question',
+    subtitle: 'Get help from the community',
+    icon: 'help-circle',
+    color: 'blue',
+    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    textColor: 'text-blue-900 dark:text-blue-100',
+  },
+  {
+    key: 'plant_share',
+    title: 'Share a Plant',
+    subtitle: 'Show off your growing progress',
+    icon: 'leaf',
+    color: 'green',
+    bgColor: 'bg-green-50 dark:bg-green-900/20',
+    iconColor: 'text-green-600 dark:text-green-400',
+    textColor: 'text-green-900 dark:text-green-100',
+  },
+  {
+    key: 'general',
+    title: 'General Post',
+    subtitle: 'Share thoughts or experiences',
+    icon: 'chatbubble',
+    color: 'neutral',
+    bgColor: 'bg-neutral-50 dark:bg-neutral-800',
+    iconColor: 'text-neutral-600 dark:text-neutral-400',
+    textColor: 'text-neutral-900 dark:text-neutral-100',
+  },
+] as const;
+
+export default function CreatePostModal({
+  isVisible,
+  onClose,
+  onCreateQuestion,
+  onCreatePlantShare,
+  onCreateGeneralPost,
+}: CreatePostModalProps) {
+  const handleOptionPress = useCallback(async (option: string) => {
+    await triggerLightHapticSync();
+    
+    switch (option) {
+      case 'question':
+        onCreateQuestion();
+        break;
+      case 'plant_share':
+        onCreatePlantShare();
+        break;
+      case 'general':
+        onCreateGeneralPost();
+        break;
+    }
+    
+    onClose();
+  }, [onCreateQuestion, onCreatePlantShare, onCreateGeneralPost, onClose]);
+
+  const handleBackdropPress = useCallback(async () => {
+    await triggerLightHapticSync();
+    onClose();
+  }, [onClose]);
+
+  return (
+    <Modal
+      visible={isVisible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <Animated.View
+        entering={FadeInDown.duration(200)}
+        exiting={FadeOutDown.duration(200)}
+        className="flex-1 justify-end bg-black/50"
+      >
+        <Pressable
+          className="flex-1"
+          onPress={handleBackdropPress}
+          accessibilityLabel="Close modal"
+        />
+        
+        <Animated.View
+          entering={SlideInDown.duration(300).springify()}
+          exiting={SlideOutDown.duration(250)}
+          className="bg-white dark:bg-neutral-900 rounded-t-3xl px-6 pt-6 pb-8"
+        >
+          {/* Handle Bar */}
+          <View className="self-center w-12 h-1 bg-neutral-300 dark:bg-neutral-600 rounded-full mb-6" />
+          
+          {/* Header */}
+          <View className="mb-6">
+            <Text className="text-xl font-bold text-neutral-900 dark:text-neutral-100 text-center">
+              Create New Post
+            </Text>
+            <Text className="text-sm text-neutral-500 dark:text-neutral-400 text-center mt-1">
+              Choose what you'd like to share with the community
+            </Text>
+          </View>
+
+          {/* Options */}
+          <View className="space-y-3">
+            {POST_OPTIONS.map((option, index) => (
+              <Animated.View
+                key={option.key}
+                entering={FadeInDown.delay(index * 100).duration(300).springify()}
+              >
+                <Pressable
+                  onPress={() => handleOptionPress(option.key)}
+                  className={`${option.bgColor} rounded-2xl p-4 border border-transparent active:border-neutral-200 dark:active:border-neutral-700`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${option.title}: ${option.subtitle}`}
+                >
+                  <View className="flex-row items-center">
+                    <View className={`w-12 h-12 ${option.bgColor} rounded-xl items-center justify-center mr-4`}>
+                      <OptimizedIcon
+                        name={option.icon}
+                        size={24}
+                        className={option.iconColor}
+                      />
+                    </View>
+                    
+                    <View className="flex-1">
+                      <Text className={`text-lg font-semibold ${option.textColor} mb-1`}>
+                        {option.title}
+                      </Text>
+                      <Text className="text-sm text-neutral-600 dark:text-neutral-400">
+                        {option.subtitle}
+                      </Text>
+                    </View>
+                    
+                    <OptimizedIcon
+                      name="chevron-forward"
+                      size={20}
+                      className="text-neutral-400 dark:text-neutral-500"
+                    />
+                  </View>
+                </Pressable>
+              </Animated.View>
+            ))}
+          </View>
+
+          {/* Cancel Button */}
+          <Pressable
+            onPress={handleBackdropPress}
+            className="mt-6 bg-neutral-100 dark:bg-neutral-800 rounded-xl py-4"
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+          >
+            <Text className="text-center text-lg font-medium text-neutral-700 dark:text-neutral-300">
+              Cancel
+            </Text>
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+```
+
+### **2. Question Creation Screen**
+```typescript
+// screens/community/CreateQuestionScreen.tsx
+
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, Alert } from 'react-native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { EnhancedKeyboardWrapper } from '../../components/keyboard/EnhancedKeyboardWrapper';
+import { EnhancedTextInput } from '../../components/ui/EnhancedTextInput';
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
+import NetworkResilientImage from '../../components/ui/NetworkResilientImage';
+import TagPill from '../../components/ui/TagPill';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import { useImagePicker } from '../../lib/utils/image-picker';
+import { useCreateQuestion } from '../../lib/hooks/community/useCommunityQuestions';
+import type { QuestionCategory } from '../../lib/types/community';
+
+const QUESTION_CATEGORIES: { value: QuestionCategory; label: string }[] = [
+  { value: 'general', label: 'General' },
+  { value: 'growing_tips', label: 'Growing Tips' },
+  { value: 'troubleshooting', label: 'Troubleshooting' },
+  { value: 'strain_info', label: 'Strain Information' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'harvest', label: 'Harvest' },
+  { value: 'nutrients', label: 'Nutrients' },
+];
+
+const COMMON_TAGS = [
+  'beginner', 'indoor', 'outdoor', 'hydroponic', 'soil', 'LED', 'nutrients',
+  'flowering', 'vegetative', 'seedling', 'harvest', 'drying', 'curing',
+  'pest-control', 'deficiency', 'training', 'LST', 'SCROG', 'topping',
+];
+
+export default function CreateQuestionScreen() {
+  const insets = useSafeAreaInsets();
+  const createQuestion = useCreateQuestion();
+  const { pickImage, isLoading: imageLoading } = useImagePicker();
+
+  // Form state
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [category, setCategory] = useState<QuestionCategory>('general');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [customTag, setCustomTag] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [priority, setPriority] = useState<1 | 2 | 3 | 4 | 5>(1);
+
+  // Validation
+  const isFormValid = title.trim().length >= 5 && content.trim().length >= 10;
+  const isSubmitting = createQuestion.isPending;
+
+  const handleImagePick = useCallback(async () => {
+    try {
+      const result = await pickImage({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+      
+      if (result?.uri) {
+        setImageUri(result.uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  }, [pickImage]);
+
+  const handleRemoveImage = useCallback(() => {
+    setImageUri(null);
+    triggerLightHapticSync();
+  }, []);
+
+  const handleTagToggle = useCallback((tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+    triggerLightHapticSync();
+  }, []);
+
+  const handleAddCustomTag = useCallback(() => {
+    const trimmedTag = customTag.trim().toLowerCase();
+    if (trimmedTag && !selectedTags.includes(trimmedTag)) {
+      setSelectedTags(prev => [...prev, trimmedTag]);
+      setCustomTag('');
+      triggerLightHapticSync();
+    }
+  }, [customTag, selectedTags]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!isFormValid) return;
+
+    try {
+      await createQuestion.mutateAsync({
+        title: title.trim(),
+        content: content.trim(),
+        category,
+        tags: selectedTags,
+        image_url: imageUri || undefined,
+        priority_level: priority,
+      });
+
+      Alert.alert(
+        'Question Posted!',
+        'Your question has been posted to the community.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'Failed to post your question. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [isFormValid, createQuestion, title, content, category, selectedTags, imageUri, priority]);
+
+  return (
+    <EnhancedKeyboardWrapper
+      showAccessoryToolbar
+      accessoryToolbarActions={[
+        {
+          title: 'Cancel',
+          onPress: () => router.back(),
+          style: 'cancel',
+        },
+        {
+          title: 'Post Question',
+          onPress: handleSubmit,
+          style: 'done',
+          disabled: !isFormValid || isSubmitting,
+        },
+      ]}
+    >
+      <View className="flex-1 bg-white dark:bg-neutral-900" style={{ paddingTop: insets.top }}>
+        {/* Header */}
+        <View className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
+          <View className="flex-row items-center">
+            <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-full">
+              <OptimizedIcon
+                name="help-circle"
+                size={20}
+                className="text-blue-600 dark:text-blue-400 mr-2"
+              />
+              <Text className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                Ask a Question
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+          {/* Title Input */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Question Title *
+            </Text>
+            <EnhancedTextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="What's your question?"
+              maxLength={200}
+              showCharacterCount
+              className="bg-neutral-50 dark:bg-neutral-800"
+              autoFocus
+            />
+          </View>
+
+          {/* Category Selection */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+              Category
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row space-x-2">
+                {QUESTION_CATEGORIES.map((cat) => (
+                  <Pressable
+                    key={cat.value}
+                    onPress={() => {
+                      setCategory(cat.value);
+                      triggerLightHapticSync();
+                    }}
+                    className={`px-4 py-2 rounded-full border ${
+                      category === cat.value
+                        ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700'
+                        : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        category === cat.value
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-neutral-600 dark:text-neutral-400'
+                      }`}
+                    >
+                      {cat.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Content Input */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Question Details *
+            </Text>
+            <EnhancedTextInput
+              value={content}
+              onChangeText={setContent}
+              placeholder="Provide more details about your question..."
+              multiline
+              numberOfLines={6}
+              maxLength={2000}
+              showCharacterCount
+              className="bg-neutral-50 dark:bg-neutral-800"
+            />
+          </View>
+
+          {/* Tags Section */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+              Tags (Optional)
+            </Text>
+            
+            {/* Selected Tags */}
+            {selectedTags.length > 0 && (
+              <View className="flex-row flex-wrap mb-3">
+                {selectedTags.map((tag) => (
+                  <TagPill
+                    key={tag}
+                    text={tag}
+                    variant="blue"
+                    size="small"
+                    onRemove={() => handleTagToggle(tag)}
+                    className="mr-2 mb-2"
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Common Tags */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row space-x-2">
+                {COMMON_TAGS.filter(tag => !selectedTags.includes(tag)).map((tag) => (
+                  <Pressable
+                    key={tag}
+                    onPress={() => handleTagToggle(tag)}
+                    className="px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-full border border-neutral-200 dark:border-neutral-700"
+                  >
+                    <Text className="text-sm text-neutral-600 dark:text-neutral-400">
+                      {tag}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* Custom Tag Input */}
+            <View className="mt-3 flex-row">
+              <EnhancedTextInput
+                value={customTag}
+                onChangeText={setCustomTag}
+                placeholder="Add custom tag..."
+                className="flex-1 bg-neutral-50 dark:bg-neutral-800 mr-2"
+                onSubmitEditing={handleAddCustomTag}
+                returnKeyType="done"
+              />
+              <Pressable
+                onPress={handleAddCustomTag}
+                disabled={!customTag.trim()}
+                className={`px-4 py-2 rounded-xl ${
+                  customTag.trim()
+                    ? 'bg-blue-500'
+                    : 'bg-neutral-300 dark:bg-neutral-700'
+                }`}
+              >
+                <Text className={`text-sm font-medium ${
+                  customTag.trim()
+                    ? 'text-white'
+                    : 'text-neutral-500 dark:text-neutral-400'
+                }`}>
+                  Add
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Image Upload */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+              Image (Optional)
+            </Text>
+            
+            {imageUri ? (
+              <View className="relative">
+                <NetworkResilientImage
+                  source={{ uri: imageUri }}
+                  className="w-full h-48 rounded-xl"
+                  resizeMode="cover"
+                />
+                <Pressable
+                  onPress={handleRemoveImage}
+                  className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full items-center justify-center"
+                >
+                  <OptimizedIcon
+                    name="close"
+                    size={16}
+                    className="text-white"
+                  />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                onPress={handleImagePick}
+                disabled={imageLoading}
+                className="h-32 bg-neutral-100 dark:bg-neutral-800 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 items-center justify-center"
+              >
+                <OptimizedIcon
+                  name={imageLoading ? "hourglass" : "camera"}
+                  size={32}
+                  className="text-neutral-400 dark:text-neutral-500 mb-2"
+                />
+                <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {imageLoading ? 'Loading...' : 'Tap to add image'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Priority Level */}
+          <View className="mt-6 mb-8">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+              Priority Level
+            </Text>
+            <View className="flex-row space-x-2">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <Pressable
+                  key={level}
+                  onPress={() => {
+                    setPriority(level as 1 | 2 | 3 | 4 | 5);
+                    triggerLightHapticSync();
+                  }}
+                  className={`flex-1 py-3 rounded-xl border ${
+                    priority === level
+                      ? level > 3
+                        ? 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700'
+                        : 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700'
+                      : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+                  }`}
+                >
+                  <Text
+                    className={`text-center text-sm font-medium ${
+                      priority === level
+                        ? level > 3
+                          ? 'text-orange-700 dark:text-orange-300'
+                          : 'text-blue-700 dark:text-blue-300'
+                        : 'text-neutral-600 dark:text-neutral-400'
+                    }`}
+                  >
+                    {level}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 text-center">
+              1 = Low Priority, 5 = Urgent
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
+    </EnhancedKeyboardWrapper>
+  );
+}
+```
+
+### **3. Plant Share Creation Screen**
+```typescript
+// screens/community/CreatePlantShareScreen.tsx
+
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, Alert, Pressable } from 'react-native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { EnhancedKeyboardWrapper } from '../../components/keyboard/EnhancedKeyboardWrapper';
+import { EnhancedTextInput } from '../../components/ui/EnhancedTextInput';
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
+import NetworkResilientImage from '../../components/ui/NetworkResilientImage';
+import TagPill from '../../components/ui/TagPill';
+import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import { useImagePicker } from '../../lib/utils/image-picker';
+import { useCreatePlantShare } from '../../lib/hooks/community/useCommunityPlantShares';
+import { usePlants } from '../../lib/hooks/plants/usePlants'; // Existing hook
+import type { GrowthStage, GrowingMedium, Environment } from '../../lib/types/community';
+
+const GROWTH_STAGES: { value: GrowthStage; label: string; color: string }[] = [
+  { value: 'seedling', label: 'Seedling', color: 'green' },
+  { value: 'vegetative', label: 'Vegetative', color: 'blue' },
+  { value: 'flowering', label: 'Flowering', color: 'purple' },
+  { value: 'harvest', label: 'Harvest', color: 'orange' },
+  { value: 'curing', label: 'Curing', color: 'amber' },
+];
+
+const GROWING_MEDIUMS: { value: GrowingMedium; label: string }[] = [
+  { value: 'soil', label: 'Soil' },
+  { value: 'hydroponic', label: 'Hydroponic' },
+  { value: 'coco_coir', label: 'Coco Coir' },
+  { value: 'rockwool', label: 'Rockwool' },
+  { value: 'perlite', label: 'Perlite' },
+  { value: 'other', label: 'Other' },
+];
+
+const ENVIRONMENTS: { value: Environment; label: string }[] = [
+  { value: 'indoor', label: 'Indoor' },
+  { value: 'outdoor', label: 'Outdoor' },
+  { value: 'greenhouse', label: 'Greenhouse' },
+  { value: 'mixed', label: 'Mixed' },
+];
+
+export default function CreatePlantShareScreen() {
+  const insets = useSafeAreaInsets();
+  const createPlantShare = useCreatePlantShare();
+  const { data: userPlants } = usePlants(); // Get user's plants
+  const { pickMultipleImages, isLoading: imageLoading } = useImagePicker();
+
+  // Form state
+  const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
+  const [plantName, setPlantName] = useState('');
+  const [strainName, setStrainName] = useState('');
+  const [growthStage, setGrowthStage] = useState<GrowthStage>('vegetative');
+  const [content, setContent] = useState('');
+  const [careTips, setCareTips] = useState('');
+  const [growingMedium, setGrowingMedium] = useState<GrowingMedium>('soil');
+  const [environment, setEnvironment] = useState<Environment>('indoor');
+  const [imageUris, setImageUris] = useState<string[]>([]);
+
+  // Auto-fill from selected plant
+  const selectedPlant = useMemo(() => 
+    userPlants?.find(plant => plant.id === selectedPlantId),
+    [userPlants, selectedPlantId]
+  );
+
+  React.useEffect(() => {
+    if (selectedPlant) {
+      setPlantName(selectedPlant.name);
+      setStrainName(selectedPlant.strain_name || '');
+      // Auto-detect growth stage based on plant data if available
+    }
+  }, [selectedPlant]);
+
+  // Validation
+  const isFormValid = plantName.trim().length >= 2 && content.trim().length >= 10;
+  const isSubmitting = createPlantShare.isPending;
+
+  const handleImagesPick = useCallback(async () => {
+    try {
+      const results = await pickMultipleImages({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        maxImages: 5,
+      });
+      
+      if (results && results.length > 0) {
+        setImageUris(results.map(r => r.uri));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick images. Please try again.');
+    }
+  }, [pickMultipleImages]);
+
+  const handleRemoveImage = useCallback((index: number) => {
+    setImageUris(prev => prev.filter((_, i) => i !== index));
+    triggerLightHapticSync();
+  }, []);
+
+  const handlePlantSelect = useCallback((plantId: string) => {
+    setSelectedPlantId(plantId);
+    triggerLightHapticSync();
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!isFormValid) return;
+
+    try {
+      await createPlantShare.mutateAsync({
+        plant_id: selectedPlantId || undefined,
+        plant_name: plantName.trim(),
+        strain_name: strainName.trim() || undefined,
+        growth_stage: growthStage,
+        content: content.trim(),
+        care_tips: careTips.trim() || undefined,
+        growing_medium: growingMedium,
+        environment: environment,
+        images_urls: imageUris,
+      });
+
+      Alert.alert(
+        'Plant Shared!',
+        'Your plant has been shared with the community.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'Failed to share your plant. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [isFormValid, createPlantShare, selectedPlantId, plantName, strainName, growthStage, content, careTips, growingMedium, environment, imageUris]);
+
+  return (
+    <EnhancedKeyboardWrapper
+      showAccessoryToolbar
+      accessoryToolbarActions={[
+        {
+          title: 'Cancel',
+          onPress: () => router.back(),
+          style: 'cancel',
+        },
+        {
+          title: 'Share Plant',
+          onPress: handleSubmit,
+          style: 'done',
+          disabled: !isFormValid || isSubmitting,
+        },
+      ]}
+    >
+      <View className="flex-1 bg-white dark:bg-neutral-900" style={{ paddingTop: insets.top }}>
+        {/* Header */}
+        <View className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
+          <View className="flex-row items-center">
+            <View className="flex-row items-center bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-full">
+              <OptimizedIcon
+                name="leaf"
+                size={20}
+                className="text-green-600 dark:text-green-400 mr-2"
+              />
+              <Text className="text-lg font-semibold text-green-600 dark:text-green-400">
+                Share a Plant
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+          {/* Plant Selection */}
+          {userPlants && userPlants.length > 0 && (
+            <View className="mt-6">
+              <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+                Select from Your Plants (Optional)
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View className="flex-row space-x-3">
+                  {userPlants.map((plant) => (
+                    <Pressable
+                      key={plant.id}
+                      onPress={() => handlePlantSelect(plant.id)}
+                      className={`p-3 rounded-xl border min-w-[120px] ${
+                        selectedPlantId === plant.id
+                          ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700'
+                          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm font-medium text-center ${
+                          selectedPlantId === plant.id
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-neutral-600 dark:text-neutral-400'
+                        }`}
+                        numberOfLines={2}
+                      >
+                        {plant.name}
+                      </Text>
+                      {plant.strain_name && (
+                        <Text className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-1">
+                          {plant.strain_name}
+                        </Text>
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Plant Name Input */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Plant Name *
+            </Text>
+            <EnhancedTextInput
+              value={plantName}
+              onChangeText={setPlantName}
+              placeholder="What do you call this plant?"
+              maxLength={100}
+              className="bg-neutral-50 dark:bg-neutral-800"
+              autoFocus={!selectedPlantId}
+            />
+          </View>
+
+          {/* Strain Name Input */}
+          <View className="mt-4">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Strain Name (Optional)
+            </Text>
+            <EnhancedTextInput
+              value={strainName}
+              onChangeText={setStrainName}
+              placeholder="e.g., Blue Dream, OG Kush..."
+              maxLength={100}
+              className="bg-neutral-50 dark:bg-neutral-800"
+            />
+          </View>
+
+          {/* Growth Stage Selection */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+              Growth Stage
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row space-x-2">
+                {GROWTH_STAGES.map((stage) => (
+                  <Pressable
+                    key={stage.value}
+                    onPress={() => {
+                      setGrowthStage(stage.value);
+                      triggerLightHapticSync();
+                    }}
+                    className={`px-4 py-2 rounded-full border ${
+                      growthStage === stage.value
+                        ? `bg-${stage.color}-100 dark:bg-${stage.color}-900/30 border-${stage.color}-300 dark:border-${stage.color}-700`
+                        : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        growthStage === stage.value
+                          ? `text-${stage.color}-700 dark:text-${stage.color}-300`
+                          : 'text-neutral-600 dark:text-neutral-400'
+                      }`}
+                    >
+                      {stage.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Content Input */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Share Your Story *
+            </Text>
+            <EnhancedTextInput
+              value={content}
+              onChangeText={setContent}
+              placeholder="Tell the community about your plant, growing experience, challenges, successes..."
+              multiline
+              numberOfLines={6}
+              maxLength={2000}
+              showCharacterCount
+              className="bg-neutral-50 dark:bg-neutral-800"
+            />
+          </View>
+
+          {/* Care Tips Input */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+              Care Tips (Optional)
+            </Text>
+            <EnhancedTextInput
+              value={careTips}
+              onChangeText={setCareTips}
+              placeholder="Share any specific care tips, nutrients, schedules, or techniques..."
+              multiline
+              numberOfLines={4}
+              maxLength={1000}
+              showCharacterCount
+              className="bg-neutral-50 dark:bg-neutral-800"
+            />
+          </View>
+
+          {/* Environment & Medium */}
+          <View className="mt-6">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+              Growing Details
+            </Text>
+            
+            <View className="space-y-4">
+              {/* Environment */}
+              <View>
+                <Text className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                  Environment
+                </Text>
+                <View className="flex-row space-x-2">
+                  {ENVIRONMENTS.map((env) => (
+                    <Pressable
+                      key={env.value}
+                      onPress={() => {
+                        setEnvironment(env.value);
+                        triggerLightHapticSync();
+                      }}
+                      className={`flex-1 py-2 rounded-lg border ${
+                        environment === env.value
+                          ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700'
+                          : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+                      }`}
+                    >
+                      <Text
+                        className={`text-center text-sm font-medium ${
+                          environment === env.value
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-neutral-600 dark:text-neutral-400'
+                        }`}
+                      >
+                        {env.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Growing Medium */}
+              <View>
+                <Text className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                  Growing Medium
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View className="flex-row space-x-2">
+                    {GROWING_MEDIUMS.map((medium) => (
+                      <Pressable
+                        key={medium.value}
+                        onPress={() => {
+                          setGrowingMedium(medium.value);
+                          triggerLightHapticSync();
+                        }}
+                        className={`px-4 py-2 rounded-full border ${
+                          growingMedium === medium.value
+                            ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700'
+                            : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+                        }`}
+                      >
+                        <Text
+                          className={`text-sm font-medium ${
+                            growingMedium === medium.value
+                              ? 'text-green-700 dark:text-green-300'
+                              : 'text-neutral-600 dark:text-neutral-400'
+                          }`}
+                        >
+                          {medium.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            </View>
+          </View>
+
+          {/* Image Upload */}
+          <View className="mt-6 mb-8">
+            <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+              Plant Photos (Up to 5)
+            </Text>
+            
+            {imageUris.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View className="flex-row space-x-3">
+                  {imageUris.map((uri, index) => (
+                    <View key={index} className="relative">
+                      <NetworkResilientImage
+                        source={{ uri }}
+                        className="w-24 h-24 rounded-xl"
+                        resizeMode="cover"
+                      />
+                      <Pressable
+                        onPress={() => handleRemoveImage(index)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full items-center justify-center"
+                      >
+                        <OptimizedIcon
+                          name="close"
+                          size={12}
+                          className="text-white"
+                        />
+                      </Pressable>
+                    </View>
+                  ))}
+                  
+                  {imageUris.length < 5 && (
+                    <Pressable
+                      onPress={handleImagesPick}
+                      disabled={imageLoading}
+                      className="w-24 h-24 bg-neutral-100 dark:bg-neutral-800 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 items-center justify-center"
+                    >
+                      <OptimizedIcon
+                        name={imageLoading ? "hourglass" : "add"}
+                        size={20}
+                        className="text-neutral-400 dark:text-neutral-500"
+                      />
+                    </Pressable>
+                  )}
+                </View>
+              </ScrollView>
+            ) : (
+              <Pressable
+                onPress={handleImagesPick}
+                disabled={imageLoading}
+                className="h-32 bg-neutral-100 dark:bg-neutral-800 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 items-center justify-center"
+              >
+                <OptimizedIcon
+                  name={imageLoading ? "hourglass" : "camera"}
+                  size={32}
+                  className="text-neutral-400 dark:text-neutral-500 mb-2"
+                />
+                <Text className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {imageLoading ? 'Loading...' : 'Tap to add photos'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </EnhancedKeyboardWrapper>
+  );
+}
+```
+
+## **Implementation Tasks:**
+
+### **Screen Creation:**
+1. Build CreateQuestionScreen with comprehensive form validation
+2. Build CreatePlantShareScreen with plant collection integration
+3. Enhance CreatePostModal with better visual design
+4. Add proper navigation routing for creation flows
+5. Implement image upload integration with existing helpers
+
+### **Form Features:**
+1. Advanced form validation with real-time feedback
+2. Tag management with autocomplete and custom tags
+3. Category and growth stage selection with visual indicators
+4. Priority levels and urgency indicators
+5. Multiple image upload with preview and management
+
+### **Integration Points:**
+1. Connect with existing plant collection data
+2. Use centralized image upload utilities
+3. Integrate with React Query mutations
+4. Connect with navigation patterns
+5. Use existing haptic feedback and animations
+
+### **User Experience:**
+1. Auto-fill from existing plant data
+2. Smart defaults and suggestions
+3. Character limits and progress indicators
+4. Keyboard management and accessory toolbar
+5. Proper error handling and loading states
+
+**Timeline: 4-5 days**
+**Dependencies: Phase 3 (UI Components)**
+**Deliverables: Complete creation flows, specialized screens, enhanced modal, form validation, plant integration**
+

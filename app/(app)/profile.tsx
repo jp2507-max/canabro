@@ -64,15 +64,12 @@ const useProfileData = (userId: string): ProfileData => {
           // Combine profile with counts
           return typedProfile.plants.observeCount(false).pipe(
             switchMap((plantsCount) =>
-              typedProfile.posts.observeCount(false).pipe(
-                switchMap((postsCount) =>
-                  of$({
-                    profile: typedProfile,
-                    plantsCount,
-                    postsCount,
-                  })
-                )
-              )
+              // Since posts table was removed, set postsCount to 0
+              of$({
+                profile: typedProfile,
+                plantsCount,
+                postsCount: 0,
+              })
             )
           );
         }),

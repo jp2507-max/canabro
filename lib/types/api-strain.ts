@@ -30,7 +30,7 @@ export interface ApiStrain {
   harvestTimeOutdoor?: string | null; // e.g., "End of October"
 
   // It's good practice to allow for other potential fields
-  [key: string]: any; // Allows for any other properties that might come from the API
+  [key: string]: unknown; // Allows for any other properties that might come from the API
 }
 
 /**
@@ -39,9 +39,15 @@ export interface ApiStrain {
  * @param obj - The object to check.
  * @returns True if the object is an ApiStrain, false otherwise.
  */
-export function isApiStrain(obj: any): obj is ApiStrain {
+export function isApiStrain(obj: unknown): obj is ApiStrain {
   return (
-    obj && typeof obj.api_id === 'string' && typeof obj.name === 'string'
+    obj !== null &&
+    obj !== undefined &&
+    typeof obj === 'object' &&
+    'api_id' in obj &&
+    'name' in obj &&
+    typeof (obj as Record<string, unknown>).api_id === 'string' &&
+    typeof (obj as Record<string, unknown>).name === 'string'
     // Add more checks for essential fields if necessary
   );
 }

@@ -14,9 +14,11 @@ interface TagPillProps {
   text: string;
   onPress?: () => void;
   selected?: boolean;
-  variant?: 'default' | 'strain' | 'category';
+  variant?: 'default' | 'strain' | 'category' | 'blue' | 'green' | 'neutral';
+  size?: 'small' | 'medium';
   disabled?: boolean;
   enableHaptics?: boolean;
+  className?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -26,8 +28,10 @@ export function TagPill({
   onPress,
   selected = false,
   variant = 'default',
+  size = 'medium',
   disabled = false,
   enableHaptics = true,
+  className = '',
 }: TagPillProps) {
   // Shared values for animations
   const scale = useSharedValue(1);
@@ -41,14 +45,27 @@ export function TagPill({
   // Animated styles for press and selection effects
   const animatedStyle = useAnimatedStyle(() => {
     'worklet';
+    // Color mappings: use semantic CSS variables for theme support
+    const colorFrom = 'var(--color-neutral-200)'; // neutral-200
+    let colorTo = 'var(--color-indigo-500)'; // indigo-500 (default)
+    switch (variant) {
+      case 'strain':
+      case 'green':
+        colorTo = 'var(--color-green-500)'; // green-500
+        break;
+      case 'category':
+      case 'blue':
+        colorTo = 'var(--color-blue-500)'; // blue-500
+        break;
+      case 'neutral':
+        colorTo = 'var(--color-neutral-500)'; // neutral-500
+        break;
+      // default: indigo-500
+    }
     const backgroundColor = rInterpolateColor(
       selectedProgress.value,
       [0, 1],
-      variant === 'strain'
-        ? ['rgb(229, 231, 235)', 'rgb(34, 197, 94)'] // neutral-200 to green-500
-        : variant === 'category'
-          ? ['rgb(229, 231, 235)', 'rgb(59, 130, 246)'] // neutral-200 to blue-500
-          : ['rgb(229, 231, 235)', 'rgb(99, 102, 241)'] // neutral-200 to indigo-500
+      [colorFrom, colorTo]
     );
 
     return {
@@ -92,14 +109,22 @@ export function TagPill({
     if (selected) {
       switch (variant) {
         case 'strain':
+        case 'green':
           return 'bg-green-500';
         case 'category':
+        case 'blue':
           return 'bg-blue-500';
+        case 'neutral':
+          return 'bg-neutral-500';
         default:
           return 'bg-indigo-500';
       }
     }
     return 'bg-neutral-200 dark:bg-neutral-700';
+  };
+
+  const getSizeClasses = () => {
+    return size === 'small' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-xs';
   };
 
   const getTextClasses = () => {
@@ -115,9 +140,11 @@ export function TagPill({
       disabled={disabled}
       style={animatedStyle}
       className={`
-        mr-2 rounded-full px-3 py-1.5 
+        mr-2 rounded-full
+        ${getSizeClasses()}
         ${getVariantClasses()}
         ${disabled ? 'opacity-50' : ''}
+        ${className}
         transition-colors duration-200
       `}
       accessible
@@ -129,7 +156,7 @@ export function TagPill({
       accessibilityLabel={`${text} tag${selected ? ', selected' : ''}`}
       accessibilityHint={onPress ? 'Tap to toggle selection' : undefined}>
       <Animated.View>
-        <ThemedText className={`text-xs font-medium ${getTextClasses()}`} style={textAnimatedStyle}>
+        <ThemedText className={`font-medium ${getTextClasses()}`} style={textAnimatedStyle}>
           {text}
         </ThemedText>
       </Animated.View>

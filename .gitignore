@@ -1,11 +1,38 @@
 # Environment variables
 .env
 .env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# VSCode & MCP
+# API keys and secrets
+config/secrets.json
+secrets.json
+api-keys.json
+*.key
+*.secret
+
+# VSCode & MCP - Extension configurations with API keys
 .vscode/mcp.json
+.vscode/settings.json
+.vscode/extensions.json
 .cursor/mcp.json
+.cursor/settings.json
+.cursor/extensions.json
 mcp.json
+*.mcp.json
+
+# Gemini extension configurations (may contain API keys)
+.gemini/extensions/*/gemini-extension.json
+.gemini/config.json
+.gemini/api-keys.json
+
+# IDE configuration files that may contain sensitive data
+.idea/
+*.swp
+*.swo
+*~
 
 # Dependencies
 node_modules/

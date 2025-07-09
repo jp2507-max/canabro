@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 23, // Incremented from 22 to add title column to diary_entries
+  version: 27, // Incremented from 26 to remove community/notification tables
   tables: [
     tableSchema({
       name: 'profiles',
@@ -111,22 +111,21 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
       ],
     }),
-    // Add missing notifications table
-    tableSchema({
-      name: 'notifications',
-      columns: [
-        { name: 'notification_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's \`id\`
-        { name: 'user_id', type: 'string', isIndexed: true },
-        { name: 'sender_id', type: 'string', isOptional: true },
-        { name: 'type', type: 'string' },
-        { name: 'content', type: 'string', isOptional: true },
-        { name: 'related_post_id', type: 'string', isOptional: true, isIndexed: true },
-        { name: 'related_comment_id', type: 'string', isOptional: true, isIndexed: true },
-        { name: 'is_read', type: 'boolean' },
-        { name: 'created_at', type: 'number' },
-        // Note: No updated_at in the model, so not adding here.
-      ],
-    }),
+    // Add missing notifications table - REMOVED FOR OFFLINE-FIRST FOCUS
+    // tableSchema({
+    //   name: 'notifications',
+    //   columns: [
+    //     { name: 'notification_id', type: 'string' },
+    //     { name: 'user_id', type: 'string', isIndexed: true },
+    //     { name: 'sender_id', type: 'string', isOptional: true },
+    //     { name: 'type', type: 'string' },
+    //     { name: 'content', type: 'string', isOptional: true },
+    //     { name: 'related_post_id', type: 'string', isOptional: true, isIndexed: true },
+    //     { name: 'related_comment_id', type: 'string', isOptional: true, isIndexed: true },
+    //     { name: 'is_read', type: 'boolean' },
+    //     { name: 'created_at', type: 'number' },
+    //   ],
+    // }),
     // Add missing strains table
     tableSchema({
       name: 'strains',
@@ -175,23 +174,52 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
       ],
     }),
-    // Add missing posts table
-    tableSchema({
-      name: 'posts',
-      columns: [
-        { name: 'post_id', type: 'string' }, // Assuming this is the primary key handled by WatermelonDB's \`id\`
-        { name: 'user_id', type: 'string', isIndexed: true },
-        { name: 'content', type: 'string' },
-        { name: 'image_url', type: 'string', isOptional: true },
-        { name: 'plant_id', type: 'string', isOptional: true, isIndexed: true },
-        { name: 'likes_count', type: 'number', isOptional: true },
-        { name: 'comments_count', type: 'number', isOptional: true },
-        { name: 'created_at', type: 'number' },
-        { name: 'updated_at', type: 'number' },
-        { name: 'last_synced_at', type: 'number', isOptional: true },
-        { name: 'is_deleted', type: 'boolean', isOptional: true },
-      ],
-    }),
+    // Community Questions table for Q&A posts - REMOVED FOR OFFLINE-FIRST FOCUS
+    // tableSchema({
+    //   name: 'community_questions',
+    //   columns: [
+    //     { name: 'user_id', type: 'string', isIndexed: true },
+    //     { name: 'title', type: 'string' },
+    //     { name: 'content', type: 'string' },
+    //     { name: 'category', type: 'string', isOptional: true },
+    //     { name: 'tags', type: 'string', isOptional: true }, // JSON string array
+    //     { name: 'image_url', type: 'string', isOptional: true },
+    //     { name: 'is_solved', type: 'boolean', isOptional: true },
+    //     { name: 'priority_level', type: 'number', isOptional: true },
+    //     { name: 'likes_count', type: 'number', isOptional: true },
+    //     { name: 'answers_count', type: 'number', isOptional: true },
+    //     { name: 'views_count', type: 'number', isOptional: true },
+    //     { name: 'created_at', type: 'number' },
+    //     { name: 'updated_at', type: 'number' },
+    //     { name: 'deleted_at', type: 'number', isOptional: true },
+    //     { name: 'last_synced_at', type: 'number', isOptional: true },
+    //   ],
+    // }),
+    // Community Plant Shares table for sharing plant progress - REMOVED FOR OFFLINE-FIRST FOCUS
+    // tableSchema({
+    //   name: 'community_plant_shares',
+    //   columns: [
+    //     { name: 'user_id', type: 'string', isIndexed: true },
+    //     { name: 'plant_id', type: 'string', isOptional: true, isIndexed: true },
+    //     { name: 'plant_name', type: 'string' },
+    //     { name: 'strain_name', type: 'string', isOptional: true },
+    //     { name: 'growth_stage', type: 'string', isOptional: true },
+    //     { name: 'content', type: 'string' },
+    //     { name: 'care_tips', type: 'string', isOptional: true },
+    //     { name: 'growing_medium', type: 'string', isOptional: true },
+    //     { name: 'environment', type: 'string', isOptional: true },
+    //     { name: 'images_urls', type: 'string', isOptional: true }, // JSON string array
+    //     { name: 'is_featured', type: 'boolean', isOptional: true },
+    //     { name: 'likes_count', type: 'number', isOptional: true },
+    //     { name: 'comments_count', type: 'number', isOptional: true },
+    //     { name: 'shares_count', type: 'number', isOptional: true },
+    //     { name: 'created_at', type: 'number' },
+    //     { name: 'updated_at', type: 'number' },
+    //     { name: 'deleted_at', type: 'number', isOptional: true },
+    //     { name: 'last_synced_at', type: 'number', isOptional: true },
+    //   ],
+    // }),
+    /*
     tableSchema({
       name: 'favorite_strains',
       columns: [
@@ -202,5 +230,6 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
       ],
     }),
+    */
   ],
 });

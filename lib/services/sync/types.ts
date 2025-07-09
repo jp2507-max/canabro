@@ -63,7 +63,6 @@ export const TABLES_TO_SYNC = [
   'grow_locations',
   'diary_entries',
   'plant_tasks',
-  'posts',
 ];
 
 /**

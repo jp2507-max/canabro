@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -45,6 +46,7 @@ export default function StrainsScreen() {
   } = useFavoriteManager();
 
   // Strains query
+
   const {
     data,
     isLoading,
@@ -61,10 +63,18 @@ export default function StrainsScreen() {
     enabled: true,
   });
 
+  // Type for StrainQueryResponse
+  type StrainQueryResponse = {
+    strains: WeedDbStrain[];
+    total: number;
+    hasMore: boolean;
+  };
+
   // Flatten pages into a single array
   const strains = useMemo(() => {
-    if (!data) return [];
-    return data.pages.flatMap((p) => p.strains);
+    const infiniteData = data as unknown as { pages: StrainQueryResponse[] } | undefined;
+    if (!infiniteData) return [];
+    return infiniteData.pages.flatMap((p: StrainQueryResponse) => p.strains);
   }, [data]) as WeedDbStrain[];
 
   // Memoized values
@@ -190,7 +200,7 @@ export default function StrainsScreen() {
         strains={strains}
         isLoading={isLoading || favoritesLoading}
         isFetching={isFetching}
-        error={error || favoritesError}
+  error={error || (favoritesError instanceof Error ? favoritesError : null)}
         activeFilters={activeFilters}
         setActiveFilters={setActiveFilters}
         handleApplyFilters={handleApplyFilters}

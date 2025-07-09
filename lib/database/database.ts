@@ -14,12 +14,12 @@ import { FavoriteStrain } from '../models/FavoriteStrain';
 import { GrowJournal } from '../models/GrowJournal';
 import { GrowLocation } from '../models/GrowLocation';
 import { JournalEntry } from '../models/JournalEntry';
-import { Notification } from '../models/Notification';
 import { Plant } from '../models/Plant';
 import { PlantTask } from '../models/PlantTask';
-import { Post } from '../models/Post';
 import { Profile } from '../models/Profile';
 import { Strain } from '../models/Strain';
+// Note: CommunityQuestion and CommunityPlantShare models removed in schema v27
+// Note: Notification model commented out as it doesn't exist yet
 import migrations from '../models/migrations';
 import plantSchema from '../models/schema'; // Corrected import path
 
@@ -70,10 +70,11 @@ const modelClasses = [
   GrowJournal,
   JournalEntry,
   GrowLocation,
-  Notification,
+  // Notification, // Commented out as it doesn't exist yet
   Strain,
   PlantTask,
-  Post,
+  // CommunityQuestion, // Removed in schema v27
+  // CommunityPlantShare, // Removed in schema v27
   FavoriteStrain,
 ];
 
@@ -106,10 +107,10 @@ if (isExpoGo) {
     unsafeResetDatabase: async () => {
       console.log('Mock unsafeResetDatabase called');
     },
-    getLocal: async (key: string) => null,
-    setLocal: async (key: string, value: string) => {},
-    removeLocal: async (key: string) => {},
-  } as any; // Cast to any to satisfy the type temporarily
+    getLocal: async (_key: string) => null,
+    setLocal: async (_key: string, _value: string) => {},
+    removeLocal: async (_key: string) => {},
+  } as unknown as SQLiteAdapter; // Cast to unknown first, then to SQLiteAdapter
   console.warn(
     'Using a minimal mock adapter for Expo Go. Database functionality will be limited/broken.'
   );

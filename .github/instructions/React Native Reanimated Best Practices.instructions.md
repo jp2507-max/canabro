@@ -1,5 +1,5 @@
 ---
-applyTo: 'Styling, Theming'
+applyTo: 'Animation, Theming'
 ---
 # 🎬 React Native Reanimated Production Guide
 
@@ -292,11 +292,11 @@ import { AnimatedCard } from '@/lib/animations/AnimatedCard';
 // ✅ REACT COMPILER COMPATIBLE (RC Available since April 2025)
 const animatedStyle = useAnimatedStyle(() => {
   'worklet';
-  return { width: sv.get() * 100 };
+  return { width: sv.value * 100 };
 });
 
 const handlePress = () => {
-  sv.set((value) => value + 1);
+  sv.value = sv.value + 1;
 };
 ```
 

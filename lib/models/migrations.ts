@@ -16,7 +16,7 @@ const migrations = schemaMigrations({
     {
       toVersion: 2,
       steps: [
-        // First, create the posts table if it doesn't exist
+        // Create the posts table (deprecated in v26, replaced by community_questions and community_plant_shares)
         createTable({
           name: 'posts',
           columns: [
@@ -67,7 +67,7 @@ const migrations = schemaMigrations({
           table: 'plant_tasks',
           columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
         }),
-        // Add is_deleted column to posts
+        // Add is_deleted column to posts (deprecated table, removed in v26)
         addColumns({
           table: 'posts',
           columns: [{ name: 'is_deleted', type: 'boolean', isOptional: true }],
@@ -197,7 +197,7 @@ const migrations = schemaMigrations({
         }),
       ],
     },
-    // Migration to version 9: Add the posts table
+    // Migration to version 9: Add the posts table (deprecated in v26)
     {
       toVersion: 9,
       steps: [
@@ -376,6 +376,105 @@ const migrations = schemaMigrations({
           table: 'diary_entries',
           columns: [{ name: 'title', type: 'string', isOptional: true }],
         }),
+      ],
+    },
+    // Migration to version 24: Fix posts table schema to match Supabase (deprecated in v26)
+    // Remove plant_id column and add plant_stage and plant_strain columns
+    {
+      toVersion: 24,
+      steps: [
+        addColumns({
+          table: 'posts',
+          columns: [
+            { name: 'plant_stage', type: 'string', isOptional: true },
+            { name: 'plant_strain', type: 'string', isOptional: true },
+          ],
+        }),
+        // Note: We don't explicitly remove the plant_id column to avoid complex migration
+        // The column is removed from the schema definition and won't be used in new code
+      ],
+    },
+    // Migration to version 25: Add community_questions and community_plant_shares tables
+    // Replace the legacy posts table with split community tables
+    {
+      toVersion: 25,
+      steps: [
+        // Create community_questions table for Q&A posts
+        createTable({
+          name: 'community_questions',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'title', type: 'string' },
+            { name: 'content', type: 'string' },
+            { name: 'category', type: 'string', isOptional: true },
+            { name: 'tags', type: 'string', isOptional: true }, // JSON string array
+            { name: 'image_url', type: 'string', isOptional: true },
+            { name: 'is_solved', type: 'boolean', isOptional: true },
+            { name: 'priority_level', type: 'number', isOptional: true },
+            { name: 'likes_count', type: 'number', isOptional: true },
+            { name: 'answers_count', type: 'number', isOptional: true },
+            { name: 'views_count', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'deleted_at', type: 'number', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+          ],
+        }),
+        // Create community_plant_shares table for sharing plant progress
+        createTable({
+          name: 'community_plant_shares',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'plant_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'plant_name', type: 'string' },
+            { name: 'strain_name', type: 'string', isOptional: true },
+            { name: 'growth_stage', type: 'string', isOptional: true },
+            { name: 'content', type: 'string' },
+            { name: 'care_tips', type: 'string', isOptional: true },
+            { name: 'growing_medium', type: 'string', isOptional: true },
+            { name: 'environment', type: 'string', isOptional: true },
+            { name: 'images_urls', type: 'string', isOptional: true }, // JSON string array
+            { name: 'is_featured', type: 'boolean', isOptional: true },
+            { name: 'likes_count', type: 'number', isOptional: true },
+            { name: 'comments_count', type: 'number', isOptional: true },
+            { name: 'shares_count', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'deleted_at', type: 'number', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+          ],
+        }),
+        // Note: The legacy posts table is kept for backward compatibility during transition.
+        // It will be removed in a future migration after all data is migrated to the new tables.
+      ],
+    },
+    // Migration to version 26: Remove legacy posts table
+    // The posts table has been successfully migrated to community_questions and community_plant_shares
+    // and dropped from Supabase. Now we remove it from WatermelonDB schema as well.
+    {
+      toVersion: 26,
+      steps: [
+        // Drop the legacy posts table from WatermelonDB
+        // Note: WatermelonDB doesn't have a direct "dropTable" method, so we rely on schema.ts
+        // to no longer include the posts table. This migration step serves as documentation
+        // that the table was intentionally removed in this version.
+        // 
+        // The posts table has been:
+        // 1. Migrated to community_questions and community_plant_shares in Supabase
+        // 2. Dropped from Supabase database
+        // 3. Removed from WatermelonDB schema.ts (version 26)
+        // 4. Post model deleted from codebase
+      ],
+    },
+    {
+      toVersion: 27,
+      steps: [
+        // This migration removes tables related to community and notification features
+        // by removing them from the schema.ts file.
+        // WatermelonDB migrations do not support dropping tables or deleting all data
+        // from a table in a safe, cross-platform way.
+        // By removing them from the schema, the app will no longer recognize or use them.
+        // Existing data will remain on user devices but will be ignored.
       ],
     },
   ],

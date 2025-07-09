@@ -4,10 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { useCrashPrevention } from '@/lib/utils/crashPrevention';
 import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
 import { OptimizedIcon } from './OptimizedIcon';
+import { useDatabase } from '@/lib/hooks/useDatabase';
+import { DataIntegrityService } from '@/lib/services/data-integrity';
+import { useAuth } from '@/lib/contexts/AuthProvider';
 
 interface DebugPanelProps {
   visible?: boolean;
@@ -22,9 +25,12 @@ export function DebugPanel({ visible = false, onClose }: DebugPanelProps) {
     listeners: 0,
     animations: 0,
   });
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   const { getCrashReports, getMemoryWarningCount, clearCrashReports } = useCrashPrevention();
   const { getResourceCount, getResourcesByType } = useResourceCleanup();
+  const database = useDatabase();
+  const { session } = useAuth();
 
   useEffect(() => {
     if (!visible) return;
@@ -67,6 +73,39 @@ export function DebugPanel({ visible = false, onClose }: DebugPanelProps) {
 
   const handleClearReports = () => {
     clearCrashReports();
+  };
+
+  const handleEmergencyCleanup = async () => {
+    if (!session?.user?.id) {
+      Alert.alert('Error', 'No user session found');
+      return;
+    }
+
+    setIsCleaningUp(true);
+    try {
+             const integrityService = new DataIntegrityService(database.database);
+      const result = await integrityService.emergencyCleanup(session.user.id);
+      
+      Alert.alert(
+        result.success ? 'Success' : 'Warning',
+        result.message,
+        [
+          {
+            text: 'Details',
+            onPress: () => {
+              if (result.details) {
+                Alert.alert('Cleanup Details', JSON.stringify(result.details, null, 2));
+              }
+            }
+          },
+          { text: 'OK' }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', `Cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsCleaningUp(false);
+    }
   };
 
   return (
@@ -251,6 +290,16 @@ export function DebugPanel({ visible = false, onClose }: DebugPanelProps) {
                   )}
                 </View>
               </View>
+
+              <Pressable
+                onPress={handleEmergencyCleanup}
+                disabled={isCleaningUp}
+                className="mt-4 p-3 bg-orange-500 rounded-lg disabled:opacity-50"
+              >
+                <Text className="text-white font-medium text-center">
+                  {isCleaningUp ? 'Cleaning up orphaned records...' : 'Emergency Cleanup (Orphaned Posts)'}
+                </Text>
+              </Pressable>
             </View>
           </ScrollView>
         </View>
