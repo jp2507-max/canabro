@@ -5,7 +5,7 @@ import supabase, { getSupabaseUrl } from '../supabase';
 /**
  * Supported storage buckets for image uploads
  */
-export type StorageBucket = 'posts' | 'plants' | 'diary_entries' | 'plant-images';
+export type StorageBucket = 'community-questions' | 'community-plant-shares' | 'plants' | 'diary_entries' | 'plant-images';
 
 /**
  * Error types for upload operations
@@ -134,8 +134,10 @@ function generateFilename(bucket: StorageBucket, options: UploadImageOptions): s
   const randomSuffix = Math.random().toString(36).substring(2, 8);
   
   switch (bucket) {
-    case 'posts':
-      return `${options.filenamePrefix || 'post'}_${timestamp}.jpg`;
+    case 'community-questions':
+      return `question_${options.filenamePrefix || timestamp}.jpg`;
+    case 'community-plant-shares':
+      return `share_${options.filenamePrefix || timestamp}.jpg`;
     case 'plants':
       return `${options.filenamePrefix || 'plant'}_${timestamp}.jpg`;
     case 'diary_entries':
@@ -355,8 +357,11 @@ export function extractFilePathFromUrl(publicUrl: string, userId: string): strin
 /**
  * Convenience functions for specific upload types
  */
-export const uploadPostImage = (userId: string, imageUri: string) =>
-  uploadImage({ bucket: 'posts', userId, imageUri, filenamePrefix: 'post' });
+export const uploadQuestionImage = (userId: string, imageUri: string) =>
+  uploadImage({ bucket: 'community-questions', userId, imageUri, filenamePrefix: 'question' });
+
+export const uploadPlantShareImage = (userId: string, imageUri: string) =>
+  uploadImage({ bucket: 'community-plant-shares', userId, imageUri, filenamePrefix: 'share' });
 
 export const uploadPlantImage = (userId: string, imageUri: string) =>
   uploadImage({ bucket: 'plants', userId, imageUri, filenamePrefix: 'plant' });
@@ -368,12 +373,33 @@ export const uploadPlantGalleryImage = (userId: string, imageUri: string) =>
   uploadImage({ bucket: 'plant-images', userId, imageUri });
 
 /**
- * Convenience functions for comment images (stored in posts bucket)
+ * Convenience functions for comment images (stored in community buckets based on context)
  */
-export const uploadCommentImage = (userId: string, imageUri: string) =>
+export const uploadCommentImage = (userId: string, imageUri: string, isQuestionComment = true) =>
   uploadImage({ 
-    bucket: 'posts', 
+    bucket: isQuestionComment ? 'community-questions' : 'community-plant-shares', 
     userId, 
     imageUri, 
     filenamePrefix: 'comment',
+  });
+
+/**
+ * Advanced convenience functions for community uploads with custom options
+ */
+export const uploadQuestionImageWithOptions = (userId: string, imageUri: string, options?: Partial<UploadImageOptions>) =>
+  uploadImage({ 
+    bucket: 'community-questions', 
+    userId, 
+    imageUri, 
+    ...options,
+    filenamePrefix: 'question'
+  });
+
+export const uploadPlantShareImageWithOptions = (userId: string, imageUri: string, options?: Partial<UploadImageOptions>) =>
+  uploadImage({ 
+    bucket: 'community-plant-shares', 
+    userId, 
+    imageUri, 
+    ...options,
+    filenamePrefix: 'share'
   }); 

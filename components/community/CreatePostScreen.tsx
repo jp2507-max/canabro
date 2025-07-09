@@ -8,6 +8,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,21 +19,22 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { createPost } from '../../lib/services/community-service';
-import { uploadPostImage } from '../../lib/utils/upload-image';
+import { CommunityService } from '../../lib/services/community-service';
+import { uploadQuestionImage, uploadPlantShareImage } from '../../lib/utils/upload-image';
 import { triggerLightHaptic, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
-import { PostActionButtons } from './PostActionButtons';
 import { PostAuthorRow } from './PostAuthorRow';
 import { NativeIconSymbol } from '@/components/ui/NativeIconSymbol';
+import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 
 type CreatePostScreenProps = {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  postType: 'question' | 'plant_share' | null;
 };
 
 // Animation config
@@ -159,7 +161,7 @@ function TopBar({ onClose, onPost, canPost, isSubmitting }: {
 function EnhancedBottomToolbar({ 
   onCameraPress,
   onPhotoLibraryPress,
-  onMentionPress,
+  onMentionPress: _onMentionPress,
   disabled = false,
 }: {
   onCameraPress?: () => void;
@@ -274,24 +276,92 @@ function NativeActionButton({
 }
 
 /**
+ * Animated Selection Button for form options
+ */
+interface AnimatedSelectionButtonProps {
+  onPress: () => void;
+  children: React.ReactNode;
+  selected: boolean;
+  disabled?: boolean;
+}
+
+function AnimatedSelectionButton({ onPress, children, selected, disabled = false }: AnimatedSelectionButtonProps) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    const backgroundColor = interpolateColor(
+      selected ? 1 : 0,
+      [0, 1],
+      ['rgba(0,0,0,0)', '#22c55e'] // transparent to green-500
+    );
+    const borderColor = interpolateColor(
+      selected ? 1 : 0,
+      [0, 1],
+      ['#d4d4d8', '#22c55e'] // neutral-300 to green-500
+    );
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+      borderColor,
+    };
+  });
+
+  const gesture = Gesture.Tap()
+    .enabled(!disabled)
+    .onBegin(() => {
+      'worklet';
+      scale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
+    })
+    .onFinalize(() => {
+      'worklet';
+      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+    })
+    .onEnd(() => {
+      runOnJS(triggerLightHaptic)();
+      runOnJS(onPress)();
+    });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        style={animatedStyle}
+        className={`border-2 rounded-xl px-4 py-2 ${disabled ? 'opacity-50' : ''}`}>
+        {children}
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
+/**
  * Main CreatePost Screen Component
  */
-export default function CreatePostScreen({ visible, onClose, onSuccess }: CreatePostScreenProps) {
+export default function CreatePostScreen({ visible, onClose, onSuccess, postType }: CreatePostScreenProps) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+  
+  // Plant share specific form fields
+  const [plantName, setPlantName] = useState('');
+  const [growthStage, setGrowthStage] = useState<'seedling' | 'vegetative' | 'flowering' | 'harvest'>('vegetative');
+  const [environment, setEnvironment] = useState<'indoor' | 'outdoor' | 'greenhouse'>('indoor');
 
   const contentInputRef = useRef<TextInput>(null);
 
-  // Fix: Ensure canPost is always boolean
-  const canPost = Boolean(content.trim().length > 0 || image);
+  // Fix: Ensure canPost is always boolean and postType is defined
+  const canPost = Boolean(
+    postType &&
+    (content.trim().length > 0 || image) &&
+    (postType !== 'plant_share' || plantName.trim().length > 0)
+  );
 
-  // Image upload function using centralized helper
+  // Image upload function using appropriate upload function based on post type
   const handleImageUpload = async (userId: string, imageUri: string): Promise<string | null> => {
-    const result = await uploadPostImage(userId, imageUri);
+    const uploadFunction = postType === 'question' ? uploadQuestionImage : uploadPlantShareImage;
+    const result = await uploadFunction(userId, imageUri);
     return result.success ? result.publicUrl || null : null;
   };
 
@@ -311,8 +381,10 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!canPost || !user) return;
-    
+    if (!canPost || !user || !postType) {
+      Alert.alert('Error', 'Please select a post type before submitting.');
+      return;
+    }
     setIsSubmitting(true);
     try {
       let imageUrl: string | null = null;
@@ -324,11 +396,22 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
         }
       }
 
-      await createPost({
-        content: content.trim(),
-        image_url: imageUrl ?? undefined,
-        user_id: user.id,
-      });
+      if (postType === 'question') {
+        await CommunityService.createQuestion({
+          title: content.trim().length > 50 ? content.trim().substring(0, 50) + '...' : content.trim(),
+          content: content.trim(),
+          category: 'general',
+          image_url: imageUrl ?? undefined,
+        });
+      } else if (postType === 'plant_share') {
+        await CommunityService.createPlantShare({
+          plant_name: plantName.trim(),
+          content: content.trim(),
+          growth_stage: growthStage,
+          environment: environment,
+          images_urls: imageUrl ? [imageUrl] : undefined,
+        });
+      }
 
       Alert.alert('Success', 'Post created successfully!');
       onSuccess?.();
@@ -340,11 +423,14 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
     } finally {
       setIsSubmitting(false);
     }
-  }, [canPost, user, content, image, onSuccess, onClose]);
+  }, [canPost, user, content, image, onSuccess, onClose, postType, plantName, growthStage, environment]);
 
   const handleReset = () => {
     setContent('');
     setImage(null);
+    setPlantName('');
+    setGrowthStage('vegetative');
+    setEnvironment('indoor');
   };
 
   const handleClose = () => {
@@ -353,7 +439,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
   };
 
   // Placeholder handlers for other actions
-  const handleMentionPress = () => console.log('Mention pressed');
+  const _handleMentionPress = () => console.log('Mention pressed');
 
   return (
     <Modal
@@ -362,7 +448,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
       presentationStyle="pageSheet"
       onRequestClose={handleClose}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
-      
+
       <EnhancedKeyboardWrapper
         className="flex-1 bg-white"
         showToolbar={true}
@@ -387,6 +473,39 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
             />
           </ThemedView>
 
+          {/* Post Type Header or Error */}
+          {postType ? (
+            <ThemedView className="px-4 py-3 bg-neutral-50 border-b border-neutral-100">
+              <View className="flex-row items-center">
+                {postType === 'question' ? (
+                  <>
+                    <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-amber-100">
+                      <OptimizedIcon name="help-circle" size={18} className="text-amber-600" />
+                    </View>
+                    <ThemedText className="text-sm font-medium text-neutral-700">
+                      Ask a Question
+                    </ThemedText>
+                  </>
+                ) : (
+                  <>
+                    <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                      <OptimizedIcon name="leaf" size={18} className="text-green-600" />
+                    </View>
+                    <ThemedText className="text-sm font-medium text-neutral-700">
+                      Share a Plant
+                    </ThemedText>
+                  </>
+                )}
+              </View>
+            </ThemedView>
+          ) : (
+            <ThemedView className="px-4 py-3 bg-red-50 border-b border-red-200">
+              <ThemedText className="text-sm font-medium text-red-700">
+                Please select a post type to continue.
+              </ThemedText>
+            </ThemedView>
+          )}
+
           {/* Main Content */}
           <ThemedView className="flex-1 px-4 py-4">
             {/* Enhanced Text Input */}
@@ -394,14 +513,92 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
               ref={contentInputRef}
               value={content}
               onChangeText={setContent}
-              placeholder="What's on your mind?"
+              placeholder={
+                postType === 'question' 
+                  ? "What's your growing question?" 
+                  : postType === 'plant_share'
+                  ? "Tell us about your plant..."
+                  : "What's on your mind?"
+              }
               variant="post"
               multiline
               autoFocus
               showCharacterCount={false}
               inputAccessoryViewID="PostToolbar"
               accessibilityLabel="Post content"
+              editable={!!postType && !isSubmitting}
             />
+
+            {/* Plant Share Form Fields */}
+            {postType === 'plant_share' && (
+              <View className="mt-4 space-y-4">
+                {/* Plant Name Input */}
+                <View>
+                  <ThemedText className="text-sm font-medium text-neutral-700 mb-2">
+                    Plant Name *
+                  </ThemedText>
+                  <EnhancedTextInput
+                    value={plantName}
+                    onChangeText={setPlantName}
+                    placeholder="e.g., My Purple Kush"
+                    maxLength={50}
+                    showCharacterCount
+                    accessibilityLabel="Plant name"
+                    editable={!!postType && !isSubmitting}
+                  />
+                </View>
+
+                {/* Growth Stage Selector */}
+                <View>
+                  <ThemedText className="text-sm font-medium text-neutral-700 mb-2">
+                    Growth Stage *
+                  </ThemedText>
+                  <View className="flex-row flex-wrap gap-2">
+                    {(['seedling', 'vegetative', 'flowering', 'harvest'] as const).map((stage) => (
+                      <AnimatedSelectionButton
+                        key={stage}
+                        onPress={() => setGrowthStage(stage)}
+                        selected={growthStage === stage}
+                        disabled={isSubmitting || !postType}>
+                        <ThemedText
+                          className={
+                            growthStage === stage
+                              ? 'font-medium text-white'
+                              : 'text-neutral-900 dark:text-neutral-100'
+                          }>
+                          {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                        </ThemedText>
+                      </AnimatedSelectionButton>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Environment Selector */}
+                <View>
+                  <ThemedText className="text-sm font-medium text-neutral-700 mb-2">
+                    Environment *
+                  </ThemedText>
+                  <View className="flex-row flex-wrap gap-2">
+                    {(['indoor', 'outdoor', 'greenhouse'] as const).map((env) => (
+                      <AnimatedSelectionButton
+                        key={env}
+                        onPress={() => setEnvironment(env)}
+                        selected={environment === env}
+                        disabled={isSubmitting || !postType}>
+                        <ThemedText
+                          className={
+                            environment === env
+                              ? 'font-medium text-white'
+                              : 'text-neutral-900 dark:text-neutral-100'
+                          }>
+                          {env.charAt(0).toUpperCase() + env.slice(1)}
+                        </ThemedText>
+                      </AnimatedSelectionButton>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
 
             {/* Show selected image preview */}
             {image && (
@@ -418,8 +615,8 @@ export default function CreatePostScreen({ visible, onClose, onSuccess }: Create
           <EnhancedBottomToolbar
             onCameraPress={handleCameraPress}
             onPhotoLibraryPress={handleImagePicker}
-            onMentionPress={handleMentionPress}
-            disabled={isSubmitting}
+            onMentionPress={_handleMentionPress}
+            disabled={isSubmitting || !postType}
           />
         </ThemedView>
       </EnhancedKeyboardWrapper>

@@ -1,0 +1,140 @@
+# Task ID: 3
+# Title: Refactor Community Feature: Remove Legacy Posts Table and Migrate to Split Tables
+# Status: in-progress
+# Dependencies: 1, 2
+# Priority: medium
+# Description: Refactor the community feature by removing the legacy posts table and migrating all logic and data to the new community_questions and community_plant_shares tables, ensuring all hooks, services, UI components, and sync logic are updated to maintain feature parity.
+# Details:
+1. Analyze all current usages of the legacy posts table across hooks, services, UI components, and sync logic. 
+2. Design and implement migration scripts to move existing data from the posts table to the new community_questions and community_plant_shares tables, ensuring data integrity and correct mapping of fields. 
+3. Update all backend and frontend code to reference the new tables, including queries, mutations, and data models. 
+4. Refactor hooks and services to support the new table structure, ensuring that all business logic (posting, editing, deleting, fetching) works seamlessly with the split tables. 
+5. Update UI components to fetch and display data from the new tables, maintaining the same user experience and feature set as before. 
+6. Revise sync logic (e.g., Supabase-WatermelonDB) to handle the new schema, ensuring robust bidirectional synchronization and proper handling of deletions and updates. 
+7. Remove all code and schema references to the legacy posts table once migration and refactoring are complete. 
+8. Implement a rollback plan in case of migration failure, and ensure comprehensive backups are taken before migration begins[1][2][3].
+
+# Test Strategy:
+- Write and run migration tests to verify all data is correctly moved and transformed from the legacy posts table to the new tables, with no data loss or corruption.
+- Perform unit and integration tests on all updated hooks, services, and UI components to ensure they interact correctly with the new schema and maintain feature parity.
+- Test synchronization logic under various scenarios (including deletions and edits) to confirm data consistency between Supabase and WatermelonDB.
+- Conduct user acceptance testing to validate that the community feature behaves identically to the previous implementation from an end-user perspective.
+- Monitor system performance and error logs post-migration to quickly identify and resolve any issues.
+
+# Subtasks:
+## 1. Comprehensive Usage Audit of Legacy Posts Table [in-progress]
+### Dependencies: None
+### Description: Identify and document all usages of the legacy posts table across hooks, services, UI components, and sync logic to establish the full scope of dependencies and integration points.
+### Details:
+Perform a codebase-wide search and analysis to map every reference, query, and logic path involving the posts table. Create a detailed inventory to inform subsequent migration and refactoring steps.
+
+## 2. Design Data Migration and Mapping Strategy [in-progress]
+### Dependencies: 3.1
+### Description: Define the mapping between legacy posts data and the new community_questions and community_plant_shares tables, ensuring all fields are correctly transformed and no data is lost.
+### Details:
+Analyze the schema differences, determine how each field in posts maps to the new tables, and document transformation rules for special cases or data normalization.
+
+## 3. Develop and Test Migration Scripts [pending]
+### Dependencies: 3.2
+### Description: Implement scripts to migrate all existing data from the posts table to the new tables, ensuring data integrity and correct field mapping.
+### Details:
+Write migration scripts using a reliable migration tool or custom code, including validation steps to check for data consistency and completeness post-migration.
+
+## 4. Refactor Backend Code to Use New Tables [pending]
+### Dependencies: 3.3
+### Description: Update all backend queries, mutations, and data models to reference community_questions and community_plant_shares instead of the legacy posts table.
+### Details:
+Modify backend services, APIs, and business logic to interact exclusively with the new tables, ensuring all CRUD operations are supported.
+
+## 5. Refactor Frontend Hooks, Services, and UI Components [pending]
+### Dependencies: 3.4
+### Description: Update frontend hooks, services, and UI components to fetch, display, and manipulate data from the new tables, maintaining feature parity and user experience.
+### Details:
+Refactor React hooks, service calls, and UI logic to align with the new backend structure and data models, ensuring seamless user interactions.
+
+## 6. Revise Sync Logic for New Schema [pending]
+### Dependencies: 3.5
+### Description: Update synchronization logic (e.g., Supabase-WatermelonDB) to handle the new table structure, ensuring robust bidirectional sync and correct handling of deletions and updates.
+### Details:
+Refactor sync adapters and logic to support the new schema, test for edge cases like conflict resolution and offline scenarios.
+
+## 7. Remove Legacy Posts Table and Related Code [pending]
+### Dependencies: None
+### Description: Delete all code, schema references, and database objects related to the legacy posts table after successful migration and refactoring.
+### Details:
+Clean up the codebase and database schema, ensuring no residual dependencies remain and that the system operates solely on the new tables.
+
+## 8. Implement Rollback and Backup Plan [pending]
+### Dependencies: 3.3
+### Description: Establish and test a rollback plan in case of migration failure, and ensure comprehensive backups are taken before migration begins.
+### Details:
+Create automated backup scripts and rollback procedures, document recovery steps, and perform trial runs to validate effectiveness.
+
+## 9. Refactor community-service.ts to use new tables [in-progress]
+### Dependencies: None
+### Description: Replace all Supabase queries referencing `posts` with the appropriate calls to `community_questions` and `community_plant_shares`, returning a unified DTO for the UI layer.
+### Details:
+• Create helper map/adapter to transform data into existing PostView model.
+• Ensure create/update/delete helpers call correct target table based on postType param.
+• Maintain existing method signatures so UI remains unchanged.
+
+## 10. Update community hooks to leverage refactored service [done]
+### Dependencies: None
+### Description: Modify hooks in lib/hooks/community to call updated service methods and adapt returned data for UI components.
+### Details:
+Include usePosts, usePostActions, useCommunityQuestions, useCommunityPlantShares, etc.
+
+## 11. Align UI components with new models [done]
+### Dependencies: None
+### Description: Ensure PostItem, QuestionPostItem, PlantSharePostItem, etc., correctly render data from new structures without UI regression.
+### Details:
+Update prop types, rename fields, keep styling identical.
+
+## 12. Extend TypeScript models & types [done]
+### Dependencies: None
+### Description: Create unified interfaces (PostView) that cover both question and plant share shapes; deprecate legacy Post model.
+### Details:
+Update lib/models and lib/types accordingly, keep backwards compatibility via alias.
+
+## 13. Comprehensive regression & UX testing [in-progress]
+### Dependencies: None
+### Description: Run automated tests and manual walkthrough to ensure Community UI remains visually identical and fully functional.
+### Details:
+Visual diff snapshots, interaction flows, performance checks.
+
+## 14. Backend Refactor: Remove Legacy Posts Table Usage [completed]
+### Dependencies: None
+### Description: Refactor backend services to eliminate legacy 'posts' table usages. Update CommunityService.deletePost/softDeletePost/restorePost to call question/plant share specific functions or deprecate entirely. Replace '.from(\"posts\")' queries in storage-cleanup.ts, profile-service.ts, data-integrity.ts, sync/data-integrity.ts with equivalent queries to 'community_questions' and 'community_plant_shares'.
+### Details:
+• Update CommunityService methods to use new tables\n• Refactor storage-cleanup.ts queries\n• Update profile-service.ts statistics queries\n• Replace data-integrity.ts queries\n• Update sync/data-integrity.ts queries\n• Ensure all backend services use community_questions and community_plant_shares only
+
+## 15. Frontend Refactor: Remove Posts Legacy Dependencies [completed]
+### Dependencies: 3.14
+### Description: Update frontend hooks/components to stop relying on adapter for legacy PostData when possible. Replace usePosts with unified useCommunityFeed that already uses new tables. Remove PostItem.tsx legacy component and switch UI to QuestionPostItem / PlantSharePostItem everywhere.
+### Details:
+• Update component prop interfaces to align with new data structures\n• Replace PostItem usage with QuestionPostItem/PlantSharePostItem\n• Ensure proper data transformation for component props\n• Verify all community UI uses new table data\n• Test component rendering with new data structures
+
+## 16. Sync Logic Update for New Schema [in-progress]
+### Dependencies: 3.14
+### Description: Revise sync logic (Supabase ↔ WatermelonDB) to sync new tables. Update sync/data-integrity modules to track community_questions and community_plant_shares instead of posts.
+### Details:
+• Update WatermelonDB sync adapters for new tables\n• Modify sync/data-integrity.ts for community_questions and community_plant_shares\n• Ensure bidirectional sync works with new schema\n• Test sync operations in offline/online scenarios\n• Verify conflict resolution with new table structure
+
+## 17. Remove Legacy Posts Table [pending]
+### Dependencies: 3.14, 3.15, 3.16
+### Description: Safely drop legacy 'posts' table and remove all schema references after codebase no longer depends on it. Provide migration and rollback scripts.
+### Details:
+• Create database migration to drop posts table\n• Remove posts table from WatermelonDB schema\n• Remove any remaining TypeScript type references\n• Create rollback migration script\n• Verify no remaining dependencies in codebase\n• Document the removal process
+
+## 18. Automated Database Backup and Rollback Plan [pending]
+### Dependencies: 3.17
+### Description: Implement automated database backup and rollback plan for community data migration.
+### Details:
+• Create automated backup scripts for community data\n• Implement rollback procedures for failed migrations\n• Document recovery steps and procedures\n• Test backup and restore in staging environment\n• Create monitoring and alerting for migration health\n• Establish data validation checks post-migration
+
+## 19. Comprehensive Regression Testing [pending]
+### Dependencies: 3.15, 3.16
+### Description: Comprehensive regression and UX testing for community feature using new tables. Add test suites and run manual walkthroughs.
+### Details:
+• Write automated test suites for community features\n• Perform manual UX testing walkthroughs\n• Test all CRUD operations for questions and plant shares\n• Verify sync functionality works correctly\n• Performance testing and monitoring\n• Visual regression testing for UI components\n• Edge case testing (offline, poor network, etc.)
+

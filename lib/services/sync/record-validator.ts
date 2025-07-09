@@ -12,7 +12,7 @@ import { loadStrainFromDatabase } from './strain-loader';
 import type { StrainObject } from './strain-loader';
 import { logger } from '../../config/production';
 
-interface PlantRecord {
+export interface PlantRecord {
   id: string;
   name: string;
   strain?: string;

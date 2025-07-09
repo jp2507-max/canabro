@@ -3,7 +3,7 @@ import { Associations } from '@nozbe/watermelondb/Model';
 import { field, date, readonly, text, children } from '@nozbe/watermelondb/decorators';
 
 import { Plant } from './Plant'; // Import Plant model
-import { Post } from './Post'; // Import Post model
+// Removed: import { Post } from './Post'; - Post model has been deleted
 
 /**
  * Profile model representing user profiles in the database
@@ -12,32 +12,49 @@ export class Profile extends Model {
   static table = 'profiles';
   static associations: Associations = {
     plants: { type: 'has_many' as const, foreignKey: 'user_id' },
-    posts: { type: 'has_many' as const, foreignKey: 'user_id' },
+    // Removed: posts: { type: 'has_many' as const, foreignKey: 'user_id' }, - posts table removed
   };
 
-  @text('user_id') userId!: string;
+  // Auth user reference (text field, references auth.users.id)
+  @text('user_id') userId?: string;
+  
+  // Core profile fields
   @text('username') username!: string;
+  @text('full_name') fullName?: string;
   @text('display_name') displayName?: string;
   @text('avatar_url') avatarUrl?: string;
+  @date('birth_date') birthDate?: Date;
+  @text('bio') bio?: string;
+  
+  // Growing-related fields
   @text('experience_level') experienceLevel?: string;
   @text('preferred_grow_method') preferredGrowMethod?: string;
-  @text('bio') bio?: string;
+  @field('growing_since') growingSince?: number; // bigint in Supabase
   @text('location') location?: string;
-  @date('growing_since') growingSince?: Date;
-  @text('favorite_strains') favoriteStrains?: string;
   @field('is_certified') isCertified?: boolean;
-  @text('certifications') certifications?: string;
+  @text('certifications') certifications?: string; // JSON array stored as text
+  
+  // Authentication fields
+  @text('auth_provider') authProvider?: string;
+  @field('email_verified') emailVerified?: boolean;
+  @date('last_sign_in') lastSignIn?: Date;
+  
+  // Sync and status fields
+  @text('_status') status?: string;
+  @text('_changed') changed?: string;
+  @field('is_deleted') isDeleted?: boolean;
+  
+  // Timestamps
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
-  @date('last_synced_at') lastSyncedAt?: Date;
-  @field('is_deleted') isDeleted?: boolean;
 
   // Children collections
   @children('plants') plants!: Query<Plant>;
-  @children('posts') posts!: Query<Post>;
+  // Removed: @children('posts') posts!: Query<Post>; - posts table removed
 
   /**
    * Returns parsed certifications array from serialized storage
+   * Note: Supabase stores this as a text array, but WatermelonDB stores as JSON string
    */
   getCertifications(): string[] {
     return this.certifications ? JSON.parse(this.certifications) : [];
@@ -45,22 +62,9 @@ export class Profile extends Model {
 
   /**
    * Sets certifications by serializing to JSON string
+   * Note: Supabase stores this as a text array, but WatermelonDB stores as JSON string
    */
   setCertifications(certs: string[]): void {
     this.certifications = JSON.stringify(certs);
-  }
-
-  /**
-   * Returns parsed favorite strains array from serialized storage
-   */
-  getFavoriteStrains(): string[] {
-    return this.favoriteStrains ? JSON.parse(this.favoriteStrains) : [];
-  }
-
-  /**
-   * Sets favorite strains by serializing to JSON string
-   */
-  setFavoriteStrains(strains: string[]): void {
-    this.favoriteStrains = JSON.stringify(strains);
   }
 }

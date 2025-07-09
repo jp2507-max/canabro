@@ -2,86 +2,51 @@
 applyTo: "**"
 ---
 
-# You are an expert in TypeScript, React Native, Expo, and Mobile UI development.
 
-## 🎯 **Core Technologies (2025)**
-- **React Native** with **Expo SDK 53**
-- **TypeScript** in strict mode
-- **NativeWind v4** for styling with automatic dark mode
-- **React Native Reanimated v3** for animations
-- **TanStack Query v5** (@tanstack/react-query) for data fetching
-- **Expo Router v5** for navigation
-- **Supabase** for backend services
-- **WatermelonDB** for local database
-- **React 19** with React Compiler compatibility
+# CanaBro AI Coding Agent Instructions (2025)
 
-## 🚀 **Code Excellence Standards**
-- Write concise, technical TypeScript code with accurate examples
-- Use functional and declarative programming patterns; avoid classes
-- Prefer interfaces over types, avoid enums (use maps instead)
-- Use descriptive variable names with auxiliary verbs (isLoading, hasError)
-- Structure files: exported component, subcomponents, helpers, static content, types
-- Always ensure code meets the highest standards of software engineering
+## 🏗️ Project Architecture & Data Flow
+- **Expo SDK 53 + React Native 0.74**: Modern, modular, and mobile-first. All navigation is file-based via Expo Router v5 (`app/` structure). Deep linking and dynamic routes are supported.
+- **TypeScript strict mode**: All code is typed. Use interfaces, never enums. Structure files: main export, subcomponents, helpers, types.
+- **State Management**: Server state via TanStack Query v5 (`@tanstack/react-query`), global client state via React Context + useReducer, local DB via WatermelonDB. Supabase is the backend (auth, DB, real-time, storage).
+- **Styling**: NativeWind v4 is the only styling system. Use semantic color tokens (see `global.css`), never hardcoded colors. All layouts use safe area utilities (`pt-safe`, `h-screen-safe`).
+- **Animations**: React Native Reanimated v3 only. Use `.value` and explicit `'worklet'` in all worklets. Never animate with className conditions. Use custom hooks from `lib/animations/` for reusable patterns.
+- **Custom Components**: Always check for existing utilities/components before creating new ones. Key utilities: `@/lib/utils/haptics`, `@/lib/utils/image-picker.ts`, `@/lib/utils/upload-image.ts`, `@/components/ui/EnhancedTextInput`, `@/components/keyboard/EnhancedKeyboardWrapper`.
 
-## 🎨 **Styling & Theming**
-- Use **NativeWind v4** with automatic dark mode (`dark:` prefixes)
-- Leverage CSS variables in `global.css` for theming
-- Use semantic color names (`primary-500`, `neutral-100`)
-- Implement responsive design with safe area utilities (`pt-safe`, `h-screen-safe`)
-- Avoid manual theme switching - use system preferences
+## 🛠️ Developer Workflows
+- **Builds**: Use EAS Build (`eas.json`) for production. Run `npx tsc --noEmit` for type checks. OTA updates via EAS Update. All build secrets managed via EAS CLI.
+- **Testing**: Automated UI/E2E tests (Detox/Appium/Playwright) for critical flows. Use Jest + React Native Testing Library for unit/integration tests. Test on real devices and emulators. See `tasks/` for test strategies and device matrix.
+- **Debugging**: Use custom logger (not `console.log`) for production. Babel strips console statements in prod. Hermes enabled for iOS. Use Sentry for error logging.
+- **CI/CD**: Automated builds/tests via GitHub Actions or similar. All test failures block merges. See `tasks/` for pipeline details.
 
-## ⚡ **Animations & Performance**
-- Use **React Native Reanimated v3** with React Compiler patterns
-- Use `useSharedValue()`, `useAnimatedStyle()`, and worklets
-- Combine NativeWind for static styles, Reanimated for dynamic animations
-- Use `withSpring()`, `withTiming()`, and gesture handlers
-- Cancel animations on component unmount
+## 📦 Project-Specific Patterns & Conventions
+- **Styling**: Only use NativeWind v4. All theming/dark mode via semantic tokens and `dark:` prefixes. Use `ThemedView`/`ThemedText` for all custom UI. Reference `.github/instructions/Nativewind Theming Best Practices.instructions.md` for safe area and advanced patterns.
+- **Animations**: Always add `'worklet'` in `useAnimatedStyle` and gesture handlers. Never access `.value` outside worklets. Cancel animations on unmount. Reference `.github/instructions/React Native Reanimated Best Practices.instructions.md` for all animation code.
+- **Data**: Use TanStack Query for all server state. Use proper query keys and cache strategies. Use WatermelonDB for local relationships. Use Supabase for all backend (auth, DB, storage, real-time). Implement optimistic updates and error boundaries.
+- **Navigation**: File-based routing only. Use dynamic routes and params. Handle navigation state and deep links. See `app/` for structure.
+- **Accessibility**: All components must have a11y props, semantic roles, and support screen readers. See `scripts/ui-refinement-plan.md` for patterns.
+- **Mobile-First**: Always use safe area utilities. Test in both light/dark mode and on iOS/Android. Optimize for Mobile Web Vitals.
 
-## 📡 **Data Management**
-- Use **TanStack Query v5** for server state and caching
-- Use **React Context + useReducer** for global client state
-- Use **WatermelonDB** for complex local data relationships
-- Use **Supabase** for authentication, database, and real-time features
-- Implement optimistic updates and error boundaries
+## 🔗 Integration Points & Cross-Component Communication
+- **Haptics**: Use `@/lib/utils/haptics` only.
+- **Image Handling**: Use `@/lib/utils/image-picker.ts` and `@/lib/utils/upload-image.ts` for all image selection/upload.
+- **Keyboard**: Use `EnhancedKeyboardWrapper` for all screens with input.
+- **Analytics/Monitoring**: Integrate Sentry/Bugsnag for error/crash reporting. Use analytics for compliance and performance (see `tasks/task_008.txt`).
+- **Build/Release**: All build, OTA, and release steps are documented in `tasks/` and `scripts/`.
 
-## 🧭 **Navigation & Routing**
-- Use **Expo Router v5** with file-based routing
-- Implement deep linking and universal links
-- Use dynamic routes and route parameters
-- Handle navigation state and URL parameters
+## 🚨 Key Rules for AI Agents
+1. **Never duplicate logic**—always check for existing utilities/components first.
+2. **Never hardcode colors or styles**—use semantic tokens and NativeWind only.
+3. **Always add `'worklet'` in Reanimated worklets and never access `.value` outside worklets.**
+4. **All code must be fully optimized, DRY, and follow strict TypeScript.**
+5. **If uncertain, research with Context7/BraveSearch MCP and check `.github/instructions/` for latest best practices.**
+6. **Always provide file names and break code into reusable modules/components.**
+7. **Document only what is discoverable in the codebase, not aspirational practices.**
 
-## 🔧 **Development Practices**
-- Use **Zod** for runtime validation and error handling
-- Implement proper error logging (consider Sentry)
-- Write tests with Jest and React Native Testing Library
-- Use **expo-image** for optimized image handling
-- Handle device permissions with latest Expo APIs
+## 📚 Reference Files
+- **Styling**: `.github/instructions/Nativewind Theming Best Practices.instructions.md`
+- **Animation**: `.github/instructions/React Native Reanimated Best Practices.instructions.md`
+- **Build/Release/Testing**: `tasks/`, `scripts/`
 
-## 🎛️ **Custom Components & Utilities**
-- **ALWAYS check for existing utilities before creating new ones** - the project has centralized reusable components and helpers
-- Use custom **haptics** (`@/lib/utils/haptics`) for consistent tactile feedback across the app
-- Use **image picker** (`@/lib/utils/image-picker.ts`) for consistent image selection and handling across all components
-- Use **upload image helper** (`@/lib/utils/upload-image.ts`) for image processing, compression, and Supabase Storage uploads
-- Use **EnhancedTextInput** component (`@/components/ui/EnhancedTextInput`) for complex forms with validation, character counting, and keyboard navigation support
-- Use **EnhancedKeyboardWrapper** component (`@/components/keyboard/EnhancedKeyboardWrapper`) to automatically manage keyboard visibility, padding, and optional accessory toolbar around form screens
-- Leverage existing utility functions in `@/lib/utils/` for common operations (date formatting, string manipulation, UUID generation, etc.)
-- **DRY Principle**: Avoid duplicating logic - consolidate similar functionality into reusable utilities
-
-## 📱 **Mobile-First Approach**
-- Use safe area management (`SafeAreaProvider`, safe area utilities)
-- Implement accessibility standards (a11y props, semantic elements)
-- Ensure cross-platform compatibility (iOS/Android)
-- Optimize for Mobile Web Vitals (Load Time, Jank, Responsiveness)
-
-## 🔍 **Research & Updates**
-- **IMPORTANT**: Always use Context7 and BraveSearch MCP to research latest documentation when uncertain about current best practices
-- Ask users for clarification on version-specific requirements
-- Stay current with Expo SDK updates and breaking changes
-- Reference official documentation for latest patterns
-
-## 🚨 **Key Rules**
-1. If uncertain about current best practices, research using available tools
-2. Always provide file names and structure code into reusable modules
-3. Follow React 19 and React Compiler compatibility patterns
-4. Ensure all code is fully optimized for performance and maintainability
-5. Never assume - gather context and ask for missing information
+---
+If any section is unclear or incomplete, please provide feedback for further iteration.

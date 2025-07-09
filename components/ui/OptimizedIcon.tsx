@@ -217,6 +217,7 @@ const IconSVG = {
   'calendar-outline': '📅',
   'search-outline': '🔍',
   'check-circle': '✅',
+  'cloud-offline-outline': '☁️',
 
   // Loading states
   loading1: '⭮',
@@ -329,6 +330,7 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   'calendar-outline': 'Calendar',
   'search-outline': 'Search',
   'check-circle': 'Check circle',
+  'cloud-offline-outline': 'Cloud offline',
 
   loading1: 'Loading',
   default: 'Icon',

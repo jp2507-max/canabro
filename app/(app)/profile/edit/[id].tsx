@@ -114,29 +114,8 @@ export default function EditProfileScreen() {
   const preferredGrowMethodRef = useRef<TextInput>(null);
   const growingSinceRef = useRef<TextInput>(null);
 
-  const inputRefs = [
-    usernameRef,
-    displayNameRef,
-    bioRef,
-    locationRef,
-    experienceLevelRef,
-    preferredGrowMethodRef,
-    growingSinceRef,
-  ];
-
   // Simplified keyboard handling – no advanced navigation
   const dismissKeyboard = () => Keyboard.dismiss();
-
-  // Field labels for keyboard toolbar
-  const fieldLabels = [
-    'Username',
-    'Display Name',
-    'Bio',
-    'Location',
-    'Experience Level',
-    'Grow Method',
-    'Growing Since',
-  ];
 
   // Validation function
   const validateForm = () => {
@@ -207,7 +186,7 @@ export default function EditProfileScreen() {
       setPreferredGrowMethod(profile.preferredGrowMethod || '');
 
       if (profile.growingSince) {
-        const dateStr = profile.growingSince.toISOString().split('T')[0];
+        const dateStr = new Date(profile.growingSince).toISOString().split('T')[0];
         setGrowingSince(dateStr || '');
       } else {
         setGrowingSince('');
@@ -246,7 +225,7 @@ export default function EditProfileScreen() {
           if (growingSince.trim()) {
             const parsedDate = parseISO(growingSince.trim());
             if (isValid(parsedDate)) {
-              p.growingSince = parsedDate;
+              p.growingSince = parsedDate.getTime(); // Convert to timestamp number
             } else {
               // This should not happen due to form validation, but handle gracefully
               console.error('Invalid date detected during save operation:', growingSince);
