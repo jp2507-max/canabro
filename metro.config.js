@@ -19,7 +19,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Get the default configuration
-// eslint-disable-next-line no-undef
+ 
 const config = getDefaultConfig(__dirname, {
   // Enable CSS support.
   isCSSEnabled: true,
@@ -52,8 +52,10 @@ config.resolver.extraNodeModules = {
   stream: path.resolve(__dirname, 'node_modules/stream-browserify'),
   path: path.resolve(__dirname, 'node_modules/path-browserify'),
   querystring: path.resolve(__dirname, 'node_modules/querystring-es3'),
-  fs: path.resolve(__dirname, 'node_modules/react-native-fs'),
-  crypto: path.resolve(__dirname, 'node_modules/react-native-crypto'),
+  // Use Expo's built-in file system instead of react-native-fs
+  fs: false, // Disable fs polyfill - use expo-file-system instead
+  // Use expo-crypto instead of react-native-crypto
+  crypto: false, // Disable crypto polyfill - use expo-crypto instead
   // Removed custom "http" polyfill because it overrides Expo's built-in networking APIs and breaks
   // expo-notifications with errors like "Invalid responseType: blob" and "blobId undefined".
   // If you still need Node's http in rare cases, install a pure JS replacement like "stream-http"
@@ -61,7 +63,9 @@ config.resolver.extraNodeModules = {
   // http: path.resolve(__dirname, 'node_modules/@tradle/react-native-http'),
   https: path.resolve(__dirname, 'node_modules/https-browserify'),
   os: path.resolve(__dirname, 'node_modules/os-browserify/browser'),
-  tls: path.resolve(__dirname, 'node_modules/react-native-tcp'),
+  // Disable TLS/TCP polyfills - not needed for mobile apps
+  tls: false, // Disable tls polyfill - not supported in React Native
+  net: path.resolve(__dirname, 'lib/polyfills/net-polyfill.js'),
   zlib: path.resolve(__dirname, 'node_modules/browserify-zlib'),
   buffer: path.resolve(__dirname, 'node_modules/buffer'),
   url: path.resolve(__dirname, 'node_modules/url'),
@@ -69,7 +73,6 @@ config.resolver.extraNodeModules = {
   util: path.resolve(__dirname, 'node_modules/util'),
 
   // Dedicated polyfills for specific modules
-  net: path.resolve(__dirname, 'lib/polyfills/net-polyfill.js'),
   ws: path.resolve(__dirname, 'lib/polyfills/index.js'), // Provides proper default export for WebSocket
 };
 

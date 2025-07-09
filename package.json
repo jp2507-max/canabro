@@ -108,9 +108,7 @@
     "react-hook-form": "^7.55.0",
     "react-native": "0.79.4",
     "react-native-bottom-tabs": "^0.9.2",
-    "react-native-crypto": "^2.2.0",
     "react-native-fetch-api": "^3.0.0",
-    "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-get-random-values": "^1.11.0",
     "react-native-keyboard-controller": "^1.17.4",
@@ -121,7 +119,6 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-tcp": "^4.0.0",
     "react-native-url-polyfill": "^2.0.0",
     "seedrandom": "^3.0.5",
     "sjcl": "^1.0.8",
@@ -190,7 +187,10 @@
           "aes-js",
           "date-fns",
           "dotenv",
-          "react-native-linear-gradient"
+          "react-native-linear-gradient",
+          "react-native-crypto",
+          "react-native-fs",
+          "react-native-tcp"
         ],
         "listUnknownPackages": false
       }
