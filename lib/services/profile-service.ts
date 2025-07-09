@@ -75,7 +75,13 @@ export class ProfileService extends BaseService {
       // Using a more efficient approach with parallel promises
       const [plantsResult, postsResult, followersResult, followingResult] = await Promise.all([
         supabase.from('plants').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-        supabase.from('posts').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        Promise.all([
+          supabase.from('community_questions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+          supabase.from('community_plant_shares').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        ]).then(([q, ps]) => ({
+          error: q.error || ps.error || null,
+          count: (q.count || 0) + (ps.count || 0),
+        })),
         supabase
           .from('follows')
           .select('id', { count: 'exact', head: true })

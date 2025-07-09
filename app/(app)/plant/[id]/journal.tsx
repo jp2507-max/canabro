@@ -1,4 +1,3 @@
-import * as Localization from 'expo-localization';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { ScrollView, ActivityIndicator, View, RefreshControl } from 'react-native';
@@ -23,7 +22,7 @@ import {
   triggerMediumHaptic,
   triggerLightHaptic,
 } from '../../../../lib/utils/haptics';
-import { OptimizedIcon } from '../../../../components/ui/OptimizedIcon';
+import { OptimizedIcon, IconName } from '../../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../../components/ui/ThemedText';
 import ThemedView from '../../../../components/ui/ThemedView';
 import { useDiaryEntries } from '../../../../lib/hooks/diary/useDiaryEntries';
@@ -41,7 +40,8 @@ const formatDate = (date: Date): string => {
   }
 
   try {
-    return date.toLocaleDateString(Localization.locale, { day: '2-digit', month: 'short' });
+    // Simple date formatting without localization
+    return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
   } catch (error) {
     console.error('[PlantJournalScreen] Error formatting date:', error);
     return 'Invalid Date';
@@ -116,7 +116,7 @@ function AnimatedHeaderButton({
   accessibilityLabel,
 }: {
   onPress: () => void;
-  iconName: string;
+  iconName: IconName;
   accessibilityLabel: string;
 }) {
   const scale = useSharedValue(1);
@@ -142,7 +142,7 @@ function AnimatedHeaderButton({
         className="p-2"
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}>
-        <OptimizedIcon name={iconName as any} size={24} color={undefined} />
+        <OptimizedIcon name={iconName} size={24} color={undefined} />
       </AnimatedPressable>
     </GestureDetector>
   );
@@ -288,12 +288,12 @@ export default function PlantJournalScreen() {
               className="flex-row items-center space-x-2">
               <AnimatedHeaderButton
                 onPress={handleGoToSettings}
-                iconName="settings-outline"
+                iconName="settings"
                 accessibilityLabel="Plant settings"
               />
               <AnimatedHeaderButton
                 onPress={handleExport}
-                iconName="share-outline"
+                iconName="share"
                 accessibilityLabel="Export journal"
               />
             </Animated.View>

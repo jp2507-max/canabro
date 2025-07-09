@@ -7,15 +7,17 @@
 // Database configuration
 import database from '../database/database';
 
-// Export model classes
-export { Profile } from './Profile';
-export { Plant } from './Plant';
+// Core models
 export { DiaryEntry } from './DiaryEntry';
 export { GrowJournal } from './GrowJournal';
 export { GrowLocation } from './GrowLocation';
 export { JournalEntry } from './JournalEntry';
-export { Post } from './Post';
+export { Plant } from './Plant';
 export { PlantTask } from './PlantTask';
+export { Profile } from './Profile';
+
+// Strain-related models
+export { Strain } from './Strain';
 export { FavoriteStrain } from './FavoriteStrain';
 
 // Export database

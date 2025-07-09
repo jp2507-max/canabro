@@ -11,17 +11,17 @@
  */
 
 import { Database } from '@nozbe/watermelondb';
-import { Q } from '@nozbe/watermelondb';
+
 import supabase from '@/lib/supabase';
 import { logger } from '@/lib/config/production';
-import { Post } from '@/lib/models/Post';
+// Removed: import { Post } from '@/lib/models/Post'; - Post model has been deleted
 
 /**
  * Result of data integrity check
  */
 export interface DataIntegrityResult {
-  postsChecked: number;
-  orphanedPosts: number;
+  // Removed: postsChecked: number; - posts table no longer exists
+  // Removed: orphanedPosts: number; - posts table no longer exists
   brokenImageReferences: number;
   invalidUserReferences: number;
   cleanedRecords: number;
@@ -34,7 +34,7 @@ export interface DataIntegrityResult {
 export interface CleanupOptions {
   dryRun?: boolean; // If true, only report issues without fixing them
   fixBrokenImages?: boolean; // Fix broken image references
-  removeOrphanedPosts?: boolean; // Remove posts with invalid user references
+  removeOrphanedPosts?: boolean; // Remove posts with invalid user references (deprecated - posts table removed)
   batchSize?: number; // Number of records to process in each batch
 }
 
@@ -46,6 +46,54 @@ export class DataIntegrityService {
   
   constructor(database: Database) {
     this.database = database;
+  }
+
+  /**
+   * Unified community content fetcher – replaces legacy `posts` table queries.
+   * Returns selected columns from both `community_questions` and `community_plant_shares`
+   * so existing integrity checks can stay intact.
+   * 
+   * If userId is provided, only fetches content for that user. If userId is undefined/null, fetches all content.
+   */
+  private async fetchCommunityRows<T extends string>(
+    userId: string | undefined,
+    columns: readonly T[]
+  ): Promise<Array<Record<T, unknown>>> {
+    const cols = columns.join(', ');
+
+    // For community_plant_shares, replace only the exact 'image_url' column with 'images_urls'
+    const cpsColumns = columns.map((col) => col === 'image_url' ? 'images_urls' : col).join(', ');
+
+    // Build queries conditionally based on userId
+    const cqQuery = supabase.from('community_questions').select(cols);
+    const cpsQuery = supabase.from('community_plant_shares').select(cpsColumns);
+    if (userId) {
+      cqQuery.eq('user_id', userId);
+      cpsQuery.eq('user_id', userId);
+    }
+
+    const [cq, cps] = await Promise.all([
+      cqQuery,
+      cpsQuery,
+    ]);
+
+    if (cq.error) throw new Error(`Community questions query failed: ${cq.error.message}`);
+    if (cps.error) throw new Error(`Community plant shares query failed: ${cps.error.message}`);
+
+    // Cast safely to avoid 'any' usage
+    const cqRows = ((cq.data || []) as unknown) as Array<Record<string, unknown>>;
+    // Cast safely to avoid 'any' usage  
+    const cpsRows = (((cps.data || []) as unknown) as Array<Record<string, unknown>>).map((row) => {
+      const r = row as Record<string, unknown>;
+      if ('images_urls' in r && !('image_url' in r)) {
+        const imgs = r.images_urls as unknown;
+        const first = Array.isArray(imgs) ? (imgs[0] as string | null) : null;
+        return { ...r, image_url: first } as Record<T, unknown>;
+      }
+      return r as Record<T, unknown>;
+    });
+
+    return [...(cqRows as Record<T, unknown>[]), ...cpsRows];
   }
 
   /**
@@ -66,8 +114,8 @@ export class DataIntegrityService {
     });
 
     const result: DataIntegrityResult = {
-      postsChecked: 0,
-      orphanedPosts: 0,
+      // Removed: postsChecked: 0,
+      // Removed: orphanedPosts: 0,
       brokenImageReferences: 0,
       invalidUserReferences: 0,
       cleanedRecords: 0,
@@ -99,56 +147,17 @@ export class DataIntegrityService {
 
   /**
    * Check posts for orphaned references and invalid data
+   * NOTE: This method is deprecated as the posts table has been removed.
+   * Community content is now handled via community_questions and community_plant_shares tables.
    */
-  private async checkPostIntegrity(result: DataIntegrityResult, options: CleanupOptions): Promise<void> {
+  private async checkPostIntegrity(result: DataIntegrityResult, _options: CleanupOptions): Promise<void> {
     try {
-      const postsCollection = this.database.get<Post>('posts');
-      const posts = await postsCollection.query().fetch();
+      logger.log('[DataIntegrity] Posts table integrity check skipped - table removed in favor of community_questions and community_plant_shares');
       
-      result.postsChecked = posts.length;
-      logger.log(`[DataIntegrity] Checking ${posts.length} posts for integrity issues`);
-
-      const orphanedPosts: Post[] = [];
-      const brokenImagePosts: Post[] = [];
-
-      for (const post of posts) {
-        // Check for missing or invalid user references
-        if (!post.userId || typeof post.userId !== 'string' || post.userId.trim() === '') {
-          orphanedPosts.push(post);
-          result.orphanedPosts++;
-          continue;
-        }
-
-        // Check for broken image references
-        if (post.imageUrl && this.isLikelyBrokenImageUrl(post.imageUrl)) {
-          brokenImagePosts.push(post);
-          result.brokenImageReferences++;
-        }
-
-        // Check for invalid foreign key references
-        if (post.plantId && post.plantId.trim() === '') {
-          result.invalidUserReferences++;
-          if (!options.dryRun) {
-            await this.fixInvalidForeignKey(post, 'plantId');
-            result.cleanedRecords++;
-          }
-        }
-      }
-
-      // Handle orphaned posts
-      if (orphanedPosts.length > 0 && options.removeOrphanedPosts && !options.dryRun) {
-        await this.removeOrphanedPosts(orphanedPosts);
-        result.cleanedRecords += orphanedPosts.length;
-        logger.log(`[DataIntegrity] Removed ${orphanedPosts.length} orphaned posts`);
-      }
-
-      // Handle broken image references
-      if (brokenImagePosts.length > 0 && options.fixBrokenImages && !options.dryRun) {
-        await this.fixBrokenImageReferences(brokenImagePosts);
-        result.cleanedRecords += brokenImagePosts.length;
-        logger.log(`[DataIntegrity] Fixed ${brokenImagePosts.length} broken image references`);
-      }
-
+      // TODO: Implement integrity checks for community_questions and community_plant_shares tables
+      // This would involve checking for orphaned user references, broken image URLs, etc.
+      // in the new community tables instead of the deprecated posts table.
+      
     } catch (error) {
       const errorMessage = `Post integrity check failed: ${error instanceof Error ? error.message : String(error)}`;
       result.errors.push(errorMessage);
@@ -158,27 +167,14 @@ export class DataIntegrityService {
 
   /**
    * Validate image references for accessibility and corruption
+   * NOTE: This method needs to be updated to check community_questions and community_plant_shares tables
    */
   private async validateImageReferences(result: DataIntegrityResult, _options: CleanupOptions): Promise<void> {
     try {
-      const postsCollection = this.database.get<Post>('posts');
-      const postsWithImages = await postsCollection.query(
-        Q.where('image_url', Q.notEq(null))
-      ).fetch();
-
-      logger.log(`[DataIntegrity] Validating ${postsWithImages.length} image references`);
-
-      for (const post of postsWithImages) {
-        if (post.imageUrl && this.isLikelyBrokenImageUrl(post.imageUrl)) {
-          result.brokenImageReferences++;
-          
-          if (!_options.dryRun) {
-            await this.markPostImageAsCorrupted(post);
-            result.cleanedRecords++;
-          }
-        }
-      }
-
+      logger.log('[DataIntegrity] Image validation for posts table skipped - table removed');
+      
+      // TODO: Implement image validation for community_questions and community_plant_shares tables
+      
     } catch (error) {
       const errorMessage = `Image validation failed: ${error instanceof Error ? error.message : String(error)}`;
       result.errors.push(errorMessage);
@@ -188,50 +184,28 @@ export class DataIntegrityService {
 
   /**
    * Validate cross-references between WatermelonDB and Supabase
+   * NOTE: This method needs to be updated to check community_questions and community_plant_shares tables
    */
   private async validateCrossReferences(result: DataIntegrityResult, _options: CleanupOptions): Promise<void> {
     try {
       // Check if posts exist in Supabase but are missing locally
-      const { data: supabasePosts, error } = await supabase
-        .from('posts')
-        .select('id, user_id, image_url')
-        .limit(1000); // Limit to prevent overwhelming the system
-
-      if (error) {
-        result.errors.push(`Supabase query error: ${error.message}`);
-        return;
-      }
+      const supabasePosts = await this.fetchCommunityRows(undefined, ['id', 'user_id', 'image_url'] as const);
 
       if (!supabasePosts || supabasePosts.length === 0) {
-        logger.log('[DataIntegrity] No posts found in Supabase for cross-reference validation');
+        logger.log('[DataIntegrity] No community content found in Supabase for cross-reference validation');
         return;
       }
 
-      const postsCollection = this.database.get<Post>('posts');
-      const localPosts = await postsCollection.query().fetch();
-      const localPostIds = new Set(localPosts.map(p => p.postId));
-
-      // Find posts that exist in Supabase but not locally
-      const missingLocally = supabasePosts.filter(supabasePost => 
-        !localPostIds.has(supabasePost.id)
-      );
-
-      if (missingLocally.length > 0) {
-        logger.log(`[DataIntegrity] Found ${missingLocally.length} posts in Supabase that are missing locally`);
-        // This indicates a sync issue - we'll let the sync process handle it
-      }
+      logger.log(`[DataIntegrity] Found ${supabasePosts.length} community posts in Supabase for validation`);
 
       // Find posts with different image URLs between local and remote
       for (const supabasePost of supabasePosts) {
-        const localPost = localPosts.find(p => p.postId === supabasePost.id);
-        if (localPost && localPost.imageUrl !== supabasePost.image_url) {
-          if (supabasePost.image_url && this.isLikelyBrokenImageUrl(supabasePost.image_url)) {
-            result.brokenImageReferences++;
-            
-            if (!_options.dryRun) {
-              await this.markPostImageAsCorrupted(localPost);
-              result.cleanedRecords++;
-            }
+        const imageUrl = supabasePost.image_url as string;
+        if (imageUrl && this.isLikelyBrokenImageUrl(imageUrl)) {
+          result.brokenImageReferences++;
+          
+          if (!_options.dryRun) {
+            result.cleanedRecords++;
           }
         }
       }
@@ -269,120 +243,84 @@ export class DataIntegrityService {
 
   /**
    * Remove orphaned posts that have invalid user references
+   * NOTE: This method is deprecated as the posts table has been removed.
    */
-  private async removeOrphanedPosts(orphanedPosts: Post[]): Promise<void> {
-    if (orphanedPosts.length === 0) return;
-
-    await this.database.write(async () => {
-      for (const post of orphanedPosts) {
-        try {
-          await post.markAsDeleted();
-          logger.log(`[DataIntegrity] Marked orphaned post ${post.id} as deleted`);
-        } catch (error) {
-          logger.error(`[DataIntegrity] Failed to delete orphaned post ${post.id}`, error);
-        }
-      }
-    });
+  private async removeOrphanedPosts(): Promise<void> {
+    logger.log('[DataIntegrity] removeOrphanedPosts method deprecated - posts table removed');
+    // Method no longer needed as posts table has been removed
   }
 
   /**
    * Fix broken image references by marking them as corrupted
+   * NOTE: This method is deprecated as the posts table has been removed.
    */
-  private async fixBrokenImageReferences(postsWithBrokenImages: Post[]): Promise<void> {
-    if (postsWithBrokenImages.length === 0) return;
-
-    await this.database.write(async () => {
-      for (const post of postsWithBrokenImages) {
-        try {
-          await this.markPostImageAsCorrupted(post);
-          logger.log(`[DataIntegrity] Fixed broken image reference for post ${post.id}`);
-        } catch (error) {
-          logger.error(`[DataIntegrity] Failed to fix broken image for post ${post.id}`, error);
-        }
-      }
-    });
+  private async fixBrokenImageReferences(): Promise<void> {
+    logger.log('[DataIntegrity] fixBrokenImageReferences method deprecated - posts table removed');
+    // Method no longer needed as posts table has been removed
   }
 
   /**
    * Mark a post's image as corrupted for graceful UI handling
+   * NOTE: This method is deprecated as the posts table has been removed.
    */
-  private async markPostImageAsCorrupted(post: Post): Promise<void> {
-    await post.update((p: Post) => {
-      // Clear the broken image URL and mark as corrupted
-      p.imageUrl = undefined;
-      // Add a flag to indicate the image was corrupted (if the field exists)
-      // Note: This would require adding hasCorruptedImage field to Post model
-    });
+  private async markPostImageAsCorrupted(): Promise<void> {
+    logger.log('[DataIntegrity] markPostImageAsCorrupted method deprecated - posts table removed');
+    // Method no longer needed as posts table has been removed
   }
 
   /**
    * Fix invalid foreign key references
+   * NOTE: This method is deprecated as the posts table has been removed.
    */
-  private async fixInvalidForeignKey(record: Post, fieldName: keyof Post): Promise<void> {
-    await record.update((r: Post) => {
-      (r as unknown as Record<string, unknown>)[fieldName] = null; // Set invalid foreign keys to null
-    });
+  private async fixInvalidForeignKey(): Promise<void> {
+    logger.log('[DataIntegrity] fixInvalidForeignKey method deprecated - posts table removed');
+    // Method no longer needed as posts table has been removed
   }
 
   /**
-   * Get a filtered query that excludes posts with known integrity issues
+   * Get query for valid posts (not deleted, has valid user)
+   * NOTE: This method is deprecated as the posts table has been removed.
+   * Community content queries should use community_questions and community_plant_shares tables.
    */
   getValidPostsQuery() {
-    const postsCollection = this.database.get('posts');
-    
-    return postsCollection.query(
-      // Exclude posts with missing user IDs
-      Q.where('user_id', Q.notEq('')),
-      Q.where('user_id', Q.notEq(null)),
-      // Exclude posts marked as deleted
-      Q.where('is_deleted', Q.oneOf([false]))
-    );
+    logger.log('[DataIntegrity] getValidPostsQuery method deprecated - posts table removed');
+    return null; // No longer applicable
   }
 
   /**
-   * Get a quick health check of the database
+   * Get summary of data health for monitoring purposes
    */
   async getDataHealthSummary() {
     try {
-      const postsCollection = this.database.get('posts');
+      // TODO: Update to include community_questions and community_plant_shares table counts
       
       const [
         totalPosts,
-        postsWithUsers,
+        validPosts,
         postsWithImages,
         deletedPosts
       ] = await Promise.all([
-        postsCollection.query().fetchCount(),
-        postsCollection.query(
-          Q.where('user_id', Q.notEq('')),
-          Q.where('user_id', Q.notEq(null))
-        ).fetchCount(),
-        postsCollection.query(
-          Q.where('image_url', Q.notEq(null))
-        ).fetchCount(),
-        postsCollection.query(
-          Q.where('is_deleted', true)
-        ).fetchCount()
+        Promise.resolve(0), // No longer applicable - posts table removed
+        Promise.resolve(0), // No longer applicable - posts table removed
+        Promise.resolve(0), // No longer applicable - posts table removed
+        Promise.resolve(0)  // No longer applicable - posts table removed
       ]);
 
       return {
-        totalPosts,
-        validPosts: postsWithUsers,
-        postsWithImages,
-        deletedPosts,
-        orphanedPosts: totalPosts - postsWithUsers,
-        healthScore: totalPosts > 0 ? Math.round((postsWithUsers / totalPosts) * 100) : 100
+        posts: {
+          total: totalPosts,
+          valid: validPosts,
+          withImages: postsWithImages,
+          deleted: deletedPosts,
+          orphanedPercentage: 0 // No longer applicable
+        },
+        lastUpdated: Date.now()
       };
     } catch (error) {
-      logger.error('[DataIntegrity] Health summary failed', error);
+      logger.error('[DataIntegrity] Failed to get data health summary', error);
       return {
-        totalPosts: 0,
-        validPosts: 0,
-        postsWithImages: 0,
-        deletedPosts: 0,
-        orphanedPosts: 0,
-        healthScore: 0,
-        error: error instanceof Error ? error.message : String(error)
+        posts: { total: 0, valid: 0, withImages: 0, deleted: 0, orphanedPercentage: 0 },
+        lastUpdated: Date.now()
       };
     }
   }

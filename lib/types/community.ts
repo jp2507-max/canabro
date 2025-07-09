@@ -8,7 +8,7 @@
 
 /**
  * Standardized animation configurations for consistent UX across community components
- * Used by PostItem, UserAvatar, ContextAwareFAB, and SegmentedControls
+ * Used by QuestionPostItem, PlantSharePostItem, UserAvatar, ContextAwareFAB, and SegmentedControls
  */
 export const COMMUNITY_ANIMATION_CONFIG = {
   card: { damping: 15, stiffness: 400 },
@@ -51,11 +51,11 @@ export interface PostAuthor {
 
 /**
  * Unified PostData interface that consolidates all post-related data structures
- * Replaces duplicate PostData interfaces in PostItem.tsx and other components
+ * Replaces duplicate PostData interfaces in QuestionPostItem.tsx, PlantSharePostItem.tsx and other components
  */
 export interface PostData {
   id: string;
-  user_id?: string; // User ID for ownership checks
+  user_id: string; // User ID for ownership checks (required for data integrity)
   content: string;
   image_url: string | null;
   created_at: string;
@@ -71,7 +71,8 @@ export interface PostData {
   category?: string;
   tags?: string[];
   plant_name?: string;
-  growth_stage?: GrowthStage;
+  strain_name?: string;
+  growth_stage?: CommunityGrowthStage;
   care_tips?: string;
   
   // Additional metadata
@@ -80,6 +81,10 @@ export interface PostData {
   is_featured?: boolean;
   priority_level?: 1 | 2 | 3 | 4 | 5;
   is_solved?: boolean;
+
+  // Plant share specific fields
+  environment?: Environment;
+  growing_medium?: CommunityGrowingMedium;
 }
 
 /**
@@ -88,9 +93,9 @@ export interface PostData {
 export type PostType = 'question' | 'plant_share' | 'general';
 
 /**
- * Growth stages for plant sharing posts
+ * Growth stages for plant sharing posts (Community specific)
  */
-export type GrowthStage = 'seedling' | 'vegetative' | 'flowering' | 'harvest' | 'curing';
+export type CommunityGrowthStage = 'seedling' | 'vegetative' | 'flowering' | 'harvest' | 'curing';
 
 /**
  * Post categories for question posts
@@ -99,6 +104,7 @@ export type PostCategory = 'general' | 'growing_tips' | 'troubleshooting' | 'str
 
 /**
  * Post interface matching actual database schema
+ * @deprecated Use PostData instead for unified post handling across question and plant share types
  */
 export interface Post {
   id: string;
@@ -116,6 +122,12 @@ export interface Post {
   profiles?: PostAuthor; // Profile data from join
   user_has_liked?: boolean; // From RPC function
 }
+
+/**
+ * Legacy compatibility alias
+ * @deprecated Use PostData instead
+ */
+export type LegacyPost = PostData;
 
 /**
  * Comment interface for post comments
@@ -255,9 +267,9 @@ export type QuestionCategory =
   | 'harvest';
 
 /**
- * Growing mediums for plant shares
+ * Growing mediums for plant shares (Community specific)
  */
-export type GrowingMedium = 
+export type CommunityGrowingMedium = 
   | 'soil' 
   | 'hydroponic' 
   | 'coco_coir' 
@@ -280,7 +292,21 @@ export type Environment =
 export type ContentType = 'questions' | 'plant_shares';
 
 /**
- * Community Question interface with comprehensive data model
+ * ========================================
+ * ⚠️ LEGACY INTERFACES FOR TRANSFORM COMPATIBILITY
+ * ========================================
+ * 
+ * The following interfaces are maintained for compatibility with UI components
+ * that transform PostData to specific question/plant share formats. These tables
+ * have been removed from the WatermelonDB schema (v27) for offline-first approach,
+ * but the types are kept to support the transform functions used by QuestionPostItem
+ * and PlantSharePostItem components.
+ * 
+ * TODO: Refactor UI components to work directly with PostData to eliminate these.
+ */
+
+/**
+ * @deprecated Table removed from schema v27 - kept for transform compatibility only
  */
 export interface CommunityQuestion {
   id: string;
@@ -305,7 +331,7 @@ export interface CommunityQuestion {
 }
 
 /**
- * Community Plant Share interface with comprehensive data model
+ * @deprecated Table removed from schema v27 - kept for transform compatibility only
  */
 export interface CommunityPlantShare {
   id: string;
@@ -313,10 +339,10 @@ export interface CommunityPlantShare {
   plant_id?: string;
   plant_name: string;
   strain_name?: string;
-  growth_stage: GrowthStage;
+  growth_stage: CommunityGrowthStage;
   content: string;
   care_tips?: string;
-  growing_medium?: GrowingMedium;
+  growing_medium?: CommunityGrowingMedium;
   environment?: Environment;
   images_urls: string[];
   is_featured: boolean;
@@ -333,50 +359,15 @@ export interface CommunityPlantShare {
 }
 
 /**
- * Question Answer interface for community Q&A
+ * ⚠️ DEPRECATED INTERFACES - REMOVED WITH OFFLINE-FIRST TRANSITION
+ * 
+ * The following interfaces were specific to the community_questions and 
+ * community_plant_shares tables that have been removed in schema v27.
+ * They are commented out but preserved for reference during any future
+ * community feature re-implementation.
  */
-export interface QuestionAnswer {
-  id: string;
-  question_id: string;
-  user_id: string;
-  content: string;
-  image_url?: string;
-  is_accepted: boolean;
-  is_helpful: boolean;
-  likes_count: number;
-  parent_answer_id?: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string;
-  // Joined fields
-  username?: string;
-  avatar_url?: string;
-  user_has_liked?: boolean;
-}
 
-/**
- * Plant Share Comment interface for plant sharing posts
- */
-export interface PlantShareComment {
-  id: string;
-  plant_share_id: string;
-  user_id: string;
-  content: string;
-  image_url?: string;
-  likes_count: number;
-  parent_comment_id?: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string;
-  // Joined fields
-  username?: string;
-  avatar_url?: string;
-  user_has_liked?: boolean;
-}
 
-/**
- * Filter interfaces for questions
- */
 export interface QuestionFilters {
   category?: QuestionCategory;
   is_solved?: boolean;
@@ -384,19 +375,13 @@ export interface QuestionFilters {
   order_direction?: 'ASC' | 'DESC';
 }
 
-/**
- * Filter interfaces for plant shares
- */
 export interface PlantShareFilters {
-  growth_stage?: GrowthStage;
+  growth_stage?: CommunityGrowthStage;
   environment?: Environment;
   order_by?: 'created_at' | 'likes_count' | 'comments_count';
   order_direction?: 'ASC' | 'DESC';
 }
 
-/**
- * Creation interfaces for questions
- */
 export interface CreateQuestionData {
   title: string;
   content: string;
@@ -406,24 +391,18 @@ export interface CreateQuestionData {
   priority_level?: 1 | 2 | 3 | 4 | 5;
 }
 
-/**
- * Creation interfaces for plant shares
- */
 export interface CreatePlantShareData {
   plant_id?: string;
   plant_name: string;
   strain_name?: string;
-  growth_stage: GrowthStage;
+  growth_stage: CommunityGrowthStage;
   content: string;
   care_tips?: string;
-  growing_medium?: GrowingMedium;
+  growing_medium?: CommunityGrowingMedium;
   environment?: Environment;
   images_urls?: string[];
 }
 
-/**
- * Creation interfaces for answers
- */
 export interface CreateAnswerData {
   question_id: string;
   content: string;
@@ -431,9 +410,6 @@ export interface CreateAnswerData {
   parent_answer_id?: string;
 }
 
-/**
- * Creation interfaces for plant share comments
- */
 export interface CreatePlantShareCommentData {
   plant_share_id: string;
   content: string;
@@ -446,7 +422,7 @@ export interface CreatePlantShareCommentData {
 // ========================================
 
 /**
- * Common post action handlers to eliminate duplication across PostItem components
+ * Common post action handlers to eliminate duplication across QuestionPostItem and PlantSharePostItem components
  */
 export interface PostActionHandlers {
   onLike: (postId: string, currentlyLiked: boolean) => void;

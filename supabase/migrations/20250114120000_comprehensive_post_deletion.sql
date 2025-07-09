@@ -20,14 +20,9 @@ BEGIN
     
     -- Verify the post belongs to the current user or user has admin privileges
     IF OLD.user_id != current_user_id THEN
-        -- Check if user has admin role or is service_role
-        IF NOT (
-            current_user_id IN (
-                SELECT id FROM profiles WHERE id = current_user_id
-            ) AND 
-            current_setting('role') IN ('service_role', 'postgres')
-        ) THEN
-            RAISE EXCEPTION 'Access denied: Cannot delete posts owned by other users. Post owner: %, Current user: %', 
+        -- Allow admin roles to delete any post
+        IF current_setting('role') NOT IN ('service_role', 'postgres') THEN
+            RAISE EXCEPTION 'Access denied: Cannot delete posts owned by other users. Post owner: %, Current user: %',
                 OLD.user_id, current_user_id;
         END IF;
     END IF;

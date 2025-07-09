@@ -12,7 +12,7 @@ interface SyncOperation {
   attempt: number;
   startTime: number;
   lastError?: Error;
-  timeoutId?: NodeJS.Timeout;
+  timeoutId?: ReturnType<typeof setTimeout>;
 }
 
 export interface ConflictResolution {
@@ -22,8 +22,10 @@ export interface ConflictResolution {
   table: string;
 }
 
-export class SyncRetryService {
-  private defaultConfig: RetryConfig = {
+
+// Functional implementation of SyncRetryService using closures
+const createSyncRetryService = (initialConfig: Partial<RetryConfig> = {}) => {
+  const defaultConfig: RetryConfig = {
     maxRetries: 5,
     baseDelay: 1000, // 1 second
     maxDelay: 30000, // 30 seconds
@@ -32,134 +34,87 @@ export class SyncRetryService {
     timeout: 300000, // 5 minutes default timeout
   };
 
-  private activeOperations = new Map<string, SyncOperation>();
+  const config: Partial<RetryConfig> = { ...initialConfig };
+  const activeOperations = new Map<string, SyncOperation>();
 
-  constructor(private config: Partial<RetryConfig> = {}) {
-    this.config = { ...this.defaultConfig, ...this.config };
-  }
+  const calculateDelay = (attempt: number, cfg: RetryConfig): number => {
+    let delay = cfg.baseDelay * Math.pow(cfg.backoffMultiplier, attempt - 1);
+    delay = Math.min(delay, cfg.maxDelay);
+    if (cfg.jitter) {
+      const jitterRange = delay * 0.1;
+      delay += (Math.random() - 0.5) * 2 * jitterRange;
+    }
+    return Math.round(delay);
+  };
 
-  /**
-   * Execute a sync operation with exponential backoff retry logic and timeout
-   */
-  async executeWithRetry<T>(
+  const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+  const attemptOperation = async <T>(
+    operationId: string,
+    operation: () => Promise<T>,
+    cfg: RetryConfig
+  ): Promise<T> => {
+    const syncOp = activeOperations.get(operationId)!;
+    while (syncOp.attempt < cfg.maxRetries) {
+      try {
+        const result = await operation();
+        if (syncOp.attempt > 0) {
+          console.warn(`Sync operation ${operationId} succeeded after ${syncOp.attempt} retries`);
+        }
+        return result;
+      } catch (error) {
+        syncOp.attempt++;
+        syncOp.lastError = error as Error;
+        if (syncOp.attempt >= cfg.maxRetries) {
+          console.error(`Sync operation ${operationId} failed after ${cfg.maxRetries} retries:`, error);
+          throw error;
+        }
+        const delay = calculateDelay(syncOp.attempt, cfg);
+        console.warn(`Sync operation ${operationId} failed (attempt ${syncOp.attempt}/${cfg.maxRetries}), retrying in ${delay}ms:`, error);
+        await sleep(delay);
+      }
+    }
+    throw (activeOperations.get(operationId)?.lastError) || new Error('Unknown sync error');
+  };
+
+  async function executeWithRetry<T>(
     operationId: string,
     operation: () => Promise<T>,
     operationType: 'pull' | 'push',
-    config?: Partial<RetryConfig>
+    overrideConfig?: Partial<RetryConfig>
   ): Promise<T> {
-    const finalConfig = { ...this.defaultConfig, ...this.config, ...config };
-    
+    const finalConfig = { ...defaultConfig, ...config, ...overrideConfig };
     const syncOp: SyncOperation = {
       type: operationType,
       attempt: 0,
       startTime: Date.now(),
     };
-
-    this.activeOperations.set(operationId, syncOp);
-
+    activeOperations.set(operationId, syncOp);
     try {
-      // Create timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
         const timeoutId = setTimeout(() => {
           reject(new Error(`Operation ${operationId} timed out after ${finalConfig.timeout}ms`));
         }, finalConfig.timeout);
-        
-        // Store timeout ID for cleanup
-        syncOp.timeoutId = timeoutId;
+        syncOp.timeoutId = timeoutId as ReturnType<typeof setTimeout>;
       });
-
-      // Race between the operation and timeout
-      const operationPromise = this.attemptOperation(operationId, operation, finalConfig);
-      
+      const operationPromise = attemptOperation(operationId, operation, finalConfig);
       const result = await Promise.race([operationPromise, timeoutPromise]);
-      
-      // Clear timeout if operation completes successfully
-      if (syncOp.timeoutId) {
+      if (syncOp.timeoutId !== undefined) {
         clearTimeout(syncOp.timeoutId);
       }
-      
       return result;
     } finally {
-      // Ensure timeout is cleared on any exit
-      if (syncOp.timeoutId) {
+      if (syncOp.timeoutId !== undefined) {
         clearTimeout(syncOp.timeoutId);
       }
-      this.activeOperations.delete(operationId);
+      activeOperations.delete(operationId);
     }
   }
 
-  private async attemptOperation<T>(
-    operationId: string,
-    operation: () => Promise<T>,
-    config: RetryConfig
-  ): Promise<T> {
-    const syncOp = this.activeOperations.get(operationId)!;
-
-    while (syncOp.attempt < config.maxRetries) {
-      try {
-        const result = await operation();
-        
-        // Log successful operation after retries
-        if (syncOp.attempt > 0) {
-          console.warn(`Sync operation ${operationId} succeeded after ${syncOp.attempt} retries`);
-        }
-        
-        return result;
-      } catch (error) {
-        syncOp.attempt++;
-        syncOp.lastError = error as Error;
-
-        // If we've exceeded max retries, throw the last error
-        if (syncOp.attempt >= config.maxRetries) {
-          console.error(`Sync operation ${operationId} failed after ${config.maxRetries} retries:`, error);
-          throw error;
-        }
-
-        // Calculate delay for next attempt
-        const delay = this.calculateDelay(syncOp.attempt, config);
-        
-        console.warn(`Sync operation ${operationId} failed (attempt ${syncOp.attempt}/${config.maxRetries}), retrying in ${delay}ms:`, error);
-
-        // Wait before next attempt
-        await this.sleep(delay);
-      }
-    }
-
-    throw syncOp.lastError || new Error('Unknown sync error');
-  }
-
-  private calculateDelay(attempt: number, config: RetryConfig): number {
-    // Calculate exponential backoff delay
-    let delay = config.baseDelay * Math.pow(config.backoffMultiplier, attempt - 1);
-    
-    // Apply maximum delay limit
-    delay = Math.min(delay, config.maxDelay);
-    
-    // Add jitter to prevent thundering herd
-    if (config.jitter) {
-      const jitterRange = delay * 0.1; // 10% jitter
-      delay += (Math.random() - 0.5) * 2 * jitterRange;
-    }
-    
-    return Math.round(delay);
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  /**
-   * Process conflict resolutions returned from sync operations
-   */
-  processConflictResolutions(resolutions: ConflictResolution[]): {
-    kept: ConflictResolution[];
-    deleted: ConflictResolution[];
-    conflicts: ConflictResolution[];
-  } {
+  function processConflictResolutions(resolutions: ConflictResolution[]) {
     const kept: ConflictResolution[] = [];
     const deleted: ConflictResolution[] = [];
     const conflicts: ConflictResolution[] = [];
-
     for (const resolution of resolutions) {
       switch (resolution.action) {
         case 'keep_modified':
@@ -169,52 +124,29 @@ export class SyncRetryService {
           deleted.push(resolution);
           break;
         case 'no_conflict':
-          // No action needed
           break;
         default:
           conflicts.push(resolution);
       }
     }
-
     return { kept, deleted, conflicts };
   }
 
-  /**
-   * Get status of currently active sync operations
-   */
-  getActiveOperations(): Record<string, SyncOperation> {
-    return Object.fromEntries(this.activeOperations.entries());
+  function getActiveOperations(): Record<string, SyncOperation> {
+    return Object.fromEntries(activeOperations.entries());
   }
 
-  /**
-   * Check if a specific operation is currently running
-   */
-  isOperationActive(operationId: string): boolean {
-    return this.activeOperations.has(operationId);
+  function isOperationActive(operationId: string): boolean {
+    return activeOperations.has(operationId);
   }
 
-  /**
-   * Cancel an active operation (note: this only removes it from tracking, 
-   * the actual operation might still complete)
-   */
-  cancelOperation(operationId: string): boolean {
-    return this.activeOperations.delete(operationId);
+  function cancelOperation(operationId: string): boolean {
+    return activeOperations.delete(operationId);
   }
 
-  /**
-   * Get retry statistics for monitoring
-   */
-  getRetryStats(): {
-    activeOperations: number;
-    operationDetails: Record<string, {
-      type: string;
-      attempts: number;
-      duration: number;
-      lastError?: string;
-    }>;
-  } {
+  function getRetryStats() {
     const stats = {
-      activeOperations: this.activeOperations.size,
+      activeOperations: activeOperations.size,
       operationDetails: {} as Record<string, {
         type: string;
         attempts: number;
@@ -222,8 +154,7 @@ export class SyncRetryService {
         lastError?: string;
       }>,
     };
-
-    for (const [id, op] of this.activeOperations.entries()) {
+    for (const [id, op] of activeOperations.entries()) {
       stats.operationDetails[id] = {
         type: op.type,
         attempts: op.attempt,
@@ -231,10 +162,18 @@ export class SyncRetryService {
         lastError: op.lastError?.message,
       };
     }
-
     return stats;
   }
-}
 
-// Singleton instance for global use
-export const syncRetryService = new SyncRetryService(); 
+  return {
+    executeWithRetry,
+    processConflictResolutions,
+    getActiveOperations,
+    isOperationActive,
+    cancelOperation,
+    getRetryStats,
+  };
+};
+
+// Singleton instance for global use (API compatible)
+export const syncRetryService = createSyncRetryService();

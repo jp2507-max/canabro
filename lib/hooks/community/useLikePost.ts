@@ -1,35 +1,30 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import supabase from '../../supabase';
+// import supabase from '../../supabase';
+import { CommunityService } from '../../services/community-service';
 import { triggerLightHaptic, triggerMediumHaptic } from '../../utils/haptics';
 import { PostData } from '../../types/community';
+import { Alert } from 'react-native';
 
-interface LikePostParams {
-  postId: string;
+export type LikeParams = {
+  post: PostData;
   userId: string;
-  currentlyLiked: boolean;
-}
+};
 
 export function useLikePost() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ postId, userId, currentlyLiked }: LikePostParams) => {
-      // Call the appropriate RPC function based on current state
-      const { data, error } = await supabase.rpc(
-        currentlyLiked ? 'unlike_post' : 'like_post',
-        {
-          post_id: postId,
-          user_id: userId
-        }
-      );
-
-      if (error) {
-        throw error;
+    mutationFn: async ({ post, userId }: LikeParams) => {
+      if (post.post_type === 'question') {
+        return CommunityService.toggleQuestionLike(post.id, userId);
       }
-
-      return data;
+      if (post.post_type === 'plant_share') {
+        return CommunityService.togglePlantShareLike(post.id, userId);
+      }
+  throw new Error(`Unsupported post_type: ${post.post_type}`);
     },
-    onMutate: async ({ postId, currentlyLiked }) => {
+    onMutate: async ({ post }) => {
+      const currentlyLiked = post.user_has_liked;
       // Trigger haptic feedback immediately
       if (currentlyLiked) {
         await triggerLightHaptic();
@@ -37,42 +32,50 @@ export function useLikePost() {
         await triggerMediumHaptic();
       }
 
+      // Determine the correct query key based on post type
+      const queryKey = post.post_type === 'question' ? ['questions'] : post.post_type === 'plant_share' ? ['plantShares'] : ['posts'];
+
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await queryClient.cancelQueries({ queryKey: ['posts'] });
+      await queryClient.cancelQueries({ queryKey });
 
       // Snapshot the previous value
-      const previousPosts = queryClient.getQueryData<PostData[]>(['posts']);
+      const previousPosts = queryClient.getQueryData<PostData[]>(queryKey);
 
       // Optimistically update the cache
-      queryClient.setQueryData<PostData[]>(['posts'], (old) => {
+      queryClient.setQueryData<PostData[]>(queryKey, (old) => {
         if (!old) return old;
-        
-        return old.map(post => {
-          if (post.id === postId) {
+        return old.map(item => {
+          if (item.id === post.id) {
             return {
-              ...post,
+              ...item,
               user_has_liked: !currentlyLiked,
-              likes_count: currentlyLiked ? post.likes_count - 1 : post.likes_count + 1
+              likes_count: currentlyLiked ? item.likes_count - 1 : item.likes_count + 1
             };
           }
-          return post;
+          return item;
         });
       });
 
-      // Return a context object with the snapshotted value
-      return { previousPosts };
+      // Return a context object with the snapshotted value and queryKey
+      return { previousPosts, queryKey };
     },
-    onError: (err, { postId, currentlyLiked }, context) => {
+    onError: (err, _args, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousPosts) {
-        queryClient.setQueryData(['posts'], context.previousPosts);
+      if (context?.previousPosts && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousPosts);
       }
-      
       console.error('Error toggling like:', err);
+      Alert.alert(
+        'Like Failed',
+        'Unable to update like status. Please try again.',
+        [{ text: 'OK' }]
+      );
     },
-    onSettled: () => {
+    onSettled: (_data, _error, _variables, context) => {
       // Always refetch after error or success to ensure we have the latest data
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      if (context?.queryKey) {
+        queryClient.invalidateQueries({ queryKey: context.queryKey });
+      }
     },
   });
 } 

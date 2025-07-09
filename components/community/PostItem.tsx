@@ -47,6 +47,17 @@ interface PostItemProps {
 const ANIMATION_CONFIG = COMMUNITY_ANIMATION_CONFIG;
 const SCALE_VALUES = COMMUNITY_SCALE_VALUES;
 
+/**
+ * LEGACY COMPONENT - RESTORED FOR COMPARISON
+ * 
+ * TODO: Review this legacy PostItem component and compare with:
+ * - QuestionPostItem.tsx
+ * - PlantSharePostItem.tsx
+ * 
+ * This component was temporarily restored to allow testing and comparison
+ * of the new specialized components. Consider whether any patterns from
+ * this legacy component should be incorporated into the new ones.
+ */
 const PostItem: React.FC<PostItemProps> = React.memo(
   ({ 
     post, 
@@ -61,14 +72,14 @@ const PostItem: React.FC<PostItemProps> = React.memo(
   }) => {
     // State for delete confirmation modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    // 🎬 Enhanced Reanimated v3 + React Compiler Compatible Animation System
+    // ­ƒÄ¼ Enhanced Reanimated v3 + React Compiler Compatible Animation System
     const scale = useSharedValue(1);
     const shadowOpacity = useSharedValue(0.15);
     const elevation = useSharedValue(4);
     const backgroundOpacity = useSharedValue(1);
     const cardBorderRadius = useSharedValue(24);
 
-    // 🎯 Enhanced animated styles with color interpolation and sophisticated effects
+    // ­ƒÄ» Enhanced animated styles with color interpolation and sophisticated effects
     const animatedContainerStyle = useAnimatedStyle(() => {
       const currentScale = scale.value;
       const currentShadowOpacity = shadowOpacity.value;
@@ -85,7 +96,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
       };
     });
 
-    // ♻️ Enhanced cleanup animations on unmount
+    // ÔÖ╗´©Å Enhanced cleanup animations on unmount
     useEffect(() => {
       return () => {
         cancelAnimation(scale);
@@ -96,7 +107,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
       };
     }, []);
 
-    // 🎯 Optimized computed values for performance
+    // ­ƒÄ» Optimized computed values for performance
     const displayName = useMemo(
       () => post.profiles?.username || `User ${post.profiles?.id?.slice(0, 8) || 'Unknown'}`,
       [post.profiles?.username, post.profiles?.id]
@@ -116,10 +127,8 @@ const PostItem: React.FC<PostItemProps> = React.memo(
       return currentUserId && post.user_id && currentUserId === post.user_id;
     }, [currentUserId, post.user_id]);
 
-    // Type guard for hasCorruptedImage property
-    const hasCorruptedImage = useMemo(() => {
-      return 'hasCorruptedImage' in post && !!(post as PostData & { hasCorruptedImage?: boolean }).hasCorruptedImage;
-    }, [post]);
+  // Use optional property directly (PostData includes hasCorruptedImage?)
+  const hasCorruptedImage = !!post.hasCorruptedImage;
 
     // Handle delete button press
     const handleDeletePress = useCallback(async () => {
@@ -138,7 +147,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
     // Handle delete modal close
     const handleDeleteCancel = useCallback(() => {
       setShowDeleteModal(false);
-    }, []); // 🎯 Enhanced event handlers with sophisticated haptic feedback
+    }, []); // ­ƒÄ» Enhanced event handlers with sophisticated haptic feedback
     const handleUserPress = useCallback(async () => {
       const profileId = post.profiles?.id;
       if (profileId) {
@@ -168,7 +177,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
       }
     }, [post.image_url, onImagePress]);
 
-    // 🎯 Enhanced Modern Gesture Handlers with sophisticated animation sequences
+    // ­ƒÄ» Enhanced Modern Gesture Handlers with sophisticated animation sequences
     const userPressGesture = Gesture.Tap()
       .onBegin(() => {
         'worklet';
@@ -204,7 +213,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         style={[
           animatedContainerStyle,
           {
-            // 🎨 Enhanced shadow system with neutral colors
+            // ­ƒÄ¿ Enhanced shadow system with neutral colors
             shadowColor: '#000000',
             shadowOffset: { width: 0, height: 8 },
             shadowRadius: 16,
@@ -214,7 +223,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         className="mb-6 overflow-hidden rounded-3xl border border-neutral-100 bg-white dark:border-zinc-800 dark:bg-zinc-900"
         accessibilityRole="text"
         accessibilityLabel={`Post by ${displayName}`}>
-        {/* 👤 Enhanced User Header with sophisticated gesture handling */}
+        {/* ­ƒæñ Enhanced User Header with sophisticated gesture handling */}
         <GestureDetector gesture={userPressGesture}>
           <Pressable
             className="flex-row items-center p-5 pb-4 active:opacity-90"
@@ -233,12 +242,12 @@ const PostItem: React.FC<PostItemProps> = React.memo(
           </Pressable>
         </GestureDetector>
 
-        {/* 📋 Post Type Header for Questions & Plant Shares */}
+        {/* ­ƒôï Post Type Header for Questions & Plant Shares */}
         {/* <View className="px-5">
           <PostTypeHeader post={post} />
         </View> */}
 
-        {/* 📝 Enhanced Post Content with improved typography */}
+        {/* ­ƒôØ Enhanced Post Content with improved typography */}
         {post.content && (
           <View className="mb-5 px-5">
             <Text className="text-lg font-normal leading-7 text-zinc-900 dark:text-zinc-100">
@@ -247,7 +256,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
           </View>
         )}
 
-        {/* 🖼️ Enhanced Post Image with sophisticated gesture handling */}
+        {/* ­ƒû╝´©Å Enhanced Post Image with sophisticated gesture handling */}
         {post.image_url && (
           <GestureDetector gesture={imageGesture}>
             <Pressable
@@ -283,7 +292,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
           </GestureDetector>
         )}
 
-        {/* 🎯 Post Action Row with Delete Support */}
+        {/* ­ƒÄ» Post Action Row with Delete Support */}
         <View className="px-5 pb-4">
           <PostActionRow
             likes_count={post.likes_count}
@@ -312,4 +321,4 @@ const PostItem: React.FC<PostItemProps> = React.memo(
   }
 );
 
-export default PostItem;
+export default PostItem; 

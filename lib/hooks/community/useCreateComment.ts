@@ -1,6 +1,16 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import supabase from '../../supabase';
 import { triggerLightHaptic } from '../../utils/haptics';
+import { useAuth } from '../../contexts/AuthProvider';
+import useWatermelon from '../useWatermelon';
+import { Q } from '@nozbe/watermelondb';
+// Minimal PostData type for cache updates
+interface PostData {
+  id: string;
+  comments_count: number;
+  [key: string]: string | number | boolean | null | undefined;
+}
 
 interface CreateCommentParams {
   postId: string;
@@ -25,8 +35,11 @@ interface CommentData {
   };
 }
 
+
 export function useCreateComment() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { profiles } = useWatermelon();
 
   return useMutation({
     mutationFn: async ({ postId, userId, content, imageUrl }: CreateCommentParams) => {
@@ -54,6 +67,22 @@ export function useCreateComment() {
       // Snapshot the previous value
       const previousComments = queryClient.getQueryData<CommentData[]>(['comments', postId]);
 
+      // Fetch the current user's profile from WatermelonDB
+      let username = 'You';
+      let avatar_url: string | null = null;
+      if (user?.id) {
+        try {
+          const userProfileArr = await profiles.query(Q.where('user_id', user.id)).fetch();
+          const userProfile = userProfileArr.length > 0 ? userProfileArr[0] : undefined;
+          if (userProfile) {
+            username = userProfile.username || 'You';
+            avatar_url = userProfile.avatarUrl || null;
+          }
+        } catch (_err) {
+          // fallback to defaults
+        }
+      }
+
       // Create optimistic comment
       const optimisticComment: CommentData = {
         id: `temp-${Date.now()}`,
@@ -66,8 +95,8 @@ export function useCreateComment() {
         updated_at: new Date().toISOString(),
         user_has_liked: false,
         profile: {
-          username: 'You', // Will be replaced with actual data
-          avatar_url: null
+          username,
+          avatar_url
         }
       };
 
@@ -78,7 +107,7 @@ export function useCreateComment() {
       });
 
       // Also update the post's comment count
-      queryClient.setQueryData<any[]>(['posts'], (old) => {
+      queryClient.setQueryData<PostData[]>(['posts'], (old) => {
         if (!old) return old;
         return old.map(post => {
           if (post.id === postId) {
@@ -101,7 +130,7 @@ export function useCreateComment() {
       }
       
       // Also roll back the post's comment count
-      queryClient.setQueryData<any[]>(['posts'], (old) => {
+      queryClient.setQueryData<PostData[]>(['posts'], (old) => {
         if (!old) return old;
         return old.map(post => {
           if (post.id === postId) {

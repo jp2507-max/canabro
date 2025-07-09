@@ -11,9 +11,13 @@ import type { PostData, CommunityQuestion, CommunityPlantShare, QuestionCategory
  * Used for rendering question posts in the community feed
  */
 export function transformPostToQuestion(post: PostData): CommunityQuestion {
+  const user_id = post.profiles?.id || post.user_id;
+  if (!user_id) {
+    throw new Error(`Missing user_id for post with id: ${post.id}`);
+  }
   return {
     id: post.id,
-    user_id: post.profiles?.id || '',
+    user_id,
     title: post.title || post.content.split('\n')[0] || 'Question',
     content: post.content,
     image_url: post.image_url || undefined,
@@ -37,16 +41,20 @@ export function transformPostToQuestion(post: PostData): CommunityQuestion {
  * Used for rendering plant share posts in the community feed
  */
 export function transformPostToPlantShare(post: PostData): CommunityPlantShare {
+  const user_id = post.profiles?.id || post.user_id;
+  if (!user_id) {
+    throw new Error(`Missing user_id for post with id: ${post.id}`);
+  }
   return {
     id: post.id,
-    user_id: post.profiles?.id || '',
+    user_id,
     plant_name: post.plant_name || 'My Plant',
-    strain_name: post.plant_name,
+    strain_name: post.strain_name || '',
     content: post.content,
     images_urls: post.image_url ? [post.image_url] : [],
     growth_stage: post.growth_stage || 'vegetative',
-    environment: 'indoor' as const, // Default or could be added to PostData
-    growing_medium: 'soil' as const, // Default or could be added to PostData
+    environment: post.environment ?? undefined,
+    growing_medium: post.growing_medium ?? undefined,
     care_tips: post.care_tips || '',
     is_featured: post.is_featured || false,
     likes_count: post.likes_count,

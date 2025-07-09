@@ -15,8 +15,8 @@ interface PostTypeHeaderProps {
 }
 
 const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
-  const badgeScale = useSharedValue(1);
-  const badgeOpacity = useSharedValue(1);
+  const badgeScale = useSharedValue(0);
+  const badgeOpacity = useSharedValue(0);
 
   // Enhanced animation on mount
   React.useEffect(() => {

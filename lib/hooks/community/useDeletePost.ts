@@ -1,8 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CommunityService } from '../../services/community-service';
-import { Post } from '../../types/community';
+import { PostData } from '../../types/community';
 
-interface DeletePostVariables {
+export interface DeletePostVariables {
+  post: PostData;
+  userId: string;
+}
+
+interface SoftDeleteVariables {
+  postId: string;
+  userId: string;
+}
+
+interface RestorePostVariables {
   postId: string;
   userId: string;
 }
@@ -15,22 +25,30 @@ interface DeletePostOptions {
 export function useDeletePost(options?: DeletePostOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ postId, userId }: DeletePostVariables) => {
-      await CommunityService.deletePost(postId, userId);
-      return postId;
+  return useMutation<string, Error, DeletePostVariables, { previousPosts?: PostData[] }>({
+    mutationFn: async ({ post, userId }: DeletePostVariables) => {
+      if (post.post_type === 'question') {
+        await CommunityService.deleteQuestion(post.id, userId);
+      } else if (post.post_type === 'plant_share') {
+        await CommunityService.deletePlantShare(post.id, userId);
+      } else {
+        const errorMsg = `[useDeletePost] Unsupported post type: ${post.post_type}`;
+        console.warn(errorMsg);
+        throw new Error(errorMsg);
+      }
+      return post.id;
     },
-    onMutate: async ({ postId }) => {
+    onMutate: async ({ post }) => {
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
       await queryClient.cancelQueries({ queryKey: ['posts'] });
 
       // Snapshot the previous value
-      const previousPosts = queryClient.getQueryData<Post[]>(['posts']);
+      const previousPosts = queryClient.getQueryData<PostData[]>(['posts']);
 
       // Optimistically remove the post from the cache
-      queryClient.setQueryData<Post[]>(['posts'], (old) => {
+      queryClient.setQueryData<PostData[]>(['posts'], (old) => {
         if (!old) return [];
-        return old.filter(post => post.id !== postId);
+        return old.filter(item => item.id !== post.id);
       });
 
       // Return a context object with the snapshotted value
@@ -45,8 +63,8 @@ export function useDeletePost(options?: DeletePostOptions) {
       console.error('[useDeletePost] Error deleting post:', error);
       options?.onError?.(error as Error);
     },
-    onSuccess: (deletedPostId) => {
-      console.log(`[useDeletePost] Successfully deleted post: ${deletedPostId}`);
+    onSuccess: (deletedId) => {
+      console.log(`[useDeletePost] Successfully deleted post: ${deletedId}`);
       options?.onSuccess?.();
     },
     onSettled: () => {
@@ -59,17 +77,17 @@ export function useDeletePost(options?: DeletePostOptions) {
 export function useSoftDeletePost(options?: DeletePostOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ postId, userId }: DeletePostVariables) => {
+  return useMutation<string, Error, SoftDeleteVariables, { previousPosts?: PostData[] }>({
+    mutationFn: async ({ postId, userId }: SoftDeleteVariables) => {
       await CommunityService.softDeletePost(postId, userId);
       return postId;
     },
     onMutate: async ({ postId }) => {
       await queryClient.cancelQueries({ queryKey: ['posts'] });
-      const previousPosts = queryClient.getQueryData<Post[]>(['posts']);
+      const previousPosts = queryClient.getQueryData<PostData[]>(['posts']);
 
       // Optimistically mark the post as deleted
-      queryClient.setQueryData<Post[]>(['posts'], (old) => {
+      queryClient.setQueryData<PostData[]>(['posts'], (old) => {
         if (!old) return [];
         return old.map(post => 
           post.id === postId 
@@ -101,17 +119,17 @@ export function useSoftDeletePost(options?: DeletePostOptions) {
 export function useRestorePost(options?: DeletePostOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ postId, userId }: DeletePostVariables) => {
+  return useMutation<string, Error, RestorePostVariables, { previousPosts?: PostData[] }>({
+    mutationFn: async ({ postId, userId }: RestorePostVariables) => {
       await CommunityService.restorePost(postId, userId);
       return postId;
     },
     onMutate: async ({ postId }) => {
       await queryClient.cancelQueries({ queryKey: ['posts'] });
-      const previousPosts = queryClient.getQueryData<Post[]>(['posts']);
+      const previousPosts = queryClient.getQueryData<PostData[]>(['posts']);
 
       // Optimistically restore the post
-      queryClient.setQueryData<Post[]>(['posts'], (old) => {
+      queryClient.setQueryData<PostData[]>(['posts'], (old) => {
         if (!old) return [];
         return old.map(post => 
           post.id === postId 

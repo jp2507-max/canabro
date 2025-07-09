@@ -13,9 +13,10 @@ export type {
   Comment,
   PostAuthor,
   PostType,
-  GrowthStage,
   PostCategory,
   Post,
   Like,
   Follow
 } from './community';
+
+export { GrowthStage } from './plant';

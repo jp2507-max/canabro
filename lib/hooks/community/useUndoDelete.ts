@@ -2,7 +2,8 @@
  * useUndoDelete - Hook for managing undo functionality after post deletion
  */
 
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthProvider';
 import { useRestorePost } from './useDeletePost';
 
 interface UndoDeleteState {
@@ -20,6 +21,7 @@ interface UseUndoDeleteReturn {
 }
 
 export function useUndoDelete(): UseUndoDeleteReturn {
+  const { user } = useAuth();
   const [undoState, setUndoState] = useState<UndoDeleteState>({
     visible: false,
     postId: null,
@@ -30,7 +32,7 @@ export function useUndoDelete(): UseUndoDeleteReturn {
   
   const restoreMutation = useRestorePost({
     onSuccess: () => {
-      console.warn('Post restored successfully');
+      console.log('Post restored successfully');
     },
     onError: (error) => {
       console.error('Failed to restore post:', error);
@@ -38,18 +40,8 @@ export function useUndoDelete(): UseUndoDeleteReturn {
     }
   });
 
-  const showUndoToast = useCallback((postId: string, message = 'Post deleted') => {
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
 
-    setUndoState({
-      visible: true,
-      postId,
-      message,
-    });
-  }, []);
+  const AUTO_HIDE_DELAY = 5000; // 5 seconds
 
   const hideUndoToast = useCallback(() => {
     if (timeoutRef.current) {
@@ -64,19 +56,47 @@ export function useUndoDelete(): UseUndoDeleteReturn {
     });
   }, []);
 
+  const showUndoToast = useCallback((postId: string, message = 'Post deleted') => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    setUndoState({
+      visible: true,
+      postId,
+      message,
+    });
+
+    // Set auto-hide timeout
+    timeoutRef.current = setTimeout(() => {
+      hideUndoToast();
+    }, AUTO_HIDE_DELAY);
+  }, [hideUndoToast]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, []);
+
   const handleUndo = useCallback(async () => {
-    if (!undoState.postId) return;
+    if (!undoState.postId || !user?.id) return;
 
     try {
       await restoreMutation.mutateAsync({
         postId: undoState.postId,
-        userId: '', // This will be provided by the calling component
+        userId: user.id,
       });
       hideUndoToast();
     } catch (error) {
       console.error('Error undoing deletion:', error);
     }
-  }, [undoState.postId, restoreMutation, hideUndoToast]);
+  }, [undoState.postId, restoreMutation, hideUndoToast, user?.id]);
 
   return {
     undoState,

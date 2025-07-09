@@ -115,8 +115,12 @@ function normaliseStrainArrays<T extends { effects?: string[] | string; flavors?
 let recentSyncAttempts = 0;
 let lastSyncAttemptLogTime = 0;
 
+
 // Last successful sync time
 let lastSuccessfulSyncTime = 0;
+
+// Track successful syncs for periodic cleanup
+let syncSuccessCount = 0;
 
 /**
  * Synchronize local WatermelonDB with remote Supabase
@@ -244,7 +248,7 @@ export async function synchronizeWithServer(
                     tables_to_sync: syncConfig.tablesToSync,
                     include_media: syncConfig.includeMedia,
                   });
-                } catch (error) {
+                } catch (_error) {
                   // Fallback to regular sync_pull if enhanced version is not available
                   logger.log('[Sync Service] Enhanced sync not available, falling back to regular sync');
                   return await executeRpcWithRetry('sync_pull', {
@@ -302,12 +306,10 @@ export async function synchronizeWithServer(
                     const tableChanges = receivedChanges[table] as SyncTableChangeSet;
                     const createdProfiles = tableChanges?.created || [];
                     const updatedProfiles = tableChanges?.updated || [];
-
                     try {
                       // Validate and sanitize all profile records upfront to catch any issues
                       const validCreated = [];
                       const validUpdated = [];
-
                       // Filter out invalid created records
                       for (const profile of createdProfiles) {
                         try {
@@ -315,24 +317,20 @@ export async function synchronizeWithServer(
                             console.warn(`Skipping invalid profile: not an object`);
                             continue;
                           }
-
                           // Clean up WatermelonDB internal fields
                           const cleanedProfile = { ...profile };
                           delete cleanedProfile._status;
                           delete cleanedProfile._changed;
-
                           // Ensure ID is valid
                           if (!cleanedProfile.id || typeof cleanedProfile.id !== 'string') {
                             console.warn(`Skipping invalid profile: missing or invalid ID`);
                             continue;
                           }
-
                           validCreated.push(cleanedProfile);
                         } catch (validationError) {
                           console.warn(`Skipping invalid profile record:`, validationError);
                         }
                       }
-
                       // Filter out invalid updated records
                       for (const profile of updatedProfiles) {
                         try {
@@ -340,24 +338,20 @@ export async function synchronizeWithServer(
                             console.warn(`Skipping invalid profile update: not an object`);
                             continue;
                           }
-
                           // Clean up WatermelonDB internal fields
                           const cleanedProfile = { ...profile };
                           delete cleanedProfile._status;
                           delete cleanedProfile._changed;
-
                           // Ensure ID is valid
                           if (!cleanedProfile.id || typeof cleanedProfile.id !== 'string') {
                             console.warn(`Skipping invalid profile update: missing or invalid ID`);
                             continue;
                           }
-
                           validUpdated.push(cleanedProfile);
                         } catch (validationError) {
                           console.warn(`Skipping invalid profile update record:`, validationError);
                         }
                       }
-
                       // Check local database for all profiles that are in the created array
                       // to determine if they already exist locally
                       const existingProfileIds = new Set();
@@ -376,7 +370,6 @@ export async function synchronizeWithServer(
                             // Profile doesn't exist locally, which is expected for most created records
                           }
                         }
-
                         // IMPORTANT FIX: Also check if user's own profile exists locally
                         // to avoid the error where we move it to created when it already exists
                         for (const profile of validUpdated) {
@@ -397,17 +390,22 @@ export async function synchronizeWithServer(
                             }
                           }
                         }
-                      } catch (dbError) {
-                        console.warn('[Sync] Error checking for existing profiles:', dbError);
+                      } catch (_error) {
+                        console.error('[Sync] Error during profile handling:', _error);
+                        // Fallback to normal handling
+                        ensuredChanges[table] = await handleTableConflicts(
+                          table,
+                          receivedChanges,
+                          database
+                        );
+                        continue;
                       }
-
                       // Move created profiles to updated if they already exist locally
                       const finalCreated = [];
                       const finalUpdated = [...validUpdated];
-
                       for (const profile of validCreated) {
                         if (existingProfileIds.has(profile.id) || profile.id === userId) {
-                          console.log(
+                          logger.log(
                             `[Diagnostic info] Moving profile ${profile.id} from created to updated as it already exists locally`
                           );
                           finalUpdated.push(profile);
@@ -415,11 +413,9 @@ export async function synchronizeWithServer(
                           finalCreated.push(profile);
                         }
                       }
-
                       // Also handle the case where server sends updates for profiles that don't exist locally
                       const movedToCreated = [];
                       const remainingUpdated = [];
-
                       for (const profile of finalUpdated) {
                         // If this is the user's own profile that might be missing locally
                         const isUserOwnProfile =
@@ -427,9 +423,8 @@ export async function synchronizeWithServer(
                           profile.userId === userId ||
                           profile.id === userId;
                         const existsLocally = existingProfileIds.has(profile.id);
-
                         if (isUserOwnProfile && !existsLocally) {
-                          console.log(
+                          logger.log(
                             `[Diagnostic info] Moving profile ${profile.id} from updated to created as it might not exist locally`
                           );
                           movedToCreated.push(profile); // Add to created array
@@ -437,15 +432,14 @@ export async function synchronizeWithServer(
                           remainingUpdated.push(profile); // Keep as updated
                         }
                       }
-
                       // Final created array includes original valid creations + moved from updated
                       ensuredChanges[table] = {
                         created: [...finalCreated, ...movedToCreated],
                         updated: remainingUpdated,
                         deleted: receivedChanges[table]?.deleted || [],
                       };
-                    } catch (error) {
-                      console.error('[Sync] Error during profile handling:', error);
+                    } catch (_error) {
+                      console.error('[Sync] Error during profile handling:', _error);
                       // Fallback to normal handling
                       ensuredChanges[table] = await handleTableConflicts(
                         table,
@@ -547,7 +541,7 @@ export async function synchronizeWithServer(
 
               if (plant.strainObj) {
                 // Use the attached strain object
-                console.log(
+                logger.log(
                   `[Sync] Using existing strainObj for plant ${plant.id} (${plant.name})`,
                   plant.strainObj
                 );
@@ -562,7 +556,7 @@ export async function synchronizeWithServer(
               } else {
                 // If strainObj is missing but we have strain_id, try to load the strain from WatermelonDB
                 try {
-                  console.log(
+                  logger.log(
                     `[Sync] Attempting to load strain from WatermelonDB with ID: ${strainId}`
                   );
 
@@ -570,7 +564,7 @@ export async function synchronizeWithServer(
                   const strainObj = await getStrainFromCache(strainId);
 
                   if (strainObj) {
-                    console.log(
+                    logger.log(
                       `[Sync] Successfully loaded strain "${strainObj.name}" for ID ${strainId}`
                     );
                     // Store important strain data directly in the plant record for sync
@@ -579,12 +573,12 @@ export async function synchronizeWithServer(
                     // If we have snake_case in the DB but camelCase in the app
                     if (!plant.strain_id && plant.strainId) {
                       plant.strain_id = plant.strainId;
-                      console.log(`[Sync] Added strain_id (${plant.strain_id}) based on strainId`);
+                      logger.log(`[Sync] Added strain_id (${plant.strain_id}) based on strainId`);
                     }
                     // If we have camelCase in the app but need snake_case for DB
                     if (!plant.strainId && plant.strain_id) {
                       plant.strainId = plant.strain_id;
-                      console.log(`[Sync] Added strainId (${plant.strainId}) based on strain_id`);
+                      logger.log(`[Sync] Added strainId (${plant.strainId}) based on strain_id`);
                     }
 
                     // Convert StrainObject to Strain format with proper field mapping
@@ -615,27 +609,27 @@ export async function synchronizeWithServer(
                       `[Sync] No strain found in WatermelonDB for ID ${strainId}, plant sync may fail`
                     );
                   }
-                } catch (error) {
+                } catch (_error) {
                   console.error(
                     '[Sync] Error loading strain from WatermelonDB during sync:',
-                    error
+                    _error
                   );
                   // Don't treat this as a fatal error - continue with sync
-                  console.log('[Sync] Continuing with plant sync despite strain lookup error');
+                  logger.log('[Sync] Continuing with plant sync despite strain lookup error');
                 }
               }
             } else {
-              console.log(`[Sync] Plant has no strain ID, skipping strain relationship handling`);
+              logger.log(`[Sync] Plant has no strain ID, skipping strain relationship handling`);
             }
           }
           // Skip push for turbo mode initial sync
           if (useTurboMode && !lastPulledAt) {
-            console.log('[Turbo Sync] Skipping initial push for turbo sync');
+            logger.log('[Turbo Sync] Skipping initial push for turbo sync');
             return;
           }
 
           if (!changes || Object.keys(changes).length === 0) {
-            console.log('No changes to push');
+            logger.log('No changes to push');
             return;
           }
 
@@ -646,12 +640,12 @@ export async function synchronizeWithServer(
 
             // Log created plant records
             if (plantChanges.created && plantChanges.created.length > 0) {
-              console.log(
+              logger.log(
                 `[Sync Push] Processing ${plantChanges.created.length} new plant records`
               );
               plantChanges.created.forEach((plant) => {
                 const plantRecord = plant as PlantLogRecord;
-                console.log(
+                logger.log(
                   `[Plant Create] ID: ${plantRecord.id}, Name: ${plantRecord.name}, ` +
                     `Strain: ${plantRecord.strain || 'N/A'}, ` +
                     `StrainId: ${plantRecord.strainId || 'N/A'}, ` +
@@ -662,12 +656,12 @@ export async function synchronizeWithServer(
 
             // Log updated plant records
             if (plantChanges.updated && plantChanges.updated.length > 0) {
-              console.log(
+              logger.log(
                 `[Sync Push] Processing ${plantChanges.updated.length} updated plant records`
               );
               plantChanges.updated.forEach((plant) => {
                 const plantRecord = plant as PlantLogRecord;
-                console.log(
+                logger.log(
                   `[Plant Update] ID: ${plantRecord.id}, Name: ${plantRecord.name}, ` +
                     `Strain: ${plantRecord.strain || 'N/A'}, ` +
                     `StrainId: ${plantRecord.strainId || 'N/A'}, ` +
@@ -675,10 +669,10 @@ export async function synchronizeWithServer(
                 );
               });
             } else {
-              console.log('[Sync Push] No plant updates in the current push.');
+              logger.log('[Sync Push] No plant updates in the current push.');
             }
           } else {
-            console.log('[Sync Push] No plant records in the current push.');
+            logger.log('[Sync Push] No plant records in the current push.');
           }
 
           try {
@@ -897,7 +891,7 @@ export async function synchronizeWithServer(
                   batches.push(sanitizedCreated.slice(i, i + BATCH_SIZE));
                 }
 
-                console.log(
+                logger.log(
                   `[Batch Processing] Processing ${sanitizedCreated.length} created records in ${batches.length} batches for table ${tableName}`
                 );
 
@@ -922,7 +916,7 @@ export async function synchronizeWithServer(
                     'push'
                   );
 
-                  console.log(
+                  logger.log(
                     `[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} created records`
                   );
                 }
@@ -934,7 +928,7 @@ export async function synchronizeWithServer(
                   batches.push(sanitizedUpdated.slice(i, i + BATCH_SIZE));
                 }
 
-                console.log(
+                logger.log(
                   `[Batch Processing] Processing ${sanitizedUpdated.length} updated records in ${batches.length} batches for table ${tableName}`
                 );
 
@@ -959,7 +953,7 @@ export async function synchronizeWithServer(
                     'push'
                   );
 
-                  console.log(
+                  logger.log(
                     `[Batch Processing] Completed batch ${i + 1}/${batches.length} for ${tableName} updated records`
                   );
                 }
@@ -987,15 +981,15 @@ export async function synchronizeWithServer(
               }
             }
 
-            console.log('Push completed successfully');
+            logger.log('Push completed successfully');
 
             // Log strain cache statistics for performance monitoring
             const totalQueries = cacheHits + cacheMisses;
             if (totalQueries > 0) {
-              console.log(
+              logger.log(
                 `[Sync] Strain cache stats: ${cacheHits} hits, ${cacheMisses} misses (${((cacheHits / totalQueries) * 100).toFixed(1)}% hit rate)`
               );
-              console.log(
+              logger.log(
                 `[Sync] Cached ${strainCache.size} unique strains, saved ${cacheHits} database queries`
               );
             }
@@ -1010,7 +1004,7 @@ export async function synchronizeWithServer(
           // Clear the empty flag after first sync
           if (useTurboMode) {
             await database.adapter.setLocal('sync_is_empty', 'false');
-            console.log('[Turbo Sync] First sync completed, cleared empty flag');
+            logger.log('[Turbo Sync] First sync completed, cleared empty flag');
           }
         },
       });
@@ -1035,12 +1029,12 @@ export async function synchronizeWithServer(
     release = await syncMutex.acquire();
 
     if (lockTimedOut) {
-      console.log(`[Sync Service @ ${callTimestamp}] Lock was already released due to timeout.`);
+      logger.log(`[Sync Service @ ${callTimestamp}] Lock was already released due to timeout.`);
       return false;
     }
 
     const lockAcquiredTimestamp = Date.now();
-    console.log(
+    logger.log(
       `[Sync Service @ ${lockAcquiredTimestamp}] Lock acquired, starting sync process...`
     );
 
@@ -1049,7 +1043,7 @@ export async function synchronizeWithServer(
 
     // If the first attempt failed, retry once
     if (!syncResult) {
-      console.log('Sync failed on first attempt, retrying once...');
+      logger.log('Sync failed on first attempt, retrying once...');
       await new Promise((resolve) => setTimeout(resolve, 1000));
       syncResult = await attemptSync();
     }
@@ -1062,31 +1056,29 @@ export async function synchronizeWithServer(
       // Update sync health metrics
       updateSyncMetrics(true, syncDuration);
 
-      console.log(`Sync completed successfully in ${syncDuration.toFixed(0)}ms`);
+      logger.log(`Sync completed successfully in ${syncDuration.toFixed(0)}ms`);
       lastSuccessfulSyncTime = Date.now();
 
       // Run data integrity checks after successful sync
       try {
         const integrityService = new DataIntegrityService(database);
         const integrityResult = await integrityService.performIntegrityCheck(userId);
-        
+
         if (integrityResult.fixedCount > 0) {
           logger.log(`[Sync] Data integrity check fixed ${integrityResult.fixedCount} issues`);
         }
-        
+
         if (integrityResult.errors.length > 0) {
           console.warn('[Sync] Data integrity check found errors:', integrityResult.errors);
-          
+
           // If there are errors, trigger cleanup of orphaned local records
           try {
-            const { DataIntegrityService: SyncDataIntegrityService } = await import('./data-integrity');
-            const syncIntegrityService = new SyncDataIntegrityService(database);
-            const cleanupResult = await syncIntegrityService.cleanupOrphanedLocalRecords(userId);
-            
+            const cleanupResult = await integrityService.cleanupOrphanedLocalRecords(userId);
+
             if (cleanupResult.cleaned > 0) {
               logger.log(`[Sync] Cleaned up ${cleanupResult.cleaned} orphaned local records`);
             }
-            
+
             if (cleanupResult.errors.length > 0) {
               console.warn('[Sync] Orphaned record cleanup errors:', cleanupResult.errors);
             }
@@ -1094,10 +1086,10 @@ export async function synchronizeWithServer(
             console.warn('[Sync] Failed to cleanup orphaned local records:', cleanupError);
           }
         }
-        
+
         // Clean up orphaned storage assets periodically (every 10th successful sync)
-        const syncCount = (lastSuccessfulSyncTime / SYNC_CONSTANTS.MIN_SYNC_INTERVAL_MS) % 10;
-        if (Math.floor(syncCount) === 0) {
+        syncSuccessCount++;
+        if (syncSuccessCount % 10 === 0) {
           const cleanedAssets = await integrityService.cleanupOrphanedStorageAssets(userId);
           if (cleanedAssets > 0) {
             logger.log(`[Sync] Cleaned up ${cleanedAssets} orphaned storage assets`);
@@ -1135,7 +1127,7 @@ export async function synchronizeWithServer(
     // Always clear the timeout and release the lock if it's still held
     clearTimeout(timeoutId);
     if (release && !lockTimedOut) {
-      console.log(`[Sync Service @ ${callTimestamp}] Releasing lock.`);
+      logger.log(`[Sync Service @ ${callTimestamp}] Releasing lock.`);
       release();
     }
   }

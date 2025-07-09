@@ -97,7 +97,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             console.log(
               `[DataIntegrity] Cleaned up ${result.cleanedRecords} records on startup:`,
               {
-                orphanedPosts: result.orphanedPosts,
                 brokenImageReferences: result.brokenImageReferences,
                 invalidUserReferences: result.invalidUserReferences,
               }

@@ -8,6 +8,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { OptimizedIcon } from './OptimizedIcon';
@@ -32,22 +33,28 @@ export default function UndoToast({
   const opacity = useSharedValue(0);
 
   useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
     if (visible) {
       // Animate in
       translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
       opacity.value = withSpring(1);
 
       // Auto-dismiss after duration
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         onDismiss();
       }, duration);
-
-      return () => clearTimeout(timer);
     } else {
       // Animate out
       translateY.value = withSpring(100);
       opacity.value = withSpring(0);
     }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      // Cancel ongoing animations to prevent memory leaks and inconsistent UI states
+      cancelAnimation(translateY);
+      cancelAnimation(opacity);
+    };
   }, [visible, duration, onDismiss]);
 
   const animatedStyle = useAnimatedStyle(() => ({

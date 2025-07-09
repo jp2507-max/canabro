@@ -1,6 +1,11 @@
 import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import supabase from '../../supabase';
+import { Alert } from 'react-native';
+import { triggerErrorHaptic } from '@/lib/utils/haptics';
 import type { CommunityQuestion, QuestionFilters, CreateQuestionData } from '../../types/community';
+
+type CommunityQuestionsData = InfiniteData<CommunityQuestion[], unknown>;
 
 const PAGE_SIZE = 10;
 
@@ -54,18 +59,25 @@ export function useCreateQuestion() {
       queryClient.invalidateQueries({ queryKey: ['community-questions'] });
       
       // Optionally add to cache for immediate feedback
-      queryClient.setQueryData(['community-questions'], (old: any) => {
-        if (!old) return old;
+      queryClient.setQueryData(['community-questions'], (old: CommunityQuestionsData | undefined) => {
+        if (!old || !Array.isArray(old.pages)) {
+          return old;
+        }
         return {
           ...old,
-          pages: old.pages.map((page: CommunityQuestion[], index: number) => 
+          pages: old.pages.map((page: CommunityQuestion[], index: number) =>
             index === 0 ? [newQuestion, ...page] : page
-          )
+          ),
         };
       });
     },
-    onError: (error) => {
+    onError: async (error) => {
       console.error('Error creating question:', error);
+      await triggerErrorHaptic();
+      Alert.alert(
+        'Failed to Post Question',
+        error instanceof Error ? error.message : 'An unknown error occurred.'
+      );
     }
   });
 }
@@ -110,7 +122,7 @@ export function useLikeQuestion() {
       const previousQuestions = queryClient.getQueryData(['community-questions']);
 
       // Optimistically update
-      queryClient.setQueryData(['community-questions'], (old: any) => {
+      queryClient.setQueryData(['community-questions'], (old: CommunityQuestionsData | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -185,7 +197,7 @@ export function useUpdateQuestionSolved() {
     },
     onSuccess: (updatedQuestion) => {
       // Update the question in cache
-      queryClient.setQueryData(['community-questions'], (old: any) => {
+      queryClient.setQueryData(['community-questions'], (old: CommunityQuestionsData | undefined) => {
         if (!old) return old;
         return {
           ...old,

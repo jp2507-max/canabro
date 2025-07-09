@@ -1,6 +1,9 @@
 -- Migration: Fix UUID Type Inconsistencies in Deleted Tables
 -- Description: Converts all *_deleted table id columns from TEXT to UUID for sync system compatibility
 
+-- Start explicit transaction for atomicity
+BEGIN;
+
 -- ==========================================
 -- BACKUP AND VALIDATION FUNCTIONS
 -- ==========================================
@@ -346,9 +349,7 @@ DECLARE
         'comment_likes_deleted',
         'post_media_deleted',
         'community_questions_deleted',
-        'community_plant_shares_deleted',
-        'posts_deleted',
-        'comments_deleted'
+        'community_plant_shares_deleted'
     ];
 BEGIN
     RAISE NOTICE 'Verifying UUID types in all deleted tables:';
@@ -376,3 +377,6 @@ DO $$
 BEGIN
     RAISE NOTICE 'UUID type conversion completed successfully for all deleted tables';
 END $$;
+
+-- Commit the transaction
+COMMIT;

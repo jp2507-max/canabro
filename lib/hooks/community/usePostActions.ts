@@ -25,13 +25,13 @@ export function usePostActions({
   onUserPress,
   onPress,
 }: UsePostActionsProps) {
-  const handleLike = useCallback(async () => {
-    await triggerLightHapticSync();
+  const handleLike = useCallback(() => {
+    triggerLightHapticSync();
     onLike(postId, isLiked);
   }, [postId, isLiked, onLike]);
 
-  const handleComment = useCallback(async () => {
-    await triggerLightHapticSync();
+  const handleComment = useCallback(() => {
+    triggerLightHapticSync();
     onComment(postId);
   }, [postId, onComment]);
 

@@ -23,6 +23,17 @@ interface DeletedAssetItem {
 }
 
 export class StorageCleanupService {
+  // DRY: Centralized bucket list and pattern regex for Supabase storage buckets
+  private static readonly BUCKETS = [
+    'avatars',
+    'posts',
+    'journals',
+    'plants',
+    'community-questions',
+    'community-plant-shares',
+    'plant-images',
+  ];
+  private static readonly BUCKET_PATTERN = `(?:${StorageCleanupService.BUCKETS.join('|')})`;
   private readonly BATCH_SIZE = 50;
   private readonly ORPHAN_AGE_THRESHOLD = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -80,10 +91,8 @@ export class StorageCleanupService {
 
     try {
       // Get all user's storage assets from all possible buckets
-      const buckets = ['avatars', 'posts', 'journals', 'plants', 'community-questions', 'community-plant-shares', 'plant-images'];
       const userAssets: StorageAsset[] = [];
-      
-      for (const bucket of buckets) {
+      for (const bucket of StorageCleanupService.BUCKETS) {
         const { data: assets, error: listError } = await supabase.storage
           .from(bucket)
           .list(`${userId}/`, {
@@ -186,34 +195,54 @@ export class StorageCleanupService {
    */
   private async getPostAssets(postId: string, userId: string): Promise<string[]> {
     try {
-      // Query the database to find assets associated with this post
-      const { data: postData, error } = await supabase
-        .from('posts')
+      const assets: string[] = [];
+
+      // Helper to process image url / content fields
+      const processImageFields = (row: Record<string, unknown>) => {
+        if (row.image_url && typeof row.image_url === 'string') {
+          const assetPath = this.extractAssetPath(row.image_url);
+          if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
+            assets.push(this.normalizeAssetPath(assetPath));
+          }
+        }
+        if (row.images_urls && Array.isArray(row.images_urls)) {
+          row.images_urls.forEach((url) => {
+            if (typeof url === 'string') {
+              const p = this.extractAssetPath(url);
+              if (p && this.validateUserAssetPath(p, userId)) {
+                assets.push(this.normalizeAssetPath(p));
+              }
+            }
+          });
+        }
+        if (row.content && typeof row.content === 'string') {
+          const embeddedAssets = this.extractEmbeddedAssets(row.content, userId);
+          assets.push(...embeddedAssets.map((path) => this.normalizeAssetPath(path)));
+        }
+      };
+
+      // Query community_questions
+      const { data: question, error: qError } = await supabase
+        .from('community_questions')
         .select('image_url, content')
         .eq('id', postId)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        throw new Error(`Failed to get post data: ${error.message}`);
-      }
+      if (qError) throw new Error(`Failed to get question data: ${qError.message}`);
+      if (question) processImageFields(question as Record<string, unknown>);
 
-      const assets: string[] = [];
+      // Query community_plant_shares
+      const { data: plantShare, error: psError } = await supabase
+        .from('community_plant_shares')
+        .select('images_urls, content')
+        .eq('id', postId)
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      // Extract image URL if present
-      if (postData.image_url && typeof postData.image_url === 'string') {
-        const assetPath = this.extractAssetPath(postData.image_url);
-        if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
-          assets.push(this.normalizeAssetPath(assetPath));
-        }
-      }
-
-      // Extract any embedded images from content
-      if (postData.content && typeof postData.content === 'string') {
-        const embeddedAssets = this.extractEmbeddedAssets(postData.content, userId);
-        assets.push(...embeddedAssets.map(path => this.normalizeAssetPath(path)));
-      }
-
+      if (psError) throw new Error(`Failed to get plant share data: ${psError.message}`);
+      if (plantShare) processImageFields(plantShare as Record<string, unknown>);
+ 
       return assets;
     } catch (error) {
       logger.error(`[Storage Cleanup] Error getting post assets: ${error}`);
@@ -228,52 +257,54 @@ export class StorageCleanupService {
     const referencedAssets: { path: string; table: string; id: string }[] = [];
 
     try {
-      // Check posts table
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
+      // Check community_questions table
+      const { data: questions, error: qError } = await supabase
+        .from('community_questions')
         .select('id, image_url, content')
         .eq('user_id', userId);
 
-      if (postsError) {
-        logger.warn(`[Storage Cleanup] Error querying posts: ${postsError.message}`);
-      } else if (posts) {
-        for (const post of posts) {
-          if (post.image_url) {
-            const assetPath = this.extractAssetPath(post.image_url);
+      if (qError) {
+        logger.warn(`[Storage Cleanup] Error querying community_questions: ${qError.message}`);
+      } else if (questions) {
+        questions.forEach((q) => {
+          if (q.image_url) {
+            const assetPath = this.extractAssetPath(q.image_url);
             if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
-              const normalizedPath = this.normalizeAssetPath(assetPath);
-              referencedAssets.push({ path: normalizedPath, table: 'posts', id: post.id });
+              referencedAssets.push({ path: this.normalizeAssetPath(assetPath), table: 'community_questions', id: q.id });
             }
           }
-          
-          if (post.content) {
-            const embeddedAssets = this.extractEmbeddedAssets(post.content, userId);
-            embeddedAssets.forEach(path => {
-              const normalizedPath = this.normalizeAssetPath(path);
-              referencedAssets.push({ path: normalizedPath, table: 'posts', id: post.id });
+          if (q.content) {
+            this.extractEmbeddedAssets(q.content, userId).forEach((p) => {
+              referencedAssets.push({ path: this.normalizeAssetPath(p), table: 'community_questions', id: q.id });
             });
           }
-        }
+        });
       }
 
-      // Check journal_entries table
-      const { data: entries, error: entriesError } = await supabase
-        .from('journal_entries')
-        .select('id, image_url')
+      // Check community_plant_shares table
+      const { data: plantShares, error: psError } = await supabase
+        .from('community_plant_shares')
+        .select('id, images_urls, content')
         .eq('user_id', userId);
 
-      if (entriesError) {
-        logger.warn(`[Storage Cleanup] Error querying journal entries: ${entriesError.message}`);
-      } else if (entries) {
-        for (const entry of entries) {
-          if (entry.image_url) {
-            const assetPath = this.extractAssetPath(entry.image_url);
-            if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
-              const normalizedPath = this.normalizeAssetPath(assetPath);
-              referencedAssets.push({ path: normalizedPath, table: 'journal_entries', id: entry.id });
-            }
+      if (psError) {
+        logger.warn(`[Storage Cleanup] Error querying community_plant_shares: ${psError.message}`);
+      } else if (plantShares) {
+        plantShares.forEach((ps) => {
+          if (ps.images_urls && Array.isArray(ps.images_urls)) {
+            ps.images_urls.forEach((url: string) => {
+              const assetPath = this.extractAssetPath(url);
+              if (assetPath && this.validateUserAssetPath(assetPath, userId)) {
+                referencedAssets.push({ path: this.normalizeAssetPath(assetPath), table: 'community_plant_shares', id: ps.id });
+              }
+            });
           }
-        }
+          if (ps.content) {
+            this.extractEmbeddedAssets(ps.content, userId).forEach((p) => {
+              referencedAssets.push({ path: this.normalizeAssetPath(p), table: 'community_plant_shares', id: ps.id });
+            });
+          }
+        });
       }
 
       // Check profiles table
@@ -334,8 +365,7 @@ export class StorageCleanupService {
 
     try {
       // Handle Supabase storage URLs - match known storage buckets only
-      const bucketPattern = '(?:avatars|posts|journals|plants|community-questions|community-plant-shares|plant-images)';
-      const storageUrlPattern = new RegExp(`\\/storage\\/v1\\/object\\/public\\/${bucketPattern}\\/(.+)$`);
+          const storageUrlPattern = new RegExp(`\\/storage\\/v1\\/object\\/public\\/${StorageCleanupService.BUCKET_PATTERN}\\/(.+)$`);
       const match = url.match(storageUrlPattern);
       
       if (match && match[1]) {
@@ -362,8 +392,7 @@ export class StorageCleanupService {
     
     try {
       // Look for Supabase storage URLs in content - match known storage buckets only
-      const bucketPattern = '(?:avatars|posts|journals|plants|community-questions|community-plant-shares|plant-images)';
-      const storageUrlPattern = new RegExp(`\\/storage\\/v1\\/object\\/public\\/${bucketPattern}\\/([^"'\\s]+)`, 'g');
+  const storageUrlPattern = new RegExp(`\\/storage\\/v1\\/object\\/public\\/${StorageCleanupService.BUCKET_PATTERN}\\/([^"'\\s]+)`, 'g');
       let match;
       
       while ((match = storageUrlPattern.exec(content)) !== null) {
@@ -444,35 +473,30 @@ export class StorageCleanupService {
   /**
    * Determine which bucket an asset path belongs to based on the URL pattern
    */
-  private determineBucketFromPath(assetPath: string): string {
+  private determineBucketFromPath(assetPath: string): string | null {
     // First try to extract bucket from URL if it's a full URL
     if (assetPath.includes('/storage/v1/object/public/')) {
       const bucket = this.extractBucketFromUrl(assetPath);
-      if (bucket) return bucket;
+      if (bucket && StorageCleanupService.BUCKETS.includes(bucket)) return bucket;
     }
 
     // Default bucket mapping based on common patterns
-    if (assetPath.includes('/avatar/') || assetPath.includes('_avatar_')) {
-      return 'avatars';
+    const bucketPatterns: [string, string[]][] = [
+      ['avatars', ['/avatar/', '_avatar_']],
+      ['posts', ['/post/', '_post_']],
+      ['journals', ['/journal/', '_journal_']],
+      ['plants', ['/plant/', '_plant_']],
+      ['community-questions', ['/question/', '_question_']],
+      ['community-plant-shares', ['/share/', '_share_']],
+    ];
+    for (const [bucket, patterns] of bucketPatterns) {
+      if (patterns.some((p) => assetPath.includes(p))) {
+        return bucket;
+      }
     }
-    if (assetPath.includes('/post/') || assetPath.includes('_post_')) {
-      return 'posts';
-    }
-    if (assetPath.includes('/journal/') || assetPath.includes('_journal_')) {
-      return 'journals';
-    }
-    if (assetPath.includes('/plant/') || assetPath.includes('_plant_')) {
-      return 'plants';
-    }
-    if (assetPath.includes('/question/') || assetPath.includes('_question_')) {
-      return 'community-questions';
-    }
-    if (assetPath.includes('/share/') || assetPath.includes('_share_')) {
-      return 'community-plant-shares';
-    }
-    
-    // Default to posts bucket if pattern unclear
-    return 'posts';
+    // If we reach here, bucket is undetermined
+    logger.warn(`[Storage Cleanup] Could not determine bucket for asset path: ${assetPath}`);
+    return null;
   }
 
   /**
@@ -506,11 +530,14 @@ export class StorageCleanupService {
       totalSize: 0,
     };
 
-    // Group assets by bucket
+    // Group assets by bucket, skipping undetermined buckets
     const assetsByBucket: Record<string, string[]> = {};
-    
     for (const assetPath of assetPaths) {
       const bucket = this.determineBucketFromPath(assetPath);
+      if (!bucket) {
+        logger.warn(`[Storage Cleanup] Skipping asset with undetermined bucket: ${assetPath}`);
+        continue;
+      }
       if (!assetsByBucket[bucket]) {
         assetsByBucket[bucket] = [];
       }
@@ -533,11 +560,17 @@ export class StorageCleanupService {
    */
   private groupAssetsByBucket(assets: (StorageAsset & { bucket_id?: string })[]): Record<string, StorageAsset[]> {
     return assets.reduce((acc, asset) => {
-      const bucket = asset.bucket_id || 'posts'; // Default to posts bucket
+      const bucket: string | null = (asset.bucket_id && StorageCleanupService.BUCKETS.includes(asset.bucket_id))
+        ? asset.bucket_id
+        : this.determineBucketFromPath(asset.name ?? '');
+      if (!bucket) {
+        logger.warn(`[Storage Cleanup] Skipping asset with undetermined bucket in groupAssetsByBucket: ${asset.name}`);
+        return acc;
+      }
       if (!acc[bucket]) {
         acc[bucket] = [];
       }
-      acc[bucket].push(asset);
+      (acc[bucket] as StorageAsset[]).push(asset);
       return acc;
     }, {} as Record<string, StorageAsset[]>);
   }

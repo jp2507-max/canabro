@@ -45,14 +45,27 @@ export function TagPill({
   // Animated styles for press and selection effects
   const animatedStyle = useAnimatedStyle(() => {
     'worklet';
+    // Color mappings: use semantic CSS variables for theme support
+    const colorFrom = 'var(--color-neutral-200)'; // neutral-200
+    let colorTo = 'var(--color-indigo-500)'; // indigo-500 (default)
+    switch (variant) {
+      case 'strain':
+      case 'green':
+        colorTo = 'var(--color-green-500)'; // green-500
+        break;
+      case 'category':
+      case 'blue':
+        colorTo = 'var(--color-blue-500)'; // blue-500
+        break;
+      case 'neutral':
+        colorTo = 'var(--color-neutral-500)'; // neutral-500
+        break;
+      // default: indigo-500
+    }
     const backgroundColor = rInterpolateColor(
       selectedProgress.value,
       [0, 1],
-      variant === 'strain'
-        ? ['rgb(229, 231, 235)', 'rgb(34, 197, 94)'] // neutral-200 to green-500
-        : variant === 'category'
-          ? ['rgb(229, 231, 235)', 'rgb(59, 130, 246)'] // neutral-200 to blue-500
-          : ['rgb(229, 231, 235)', 'rgb(99, 102, 241)'] // neutral-200 to indigo-500
+      [colorFrom, colorTo]
     );
 
     return {

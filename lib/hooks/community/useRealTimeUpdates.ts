@@ -31,53 +31,80 @@ export function useRealTimePostUpdates(userId?: string) {
 
     const instanceId = instanceIdRef.current;
 
-    // Subscribe to posts table changes
-    const postsSubscription = supabase
-      .channel(`posts-changes-${userId}-${instanceId}`)
+    // Subscribe to community_questions table changes
+    const questionsSub = supabase
+      .channel(`questions-changes-${userId}-${instanceId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'posts',
+          table: 'community_questions',
         },
         (payload) => {
-          console.log('Posts change received:', payload);
-          
-          // Invalidate posts queries to refetch fresh data
-          queryClient.invalidateQueries({ queryKey: ['posts'] });
+          console.log('Question change received:', payload);
+          queryClient.invalidateQueries({ queryKey: ['community_questions'] });
         }
       )
       .subscribe();
 
-    // Subscribe to likes table changes
-    const likesSubscription = supabase
-      .channel(`likes-changes-${userId}-${instanceId}`)
+    // Subscribe to community_plant_shares table changes
+    const plantSharesSub = supabase
+      .channel(`plantshare-changes-${userId}-${instanceId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'likes',
+          table: 'community_plant_shares',
         },
         (payload) => {
-          console.log('Likes change received:', payload);
-          
-          // Update specific post in cache if possible
-          if (payload.new && typeof payload.new === 'object' && 'post_id' in payload.new) {
-            queryClient.invalidateQueries({ 
-              queryKey: ['posts'],
-              exact: false 
-            });
-          }
+          console.log('Plant share change received:', payload);
+          queryClient.invalidateQueries({ queryKey: ['community_plant_shares'] });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to community question likes table changes
+    const questionLikesSubscription = supabase
+      .channel(`question-likes-changes-${userId}-${instanceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'community_question_likes',
+        },
+        (payload) => {
+          console.log('Question likes change received:', payload);
+          queryClient.invalidateQueries({ queryKey: ['community_questions'], exact: false });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to community plant share likes table changes
+    const plantShareLikesSubscription = supabase
+      .channel(`plant-share-likes-changes-${userId}-${instanceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'community_plant_share_likes',
+        },
+        (payload) => {
+          console.log('Plant share likes change received:', payload);
+          queryClient.invalidateQueries({ queryKey: ['community_plant_shares'], exact: false });
         }
       )
       .subscribe();
 
     // Cleanup subscriptions on unmount
     return () => {
-      postsSubscription.unsubscribe();
-      likesSubscription.unsubscribe();
+      supabase.removeChannel(questionsSub);
+      supabase.removeChannel(plantSharesSub);
+      supabase.removeChannel(questionLikesSubscription);
+      supabase.removeChannel(plantShareLikesSubscription);
     };
   }, [userId, queryClient]);
 }
@@ -114,9 +141,12 @@ export function useRealTimeCommentUpdates(postId?: string, userId?: string) {
             queryKey: ['comments', postId] 
           });
           
-          // Also invalidate posts to update comment counts
+          // Also invalidate post tables to update comment counts
           queryClient.invalidateQueries({ 
-            queryKey: ['posts'] 
+            queryKey: ['community_questions'] 
+          });
+          queryClient.invalidateQueries({ 
+            queryKey: ['community_plant_shares'] 
           });
         }
       )

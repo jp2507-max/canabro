@@ -311,9 +311,6 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
           // React Query will automatically update the cache via real-time subscriptions
           // Call the callback if provided
           if (onCommentAdded) onCommentAdded();
-          
-          // Manually refetch to ensure immediate update
-          refetchComments();
         }
       } else {
         console.warn('RPC function did not return comment ID.');

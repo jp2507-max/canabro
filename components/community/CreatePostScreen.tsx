@@ -34,7 +34,7 @@ type CreatePostScreenProps = {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  postType?: 'question' | 'plant_share' | null;
+  postType: 'question' | 'plant_share' | null;
 };
 
 // Animation config
@@ -351,9 +351,10 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
 
   const contentInputRef = useRef<TextInput>(null);
 
-  // Fix: Ensure canPost is always boolean
+  // Fix: Ensure canPost is always boolean and postType is defined
   const canPost = Boolean(
-    (content.trim().length > 0 || image) && 
+    postType &&
+    (content.trim().length > 0 || image) &&
     (postType !== 'plant_share' || plantName.trim().length > 0)
   );
 
@@ -380,8 +381,10 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!canPost || !user) return;
-    
+    if (!canPost || !user || !postType) {
+      Alert.alert('Error', 'Please select a post type before submitting.');
+      return;
+    }
     setIsSubmitting(true);
     try {
       let imageUrl: string | null = null;
@@ -408,9 +411,6 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
           environment: environment,
           images_urls: imageUrl ? [imageUrl] : undefined,
         });
-      } else {
-        // Fallback to general post if no specific type
-        throw new Error('Post type not specified. Please select a post type from the menu.');
       }
 
       Alert.alert('Success', 'Post created successfully!');
@@ -448,7 +448,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
       presentationStyle="pageSheet"
       onRequestClose={handleClose}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
-      
+
       <EnhancedKeyboardWrapper
         className="flex-1 bg-white"
         showToolbar={true}
@@ -473,8 +473,8 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
             />
           </ThemedView>
 
-          {/* Post Type Header */}
-          {postType && (
+          {/* Post Type Header or Error */}
+          {postType ? (
             <ThemedView className="px-4 py-3 bg-neutral-50 border-b border-neutral-100">
               <View className="flex-row items-center">
                 {postType === 'question' ? (
@@ -498,6 +498,12 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
                 )}
               </View>
             </ThemedView>
+          ) : (
+            <ThemedView className="px-4 py-3 bg-red-50 border-b border-red-200">
+              <ThemedText className="text-sm font-medium text-red-700">
+                Please select a post type to continue.
+              </ThemedText>
+            </ThemedView>
           )}
 
           {/* Main Content */}
@@ -520,6 +526,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
               showCharacterCount={false}
               inputAccessoryViewID="PostToolbar"
               accessibilityLabel="Post content"
+              editable={!!postType && !isSubmitting}
             />
 
             {/* Plant Share Form Fields */}
@@ -537,6 +544,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
                     maxLength={50}
                     showCharacterCount
                     accessibilityLabel="Plant name"
+                    editable={!!postType && !isSubmitting}
                   />
                 </View>
 
@@ -551,7 +559,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
                         key={stage}
                         onPress={() => setGrowthStage(stage)}
                         selected={growthStage === stage}
-                        disabled={isSubmitting}>
+                        disabled={isSubmitting || !postType}>
                         <ThemedText
                           className={
                             growthStage === stage
@@ -576,7 +584,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
                         key={env}
                         onPress={() => setEnvironment(env)}
                         selected={environment === env}
-                        disabled={isSubmitting}>
+                        disabled={isSubmitting || !postType}>
                         <ThemedText
                           className={
                             environment === env
@@ -608,7 +616,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
             onCameraPress={handleCameraPress}
             onPhotoLibraryPress={handleImagePicker}
             onMentionPress={_handleMentionPress}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !postType}
           />
         </ThemedView>
       </EnhancedKeyboardWrapper>

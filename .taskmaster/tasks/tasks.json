@@ -81,7 +81,7 @@
         "description": "Resolve critical data synchronization issues between Supabase and WatermelonDB causing orphaned posts with broken image URLs, and implement comprehensive post deletion functionality with proper cleanup of database records and Supabase Storage assets.",
         "details": "1. **Diagnose Synchronization Issues:**\n   - Audit current sync mechanisms between Supabase and WatermelonDB\n   - Identify root causes of orphaned posts and broken image URL references\n   - Review database schema consistency between local and remote databases\n   - Analyze sync timing and conflict resolution strategies\n\n2. **Fix Data Synchronization:**\n   - Implement robust bidirectional sync with proper conflict resolution\n   - Add data validation layers to prevent orphaned records\n   - Create sync status tracking and error recovery mechanisms\n   - Implement incremental sync to reduce data transfer and improve performance\n   - Add retry logic with exponential backoff for failed sync operations\n   - Ensure referential integrity between posts and associated media assets\n\n3. **Implement Post Deletion System:**\n   - Create comprehensive deletion workflow that handles both database records and storage assets\n   - Implement cascade deletion for related records (comments, likes, media references)\n   - Add soft delete option with recovery mechanism for accidental deletions\n   - Create batch deletion capabilities for administrative purposes\n   - Implement proper authorization checks to ensure users can only delete their own posts\n\n4. **Storage Asset Management:**\n   - Implement automatic cleanup of Supabase Storage assets when posts are deleted\n   - Create orphaned asset detection and cleanup routines\n   - Add asset reference counting to prevent premature deletion of shared resources\n   - Implement storage quota management and cleanup policies\n\n5. **Error Handling and Recovery:**\n   - Add comprehensive error handling for sync failures\n   - Implement data recovery mechanisms for corrupted or missing records\n   - Create user-friendly error messages and recovery suggestions\n   - Add logging and monitoring for sync operations and deletion processes",
         "testStrategy": "1. **Synchronization Testing:**\n   - Test sync operations under various network conditions (offline, slow, intermittent)\n   - Verify data consistency between Supabase and WatermelonDB after sync operations\n   - Test conflict resolution scenarios with simultaneous edits from multiple devices\n   - Validate that orphaned posts are properly cleaned up during sync\n\n2. **Deletion System Testing:**\n   - Test post deletion with various post types (text, images, videos)\n   - Verify that all related records (comments, likes, media) are properly deleted\n   - Test soft delete functionality and recovery mechanisms\n   - Validate that Supabase Storage assets are cleaned up after post deletion\n   - Test batch deletion operations and administrative controls\n\n3. **Edge Case Testing:**\n   - Test deletion of posts with shared media assets\n   - Verify behavior when storage cleanup fails but database deletion succeeds\n   - Test sync recovery after extended offline periods\n   - Validate handling of corrupted or malformed data during sync\n\n4. **Performance Testing:**\n   - Measure sync performance with large datasets\n   - Test deletion performance with posts containing multiple media assets\n   - Verify that cleanup operations don't impact app responsiveness\n\n5. **Integration Testing:**\n   - Test the complete flow from community screen interaction to data persistence\n   - Verify that UI properly reflects sync status and deletion operations\n   - Test error scenarios and user feedback mechanisms",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           1
         ],
@@ -126,8 +126,303 @@
               3
             ],
             "details": "1. Implement enhanced conflict resolution for complex edge cases involving concurrent deletions and modifications. 2. Add robust offline/online sync handling specifically for deletion scenarios. 3. Create comprehensive error recovery mechanisms that can automatically fix data inconsistencies. 4. Implement monitoring and logging systems for sync operations and deletion processes. 5. Add data consistency checks that run periodically to detect and fix sync issues. 6. Create self-healing mechanisms that can automatically recover from common sync failures. 7. Implement storage quota management and automated cleanup policies for orphaned assets. 8. Add performance monitoring for sync operations and deletion workflows.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test complex sync scenarios, verify monitoring and logging capture issues correctly, test self-healing mechanisms with simulated failures, and validate performance under various load conditions"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Refactor Community Feature: Remove Legacy Posts Table and Migrate to Split Tables",
+        "description": "Refactor the community feature by removing the legacy posts table and migrating all logic and data to the new community_questions and community_plant_shares tables, ensuring all hooks, services, UI components, and sync logic are updated to maintain feature parity.",
+        "details": "1. Analyze all current usages of the legacy posts table across hooks, services, UI components, and sync logic. \n2. Design and implement migration scripts to move existing data from the posts table to the new community_questions and community_plant_shares tables, ensuring data integrity and correct mapping of fields. \n3. Update all backend and frontend code to reference the new tables, including queries, mutations, and data models. \n4. Refactor hooks and services to support the new table structure, ensuring that all business logic (posting, editing, deleting, fetching) works seamlessly with the split tables. \n5. Update UI components to fetch and display data from the new tables, maintaining the same user experience and feature set as before. \n6. Revise sync logic (e.g., Supabase-WatermelonDB) to handle the new schema, ensuring robust bidirectional synchronization and proper handling of deletions and updates. \n7. Remove all code and schema references to the legacy posts table once migration and refactoring are complete. \n8. Implement a rollback plan in case of migration failure, and ensure comprehensive backups are taken before migration begins[1][2][3].",
+        "testStrategy": "- Write and run migration tests to verify all data is correctly moved and transformed from the legacy posts table to the new tables, with no data loss or corruption.\n- Perform unit and integration tests on all updated hooks, services, and UI components to ensure they interact correctly with the new schema and maintain feature parity.\n- Test synchronization logic under various scenarios (including deletions and edits) to confirm data consistency between Supabase and WatermelonDB.\n- Conduct user acceptance testing to validate that the community feature behaves identically to the previous implementation from an end-user perspective.\n- Monitor system performance and error logs post-migration to quickly identify and resolve any issues.",
+        "status": "done",
+        "dependencies": [
+          1,
+          2
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Comprehensive Usage Audit of Legacy Posts Table",
+            "description": "Identify and document all usages of the legacy posts table across hooks, services, UI components, and sync logic to establish the full scope of dependencies and integration points.",
+            "dependencies": [],
+            "details": "Perform a codebase-wide search and analysis to map every reference, query, and logic path involving the posts table. Create a detailed inventory to inform subsequent migration and refactoring steps.",
+            "status": "done",
+            "testStrategy": "Cross-verify the audit results with code review tools and peer validation to ensure no usage is missed."
+          },
+          {
+            "id": 2,
+            "title": "Design Data Migration and Mapping Strategy",
+            "description": "Define the mapping between legacy posts data and the new community_questions and community_plant_shares tables, ensuring all fields are correctly transformed and no data is lost.",
+            "dependencies": [
+              1
+            ],
+            "details": "Analyze the schema differences, determine how each field in posts maps to the new tables, and document transformation rules for special cases or data normalization.",
+            "status": "done",
+            "testStrategy": "Review mapping documentation with stakeholders and run sample transformations on test data to validate correctness."
+          },
+          {
+            "id": 3,
+            "title": "Develop and Test Migration Scripts",
+            "description": "Implement scripts to migrate all existing data from the posts table to the new tables, ensuring data integrity and correct field mapping.",
+            "dependencies": [
+              2
+            ],
+            "details": "Write migration scripts using a reliable migration tool or custom code, including validation steps to check for data consistency and completeness post-migration.",
+            "status": "done",
+            "testStrategy": "Run migration scripts in a staging environment, compare source and target data, and perform integrity checks."
+          },
+          {
+            "id": 4,
+            "title": "Refactor Backend Code to Use New Tables",
+            "description": "Update all backend queries, mutations, and data models to reference community_questions and community_plant_shares instead of the legacy posts table.",
+            "dependencies": [
+              3
+            ],
+            "details": "Modify backend services, APIs, and business logic to interact exclusively with the new tables, ensuring all CRUD operations are supported.",
+            "status": "done",
+            "testStrategy": "Execute automated and manual tests for all backend endpoints to confirm correct functionality and data handling."
+          },
+          {
+            "id": 5,
+            "title": "Refactor Frontend Hooks, Services, and UI Components",
+            "description": "Update frontend hooks, services, and UI components to fetch, display, and manipulate data from the new tables, maintaining feature parity and user experience.",
+            "dependencies": [
+              4
+            ],
+            "details": "Refactor React hooks, service calls, and UI logic to align with the new backend structure and data models, ensuring seamless user interactions.",
+            "status": "done",
+            "testStrategy": "Perform end-to-end UI testing and user acceptance testing to verify that all features work as before."
+          },
+          {
+            "id": 6,
+            "title": "Revise Sync Logic for New Schema",
+            "description": "Update synchronization logic (e.g., Supabase-WatermelonDB) to handle the new table structure, ensuring robust bidirectional sync and correct handling of deletions and updates.",
+            "dependencies": [
+              5
+            ],
+            "details": "Refactor sync adapters and logic to support the new schema, test for edge cases like conflict resolution and offline scenarios.",
+            "status": "done",
+            "testStrategy": "Simulate sync operations under various network conditions and validate data consistency across clients."
+          },
+          {
+            "id": 7,
+            "title": "Remove Legacy Posts Table and Related Code",
+            "description": "Delete all code, schema references, and database objects related to the legacy posts table after successful migration and refactoring.",
+            "dependencies": [],
+            "details": "Clean up the codebase and database schema, ensuring no residual dependencies remain and that the system operates solely on the new tables.",
+            "status": "done",
+            "testStrategy": "Run static analysis and schema validation tools to confirm complete removal; monitor for runtime errors post-deployment."
+          },
+          {
+            "id": 8,
+            "title": "Implement Rollback and Backup Plan",
+            "description": "Establish and test a rollback plan in case of migration failure, and ensure comprehensive backups are taken before migration begins.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create automated backup scripts and rollback procedures, document recovery steps, and perform trial runs to validate effectiveness.",
+            "status": "done",
+            "testStrategy": "Conduct backup and rollback drills in a non-production environment to ensure data can be restored quickly and accurately."
+          },
+          {
+            "id": 9,
+            "title": "Refactor community-service.ts to use new tables",
+            "description": "Replace all Supabase queries referencing `posts` with the appropriate calls to `community_questions` and `community_plant_shares`, returning a unified DTO for the UI layer.",
+            "details": "• Create helper map/adapter to transform data into existing PostView model.\n• Ensure create/update/delete helpers call correct target table based on postType param.\n• Maintain existing method signatures so UI remains unchanged.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 10,
+            "title": "Update community hooks to leverage refactored service",
+            "description": "Modify hooks in lib/hooks/community to call updated service methods and adapt returned data for UI components.",
+            "details": "Include usePosts, usePostActions, useCommunityQuestions, useCommunityPlantShares, etc.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 11,
+            "title": "Align UI components with new models",
+            "description": "Ensure PostItem, QuestionPostItem, PlantSharePostItem, etc., correctly render data from new structures without UI regression.",
+            "details": "Update prop types, rename fields, keep styling identical.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 12,
+            "title": "Extend TypeScript models & types",
+            "description": "Create unified interfaces (PostView) that cover both question and plant share shapes; deprecate legacy Post model.",
+            "details": "Update lib/models and lib/types accordingly, keep backwards compatibility via alias.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 13,
+            "title": "Comprehensive regression & UX testing",
+            "description": "Run automated tests and manual walkthrough to ensure Community UI remains visually identical and fully functional.",
+            "details": "Visual diff snapshots, interaction flows, performance checks.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 14,
+            "title": "Backend Refactor: Remove Legacy Posts Table Usage",
+            "description": "Refactor backend services to eliminate legacy 'posts' table usages. Update CommunityService.deletePost/softDeletePost/restorePost to call question/plant share specific functions or deprecate entirely. Replace '.from(\\\"posts\\\")' queries in storage-cleanup.ts, profile-service.ts, data-integrity.ts, sync/data-integrity.ts with equivalent queries to 'community_questions' and 'community_plant_shares'.",
+            "details": "• Update CommunityService methods to use new tables\\n• Refactor storage-cleanup.ts queries\\n• Update profile-service.ts statistics queries\\n• Replace data-integrity.ts queries\\n• Update sync/data-integrity.ts queries\\n• Ensure all backend services use community_questions and community_plant_shares only",
+            "status": "completed",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 15,
+            "title": "Frontend Refactor: Remove Posts Legacy Dependencies",
+            "description": "Update frontend hooks/components to stop relying on adapter for legacy PostData when possible. Replace usePosts with unified useCommunityFeed that already uses new tables. Remove PostItem.tsx legacy component and switch UI to QuestionPostItem / PlantSharePostItem everywhere.",
+            "details": "• Update component prop interfaces to align with new data structures\\n• Replace PostItem usage with QuestionPostItem/PlantSharePostItem\\n• Ensure proper data transformation for component props\\n• Verify all community UI uses new table data\\n• Test component rendering with new data structures",
+            "status": "done",
+            "dependencies": [
+              14
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 16,
+            "title": "Sync Logic Update for New Schema",
+            "description": "Revise sync logic (Supabase ↔ WatermelonDB) to sync new tables. Update sync/data-integrity modules to track community_questions and community_plant_shares instead of posts.",
+            "details": "• Update WatermelonDB sync adapters for new tables\\n• Modify sync/data-integrity.ts for community_questions and community_plant_shares\\n• Ensure bidirectional sync works with new schema\\n• Test sync operations in offline/online scenarios\\n• Verify conflict resolution with new table structure",
+            "status": "done",
+            "dependencies": [
+              14
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 17,
+            "title": "Remove Legacy Posts Table",
+            "description": "Safely drop legacy 'posts' table and remove all schema references after codebase no longer depends on it. Provide migration and rollback scripts.",
+            "details": "• Create database migration to drop posts table\\n• Remove posts table from WatermelonDB schema\\n• Remove any remaining TypeScript type references\\n• Create rollback migration script\\n• Verify no remaining dependencies in codebase\\n• Document the removal process",
+            "status": "done",
+            "dependencies": [
+              14,
+              15,
+              16
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 18,
+            "title": "Automated Database Backup and Rollback Plan",
+            "description": "Implement automated database backup and rollback plan for community data migration.",
+            "details": "• Create automated backup scripts for community data\\n• Implement rollback procedures for failed migrations\\n• Document recovery steps and procedures\\n• Test backup and restore in staging environment\\n• Create monitoring and alerting for migration health\\n• Establish data validation checks post-migration\n<info added on 2025-07-08T18:25:49.256Z>\nTASK COMPLETED: Implemented comprehensive automated database backup and rollback system with the following components:\n\n**Core System** (scripts/backup-rollback-system.ts):\n- Automated pre-migration backups with data integrity checks\n- Health monitoring and validation system  \n- Rollback procedures with multi-step confirmation\n- Comprehensive logging and audit trails\n- Data validation and integrity verification\n\n**CLI Interface** (scripts/migration-cli.ts):\n- Easy-to-use command-line tools for all operations\n- Interactive confirmation prompts for safety\n- Real-time status reporting and monitoring\n- Comprehensive help and documentation\n\n**Validation System** (scripts/migration-validation.ts):\n- Automated validation checks integrating with existing monitoring\n- Comprehensive health checks across all systems\n- Data integrity validation with existing DataIntegrityService\n- Sync health monitoring integration\n- Detailed validation reporting\n\n**NPM Scripts Added**:\n- npm run migration:backup <name> - Create comprehensive backup\n- npm run migration:health-check - Check system health\n- npm run migration:rollback <id> - Execute rollback with confirmation\n- npm run migration:monitor [mins] - Start continuous monitoring  \n- npm run migration:status - Show detailed status report\n- npm run migration:validate - Run validation checks\n- npm run migration:report - Generate validation report\n\n**Comprehensive Documentation** (docs/migration/backup-rollback-guide.md):\n- Complete usage guide with examples\n- Emergency procedures and troubleshooting\n- Best practices and recommendations\n- Command reference and troubleshooting\n\n**Safety Features**:\n- Multi-step confirmation for destructive operations\n- Data loss warnings with detailed implications\n- Confirmation codes for rollback execution\n- Pre and post operation health checks\n- Comprehensive error handling and recovery\n\n**Integration with Existing Systems**:\n- Works with existing DataIntegrityService\n- Integrates with sync health monitoring\n- Uses existing Supabase connection patterns\n- Leverages current WatermelonDB setup\n\nThe system provides production-ready automated backup and rollback capabilities with comprehensive safety measures, monitoring, and recovery procedures for the community data migration.\n</info added on 2025-07-08T18:25:49.256Z>",
+            "status": "done",
+            "dependencies": [
+              17
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 19,
+            "title": "Comprehensive Regression Testing",
+            "description": "Comprehensive regression and UX testing for community feature using new tables. Add test suites and run manual walkthroughs.",
+            "details": "• Write automated test suites for community features\\n• Perform manual UX testing walkthroughs\\n• Test all CRUD operations for questions and plant shares\\n• Verify sync functionality works correctly\\n• Performance testing and monitoring\\n• Visual regression testing for UI components\\n• Edge case testing (offline, poor network, etc.)",
+            "status": "done",
+            "dependencies": [
+              15,
+              16
+            ],
+            "parentTaskId": 3
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Apply Database Security and Schema Audit Recommendations",
+        "description": "Implement security and schema changes based on audit findings, including enabling RLS on deleted tables, renaming columns, adding generated columns, tightening storage ACLs, dropping redundant indexes, and setting compliant defaults.",
+        "details": "1. Enable Row-Level Security (RLS) on all tables that track deleted records to ensure only authorized users can access or restore deleted data. \n2. Rename the 'plants.stage' column to the recommended name from the audit, updating all references in queries, models, and documentation.\n3. Add a 'post_id' generated column to relevant tables, ensuring it is correctly populated and indexed for efficient lookups.\n4. Review and tighten access control lists (ACLs) on all storage buckets, restricting access to only necessary roles and enforcing least privilege.\n5. Identify and drop redundant indexes as flagged in the audit to improve performance and reduce maintenance overhead.\n6. Add or update default values for columns as specified by CanaBro business rules, ensuring data integrity and compliance.\n7. Coordinate with development and DevOps teams to ensure all changes are applied in both development and production environments, with proper migration scripts and rollback plans.\n8. Document all changes and communicate updates to affected teams.",
+        "testStrategy": "- Verify RLS is enabled and enforced on all relevant tables by attempting access with various user roles.\n- Confirm the 'plants.stage' column is renamed everywhere and that no references to the old name remain.\n- Check that the 'post_id' generated column is present, correctly populated, and indexed.\n- Audit storage bucket ACLs to ensure only authorized roles have access, and attempt unauthorized access to confirm restrictions.\n- Run database performance and integrity tests to ensure redundant indexes are removed and no queries are negatively impacted.\n- Validate that all columns have correct default values and that new records adhere to CanaBro business rules.\n- Review migration logs and perform rollback tests to ensure safe deployment.\n- Solicit feedback from affected teams to confirm no disruptions to workflows.",
+        "status": "pending",
+        "dependencies": [
+          3
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Enable Row-Level Security (RLS) on Deleted Tables",
+            "description": "Implement RLS on all tables that track deleted records to restrict access and restoration capabilities to authorized users only.",
+            "dependencies": [],
+            "details": "Review audit findings to identify relevant tables, configure RLS policies, and test access restrictions for compliance.",
+            "status": "pending",
+            "testStrategy": "Attempt access and restoration of deleted records with various user roles to confirm only authorized users have permissions."
+          },
+          {
+            "id": 2,
+            "title": "Rename 'plants.stage' Column and Update References",
+            "description": "Rename the 'plants.stage' column to the audit-recommended name and update all references in queries, models, and documentation.",
+            "dependencies": [],
+            "details": "Coordinate with development teams to identify all code and documentation referencing 'plants.stage', perform the rename, and validate updates.",
+            "status": "pending",
+            "testStrategy": "Run automated and manual tests to ensure all queries and models function correctly after the rename."
+          },
+          {
+            "id": 3,
+            "title": "Add and Index 'post_id' Generated Column",
+            "description": "Add a generated 'post_id' column to specified tables, ensuring correct population and indexing for efficient lookups.",
+            "dependencies": [],
+            "details": "Define the generation logic, update table schemas, and create necessary indexes as per audit recommendations.",
+            "status": "pending",
+            "testStrategy": "Insert and query data to verify correct generation and index performance for 'post_id'."
+          },
+          {
+            "id": 4,
+            "title": "Tighten Storage Bucket Access Control Lists (ACLs)",
+            "description": "Review and restrict storage bucket ACLs to enforce least privilege, allowing access only to necessary roles.",
+            "dependencies": [],
+            "details": "Audit current ACLs, update permissions to remove unnecessary access, and document changes for compliance.",
+            "status": "pending",
+            "testStrategy": "Test access with various roles to confirm only authorized users can access storage buckets."
+          },
+          {
+            "id": 5,
+            "title": "Drop Redundant Indexes Identified in Audit",
+            "description": "Identify and remove redundant indexes as flagged in the audit to improve database performance and reduce maintenance.",
+            "dependencies": [],
+            "details": "Review audit report, confirm redundancy, and safely drop indexes with minimal impact on operations.",
+            "status": "pending",
+            "testStrategy": "Monitor query performance and validate that required indexes remain intact after removal."
+          },
+          {
+            "id": 6,
+            "title": "Set or Update Default Values for Columns per Business Rules",
+            "description": "Add or update default values for columns as specified by CanaBro business rules to ensure data integrity and compliance.",
+            "dependencies": [],
+            "details": "Review business rules and audit findings, update schema defaults, and validate data consistency.",
+            "status": "pending",
+            "testStrategy": "Insert new records and verify that default values are correctly applied."
+          },
+          {
+            "id": 7,
+            "title": "Coordinate, Migrate, and Document All Changes",
+            "description": "Work with development and DevOps teams to apply changes in all environments, ensure proper migration scripts and rollback plans, and document updates for affected teams.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "details": "Schedule deployments, prepare migration and rollback scripts, update documentation, and communicate changes to stakeholders.",
+            "status": "pending",
+            "testStrategy": "Conduct end-to-end testing in staging and production, verify rollback procedures, and confirm all documentation is current."
           }
         ]
       }
@@ -135,7 +430,7 @@
     "metadata": {
       "created": "2025-07-05T20:15:26.619Z",
       "description": "Default tasks context",
-      "updated": "2025-07-07T16:54:11.734Z"
+      "updated": "2025-07-08T19:05:51.441Z"
     }
   }
 }

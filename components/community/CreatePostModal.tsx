@@ -20,7 +20,7 @@ import { triggerLightHapticSync, triggerMediumHapticSync } from '../../lib/utils
 import { COMMUNITY_ANIMATION_CONFIG } from '@/lib/types/community';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
-import { createPost } from '../../lib/services/community-service';
+import { CommunityService } from '../../lib/services/community-service';
 
 // Temporary type definitions for the missing component
 type PostData = {
@@ -83,17 +83,13 @@ const CreatePostModal = React.memo(function CreatePostModal({
       }
 
       setIsSubmitting(true);
+
       try {
-        const postData = {
-          user_id: user.id,
+        // Use the dedicated createPost method for general posts
+        await CommunityService.createPost({
           content: data.content,
           image_url: data.image,
-        };
-
-        const result = await createPost(postData);
-        if (!result.success) {
-          throw new Error(result.error?.message || 'Failed to create post');
-        }
+        });
 
         // Trigger success callback
         onCreatePost();
@@ -110,7 +106,7 @@ const CreatePostModal = React.memo(function CreatePostModal({
     [user?.id, isSubmitting, onCreatePost]
   );
 
-  // Handle questions as posts with question prefix
+  // Handle questions using the new question creation method
   const _handleCreateQuestion = useCallback(
     async (data: QuestionData): Promise<void> => {
       if (!user?.id || isSubmitting) {
@@ -119,17 +115,12 @@ const CreatePostModal = React.memo(function CreatePostModal({
 
       setIsSubmitting(true);
       try {
-        const questionContent = `**${data.title}**\n\n${data.content}`;
-        const postData = {
-          user_id: user.id,
-          content: questionContent,
+        await CommunityService.createQuestion({
+          title: data.title,
+          content: data.content,
+          category: 'general',
           image_url: data.image,
-        };
-
-        const result = await createPost(postData);
-        if (!result.success) {
-          throw new Error(result.error?.message || 'Failed to create question');
-        }
+        });
 
         // Trigger success callback
         onAskQuestion();

@@ -3,7 +3,7 @@ import { Associations } from '@nozbe/watermelondb/Model';
 import { field, date, readonly, text, children } from '@nozbe/watermelondb/decorators';
 
 import { Plant } from './Plant'; // Import Plant model
-import { Post } from './Post'; // Import Post model
+// Removed: import { Post } from './Post'; - Post model has been deleted
 
 /**
  * Profile model representing user profiles in the database
@@ -12,7 +12,7 @@ export class Profile extends Model {
   static table = 'profiles';
   static associations: Associations = {
     plants: { type: 'has_many' as const, foreignKey: 'user_id' },
-    posts: { type: 'has_many' as const, foreignKey: 'user_id' },
+    // Removed: posts: { type: 'has_many' as const, foreignKey: 'user_id' }, - posts table removed
   };
 
   // Auth user reference (text field, references auth.users.id)
@@ -50,7 +50,7 @@ export class Profile extends Model {
 
   // Children collections
   @children('plants') plants!: Query<Plant>;
-  @children('posts') posts!: Query<Post>;
+  // Removed: @children('posts') posts!: Query<Post>; - posts table removed
 
   /**
    * Returns parsed certifications array from serialized storage

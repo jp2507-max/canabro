@@ -1,9 +1,9 @@
 /**
  * PostActionRow - Reusable action buttons for all post types
- * Eliminates duplicate like/comment/share logic across PostItem components
+ * Eliminates duplicate like/comment/share logic across QuestionPostItem and PlantSharePostItem components
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -80,39 +80,56 @@ export default function PostActionRow({
     transform: [{ scale: deleteScale.value }],
   }));
 
+
+  // Timeout refs for cleanup
+  const likeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const commentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleLike = useCallback(async () => {
     if (liking) return;
-    
+
     await triggerLightHapticSync();
     likeScale.value = withSpring(SCALE_VALUES.likePress, SPRING_CONFIGS.like);
-    setTimeout(() => {
-      likeScale.value = withSpring(user_has_liked ? 1 : SCALE_VALUES.likeActive, SPRING_CONFIGS.like);
+    const hasLiked = user_has_liked;
+    if (likeTimeoutRef.current) clearTimeout(likeTimeoutRef.current);
+    likeTimeoutRef.current = setTimeout(() => {
+      likeScale.value = withSpring(hasLiked ? 1 : SCALE_VALUES.likeActive, SPRING_CONFIGS.like);
     }, 100);
-    
+
     onLike();
   }, [liking, onLike, user_has_liked, likeScale]);
 
   const handleComment = useCallback(async () => {
     await triggerLightHapticSync();
     commentScale.value = withSpring(SCALE_VALUES.buttonPress, SPRING_CONFIGS.button);
-    setTimeout(() => {
+    if (commentTimeoutRef.current) clearTimeout(commentTimeoutRef.current);
+    commentTimeoutRef.current = setTimeout(() => {
       commentScale.value = withSpring(1, SPRING_CONFIGS.button);
     }, 100);
-    
     onComment();
   }, [onComment, commentScale]);
 
   const handleDelete = useCallback(async () => {
     if (deleting || !onDelete) return;
-    
+
     await triggerLightHapticSync();
     deleteScale.value = withSpring(SCALE_VALUES.buttonPress, SPRING_CONFIGS.button);
-    setTimeout(() => {
+    if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+    deleteTimeoutRef.current = setTimeout(() => {
       deleteScale.value = withSpring(1, SPRING_CONFIGS.button);
     }, 100);
-    
     onDelete();
   }, [deleting, onDelete, deleteScale]);
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (likeTimeoutRef.current) clearTimeout(likeTimeoutRef.current);
+      if (commentTimeoutRef.current) clearTimeout(commentTimeoutRef.current);
+      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+    };
+  }, []);
 
   return (
     <View className={`flex-row items-center justify-between pt-3 ${className}`}>

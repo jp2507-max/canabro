@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Alert, Pressable, AccessibilityInfo, ViewStyle } from 'react-native';
+import { View, Text, Alert, Pressable } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import {
   generateCDNImageURL,
@@ -188,11 +188,13 @@ export default React.memo(function CommentItem({
     if (commentLikeMutation.isPending || !currentUserId) return;
 
     const currentlyLiked = comment.user_has_liked || false;
+    const postId = comment.post_id;
 
     try {
       await commentLikeMutation.mutateAsync({
         commentId: comment.id,
         userId: currentUserId,
+        postId,
         currentlyLiked,
       });
     } catch (error) {
