@@ -1,0 +1,11 @@
+# Task ID: 20
+# Title: Optimize Performance and Animations
+# Status: pending
+# Dependencies: 7, 8, 13, 15
+# Priority: medium
+# Description: Implement React Native Reanimated v3 animations and optimize app performance for smooth user experience
+# Details:
+Install react-native-reanimated@^3.6.0 and setup worklets. Implement smooth page transitions and micro-interactions. Optimize image loading with expo-image@^1.10.0 and lazy loading. Setup performance monitoring with Flipper integration. Implement virtual lists for large datasets using FlashList. Optimize bundle size with Metro bundler configuration. Add animation performance profiling and optimization. Create loading states and skeleton screens.
+
+# Test Strategy:
+Profile animation performance on low-end devices. Test memory usage with large image datasets. Verify smooth scrolling and navigation transitions.

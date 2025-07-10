@@ -97,7 +97,7 @@ class TranslationPerformanceService {
    */
   updateConfig(newConfig: Partial<PerformanceConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    logger.debug('Translation performance config updated:', this.config);
+    logger.log('Translation performance config updated:', this.config);
   }
 
   /**
@@ -216,7 +216,7 @@ class TranslationPerformanceService {
 
     if (victimKey) {
       this.cache.delete(victimKey);
-      logger.debug('Evicted cache entry:', victimKey, 'Score:', lowestScore);
+      logger.log('Evicted cache entry:', victimKey, 'Score:', lowestScore);
     }
   }
 
@@ -316,7 +316,7 @@ class TranslationPerformanceService {
   clearCache(): void {
     this.cache.clear();
     this.updateMetrics();
-    logger.debug('Translation cache cleared');
+    logger.log('Translation cache cleared');
   }
 
   /**
@@ -336,13 +336,12 @@ class TranslationPerformanceService {
         for (const [key, { value, type }] of Object.entries(translations)) {
           this.setCacheEntry(key, value, type);
           processed++;
-          
           // Update preload progress
           this.metrics.preloadProgress = (processed / total) * 100;
         }
 
         const duration = Date.now() - startTime;
-        logger.debug('Preloaded translations:', {
+        logger.log('Preloaded translations:', {
           count: total,
           duration,
           cacheSize: this.cache.size,
@@ -369,7 +368,7 @@ class TranslationPerformanceService {
 
     if (cleaned > 0) {
       this.updateMetrics();
-      logger.debug('Cleaned up expired cache entries:', cleaned);
+      logger.log('Cleaned up expired cache entries:', cleaned);
     }
 
     return cleaned;
@@ -401,4 +400,4 @@ class TranslationPerformanceService {
 export const translationPerformance = new TranslationPerformanceService();
 
 // Export types
-export type { TranslationMetrics, PerformanceConfig, TTLConfig }; 
+export type { PerformanceConfig, TTLConfig };

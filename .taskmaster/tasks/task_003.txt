@@ -1,7 +1,7 @@
 # Task ID: 3
 # Title: Refactor Community Feature: Remove Legacy Posts Table and Migrate to Split Tables
 # Status: done
-# Dependencies: 1, 2
+# Dependencies: 1, 2 (Not found)
 # Priority: medium
 # Description: Refactor the community feature by removing the legacy posts table and migrating all logic and data to the new community_questions and community_plant_shares tables, ensuring all hooks, services, UI components, and sync logic are updated to maintain feature parity.
 # Details:

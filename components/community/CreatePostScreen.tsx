@@ -7,6 +7,8 @@ import {
   TextInput,
   Alert,
   StatusBar,
+  ScrollView,
+  useColorScheme,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -15,6 +17,8 @@ import Animated, {
   withSpring,
   interpolateColor,
   runOnJS,
+  withTiming,
+  withSequence,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,16 +41,19 @@ type CreatePostScreenProps = {
   postType: 'question' | 'plant_share' | null;
 };
 
-// Animation config
+// Enhanced animation constants
 const SPRING_CONFIG = {
-  damping: 20,
+  damping: 15,
   stiffness: 300,
-  mass: 0.8,
-} as const;
+  mass: 1,
+};
 
-/**
- * Top Bar Component with X, Privacy pill, and Post button
- */
+const SELECTION_SPRING = {
+  damping: 20,
+  stiffness: 400,
+  mass: 0.8,
+};
+
 function TopBar({ onClose, onPost, canPost, isSubmitting }: {
   onClose: () => void;
   onPost: () => void;
@@ -55,109 +62,240 @@ function TopBar({ onClose, onPost, canPost, isSubmitting }: {
 }) {
   const closeScale = useSharedValue(1);
   const postScale = useSharedValue(1);
-  const postPressed = useSharedValue(0);
+  const postOpacity = useSharedValue(canPost ? 1 : 0.5);
 
-  const closeAnimatedStyle = useAnimatedStyle(() => ({
+  const closeStyle = useAnimatedStyle(() => ({
     transform: [{ scale: closeScale.value }],
   }));
 
-  const postAnimatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
-      postPressed.value,
-      [0, 1],
-      ['#BAE06F', '#9BC34F'] // limePrimary to limePrimary-active
-    );
-
-    return {
-      transform: [{ scale: postScale.value }],
-      backgroundColor,
-    };
-  });
+  const postStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: postScale.value }],
+    opacity: postOpacity.value,
+  }));
 
   const handleClosePress = () => {
     'worklet';
-    closeScale.value = withSpring(0.9, SPRING_CONFIG);
-    runOnJS(() => {
-      triggerLightHaptic();
-      setTimeout(() => {
-        closeScale.value = withSpring(1, SPRING_CONFIG);
-        onClose();
-      }, 100);
-    })();
+    closeScale.value = withSequence(
+      withTiming(0.95, { duration: 100 }),
+      withSpring(1, SPRING_CONFIG)
+    );
+    runOnJS(triggerLightHaptic)();
+    runOnJS(onClose)();
   };
 
   const handlePostPressIn = () => {
     'worklet';
-    if (!canPost || isSubmitting) return;
-    postScale.value = withSpring(0.95, SPRING_CONFIG);
-    postPressed.value = withSpring(1, SPRING_CONFIG);
-    runOnJS(triggerLightHaptic)();
+    postScale.value = withSpring(0.95, SELECTION_SPRING);
   };
 
   const handlePostPressOut = () => {
     'worklet';
-    postScale.value = withSpring(1, SPRING_CONFIG);
-    postPressed.value = withSpring(0, SPRING_CONFIG);
+    postScale.value = withSpring(1, SELECTION_SPRING);
   };
 
   const handlePostPress = () => {
-    if (!canPost || isSubmitting) return;
-    triggerMediumHapticSync();
-    onPost();
+    'worklet';
+    runOnJS(triggerMediumHapticSync)();
+    runOnJS(onPost)();
   };
 
+  React.useEffect(() => {
+    postOpacity.value = withSpring(canPost && !isSubmitting ? 1 : 0.5, SPRING_CONFIG);
+  }, [canPost, isSubmitting]);
+
   return (
-    <ThemedView className="flex-row items-center justify-between px-4 h-16 bg-white">
-      {/* Close Button - Made even bigger with SF Symbol */}
-      <Animated.View style={closeAnimatedStyle}>
-        <Pressable
-          onPress={handleClosePress}
-          className="w-12 h-12 items-center justify-center"
-          accessibilityLabel="Close"
-          accessibilityRole="button">
-          <NativeIconSymbol 
-            name="close" 
-            size={32} 
-            tintColor="#000000"
-            weight="medium"
-          />
-        </Pressable>
+    <ThemedView className="flex-row items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
+      <Animated.View style={closeStyle}>
+        <GestureDetector gesture={Gesture.Tap().onEnd(handleClosePress)}>
+          <Pressable 
+            className="h-8 w-8 items-center justify-center rounded-full"
+            accessibilityLabel="Close"
+            accessibilityRole="button">
+            <OptimizedIcon name="close" size={24} className="text-neutral-700 dark:text-neutral-300" />
+          </Pressable>
+        </GestureDetector>
       </Animated.View>
 
-      {/* Spacer - Privacy selector will be in the author row */}
-      <View />
+      <ThemedText className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+        Create Post
+      </ThemedText>
 
-      {/* Post Button - Made even bigger */}
-      <Animated.View style={postAnimatedStyle} className="rounded-3xl">
-        <Pressable
-          onPress={handlePostPress}
-          onPressIn={handlePostPressIn}
-          onPressOut={handlePostPressOut}
-          disabled={!canPost || isSubmitting}
-          className={`px-8 h-12 items-center justify-center rounded-3xl ${
-            !canPost || isSubmitting ? 'opacity-50' : ''
-          }`}
-          style={{
-            shadowColor: 'rgba(0,0,0,0.10)',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 1,
-            shadowRadius: 2,
-            elevation: 2,
-          }}
-          accessibilityLabel="Post"
-          accessibilityRole="button">
-          <ThemedText className="text-lg font-semibold" style={{ color: '#33663F' }}>
-            {isSubmitting ? 'Posting...' : 'Post'}
-          </ThemedText>
-        </Pressable>
+      <Animated.View style={postStyle}>
+        <GestureDetector
+          gesture={Gesture.Tap()
+            .onBegin(handlePostPressIn)
+            .onFinalize(handlePostPressOut)
+            .onEnd(handlePostPress)}
+        >
+          <Pressable
+            className={`px-6 py-2 rounded-full ${
+              canPost && !isSubmitting
+                ? 'bg-primary-500 dark:bg-primary-600'
+                : 'bg-neutral-300 dark:bg-neutral-600'
+            }`}
+            disabled={!canPost || isSubmitting}
+            accessibilityLabel="Post"
+            accessibilityRole="button">
+            <ThemedText className={`font-semibold ${
+              canPost && !isSubmitting
+                ? 'text-white'
+                : 'text-neutral-500 dark:text-neutral-400'
+            }`}>
+              {isSubmitting ? 'Posting...' : 'Post'}
+            </ThemedText>
+          </Pressable>
+        </GestureDetector>
       </Animated.View>
     </ThemedView>
   );
 }
 
-/**
- * Native iOS-style Bottom Toolbar - Enhanced design with SF Symbols
- */
+// Enhanced selection component with icons and better visual feedback
+interface ModernSelectionCardProps {
+  onPress: () => void;
+  children: React.ReactNode;
+  selected: boolean;
+  disabled?: boolean;
+  icon?: React.ComponentProps<typeof OptimizedIcon>['name'];
+  subtitle?: string;
+}
+
+function ModernSelectionCard({ 
+  onPress, 
+  children, 
+  selected, 
+  disabled = false,
+  icon,
+  subtitle
+}: ModernSelectionCardProps) {
+  const scale = useSharedValue(1);
+  const backgroundColor = useSharedValue(selected ? 1 : 0);
+  const borderColor = useSharedValue(selected ? 1 : 0);
+  const colorScheme = useColorScheme();
+
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    const bgColor = interpolateColor(
+      backgroundColor.value,
+      [0, 1],
+      colorScheme === 'dark' 
+        ? ['#1f2937', '#059669'] // neutral-800 to emerald-600
+        : ['#f9fafb', '#10b981'] // neutral-50 to emerald-500
+    );
+
+    const borderCol = interpolateColor(
+      borderColor.value,
+      [0, 1],
+      colorScheme === 'dark'
+        ? ['#374151', '#059669'] // neutral-700 to emerald-600
+        : ['#e5e7eb', '#10b981'] // neutral-200 to emerald-500
+    );
+
+    return {
+      backgroundColor: bgColor,
+      borderColor: borderCol,
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const textStyle = useAnimatedStyle(() => {
+    'worklet';
+    const textColor = interpolateColor(
+      backgroundColor.value,
+      [0, 1],
+      colorScheme === 'dark'
+        ? ['#f3f4f6', '#ffffff'] // neutral-100 to white
+        : ['#374151', '#ffffff'] // neutral-700 to white
+    );
+
+    return { color: textColor };
+  });
+
+  const handlePressIn = () => {
+    'worklet';
+    scale.value = withSpring(0.95, SELECTION_SPRING);
+  };
+
+  const handlePressOut = () => {
+    'worklet';
+    scale.value = withSpring(1, SELECTION_SPRING);
+  };
+
+  const handlePress = () => {
+    'worklet';
+    if (!disabled) {
+      runOnJS(triggerLightHaptic)();
+      runOnJS(onPress)();
+    }
+  };
+
+  React.useEffect(() => {
+    backgroundColor.value = withSpring(selected ? 1 : 0, SPRING_CONFIG);
+    borderColor.value = withSpring(selected ? 1 : 0, SPRING_CONFIG);
+  }, [selected]);
+
+  return (
+    <GestureDetector
+      gesture={Gesture.Tap()
+        .onBegin(handlePressIn)
+        .onFinalize(handlePressOut)
+        .onEnd(handlePress)}
+    >
+      <Animated.View
+        style={[animatedStyle]}
+        className="min-h-[64px] flex-1 p-3 rounded-2xl border-2 items-center justify-center"
+      >
+        {icon && (
+          <OptimizedIcon 
+            name={icon} 
+            size={20} 
+            className={selected ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'} 
+          />
+        )}
+        <Animated.Text 
+          style={textStyle}
+          className="text-sm font-medium text-center mt-1"
+        >
+          {children}
+        </Animated.Text>
+        {subtitle && (
+          <Animated.Text 
+            style={textStyle}
+            className="text-xs text-center mt-0.5 opacity-80"
+          >
+            {subtitle}
+          </Animated.Text>
+        )}
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
+// Enhanced form section component
+interface FormSectionProps {
+  title: string;
+  children: React.ReactNode;
+  icon?: React.ComponentProps<typeof OptimizedIcon>['name'];
+}
+
+function FormSection({ title, children, icon }: FormSectionProps) {
+  return (
+    <ThemedView className="bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow-sm border border-neutral-100 dark:border-neutral-700">
+      <View className="flex-row items-center mb-3">
+        {icon && (
+          <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+            <OptimizedIcon name={icon} size={18} className="text-emerald-600 dark:text-emerald-400" />
+          </View>
+        )}
+        <ThemedText className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          {title}
+        </ThemedText>
+      </View>
+      {children}
+    </ThemedView>
+  );
+}
+
 function EnhancedBottomToolbar({ 
   onCameraPress,
   onPhotoLibraryPress,
@@ -170,41 +308,25 @@ function EnhancedBottomToolbar({
   disabled?: boolean;
 }) {
   return (
-    <ThemedView className="px-6 py-4 bg-white border-t border-neutral-100">
-      <View className="flex-row items-center justify-around">
+    <ThemedView className="border-t border-neutral-100 dark:border-neutral-800 px-4 py-3">
+      <View className="flex-row items-center space-x-4">
         <NativeActionButton
           iconName="camera"
           onPress={onCameraPress}
           disabled={disabled}
-          accessibilityLabel="Take photo with camera"
+          accessibilityLabel="Take photo"
         />
         <NativeActionButton
-          iconName="images-outline"
+          iconName="photo"
           onPress={onPhotoLibraryPress}
           disabled={disabled}
-          accessibilityLabel="Choose from photo library"
+          accessibilityLabel="Choose from library"
         />
-        <NativeActionButton
-          iconName="calendar-outline"
-          onPress={() => console.log('Calendar pressed')}
-          disabled={disabled}
-          accessibilityLabel="Schedule post"
-        />
-        <NativeActionButton
-          iconName="layers-outline"
-          onPress={() => console.log('Layers pressed')}
-          disabled={disabled}
-          accessibilityLabel="Add layers"
-        />
-        <View className="w-6" />
       </View>
     </ThemedView>
   );
 }
 
-/**
- * Native iOS-style action button - Enhanced design with SF Symbols
- */
 function NativeActionButton({ 
   iconName,
   onPress, 
@@ -217,7 +339,7 @@ function NativeActionButton({
   accessibilityLabel: string;
 }) {
   const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
+  const opacity = useSharedValue(disabled ? 0.5 : 1);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -226,58 +348,47 @@ function NativeActionButton({
 
   const handlePressIn = () => {
     'worklet';
-    if (disabled) return;
-    scale.value = withSpring(0.8, SPRING_CONFIG);
-    opacity.value = withSpring(0.6, SPRING_CONFIG);
-    runOnJS(triggerLightHaptic)();
+    scale.value = withSpring(0.9, SELECTION_SPRING);
   };
 
   const handlePressOut = () => {
     'worklet';
-    scale.value = withSpring(1, SPRING_CONFIG);
-    opacity.value = withSpring(1, SPRING_CONFIG);
+    scale.value = withSpring(1, SELECTION_SPRING);
   };
 
   const handlePress = () => {
-    if (disabled) return;
-    triggerMediumHapticSync();
-    onPress?.();
+    'worklet';
+    if (!disabled) {
+      runOnJS(triggerLightHaptic)();
+      runOnJS(onPress || (() => {}))();
+    }
   };
+
+  React.useEffect(() => {
+    opacity.value = withSpring(disabled ? 0.5 : 1, SPRING_CONFIG);
+  }, [disabled]);
 
   return (
     <Animated.View style={animatedStyle}>
-      <Pressable
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={disabled}
-        className={`w-16 h-16 items-center justify-center rounded-2xl ${
-          disabled ? 'opacity-30' : 'bg-neutral-50'
-        }`}
-        style={{
-          shadowColor: 'rgba(0,0,0,0.05)',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 1,
-          shadowRadius: 3,
-          elevation: 1,
-        }}
-        accessibilityLabel={accessibilityLabel}
-        accessibilityRole="button">
-        <NativeIconSymbol 
-          name={iconName}
-          size={28} 
-          tintColor={disabled ? "#9CA3AF" : "#374151"}
-          weight="regular"
-          scale="large"
-        />
-      </Pressable>
+      <GestureDetector
+        gesture={Gesture.Tap()
+          .onBegin(handlePressIn)
+          .onFinalize(handlePressOut)
+          .onEnd(handlePress)}
+      >
+        <Pressable
+          className="h-10 w-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700"
+          disabled={disabled}
+          accessibilityLabel={accessibilityLabel}
+          accessibilityRole="button">
+          <NativeIconSymbol name={iconName} size={20} />
+        </Pressable>
+      </GestureDetector>
     </Animated.View>
   );
 }
 
-/**
- * Animated Selection Button for form options
- */
+// Updated AnimatedSelectionButton for backward compatibility
 interface AnimatedSelectionButtonProps {
   onPress: () => void;
   children: React.ReactNode;
@@ -286,50 +397,14 @@ interface AnimatedSelectionButtonProps {
 }
 
 function AnimatedSelectionButton({ onPress, children, selected, disabled = false }: AnimatedSelectionButtonProps) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    'worklet';
-    const backgroundColor = interpolateColor(
-      selected ? 1 : 0,
-      [0, 1],
-      ['rgba(0,0,0,0)', '#22c55e'] // transparent to green-500
-    );
-    const borderColor = interpolateColor(
-      selected ? 1 : 0,
-      [0, 1],
-      ['#d4d4d8', '#22c55e'] // neutral-300 to green-500
-    );
-    return {
-      transform: [{ scale: scale.value }],
-      backgroundColor,
-      borderColor,
-    };
-  });
-
-  const gesture = Gesture.Tap()
-    .enabled(!disabled)
-    .onBegin(() => {
-      'worklet';
-      scale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
-    })
-    .onFinalize(() => {
-      'worklet';
-      scale.value = withSpring(1, { damping: 15, stiffness: 400 });
-    })
-    .onEnd(() => {
-      runOnJS(triggerLightHaptic)();
-      runOnJS(onPress)();
-    });
-
   return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View
-        style={animatedStyle}
-        className={`border-2 rounded-xl px-4 py-2 ${disabled ? 'opacity-50' : ''}`}>
-        {children}
-      </Animated.View>
-    </GestureDetector>
+    <ModernSelectionCard
+      onPress={onPress}
+      selected={selected}
+      disabled={disabled}
+    >
+      {children}
+    </ModernSelectionCard>
   );
 }
 
@@ -450,11 +525,11 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       <EnhancedKeyboardWrapper
-        className="flex-1 bg-white"
+        className="flex-1 bg-neutral-50 dark:bg-neutral-900"
         showToolbar={true}
         doneText="Done"
         extraOffset={0}>
-        <ThemedView className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+        <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900" style={{ paddingTop: insets.top }}>
           {/* Top Bar */}
           <TopBar 
             onClose={handleClose}
@@ -464,7 +539,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
           />
 
           {/* Author Row with Privacy Selector - Enhanced avatar size */}
-          <ThemedView className="px-4 py-4 border-b border-neutral-100">
+          <ThemedView className="px-4 py-4 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-800">
             <PostAuthorRow
               userAvatarUrl={user?.user_metadata?.avatar_url || ''}
               userName={user?.user_metadata?.username || 'You'}
@@ -475,23 +550,23 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
 
           {/* Post Type Header or Error */}
           {postType ? (
-            <ThemedView className="px-4 py-3 bg-neutral-50 border-b border-neutral-100">
+            <ThemedView className="px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800">
               <View className="flex-row items-center">
                 {postType === 'question' ? (
                   <>
-                    <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-amber-100">
-                      <OptimizedIcon name="help-circle" size={18} className="text-amber-600" />
+                    <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+                      <OptimizedIcon name="help-circle" size={18} className="text-amber-600 dark:text-amber-400" />
                     </View>
-                    <ThemedText className="text-sm font-medium text-neutral-700">
+                    <ThemedText className="text-sm font-medium text-amber-700 dark:text-amber-300">
                       Ask a Question
                     </ThemedText>
                   </>
                 ) : (
                   <>
-                    <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                      <OptimizedIcon name="leaf" size={18} className="text-green-600" />
+                    <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                      <OptimizedIcon name="leaf" size={18} className="text-emerald-600 dark:text-emerald-400" />
                     </View>
-                    <ThemedText className="text-sm font-medium text-neutral-700">
+                    <ThemedText className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                       Share a Plant
                     </ThemedText>
                   </>
@@ -499,117 +574,155 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
               </View>
             </ThemedView>
           ) : (
-            <ThemedView className="px-4 py-3 bg-red-50 border-b border-red-200">
-              <ThemedText className="text-sm font-medium text-red-700">
+            <ThemedView className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+              <ThemedText className="text-sm font-medium text-red-700 dark:text-red-300">
                 Please select a post type to continue.
               </ThemedText>
             </ThemedView>
           )}
 
-          {/* Main Content */}
-          <ThemedView className="flex-1 px-4 py-4">
-            {/* Enhanced Text Input */}
-            <EnhancedTextInput
-              ref={contentInputRef}
-              value={content}
-              onChangeText={setContent}
-              placeholder={
-                postType === 'question' 
-                  ? "What's your growing question?" 
-                  : postType === 'plant_share'
-                  ? "Tell us about your plant..."
-                  : "What's on your mind?"
-              }
-              variant="post"
-              multiline
-              autoFocus
-              showCharacterCount={false}
-              inputAccessoryViewID="PostToolbar"
-              accessibilityLabel="Post content"
-              editable={!!postType && !isSubmitting}
-            />
+          {/* Main Content - Scrollable */}
+          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <View className="px-4 py-4 space-y-4">
+              {/* Enhanced Text Input */}
+              <FormSection title="Share Your Story" icon="pencil">
+                <EnhancedTextInput
+                  ref={contentInputRef}
+                  value={content}
+                  onChangeText={setContent}
+                  placeholder={
+                    postType === 'question' 
+                      ? "What's your growing question?" 
+                      : postType === 'plant_share'
+                      ? "Tell us about your plant..."
+                      : "What's on your mind?"
+                  }
+                  variant="post"
+                  multiline
+                  autoFocus
+                  showCharacterCount={false}
+                  inputAccessoryViewID="PostToolbar"
+                  accessibilityLabel="Post content"
+                  editable={!!postType && !isSubmitting}
+                />
+              </FormSection>
 
-            {/* Plant Share Form Fields */}
-            {postType === 'plant_share' && (
-              <View className="mt-4 space-y-4">
-                {/* Plant Name Input */}
-                <View>
-                  <ThemedText className="text-sm font-medium text-neutral-700 mb-2">
-                    Plant Name *
-                  </ThemedText>
-                  <EnhancedTextInput
-                    value={plantName}
-                    onChangeText={setPlantName}
-                    placeholder="e.g., My Purple Kush"
-                    maxLength={50}
-                    showCharacterCount
-                    accessibilityLabel="Plant name"
-                    editable={!!postType && !isSubmitting}
-                  />
-                </View>
-
-                {/* Growth Stage Selector */}
-                <View>
-                  <ThemedText className="text-sm font-medium text-neutral-700 mb-2">
-                    Growth Stage *
-                  </ThemedText>
-                  <View className="flex-row flex-wrap gap-2">
-                    {(['seedling', 'vegetative', 'flowering', 'harvest'] as const).map((stage) => (
-                      <AnimatedSelectionButton
-                        key={stage}
-                        onPress={() => setGrowthStage(stage)}
-                        selected={growthStage === stage}
-                        disabled={isSubmitting || !postType}>
-                        <ThemedText
-                          className={
-                            growthStage === stage
-                              ? 'font-medium text-white'
-                              : 'text-neutral-900 dark:text-neutral-100'
-                          }>
-                          {stage.charAt(0).toUpperCase() + stage.slice(1)}
+              {/* Plant Share Form Fields */}
+              {postType === 'plant_share' && (
+                <>
+                  {/* Plant Details Section */}
+                  <FormSection title="Plant Details" icon="leaf">
+                    <View className="space-y-4">
+                      {/* Plant Name Input */}
+                      <View>
+                        <ThemedText className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                          Plant Name *
                         </ThemedText>
-                      </AnimatedSelectionButton>
-                    ))}
-                  </View>
-                </View>
+                        <EnhancedTextInput
+                          value={plantName}
+                          onChangeText={setPlantName}
+                          placeholder="e.g., My Purple Kush"
+                          maxLength={50}
+                          showCharacterCount
+                          accessibilityLabel="Plant name"
+                          editable={!!postType && !isSubmitting}
+                        />
+                      </View>
+                    </View>
+                  </FormSection>
 
-                {/* Environment Selector */}
-                <View>
-                  <ThemedText className="text-sm font-medium text-neutral-700 mb-2">
-                    Environment *
-                  </ThemedText>
-                  <View className="flex-row flex-wrap gap-2">
-                    {(['indoor', 'outdoor', 'greenhouse'] as const).map((env) => (
-                      <AnimatedSelectionButton
-                        key={env}
-                        onPress={() => setEnvironment(env)}
-                        selected={environment === env}
-                        disabled={isSubmitting || !postType}>
-                        <ThemedText
-                          className={
-                            environment === env
-                              ? 'font-medium text-white'
-                              : 'text-neutral-900 dark:text-neutral-100'
-                          }>
-                          {env.charAt(0).toUpperCase() + env.slice(1)}
-                        </ThemedText>
-                      </AnimatedSelectionButton>
-                    ))}
-                  </View>
-                </View>
-              </View>
-            )}
+                                     {/* Growth Stage Section */}
+                   <FormSection title="Growth Stage">
+                     <View className="flex-row flex-wrap gap-2">
+                       <ModernSelectionCard
+                         onPress={() => setGrowthStage('seedling')}
+                         selected={growthStage === 'seedling'}
+                         disabled={isSubmitting || !postType}
+                         subtitle="Just starting">
+                         🌱 Seedling
+                       </ModernSelectionCard>
+                      
+                      <ModernSelectionCard
+                        onPress={() => setGrowthStage('vegetative')}
+                        selected={growthStage === 'vegetative'}
+                        disabled={isSubmitting || !postType}
+                        icon="leaf"
+                        subtitle="Growing leaves">
+                        Vegetative
+                      </ModernSelectionCard>
+                      
+                      <ModernSelectionCard
+                        onPress={() => setGrowthStage('flowering')}
+                        selected={growthStage === 'flowering'}
+                        disabled={isSubmitting || !postType}
+                        icon="flower"
+                        subtitle="Producing buds">
+                        Flowering
+                      </ModernSelectionCard>
+                      
+                      <ModernSelectionCard
+                        onPress={() => setGrowthStage('harvest')}
+                        selected={growthStage === 'harvest'}
+                        disabled={isSubmitting || !postType}
+                        icon="checkmark-circle"
+                        subtitle="Ready to harvest">
+                        Harvest
+                      </ModernSelectionCard>
+                    </View>
+                  </FormSection>
 
-            {/* Show selected image preview */}
-            {image && (
-              <View className="mt-4 rounded-lg overflow-hidden">
-                <Pressable onPress={() => setImage(null)} className="absolute top-2 right-2 z-10 w-8 h-8 bg-black/50 rounded-full items-center justify-center">
-                  <NativeIconSymbol name="close" size={20} tintColor="#FFFFFF" />
-                </Pressable>
-                <ThemedText className="text-sm text-neutral-600 mb-2">Image selected</ThemedText>
-              </View>
-            )}
-          </ThemedView>
+                  {/* Environment Section */}
+                  <FormSection title="Growing Environment" icon="home">
+                    <View className="flex-row flex-wrap gap-2">
+                      <ModernSelectionCard
+                        onPress={() => setEnvironment('indoor')}
+                        selected={environment === 'indoor'}
+                        disabled={isSubmitting || !postType}
+                        icon="home"
+                        subtitle="Controlled climate">
+                        Indoor
+                      </ModernSelectionCard>
+                      
+                      <ModernSelectionCard
+                        onPress={() => setEnvironment('outdoor')}
+                        selected={environment === 'outdoor'}
+                        disabled={isSubmitting || !postType}
+                        icon="sun"
+                        subtitle="Natural sunlight">
+                        Outdoor
+                      </ModernSelectionCard>
+                      
+                      <ModernSelectionCard
+                        onPress={() => setEnvironment('greenhouse')}
+                        selected={environment === 'greenhouse'}
+                        disabled={isSubmitting || !postType}
+                        icon="home"
+                        subtitle="Protected growing">
+                        Greenhouse
+                      </ModernSelectionCard>
+                    </View>
+                  </FormSection>
+                </>
+              )}
+
+              {/* Show selected image preview */}
+              {image && (
+                                 <FormSection title="Selected Image" icon="image-outline">
+                   <View className="relative rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-700 h-40 items-center justify-center">
+                     <Pressable 
+                       onPress={() => setImage(null)} 
+                       className="absolute top-2 right-2 z-10 w-8 h-8 bg-black/50 rounded-full items-center justify-center">
+                       <NativeIconSymbol name="close" size={20} tintColor="#FFFFFF" />
+                     </Pressable>
+                     <OptimizedIcon name="image-outline" size={32} className="text-neutral-500 dark:text-neutral-400" />
+                     <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
+                       Image selected
+                     </ThemedText>
+                   </View>
+                 </FormSection>
+              )}
+            </View>
+          </ScrollView>
 
           {/* Enhanced Bottom Toolbar */}
           <EnhancedBottomToolbar

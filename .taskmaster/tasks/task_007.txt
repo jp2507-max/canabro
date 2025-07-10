@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Configure Expo Router v5 Navigation
+# Status: pending
+# Dependencies: 6
+# Priority: high
+# Description: Implement file-based routing system with Expo Router v5 including tab navigation and deep linking support
+# Details:
+Install expo-router@^5.0.0 and configure app/_layout.tsx as root layout. Create tab-based navigation structure: app/(tabs)/_layout.tsx with tabs for Plants, Community, Strains, Calendar, and Profile. Implement stack navigation for detailed screens. Configure deep linking with proper URL schemes. Setup typed navigation with TypeScript definitions. Create reusable navigation components and hooks for consistent navigation patterns.
+
+# Test Strategy:
+Test navigation between all tab screens and nested stacks. Verify deep linking functionality with test URLs. Validate TypeScript navigation types and autocomplete.

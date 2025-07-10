@@ -383,6 +383,7 @@ export interface PlantShareFilters {
 }
 
 export interface CreateQuestionData {
+  user_id?: string; // Made optional since it can be auto-filled by the service
   title: string;
   content: string;
   category: QuestionCategory;
@@ -392,6 +393,7 @@ export interface CreateQuestionData {
 }
 
 export interface CreatePlantShareData {
+  user_id?: string; // Made optional since it can be auto-filled by the service
   plant_id?: string;
   plant_name: string;
   strain_name?: string;

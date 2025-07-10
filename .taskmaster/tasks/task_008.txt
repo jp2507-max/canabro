@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Setup NativeWind v4 Styling System
+# Status: pending
+# Dependencies: 6
+# Priority: high
+# Description: Configure NativeWind v4 with semantic color tokens, dark mode support, and responsive design system
+# Details:
+Install nativewind@^4.0.0 and tailwindcss@^3.4.0. Configure tailwind.config.js with custom color palette for cannabis theme (greens, earth tones). Setup semantic color tokens for light/dark modes. Configure responsive breakpoints for different screen sizes. Create utility classes for common patterns. Setup CSS variables for dynamic theming. Implement theme provider with React Context for mode switching.
+
+# Test Strategy:
+Test styling consistency across iOS and Android. Verify dark/light mode switching. Validate responsive design on different screen sizes.

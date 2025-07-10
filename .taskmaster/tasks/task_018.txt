@@ -1,0 +1,11 @@
+# Task ID: 18
+# Title: Develop Plant Diagnosis System
+# Status: pending
+# Dependencies: 13, 8
+# Priority: medium
+# Description: Create plant health diagnosis tools with symptom identification and treatment recommendations
+# Details:
+Build symptom identification wizard with visual guides and photo comparison. Create treatment recommendation engine with evidence-based solutions. Implement plant problem database with searchable symptoms and solutions. Setup AI-powered analysis preparation (model integration placeholder). Create diagnostic history tracking for plants. Implement expert guidance system with cultivation best practices. Add integration with community for expert advice.
+
+# Test Strategy:
+Test diagnosis wizard flow and accuracy. Verify treatment recommendations relevance. Test diagnostic history and data persistence.

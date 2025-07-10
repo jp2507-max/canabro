@@ -72,62 +72,63 @@
               "1.5"
             ],
             "parentTaskId": 1
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "Fix Supabase-WatermelonDB Data Synchronization and Implement Post Deletion System",
-        "description": "Resolve critical data synchronization issues between Supabase and WatermelonDB causing orphaned posts with broken image URLs, and implement comprehensive post deletion functionality with proper cleanup of database records and Supabase Storage assets.",
-        "details": "1. **Diagnose Synchronization Issues:**\n   - Audit current sync mechanisms between Supabase and WatermelonDB\n   - Identify root causes of orphaned posts and broken image URL references\n   - Review database schema consistency between local and remote databases\n   - Analyze sync timing and conflict resolution strategies\n\n2. **Fix Data Synchronization:**\n   - Implement robust bidirectional sync with proper conflict resolution\n   - Add data validation layers to prevent orphaned records\n   - Create sync status tracking and error recovery mechanisms\n   - Implement incremental sync to reduce data transfer and improve performance\n   - Add retry logic with exponential backoff for failed sync operations\n   - Ensure referential integrity between posts and associated media assets\n\n3. **Implement Post Deletion System:**\n   - Create comprehensive deletion workflow that handles both database records and storage assets\n   - Implement cascade deletion for related records (comments, likes, media references)\n   - Add soft delete option with recovery mechanism for accidental deletions\n   - Create batch deletion capabilities for administrative purposes\n   - Implement proper authorization checks to ensure users can only delete their own posts\n\n4. **Storage Asset Management:**\n   - Implement automatic cleanup of Supabase Storage assets when posts are deleted\n   - Create orphaned asset detection and cleanup routines\n   - Add asset reference counting to prevent premature deletion of shared resources\n   - Implement storage quota management and cleanup policies\n\n5. **Error Handling and Recovery:**\n   - Add comprehensive error handling for sync failures\n   - Implement data recovery mechanisms for corrupted or missing records\n   - Create user-friendly error messages and recovery suggestions\n   - Add logging and monitoring for sync operations and deletion processes",
-        "testStrategy": "1. **Synchronization Testing:**\n   - Test sync operations under various network conditions (offline, slow, intermittent)\n   - Verify data consistency between Supabase and WatermelonDB after sync operations\n   - Test conflict resolution scenarios with simultaneous edits from multiple devices\n   - Validate that orphaned posts are properly cleaned up during sync\n\n2. **Deletion System Testing:**\n   - Test post deletion with various post types (text, images, videos)\n   - Verify that all related records (comments, likes, media) are properly deleted\n   - Test soft delete functionality and recovery mechanisms\n   - Validate that Supabase Storage assets are cleaned up after post deletion\n   - Test batch deletion operations and administrative controls\n\n3. **Edge Case Testing:**\n   - Test deletion of posts with shared media assets\n   - Verify behavior when storage cleanup fails but database deletion succeeds\n   - Test sync recovery after extended offline periods\n   - Validate handling of corrupted or malformed data during sync\n\n4. **Performance Testing:**\n   - Measure sync performance with large datasets\n   - Test deletion performance with posts containing multiple media assets\n   - Verify that cleanup operations don't impact app responsiveness\n\n5. **Integration Testing:**\n   - Test the complete flow from community screen interaction to data persistence\n   - Verify that UI properly reflects sync status and deletion operations\n   - Test error scenarios and user feedback mechanisms",
-        "status": "done",
-        "dependencies": [
-          1
-        ],
-        "priority": "high",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Immediate Fix - Data Integrity & Cleanup",
-            "description": "Clean up orphaned posts in WatermelonDB that reference deleted Supabase data and improve error handling for broken image references to prevent app crashes and improve user experience.",
-            "dependencies": [],
-            "details": "1. Create a data cleanup utility to identify and remove orphaned posts in WatermelonDB that reference non-existent Supabase records. 2. Enhance NetworkResilientImage component to gracefully handle 404 errors and deleted images with fallback placeholders. 3. Add data validation in community screen queries to filter out posts with invalid references. 4. Implement immediate error recovery mechanisms that can detect and handle sync inconsistencies. 5. Add database integrity checks that run on app startup to identify and fix data corruption issues.",
-            "status": "done",
-            "testStrategy": "Create test scenarios with intentionally orphaned data, verify error handling with broken image URLs, and test data validation filters in community screen"
           },
           {
-            "id": 2,
-            "title": "Sync System Enhancement for Deletions",
-            "description": "Implement proper deletion synchronization from Supabase to WatermelonDB using existing sync infrastructure and add cascading cleanup for related data.",
+            "id": 7,
+            "title": "Fix Supabase-WatermelonDB Data Synchronization and Implement Post Deletion System",
+            "description": "Resolve critical data synchronization issues between Supabase and WatermelonDB causing orphaned posts with broken image URLs, and implement comprehensive post deletion functionality with proper cleanup of database records and Supabase Storage assets.",
+            "details": "1. **Diagnose Synchronization Issues:**\n   - Audit current sync mechanisms between Supabase and WatermelonDB\n   - Identify root causes of orphaned posts and broken image URL references\n   - Review database schema consistency between local and remote databases\n   - Analyze sync timing and conflict resolution strategies\n\n2. **Fix Data Synchronization:**\n   - Implement robust bidirectional sync with proper conflict resolution\n   - Add data validation layers to prevent orphaned records\n   - Create sync status tracking and error recovery mechanisms\n   - Implement incremental sync to reduce data transfer and improve performance\n   - Add retry logic with exponential backoff for failed sync operations\n   - Ensure referential integrity between posts and associated media assets\n\n3. **Implement Post Deletion System:**\n   - Create comprehensive deletion workflow that handles both database records and storage assets\n   - Implement cascade deletion for related records (comments, likes, media references)\n   - Add soft delete option with recovery mechanism for accidental deletions\n   - Create batch deletion capabilities for administrative purposes\n   - Implement proper authorization checks to ensure users can only delete their own posts\n\n4. **Storage Asset Management:**\n   - Implement automatic cleanup of Supabase Storage assets when posts are deleted\n   - Create orphaned asset detection and cleanup routines\n   - Add asset reference counting to prevent premature deletion of shared resources\n   - Implement storage quota management and cleanup policies\n\n5. **Error Handling and Recovery:**\n   - Add comprehensive error handling for sync failures\n   - Implement data recovery mechanisms for corrupted or missing records\n   - Create user-friendly error messages and recovery suggestions\n   - Add logging and monitoring for sync operations and deletion processes",
+            "testStrategy": "1. **Synchronization Testing:**\n   - Test sync operations under various network conditions (offline, slow, intermittent)\n   - Verify data consistency between Supabase and WatermelonDB after sync operations\n   - Test conflict resolution scenarios with simultaneous edits from multiple devices\n   - Validate that orphaned posts are properly cleaned up during sync\n\n2. **Deletion System Testing:**\n   - Test post deletion with various post types (text, images, videos)\n   - Verify that all related records (comments, likes, media) are properly deleted\n   - Test soft delete functionality and recovery mechanisms\n   - Validate that Supabase Storage assets are cleaned up after post deletion\n   - Test batch deletion operations and administrative controls\n\n3. **Edge Case Testing:**\n   - Test deletion of posts with shared media assets\n   - Verify behavior when storage cleanup fails but database deletion succeeds\n   - Test sync recovery after extended offline periods\n   - Validate handling of corrupted or malformed data during sync\n\n4. **Performance Testing:**\n   - Measure sync performance with large datasets\n   - Test deletion performance with posts containing multiple media assets\n   - Verify that cleanup operations don't impact app responsiveness\n\n5. **Integration Testing:**\n   - Test the complete flow from community screen interaction to data persistence\n   - Verify that UI properly reflects sync status and deletion operations\n   - Test error scenarios and user feedback mechanisms",
+            "status": "done",
             "dependencies": [
               1
             ],
-            "details": "1. Modify existing sync pull mechanisms to properly handle deleted records from Supabase using soft delete flags or deletion timestamps. 2. Implement cascading deletion logic that removes related comments, likes, and image references when a post is deleted. 3. Enhance conflict resolution to handle scenarios where posts are deleted on server but modified locally. 4. Add proper sync status tracking for deletion operations. 5. Implement incremental sync improvements to efficiently handle deletion events. 6. Add retry logic with exponential backoff for failed deletion sync operations.\n<info added on 2025-07-07T09:37:41.622Z>\nAnalysis completed using Supabase MCP tools. Current status shows deletion tracking infrastructure and basic sync functions are implemented and functional. However, three critical components remain incomplete: cascading deletion triggers for related data cleanup, conflict resolution mechanisms for delete-modify scenarios, and retry logic with exponential backoff for failed operations. The core deletion sync mechanism is working but requires completion of these advanced features to ensure robust data synchronization.\n</info added on 2025-07-07T09:37:41.622Z>\n<info added on 2025-07-07T09:45:08.516Z>\nCOMPLETED: All critical sync system enhancement components have been successfully implemented and integrated. The cascading deletion triggers using handle_post_deletion() function automatically manage related data cleanup. Conflict resolution is handled by handle_delete_modify_conflict() function with timestamp-based logic. The comprehensive SyncRetryService class provides exponential backoff retry logic with jitter and operation tracking. Storage asset management is handled by StorageCleanupService for automatic cleanup of Supabase Storage assets. Enhanced sync integration in core-sync.ts now uses retry service for both pull and push operations with full conflict resolution processing. CommunityService.deletePost() has been enhanced to utilize storage cleanup and retry services. All components include proper error handling, logging, and monitoring capabilities ensuring robust data synchronization with reliable deletion handling.\n</info added on 2025-07-07T09:45:08.516Z>",
-            "status": "done",
-            "testStrategy": "Test deletion sync scenarios including offline/online transitions, verify cascading deletions work correctly, and test conflict resolution with concurrent modifications"
-          },
-          {
-            "id": 3,
-            "title": "User Deletion Features Implementation",
-            "description": "Add user-facing post deletion functionality with proper UI components, mutations, and Supabase Storage cleanup.",
-            "dependencies": [
-              2
+            "priority": "high",
+            "subtasks": [
+              {
+                "id": 1,
+                "title": "Immediate Fix - Data Integrity & Cleanup",
+                "description": "Clean up orphaned posts in WatermelonDB that reference deleted Supabase data and improve error handling for broken image references to prevent app crashes and improve user experience.",
+                "dependencies": [],
+                "details": "1. Create a data cleanup utility to identify and remove orphaned posts in WatermelonDB that reference non-existent Supabase records. 2. Enhance NetworkResilientImage component to gracefully handle 404 errors and deleted images with fallback placeholders. 3. Add data validation in community screen queries to filter out posts with invalid references. 4. Implement immediate error recovery mechanisms that can detect and handle sync inconsistencies. 5. Add database integrity checks that run on app startup to identify and fix data corruption issues.",
+                "status": "done",
+                "testStrategy": "Create test scenarios with intentionally orphaned data, verify error handling with broken image URLs, and test data validation filters in community screen"
+              },
+              {
+                "id": 2,
+                "title": "Sync System Enhancement for Deletions",
+                "description": "Implement proper deletion synchronization from Supabase to WatermelonDB using existing sync infrastructure and add cascading cleanup for related data.",
+                "dependencies": [
+                  1
+                ],
+                "details": "1. Modify existing sync pull mechanisms to properly handle deleted records from Supabase using soft delete flags or deletion timestamps. 2. Implement cascading deletion logic that removes related comments, likes, and image references when a post is deleted. 3. Enhance conflict resolution to handle scenarios where posts are deleted on server but modified locally. 4. Add proper sync status tracking for deletion operations. 5. Implement incremental sync improvements to efficiently handle deletion events. 6. Add retry logic with exponential backoff for failed deletion sync operations.\n<info added on 2025-07-07T09:37:41.622Z>\nAnalysis completed using Supabase MCP tools. Current status shows deletion tracking infrastructure and basic sync functions are implemented and functional. However, three critical components remain incomplete: cascading deletion triggers for related data cleanup, conflict resolution mechanisms for delete-modify scenarios, and retry logic with exponential backoff for failed operations. The core deletion sync mechanism is working but requires completion of these advanced features to ensure robust data synchronization.\n</info added on 2025-07-07T09:37:41.622Z>\n<info added on 2025-07-07T09:45:08.516Z>\nCOMPLETED: All critical sync system enhancement components have been successfully implemented and integrated. The cascading deletion triggers using handle_post_deletion() function automatically manage related data cleanup. Conflict resolution is handled by handle_delete_modify_conflict() function with timestamp-based logic. The comprehensive SyncRetryService class provides exponential backoff retry logic with jitter and operation tracking. Storage asset management is handled by StorageCleanupService for automatic cleanup of Supabase Storage assets. Enhanced sync integration in core-sync.ts now uses retry service for both pull and push operations with full conflict resolution processing. CommunityService.deletePost() has been enhanced to utilize storage cleanup and retry services. All components include proper error handling, logging, and monitoring capabilities ensuring robust data synchronization with reliable deletion handling.\n</info added on 2025-07-07T09:45:08.516Z>",
+                "status": "done",
+                "testStrategy": "Test deletion sync scenarios including offline/online transitions, verify cascading deletions work correctly, and test conflict resolution with concurrent modifications"
+              },
+              {
+                "id": 3,
+                "title": "User Deletion Features Implementation",
+                "description": "Add user-facing post deletion functionality with proper UI components, mutations, and Supabase Storage cleanup.",
+                "dependencies": [
+                  2
+                ],
+                "details": "1. Add delete button to PostItem component with appropriate UI/UX design and confirmation dialogs. 2. Implement delete mutation for posts with optimistic updates to provide immediate feedback. 3. Create Supabase Storage cleanup functionality that removes associated images when posts are deleted. 4. Add proper loading states, error handling, and user feedback for deletion operations. 5. Implement permission checks to ensure users can only delete their own posts. 6. Add undo functionality for accidental deletions within a short time window. 7. Create batch deletion capabilities for administrative purposes.",
+                "status": "done",
+                "testStrategy": "Test deletion UI flow, verify storage cleanup works correctly, test permission restrictions, and validate optimistic updates with network failures"
+              },
+              {
+                "id": 4,
+                "title": "Long-term Resilience and Monitoring",
+                "description": "Implement comprehensive error recovery, monitoring, and self-healing mechanisms to ensure long-term data consistency and system reliability.",
+                "dependencies": [
+                  3
+                ],
+                "details": "1. Implement enhanced conflict resolution for complex edge cases involving concurrent deletions and modifications. 2. Add robust offline/online sync handling specifically for deletion scenarios. 3. Create comprehensive error recovery mechanisms that can automatically fix data inconsistencies. 4. Implement monitoring and logging systems for sync operations and deletion processes. 5. Add data consistency checks that run periodically to detect and fix sync issues. 6. Create self-healing mechanisms that can automatically recover from common sync failures. 7. Implement storage quota management and automated cleanup policies for orphaned assets. 8. Add performance monitoring for sync operations and deletion workflows.",
+                "status": "done",
+                "testStrategy": "Test complex sync scenarios, verify monitoring and logging capture issues correctly, test self-healing mechanisms with simulated failures, and validate performance under various load conditions"
+              }
             ],
-            "details": "1. Add delete button to PostItem component with appropriate UI/UX design and confirmation dialogs. 2. Implement delete mutation for posts with optimistic updates to provide immediate feedback. 3. Create Supabase Storage cleanup functionality that removes associated images when posts are deleted. 4. Add proper loading states, error handling, and user feedback for deletion operations. 5. Implement permission checks to ensure users can only delete their own posts. 6. Add undo functionality for accidental deletions within a short time window. 7. Create batch deletion capabilities for administrative purposes.",
-            "status": "done",
-            "testStrategy": "Test deletion UI flow, verify storage cleanup works correctly, test permission restrictions, and validate optimistic updates with network failures"
-          },
-          {
-            "id": 4,
-            "title": "Long-term Resilience and Monitoring",
-            "description": "Implement comprehensive error recovery, monitoring, and self-healing mechanisms to ensure long-term data consistency and system reliability.",
-            "dependencies": [
-              3
-            ],
-            "details": "1. Implement enhanced conflict resolution for complex edge cases involving concurrent deletions and modifications. 2. Add robust offline/online sync handling specifically for deletion scenarios. 3. Create comprehensive error recovery mechanisms that can automatically fix data inconsistencies. 4. Implement monitoring and logging systems for sync operations and deletion processes. 5. Add data consistency checks that run periodically to detect and fix sync issues. 6. Create self-healing mechanisms that can automatically recover from common sync failures. 7. Implement storage quota management and automated cleanup policies for orphaned assets. 8. Add performance monitoring for sync operations and deletion workflows.",
-            "status": "done",
-            "testStrategy": "Test complex sync scenarios, verify monitoring and logging capture issues correctly, test self-healing mechanisms with simulated failures, and validate performance under various load conditions"
+            "parentTaskId": 1
           }
         ]
       },
