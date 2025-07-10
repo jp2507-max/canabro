@@ -494,12 +494,215 @@
             "testStrategy": "Perform comprehensive testing of entire app in German language, test lazy loading performance, verify fallback mechanisms work correctly, test translation validation tools, and conduct user acceptance testing with German-speaking users."
           }
         ]
+      },
+      {
+        "id": 6,
+        "title": "Setup Expo SDK 53 Project with TypeScript",
+        "description": "Initialize the React Native project using Expo SDK 53 with TypeScript strict mode configuration and essential development tools",
+        "details": "Create new Expo project using `npx create-expo-app@latest CanaBro --template blank-typescript`. Configure TypeScript strict mode in tsconfig.json. Setup ESLint with @typescript-eslint/parser and Prettier for code formatting. Install core dependencies: expo@~53.0.0, react-native@0.79.x, typescript@^5.3.0. Configure app.json with proper bundle identifiers and permissions (camera, photo library, notifications). Setup development scripts and environment configuration.",
+        "testStrategy": "Verify project builds successfully on both iOS and Android simulators. Test TypeScript compilation with strict mode. Validate ESLint and Prettier configuration.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Configure Expo Router v5 Navigation",
+        "description": "Implement file-based routing system with Expo Router v5 including tab navigation and deep linking support",
+        "details": "Install expo-router@^5.0.0 and configure app/_layout.tsx as root layout. Create tab-based navigation structure: app/(tabs)/_layout.tsx with tabs for Plants, Community, Strains, Calendar, and Profile. Implement stack navigation for detailed screens. Configure deep linking with proper URL schemes. Setup typed navigation with TypeScript definitions. Create reusable navigation components and hooks for consistent navigation patterns.",
+        "testStrategy": "Test navigation between all tab screens and nested stacks. Verify deep linking functionality with test URLs. Validate TypeScript navigation types and autocomplete.",
+        "priority": "high",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Setup NativeWind v4 Styling System",
+        "description": "Configure NativeWind v4 with semantic color tokens, dark mode support, and responsive design system",
+        "details": "Install nativewind@^4.0.0 and tailwindcss@^3.4.0. Configure tailwind.config.js with custom color palette for cannabis theme (greens, earth tones). Setup semantic color tokens for light/dark modes. Configure responsive breakpoints for different screen sizes. Create utility classes for common patterns. Setup CSS variables for dynamic theming. Implement theme provider with React Context for mode switching.",
+        "testStrategy": "Test styling consistency across iOS and Android. Verify dark/light mode switching. Validate responsive design on different screen sizes.",
+        "priority": "high",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Integrate Supabase Authentication",
+        "description": "Setup Supabase client with authentication system supporting email/password and social login options",
+        "details": "Install @supabase/supabase-js@^2.45.0 and configure Supabase client with environment variables. Setup authentication with email/password, Google, and Apple sign-in. Implement auth context with React Context API for global auth state. Create login, register, and password reset screens. Setup secure token storage using expo-secure-store@^13.0.0. Implement auth guards for protected routes. Configure RLS policies in Supabase for user data security.",
+        "testStrategy": "Test user registration, login, logout flows. Verify token persistence and automatic session restoration. Test social login integration on devices.",
+        "priority": "high",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Design Supabase Database Schema",
+        "description": "Create comprehensive database schema for users, plants, strains, community posts, and related entities with proper relationships",
+        "details": "Design PostgreSQL schema with tables: users (profiles, preferences), plants (growth_stage, strain_id, photos), strains (effects, characteristics), community_posts (type: question/share), comments, likes, tasks, and plant_photos. Implement proper foreign key relationships and indexes. Setup RLS policies for data security. Create database functions for complex queries. Use UUID primary keys and proper timestamp handling. Setup database triggers for updated_at fields.",
+        "testStrategy": "Validate schema with sample data insertion. Test RLS policies with different user roles. Verify foreign key constraints and cascading deletes.",
+        "priority": "high",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Setup WatermelonDB Local Database",
+        "description": "Configure WatermelonDB for offline data storage with models matching Supabase schema and sync capabilities",
+        "details": "Install @nozbe/watermelondb@^0.27.0 and configure with SQLite adapter. Create models for User, Plant, Strain, Post, Comment, Task with proper decorators and relationships. Setup database schema migrations. Implement sync adapter for Supabase integration. Configure lazy loading for performance. Setup database indexes for common queries. Implement data validation with model decorators.",
+        "testStrategy": "Test CRUD operations on all models. Verify relationships and lazy loading. Test database migrations and schema updates.",
+        "priority": "high",
+        "dependencies": [
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement TanStack Query v5 State Management",
+        "description": "Setup TanStack Query for server state management with caching, optimistic updates, and error handling",
+        "details": "Install @tanstack/react-query@^5.0.0 and setup QueryClient with proper cache configuration. Create custom hooks for all API operations (plants, strains, posts, comments). Implement optimistic updates for better UX. Setup error boundaries and retry logic. Configure background refetching and stale-while-revalidate patterns. Implement infinite queries for paginated data. Setup query invalidation strategies for data consistency.",
+        "testStrategy": "Test query caching and invalidation. Verify optimistic updates rollback on errors. Test offline behavior and background sync.",
+        "priority": "medium",
+        "dependencies": [
+          9,
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Build Core Plant Management System",
+        "description": "Create comprehensive plant management features including CRUD operations, photo capture, and growth stage tracking",
+        "details": "Build plant list screen with search and filtering. Create add/edit plant forms with validation using react-hook-form@^7.48.0. Implement photo capture using expo-camera@^15.0.0 and expo-image-picker@^15.0.0. Setup image compression and upload to Supabase Storage. Create growth stage selector with visual indicators. Implement plant detail screen with photo gallery and notes. Add plant health tracking with metrics input. Setup plant deletion with confirmation dialogs.",
+        "testStrategy": "Test plant CRUD operations with validation. Verify photo capture and upload functionality. Test growth stage transitions and data persistence.",
+        "priority": "high",
+        "dependencies": [
+          7,
+          8,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Develop Strain Database Integration",
+        "description": "Implement strain browsing, search, filtering, and integration with external strain APIs",
+        "details": "Create strain list screen with search and advanced filtering (effects, difficulty, flowering time). Implement strain detail screen with comprehensive information display. Setup integration with external strain API via RapidAPI. Create strain favorites system with local storage. Implement strain-to-plant linking functionality. Setup strain data caching and offline access. Create strain comparison feature for side-by-side analysis.",
+        "testStrategy": "Test strain search and filtering performance. Verify external API integration and error handling. Test strain-plant linking and data consistency.",
+        "priority": "medium",
+        "dependencies": [
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Create Community Q&A System",
+        "description": "Build community platform for questions and plant sharing with engagement features",
+        "details": "Create community feed with infinite scroll using FlashList@^1.6.0. Implement post creation forms for questions and plant shares with image upload. Build engagement system with likes and comments using Supabase realtime subscriptions. Create content filtering and moderation tools. Implement user profiles and activity tracking. Setup push notifications for community interactions using expo-notifications@^0.28.0. Add content reporting and flagging system.",
+        "testStrategy": "Test real-time updates and notifications. Verify content moderation and reporting. Test infinite scroll performance with large datasets.",
+        "priority": "medium",
+        "dependencies": [
+          8,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Implement Data Synchronization",
+        "description": "Build robust sync system between WatermelonDB and Supabase with conflict resolution",
+        "details": "Implement bidirectional sync between WatermelonDB and Supabase using sync adapters. Setup conflict resolution strategies (last-write-wins, user-choice). Implement incremental sync with timestamps and change tracking. Create sync status indicators and error handling. Setup automatic sync on app foreground and manual sync triggers. Implement data migration strategies for schema changes. Add sync queue for offline operations.",
+        "testStrategy": "Test sync with concurrent modifications. Verify conflict resolution scenarios. Test offline-to-online sync reliability and data integrity.",
+        "priority": "high",
+        "dependencies": [
+          11,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Build Calendar and Task Management",
+        "description": "Create growing calendar with task scheduling, reminders, and growth timeline visualization",
+        "details": "Install react-native-calendars@^1.1302.0 for calendar component. Create task creation and management system with categories (watering, feeding, pruning). Implement recurring task templates and custom schedules. Setup local notifications using expo-notifications for reminders. Create timeline view for plant growth milestones. Implement task completion tracking and history. Add calendar integration with plant growth stages.",
+        "testStrategy": "Test task scheduling and notification delivery. Verify calendar performance with large datasets. Test recurring task generation and completion tracking.",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Develop Plant Diagnosis System",
+        "description": "Create plant health diagnosis tools with symptom identification and treatment recommendations",
+        "details": "Build symptom identification wizard with visual guides and photo comparison. Create treatment recommendation engine with evidence-based solutions. Implement plant problem database with searchable symptoms and solutions. Setup AI-powered analysis preparation (model integration placeholder). Create diagnostic history tracking for plants. Implement expert guidance system with cultivation best practices. Add integration with community for expert advice.",
+        "testStrategy": "Test diagnosis wizard flow and accuracy. Verify treatment recommendations relevance. Test diagnostic history and data persistence.",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Implement Internationalization (i18n)",
+        "description": "Setup comprehensive localization system with German translation and locale-aware formatting",
+        "details": "Install expo-localization@^15.0.0 and i18next@^23.7.0 with react-i18next@^13.5.0. Create translation files for English and German with proper namespacing. Implement locale detection and switching. Setup date/time formatting with locale awareness using date-fns@^3.0.0. Create number and currency formatting utilities. Implement RTL support preparation. Setup translation key extraction and validation tools.",
+        "testStrategy": "Test language switching and persistence. Verify German translations accuracy and completeness. Test locale-aware formatting across different regions.",
+        "priority": "medium",
+        "dependencies": [
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Optimize Performance and Animations",
+        "description": "Implement React Native Reanimated v3 animations and optimize app performance for smooth user experience",
+        "details": "Install react-native-reanimated@^3.6.0 and setup worklets. Implement smooth page transitions and micro-interactions. Optimize image loading with expo-image@^1.10.0 and lazy loading. Setup performance monitoring with Flipper integration. Implement virtual lists for large datasets using FlashList. Optimize bundle size with Metro bundler configuration. Add animation performance profiling and optimization. Create loading states and skeleton screens.",
+        "testStrategy": "Profile animation performance on low-end devices. Test memory usage with large image datasets. Verify smooth scrolling and navigation transitions.",
+        "priority": "medium",
+        "dependencies": [
+          7,
+          8,
+          13,
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-07-05T20:15:26.619Z",
-      "description": "Default tasks context",
-      "updated": "2025-07-10T07:08:07.677Z"
+      "updated": "2025-07-10T15:36:19.136Z",
+      "description": "Tasks for master context"
     }
   }
 }

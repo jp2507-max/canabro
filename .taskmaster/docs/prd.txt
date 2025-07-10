@@ -1,0 +1,201 @@
+# CanaBro - Cannabis Growing Management App PRD
+
+## Overview
+CanaBro is a comprehensive mobile application for cannabis cultivation management, built with Expo SDK 53 and React Native 0.79. The app provides growers with tools to track their plants, access strain information, manage growing schedules, diagnose plant issues, and connect with a community of fellow cultivators. The platform combines local plant tracking with cloud-based community features and real-time synchronization.
+
+## Core Features
+
+### 1. Plant Management & Tracking
+- **Personal Plant Collection**: Users can add, edit, and track individual cannabis plants with detailed profiles including strain, growth stage, photos, and cultivation notes
+- **Growth Stage Tracking**: Monitor plants through different phases (seedling, vegetative, flowering, harvest) with stage-specific guidance and reminders
+- **Photo Documentation**: Integration with device camera and photo library for visual plant progress tracking
+- **Plant Health Monitoring**: Track plant health metrics, environmental conditions, and growth milestones
+
+### 2. Community Platform
+- **Q&A Section**: Users can ask cultivation questions and receive answers from experienced growers
+- **Plant Sharing**: Share photos and details of successful grows with the community
+- **Engagement Features**: Like and comment system for community interaction
+- **Content Filtering**: Separate question and plant share content types with specialized creation flows
+
+### 3. Strain Database & Information
+- **Comprehensive Strain Catalog**: Searchable database of cannabis strains with detailed information
+- **Strain Characteristics**: Effects, growing difficulty, flowering time, yield information
+- **Strain Filtering**: Advanced filtering by effects, growing conditions, and user preferences
+- **Strain-to-Plant Linking**: Connect personal plants to strain database entries
+
+### 4. Growing Calendar & Schedule Management
+- **Task Scheduling**: Set and track cultivation tasks (watering, feeding, pruning, etc.)
+- **Growth Reminders**: Automated notifications for important cultivation milestones
+- **Calendar View**: Visual calendar interface for planning and tracking cultivation activities
+- **Custom Schedule Templates**: Pre-built and customizable growing schedules
+
+### 5. Plant Diagnosis & Problem Solving
+- **Symptom Identification**: Visual guides and tools to identify plant health issues
+- **Treatment Recommendations**: Evidence-based solutions for common cannabis growing problems
+- **AI-Powered Analysis**: Potential integration of machine learning for plant issue detection
+- **Expert Guidance**: Access to cultivation best practices and troubleshooting guides
+
+### 6. User Profile & Settings
+- **Personal Dashboard**: Overview of user's plants, recent activity, and upcoming tasks
+- **Experience Tracking**: Track growing experience level and cultivation achievements
+- **Preference Management**: Customize app settings, notification preferences, and privacy controls
+- **Multi-language Support**: German localization with robust i18n system
+
+## User Experience
+
+### User Personas
+1. **Beginner Growers**: New to cannabis cultivation, need guidance and community support
+2. **Experienced Cultivators**: Seeking advanced tools and community engagement
+3. **Medical Patients**: Focus on specific strains and precise cultivation for medical needs
+4. **Commercial Growers**: Managing multiple plants with detailed tracking requirements
+
+### Key User Flows
+1. **Onboarding Flow**: Account creation, profile setup, and first plant addition
+2. **Daily Management**: Check plant status, complete tasks, update growth progress
+3. **Community Engagement**: Browse questions/shares, contribute content, interact with posts
+4. **Strain Research**: Search strains, read details, save favorites, link to plants
+5. **Problem Resolution**: Identify plant issues, seek community help, implement solutions
+
+### UI/UX Considerations
+- **Mobile-First Design**: Optimized for iOS and Android with responsive layouts
+- **Dark Mode Support**: Full theming system with automatic and manual mode switching
+- **Accessibility**: Screen reader support, semantic roles, and inclusive design patterns
+- **Offline Capability**: Local data storage with sync when connectivity returns
+- **Performance**: Optimized for smooth animations and fast load times
+
+## Technical Architecture
+
+### System Components
+- **Frontend**: React Native 0.79 with Expo SDK 53, TypeScript strict mode
+- **Navigation**: File-based routing with Expo Router v5, deep linking support
+- **State Management**: TanStack Query v5 for server state, React Context for global client state
+- **Local Database**: WatermelonDB for offline data storage and relationships
+- **Backend**: Supabase for authentication, database, real-time subscriptions, and file storage
+- **Styling**: NativeWind v4 with semantic color tokens and responsive design
+- **Animations**: React Native Reanimated v3 for smooth, performant animations
+
+### Data Models
+- **Users**: Profile information, preferences, authentication data
+- **Plants**: Individual plant records with growth tracking and media
+- **Strains**: Cannabis strain database with characteristics and effects
+- **Community Posts**: Questions and plant shares with engagement metrics
+- **Tasks**: Calendar events and cultivation reminders
+- **Comments**: Community interaction and engagement data
+
+### APIs and Integrations
+- **Supabase REST API**: CRUD operations for all data entities
+- **Supabase Realtime**: Live updates for community features
+- **Supabase Storage**: Image and file uploads with CDN delivery
+- **Device APIs**: Camera, photo library, notifications, location (optional)
+- **External Strain API**: Third-party strain database integration via RapidAPI
+
+### Infrastructure Requirements
+- **Supabase Cloud**: Database, authentication, storage, and edge functions
+- **EAS Build**: Cloud build service for iOS and Android app compilation
+- **EAS Update**: Over-the-air updates for rapid deployment
+- **Expo Application Services**: Push notifications and analytics
+- **CDN**: Fast global content delivery for images and assets
+
+## Development Roadmap
+
+### MVP Phase 1: Core Plant Management
+- Basic plant CRUD operations with local storage
+- Photo capture and gallery integration
+- Simple growth stage tracking
+- User authentication and profile management
+- Basic strain database browsing
+- Essential UI components and navigation
+
+### Phase 2: Community Features
+- Community question and plant sharing system
+- Like and comment functionality
+- Real-time updates and notifications
+- Advanced plant management features
+- Enhanced strain filtering and search
+- Calendar and task management basics
+
+### Phase 3: Advanced Features & Polish
+- Plant diagnosis and AI analysis tools
+- Advanced calendar with custom schedules
+- Comprehensive localization (German)
+- Performance optimizations and caching
+- Advanced community features (user profiles, following)
+- Detailed analytics and insights
+
+### Phase 4: Scale & Enhancement
+- Multi-plant management dashboards
+- Commercial growing features
+- API partnerships and integrations
+- Advanced AI and machine learning features
+- Social features and community building
+- Platform expansion considerations
+
+## Logical Dependency Chain
+
+### Foundation Layer (Must Build First)
+1. **Authentication System**: User registration, login, profile management
+2. **Database Schema**: Core tables for users, plants, strains, posts
+3. **Navigation Framework**: App routing, tab navigation, screen structure
+4. **Basic UI Components**: Themed components, form inputs, common layouts
+
+### Core Functionality (Build for Quick Usability)
+1. **Plant Management**: Add/edit plants, photo capture, basic tracking
+2. **Strain Database**: Browse strains, search/filter, view details
+3. **Data Synchronization**: Supabase-WatermelonDB sync, offline capability
+4. **Community MVP**: Basic post creation, viewing, simple engagement
+
+### Enhancement Layer (Iterate and Improve)
+1. **Advanced Community**: Comments, likes, real-time updates, content filtering
+2. **Calendar System**: Task scheduling, reminders, growth timeline
+3. **Diagnosis Tools**: Plant problem identification, treatment guides
+4. **Localization**: German translation, i18n infrastructure
+
+### Scale & Polish (Continuous Improvement)
+1. **Performance Optimization**: Caching, lazy loading, animation performance
+2. **Advanced Features**: AI analysis, detailed analytics, social features
+3. **Platform Expansion**: Web app, additional languages, API ecosystem
+4. **Commercial Features**: Multi-plant dashboards, business tools
+
+## Risks and Mitigations
+
+### Technical Challenges
+- **Risk**: Complex data synchronization between local and cloud storage
+- **Mitigation**: Use proven sync patterns, implement conflict resolution, comprehensive testing
+
+- **Risk**: Performance issues with large datasets and complex UI
+- **Mitigation**: Implement virtual lists, lazy loading, optimize animations, use performance monitoring
+
+- **Risk**: Cross-platform compatibility and native feature access
+- **Mitigation**: Use Expo managed workflow, test on multiple devices, implement feature detection
+
+### MVP Definition and Scope
+- **Risk**: Feature creep preventing timely MVP delivery
+- **Mitigation**: Strict MVP scope definition, prioritize core user value, defer advanced features
+
+- **Risk**: Over-engineering early features that may change
+- **Mitigation**: Build minimal viable implementations, focus on user feedback, iterate quickly
+
+### Resource Constraints
+- **Risk**: Limited development resources for comprehensive feature set
+- **Mitigation**: Phased development approach, prioritize high-impact features, leverage existing libraries
+
+- **Risk**: Third-party API dependencies and rate limits
+- **Mitigation**: Implement caching strategies, use fallback options, monitor usage patterns
+
+## Appendix
+
+### Research Findings
+- Cannabis cultivation apps market analysis shows demand for comprehensive, community-driven solutions
+- User research indicates preference for visual tracking, expert guidance, and peer support
+- Technical research confirms viability of React Native + Supabase architecture for real-time apps
+
+### Technical Specifications
+- **Minimum OS**: iOS 16.0+, Android API 23+
+- **Performance Targets**: App launch < 3s, navigation < 500ms, image load < 2s
+- **Offline Support**: 7 days of local data storage, automatic sync on reconnection
+- **Accessibility**: WCAG 2.1 AA compliance, screen reader support, keyboard navigation
+
+### Compliance and Legal
+- **Data Privacy**: GDPR compliance for German users, transparent data handling
+- **Content Moderation**: Community guidelines, reporting system, automated content filtering
+- **Legal Compliance**: Age verification, jurisdiction-specific cannabis law awareness
