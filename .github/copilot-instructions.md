@@ -48,5 +48,7 @@ applyTo: "**"
 - **only for Animation**: `.github/instructions/React Native Reanimated Best Practices.instructions.md`
 - **Build/Release/Testing**: `tasks/`, `scripts/`
 
+- **Product Requirements Document (PRD)**: `.taskmaster/docs/prd.txt`
+
 ---
 If any section is unclear or incomplete, please provide feedback for further iteration.
