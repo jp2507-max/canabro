@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 import React, { useCallback, useState, useMemo } from 'react';
 
 import CalendarScreenView from './CalendarScreenView';
@@ -23,7 +23,7 @@ function CalendarScreenContainer({
   const [loading, setLoading] = useState(true);
   const { refreshing, handleRefresh } = usePullToRefresh();
   const [isTaskActionsVisible, setTaskActionsVisible] = useState(false);
-  const router = useRouter();
+  const router = useSafeRouter();
 
   // Normalize selectedDate with defensive fallback
   const normalizedDate = useMemo(() => {

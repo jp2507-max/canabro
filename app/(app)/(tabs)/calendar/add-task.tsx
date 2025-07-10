@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EnhancedKeyboardWrapper from '../../../../components/keyboard/EnhancedKeyboardWrapper';
 
@@ -15,7 +16,7 @@ interface TaskFormData {
 }
 
 export default function AddTaskScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { selectedDate } = useLocalSearchParams<{ selectedDate?: string }>();
   const { session: _session } = useAuth();
 

@@ -39,7 +39,7 @@ export default {
         {
           ios: {
             useFrameworks: 'static',
-            deploymentTarget: '15.1',
+            deploymentTarget: '16.0',
             extraPodspecDependencies: {
               simdjson: '../node_modules/@nozbe/simdjson',
             },
@@ -74,7 +74,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.canabro.app',
-      deploymentTarget: '15.1',
+      deploymentTarget: '16.0',
       config: {
         usesNonExemptEncryption: false,
       },

@@ -1,17 +1,18 @@
 import { Database } from '@nozbe/watermelondb';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import * as React from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EnhancedPlantList } from '../../../components/PlantList';
+import { useTranslation } from 'react-i18next';
 import AddPlantModal from '../../../components/ui/AddPlantModal';
 import FloatingActionButton from '../../../components/ui/FloatingActionButton';
 import HomeHeader from '../../../components/ui/HomeHeader';
 import ThemedText from '../../../components/ui/ThemedText';
 import usePullToRefresh from '../../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 
 interface HomeScreenProps {
   database: Database;
@@ -21,7 +22,8 @@ interface HomeScreenProps {
 type TaskRoute = '/(app)/(tabs)/calendar/add-plant-task' | '/(app)/(tabs)/calendar/add-task';
 
 function HomeScreen({ database }: HomeScreenProps) {
-  const router = useRouter();
+  const { t } = useTranslation();
+  const router = useSafeRouter();
   const { refreshing, handleRefresh } = usePullToRefresh({ showFeedback: true, forceSync: true });
   const [isAddPlantModalVisible, setIsAddPlantModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +50,27 @@ function HomeScreen({ database }: HomeScreenProps) {
     router.push(route);
   };
 
-  const fabActions = [
+  type IconName =
+    | 'default'
+    | 'search'
+    | 'leaf-outline'
+    | 'pencil-outline'
+    | 'layers-outline'
+    | 'close-outline'
+    | 'add-outline'
+    | 'add'
+    | 'close'
+    | 'checkmark'
+    | 'checkmark-circle'
+    | 'chevron-forward';
+
+  const fabActions: Array<{
+    iconName: IconName;
+    onPress: () => void;
+    accessibilityLabel: string;
+    size: number;
+    label: string;
+  }> = [
     {
       iconName: 'leaf-outline',
       onPress: handleAddPlant,
@@ -101,7 +123,7 @@ function HomeScreen({ database }: HomeScreenProps) {
                 )}
                 {/* Individual FABs no longer need absolute positioning as they are in a View container */}
                 <FloatingActionButton
-                  iconName={action.iconName as any}
+                  iconName={action.iconName}
                   onPress={action.onPress}
                   accessibilityLabel={action.accessibilityLabel}
                   size={40} // Smaller size for action buttons - remains 40

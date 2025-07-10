@@ -1,0 +1,11 @@
+# Task ID: 11
+# Title: Setup WatermelonDB Local Database
+# Status: pending
+# Dependencies: 10
+# Priority: high
+# Description: Configure WatermelonDB for offline data storage with models matching Supabase schema and sync capabilities
+# Details:
+Install @nozbe/watermelondb@^0.27.0 and configure with SQLite adapter. Create models for User, Plant, Strain, Post, Comment, Task with proper decorators and relationships. Setup database schema migrations. Implement sync adapter for Supabase integration. Configure lazy loading for performance. Setup database indexes for common queries. Implement data validation with model decorators.
+
+# Test Strategy:
+Test CRUD operations on all models. Verify relationships and lazy loading. Test database migrations and schema updates.

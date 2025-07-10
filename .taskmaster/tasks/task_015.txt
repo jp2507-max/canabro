@@ -1,0 +1,11 @@
+# Task ID: 15
+# Title: Create Community Q&A System
+# Status: pending
+# Dependencies: 8, 12
+# Priority: medium
+# Description: Build community platform for questions and plant sharing with engagement features
+# Details:
+Create community feed with infinite scroll using FlashList@^1.6.0. Implement post creation forms for questions and plant shares with image upload. Build engagement system with likes and comments using Supabase realtime subscriptions. Create content filtering and moderation tools. Implement user profiles and activity tracking. Setup push notifications for community interactions using expo-notifications@^0.28.0. Add content reporting and flagging system.
+
+# Test Strategy:
+Test real-time updates and notifications. Verify content moderation and reporting. Test infinite scroll performance with large datasets.

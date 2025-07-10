@@ -477,6 +477,35 @@ const migrations = schemaMigrations({
         // Existing data will remain on user devices but will be ignored.
       ],
     },
+    // Migration to version 28: Re-introduce favorite_strains table that was removed in v27
+    // We use createTable which is idempotent on iOS (uses IF NOT EXISTS) and Android (will no-op if the table exists)
+    // so it will safely run for devices that still have the table from older versions.
+    {
+      toVersion: 28,
+      steps: [
+        createTable({
+          name: 'favorite_strains',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'strain_id', type: 'string', isIndexed: true },
+            { name: 'strain_object_id', type: 'string', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 29: Clean up orphaned local posts data
+    // This migration ensures any remaining local posts table data is properly handled
+    // The posts table was removed from schema in v26 and the community tables in v27
+    {
+      toVersion: 29,
+      steps: [
+        // This migration triggers the data integrity service to clean up any orphaned local posts
+        // No schema changes needed as the table is already removed from schema.ts
+        // The cleanup will be handled by the data integrity service when it detects the version bump
+      ],
+    },
   ],
 });
 

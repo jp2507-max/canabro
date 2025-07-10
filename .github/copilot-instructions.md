@@ -6,7 +6,7 @@ applyTo: "**"
 # CanaBro AI Coding Agent Instructions (2025)
 
 ## 🏗️ Project Architecture & Data Flow
-- **Expo SDK 53 + React Native 0.74**: Modern, modular, and mobile-first. All navigation is file-based via Expo Router v5 (`app/` structure). Deep linking and dynamic routes are supported.
+- **Expo SDK 53 + React Native 0.79**: Modern, modular, and mobile-first. All navigation is file-based via Expo Router v5 (`app/` structure). Deep linking and dynamic routes are supported.
 - **TypeScript strict mode**: All code is typed. Use interfaces, never enums. Structure files: main export, subcomponents, helpers, types.
 - **State Management**: Server state via TanStack Query v5 (`@tanstack/react-query`), global client state via React Context + useReducer, local DB via WatermelonDB. Supabase is the backend (auth, DB, real-time, storage).
 - **Styling**: NativeWind v4 is the only styling system. Use semantic color tokens (see `global.css`), never hardcoded colors. All layouts use safe area utilities (`pt-safe`, `h-screen-safe`).
@@ -44,8 +44,8 @@ applyTo: "**"
 7. **Document only what is discoverable in the codebase, not aspirational practices.**
 
 ## 📚 Reference Files
-- **Styling**: `.github/instructions/Nativewind Theming Best Practices.instructions.md`
-- **Animation**: `.github/instructions/React Native Reanimated Best Practices.instructions.md`
+- **only for Styling**: `.github/instructions/Nativewind Theming Best Practices.instructions.md`
+- **only for Animation**: `.github/instructions/React Native Reanimated Best Practices.instructions.md`
 - **Build/Release/Testing**: `tasks/`, `scripts/`
 
 ---

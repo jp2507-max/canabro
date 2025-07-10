@@ -3616,3 +3616,40 @@ export default function CreatePlantShareScreen() {
 **Dependencies: Phase 3 (UI Components)**
 **Deliverables: Complete creation flows, specialized screens, enhanced modal, form validation, plant integration**
 
+## 7. Fix Supabase-WatermelonDB Data Synchronization and Implement Post Deletion System [done]
+### Dependencies: 1.1
+### Description: Resolve critical data synchronization issues between Supabase and WatermelonDB causing orphaned posts with broken image URLs, and implement comprehensive post deletion functionality with proper cleanup of database records and Supabase Storage assets.
+### Details:
+1. **Diagnose Synchronization Issues:**
+   - Audit current sync mechanisms between Supabase and WatermelonDB
+   - Identify root causes of orphaned posts and broken image URL references
+   - Review database schema consistency between local and remote databases
+   - Analyze sync timing and conflict resolution strategies
+
+2. **Fix Data Synchronization:**
+   - Implement robust bidirectional sync with proper conflict resolution
+   - Add data validation layers to prevent orphaned records
+   - Create sync status tracking and error recovery mechanisms
+   - Implement incremental sync to reduce data transfer and improve performance
+   - Add retry logic with exponential backoff for failed sync operations
+   - Ensure referential integrity between posts and associated media assets
+
+3. **Implement Post Deletion System:**
+   - Create comprehensive deletion workflow that handles both database records and storage assets
+   - Implement cascade deletion for related records (comments, likes, media references)
+   - Add soft delete option with recovery mechanism for accidental deletions
+   - Create batch deletion capabilities for administrative purposes
+   - Implement proper authorization checks to ensure users can only delete their own posts
+
+4. **Storage Asset Management:**
+   - Implement automatic cleanup of Supabase Storage assets when posts are deleted
+   - Create orphaned asset detection and cleanup routines
+   - Add asset reference counting to prevent premature deletion of shared resources
+   - Implement storage quota management and cleanup policies
+
+5. **Error Handling and Recovery:**
+   - Add comprehensive error handling for sync failures
+   - Implement data recovery mechanisms for corrupted or missing records
+   - Create user-friendly error messages and recovery suggestions
+   - Add logging and monitoring for sync operations and deletion processes
+

@@ -7,8 +7,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { useTranslation } from 'react-i18next';
 
 interface StrainLoadingStateProps {
   message?: string;
@@ -73,7 +75,9 @@ const SkeletonCard = memo(() => {
 SkeletonCard.displayName = 'SkeletonCard';
 
 const StrainLoadingState = memo<StrainLoadingStateProps>(
-  ({ message = 'Loading strains...', showSkeletons = true }) => {
+  ({ message, showSkeletons = true }) => {
+    const { t } = useTranslation();
+    const loadingMsg = message || t('strains.loading', 'Loading strains...');
     if (showSkeletons) {
       return (
         <View className="flex-1">
@@ -97,8 +101,8 @@ const StrainLoadingState = memo<StrainLoadingStateProps>(
           variant="muted"
           className="text-center text-lg"
           accessible
-          accessibilityLabel={message}>
-          {message}
+          accessibilityLabel={loadingMsg}>
+          {loadingMsg}
         </ThemedText>
       </ThemedView>
     );

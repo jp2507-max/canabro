@@ -2,6 +2,7 @@
 import { Image as ExpoImage } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import React, { memo, useMemo, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, ScrollView, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -23,7 +24,7 @@ import {
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 
 // Local Components
-import placeholderImageSource from '../../assets/images/placeholder.png';
+import placeholderImageSource from '../../assets/placeholder.png';
 
 import EffectTag from '@/components/strains/EffectTag';
 import FlavorTag from '@/components/strains/FlavorTag';
@@ -76,9 +77,9 @@ interface StrainsViewProps {
 }
 
 const CATEGORIES_NEW = [
-  { id: 'sativa', name: 'Sativa', icon: 'white-balance-sunny', emoji: '🌞' },
-  { id: 'indica', name: 'Indica', icon: 'moon-waning-crescent', emoji: '🌙' },
-  { id: 'hybrid', name: 'Hybrid', icon: 'palette-swatch', emoji: '🧬' },
+  { id: 'sativa', icon: 'white-balance-sunny', emoji: '🌞' },
+  { id: 'indica', icon: 'moon-waning-crescent', emoji: '🌙' },
+  { id: 'hybrid', icon: 'palette-swatch', emoji: '🧬' },
 ] as const;
 
 // ✅ MIGRATED: Simple helper that returns CSS colors for strain types
@@ -121,7 +122,8 @@ const StrainCard = memo(
     isFavorite?: boolean;
     onToggleFavorite?: (id: string) => void;
   }) => {
-    // 🎯 React Compiler Compatible Animation
+  const { t } = useTranslation();
+  // 🎯 React Compiler Compatible Animation
     const scale = useSharedValue(1);
     const pressed = useSharedValue(false);
 
@@ -215,12 +217,12 @@ const StrainCard = memo(
     // Ensure all required properties exist
     const safeItem = {
       id: item.id || item._id || 'unknown',
-      name: item.name || 'Unknown Strain',
+      name: item.name || t('strains.unknownStrain'),
       type: actualType, // Use the accurately determined type
       image: item.image || item.imageUrl || placeholderImageSource,
       description: Array.isArray(item.description)
         ? item.description[0]
-        : item.description || 'No description available.',
+        : item.description || t('strains.noDescription'),
       growDifficulty: item.growDifficulty || null,
       effects: Array.isArray(item.effects) ? item.effects : [],
       flavors: Array.isArray(item.flavors) ? item.flavors : [],
@@ -232,7 +234,6 @@ const StrainCard = memo(
     const strainType = safeItem.type || 'hybrid';
     const strainTypeConfig = CATEGORIES_NEW.find((c) => c.id === strainType) || {
       id: 'hybrid',
-      name: 'Hybrid',
       icon: 'palette-swatch',
       emoji: '🧬',
     };
@@ -276,7 +277,7 @@ const StrainCard = memo(
             <ThemedText
               className="text-xs font-bold text-white"
               style={{ textShadowColor: 'rgb(var(--color-neutral-900))', textShadowRadius: 4 }}>
-              {safeItem.type.charAt(0).toUpperCase() + safeItem.type.slice(1)}
+              {t(`strains.type.${safeItem.type}`)}
             </ThemedText>
           </View>
 
@@ -285,7 +286,7 @@ const StrainCard = memo(
               style={favoriteAnimation}
               className="absolute right-5 top-5 rounded-2xl bg-white p-2 shadow-lg dark:bg-zinc-800"
               accessibilityRole="button"
-              accessibilityLabel={safeIsFavorite ? 'Remove from favorites' : 'Add to favorites'}>
+              accessibilityLabel={safeIsFavorite ? t('strains.removeFromFavorites') : t('strains.addToFavorites')}>
               <OptimizedIcon
                 name={safeIsFavorite ? 'heart' : 'heart-outline'}
                 size={22}
@@ -368,34 +369,34 @@ const CategoryChips = memo(
     selected?: 'sativa' | 'indica' | 'hybrid';
     onSelect?: (id: 'sativa' | 'indica' | 'hybrid') => void;
   }) => {
+  const { t } = useTranslation();
     logger.log('[DEBUG] CategoryChips rendering with:', { selected });
 
     // Defensive check to ensure CATEGORIES_NEW is an array before mapping
     const safeCategories = Array.isArray(CATEGORIES_NEW) ? CATEGORIES_NEW : [];
 
-    // Use debounced callback to prevent rapid state changes and context loss
-    const debouncedOnSelect = useDebouncedCallback(
-      (categoryId: 'sativa' | 'indica' | 'hybrid') => {
-        logger.log(`[CategoryChips] Selecting category: ${categoryId}`);
-        
+    // NOTE: Using React startTransition here caused a navigation context error
+    // when updating the selected strain category. The low-priority concurrent
+    // update was occasionally rendered outside the NavigationContainer tree,
+    // triggering "Couldn't find a navigation context". We disable the
+    // `useTransition` flag to perform a normal state update instead.
+
+    // Handle category selection immediately (no debounce) to avoid state
+    // updates occurring after the NavigationContainer context has been
+    // torn down, which was still triggering occasional navigation-context
+    // errors. Category changes are infrequent and lightweight so the
+    // debounce isn’t needed.
+    const handleCategorySelect = useCallback((categoryId: 'sativa' | 'indica' | 'hybrid') => {
+      try {
         if (typeof onSelect === 'function') {
           onSelect(categoryId);
         } else {
           logger.warn('[CategoryChips] onSelect function not available');
         }
-      },
-      200, // 200ms debounce delay
-      true  // Use startTransition for non-urgent updates
-    );
-
-    // Wrap onSelect in error handling
-    const handleCategorySelect = useCallback((categoryId: 'sativa' | 'indica' | 'hybrid') => {
-      try {
-        debouncedOnSelect(categoryId);
       } catch (error) {
         logger.error('[CategoryChips] Error in category selection:', error);
       }
-    }, [debouncedOnSelect]);
+    }, [onSelect]);
 
     return (
       <ScrollView
@@ -405,7 +406,7 @@ const CategoryChips = memo(
         contentContainerStyle={{ paddingHorizontal: 8, gap: 12 }}>
         {safeCategories.map((cat) => {
           // Ensure cat is a valid object with all required properties
-          if (!cat || typeof cat !== 'object' || !cat.id || !cat.name || !cat.icon || !cat.emoji) {
+          if (!cat || typeof cat !== 'object' || !cat.id || !cat.icon || !cat.emoji) {
             logger.error('[ERROR] Invalid category:', cat);
             return null;
           }
@@ -416,6 +417,7 @@ const CategoryChips = memo(
               category={cat}
               isSelected={selected === cat.id}
               onPress={() => handleCategorySelect(cat.id as 'sativa' | 'indica' | 'hybrid')}
+              label={t(`strains.type.${cat.id}`)}
             />
           );
         })}
@@ -429,11 +431,14 @@ const CategoryChip = memo(
     category,
     isSelected,
     onPress,
+    label,
   }: {
     category: (typeof CATEGORIES_NEW)[number];
     isSelected: boolean;
     onPress: () => void;
+    label: string;
   }) => {
+  const { t } = useTranslation();
     // 🎯 React Compiler Compatible Animation
     const scale = useSharedValue(1);
 
@@ -506,7 +511,7 @@ const CategoryChip = memo(
             isSelected ? 'shadow-lg' : 'bg-neutral-100 dark:bg-zinc-800'
           }`}
           accessibilityRole="button"
-          accessibilityLabel={`Filter by ${category.name}`}>
+          accessibilityLabel={t('strains.filterByCategory', { category: label })}>
           <OptimizedIcon
             name={category.icon}
             size={20}
@@ -518,7 +523,7 @@ const CategoryChip = memo(
             className={`font-bold ${
               isSelected ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'
             }`}>
-            {category.name}
+            {label}
           </ThemedText>
         </Animated.View>
       </GestureDetector>
@@ -660,6 +665,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
     }
   }, []);
 
+  const { t } = useTranslation();
   if (isLoading && !isFetching) {
     // 🎭 Enhanced loading state with animation sequence
     return (
@@ -669,7 +675,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
             <ActivityIndicator size="large" color="rgb(var(--color-primary-500))" />
           </View>
           <ThemedText className="mt-4 text-center text-base text-neutral-600 dark:text-neutral-400">
-            Loading cannabis strains...
+            {t('strains.loading')}
           </ThemedText>
         </ThemedView>
       </SafeAreaView>
@@ -682,10 +688,10 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
         <ThemedView variant="default" className="flex-1 items-center justify-center px-6">
           <OptimizedIcon name="warning" size={64} className="mb-4 text-danger-500" />
           <ThemedText className="mb-2 text-center text-xl font-bold">
-            Failed to load strains
+            {t('strains.failedToLoad')}
           </ThemedText>
           <ThemedText className="mb-6 text-center text-base text-neutral-600 dark:text-neutral-400">
-            {error.message || 'An error occurred while fetching strains.'}
+            {error.message || t('common.somethingWentWrong')}
           </ThemedText>
           <GestureDetector
             gesture={Gesture.Tap()
@@ -700,7 +706,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
             <Animated.View
               className="rounded-xl bg-primary-500 px-6 py-3 shadow-sm"
               accessibilityRole="button">
-              <ThemedText className="font-semibold text-white">Try Again</ThemedText>
+              <ThemedText className="font-semibold text-white">{t('strains.tryAgain')}</ThemedText>
             </Animated.View>
           </GestureDetector>
         </ThemedView>
@@ -769,7 +775,9 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
         ListEmptyComponent={
           <View className="mt-24 flex-1 items-center justify-center">
             <ThemedText className="text-lg text-neutral-500 dark:text-neutral-400">
-              {searchQuery ? `No strains found matching "${searchQuery}"` : 'No strains found.'}
+              {searchQuery
+                ? t('strains.noStrainsFoundMatching', { query: searchQuery })
+                : t('strains.noStrainsFound')}
             </ThemedText>
           </View>
         }

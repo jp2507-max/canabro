@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
 import React, { useMemo, useState, useCallback } from 'react';
 import { View } from 'react-native';
 
@@ -15,6 +14,7 @@ import { Strain } from '@/lib/types/weed-db';
 import { isObjectId } from '@/lib/utils/strainIdMapping';
 import { logger } from '@/lib/config/production';
 import { ensureUuid } from '@/lib/utils/uuid';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 
 /**
  * Custom hook to fetch and filter favorite strains, using MongoDB ObjectIds for API calls
@@ -192,7 +192,7 @@ function useFavoriteStrains(
  * Favorite strains screen component
  */
 export function FavoriteStrainsScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { user } = useAuth();
   const userId = user?.id;
   const {

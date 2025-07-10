@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 27, // Incremented from 26 to remove community/notification tables
+  version: 29, // Bumped to 29 to trigger cleanup of orphaned local posts data
   tables: [
     tableSchema({
       name: 'profiles',
@@ -219,7 +219,7 @@ export default appSchema({
     //     { name: 'last_synced_at', type: 'number', isOptional: true },
     //   ],
     // }),
-    /*
+    // Restored favorite_strains table so the FavoriteStrain model aligns with the schema again
     tableSchema({
       name: 'favorite_strains',
       columns: [
@@ -230,6 +230,5 @@ export default appSchema({
         { name: 'updated_at', type: 'number' },
       ],
     }),
-    */
   ],
 });

@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import EditPlantForm from '../../../../components/my-plants/EditPlantForm';
 import ThemedText from '../../../../components/ui/ThemedText';
@@ -14,6 +15,7 @@ export default function EditPlantScreen() {
   const router = useRouter();
   const { id: plantId } = useLocalSearchParams<{ id: string }>();
   const { database } = useDatabase();
+  const { t } = useTranslation(['navigation', 'common']);
   const [plant, setPlant] = useState<Plant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export default function EditPlantScreen() {
       <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
         <ThemedView className="flex-1 items-center justify-center px-4">
           <ActivityIndicator size="large" className="text-primary-500" />
-          <ThemedText className="mt-4 text-center">Loading plant data...</ThemedText>
+          <ThemedText className="mt-4 text-center">{t('common.loading')}</ThemedText>
         </ThemedView>
       </SafeAreaView>
     );
@@ -84,7 +86,7 @@ export default function EditPlantScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
-      <Stack.Screen options={{ title: 'Edit Plant' }} />
+      <Stack.Screen options={{ title: t('navigation.headers.editPlant') }} />
       <EnhancedKeyboardWrapper className="flex-1 p-4 pb-safe-or-4">
         <ThemedView variant="card" className="rounded-lg">
           <EditPlantForm plant={plant} onUpdateSuccess={handleUpdateSuccess} />

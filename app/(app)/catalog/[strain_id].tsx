@@ -478,7 +478,7 @@ export default function StrainDetailPage() {
           <Image
             source={
               imageError || !strain.image
-                ? require('../../../assets/images/placeholder.png')
+                ? require('../../../assets/placeholder.png')
                 : generateCDNImageURL(strain.image, 'medium')
             }
             style={{

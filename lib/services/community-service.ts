@@ -96,9 +96,21 @@ export class CommunityService {
    * Create a new community question
    */
   static async createQuestion(data: CreateQuestionData): Promise<CommunityQuestion> {
+    // Get the current authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User must be authenticated to create a question');
+    }
+
+    // Ensure user_id is set for RLS policy compliance
+    const questionData = {
+      ...data,
+      user_id: data.user_id || user.id, // Use provided user_id or fallback to current user
+    };
+
     const { data: result, error } = await supabase
       .from('community_questions')
-      .insert([data])
+      .insert([questionData])
       .select()
       .single();
 
@@ -180,9 +192,21 @@ export class CommunityService {
    * Create a new community plant share
    */
   static async createPlantShare(data: CreatePlantShareData): Promise<CommunityPlantShare> {
+    // Get the current authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User must be authenticated to create a plant share');
+    }
+
+    // Ensure user_id is set for RLS policy compliance
+    const plantShareData = {
+      ...data,
+      user_id: data.user_id || user.id, // Use provided user_id or fallback to current user
+    };
+
     const { data: result, error } = await supabase
       .from('community_plant_shares')
-      .insert([data])
+      .insert([plantShareData])
       .select()
       .single();
 

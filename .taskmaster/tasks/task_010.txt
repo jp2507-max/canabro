@@ -1,0 +1,11 @@
+# Task ID: 10
+# Title: Design Supabase Database Schema
+# Status: pending
+# Dependencies: 9
+# Priority: high
+# Description: Create comprehensive database schema for users, plants, strains, community posts, and related entities with proper relationships
+# Details:
+Design PostgreSQL schema with tables: users (profiles, preferences), plants (growth_stage, strain_id, photos), strains (effects, characteristics), community_posts (type: question/share), comments, likes, tasks, and plant_photos. Implement proper foreign key relationships and indexes. Setup RLS policies for data security. Create database functions for complex queries. Use UUID primary keys and proper timestamp handling. Setup database triggers for updated_at fields.
+
+# Test Strategy:
+Validate schema with sample data insertion. Test RLS policies with different user roles. Verify foreign key constraints and cascading deletes.

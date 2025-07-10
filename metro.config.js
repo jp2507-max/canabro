@@ -73,7 +73,7 @@ config.resolver.extraNodeModules = {
   util: path.resolve(__dirname, 'node_modules/util'),
 
   // Dedicated polyfills for specific modules
-  ws: path.resolve(__dirname, 'lib/polyfills/index.js'), // Provides proper default export for WebSocket
+  ws: path.resolve(__dirname, 'lib/polyfills/ws-polyfill.js'), // Provides proper WebSocket polyfill
 };
 
 // Add specific module resolution priority

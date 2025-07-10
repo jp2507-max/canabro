@@ -1,8 +1,8 @@
+
 import React from 'react';
 import { View } from 'react-native';
-
-// Removed StrainEffectType import as we now accept strings
 import ThemedText from '../ui/ThemedText';
+import { useStrainEffectsTranslation } from '../../lib/hooks/useTranslation';
 
 interface EffectTagProps {
   effect: string; // Accept string from API
@@ -101,8 +101,9 @@ export default function EffectTag({ effect, size = 'small', emoji }: EffectTagPr
   const normalizedEffect = effect.toLowerCase();
   const style = effectColors[normalizedEffect] || defaultStyle;
 
-  // Capitalize the first letter for display
-  const displayEffect = effect.charAt(0).toUpperCase() + effect.slice(1);
+  // Use translation hook for effect
+  const [translatedEffect] = useStrainEffectsTranslation([effect]);
+  const displayEffect = translatedEffect || (effect.charAt(0).toUpperCase() + effect.slice(1));
 
   const emojiIcon = emoji ? effectEmojis[normalizedEffect] || '' : '';
 

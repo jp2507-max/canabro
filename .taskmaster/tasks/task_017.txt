@@ -1,0 +1,11 @@
+# Task ID: 17
+# Title: Build Calendar and Task Management
+# Status: pending
+# Dependencies: 13, 8
+# Priority: medium
+# Description: Create growing calendar with task scheduling, reminders, and growth timeline visualization
+# Details:
+Install react-native-calendars@^1.1302.0 for calendar component. Create task creation and management system with categories (watering, feeding, pruning). Implement recurring task templates and custom schedules. Setup local notifications using expo-notifications for reminders. Create timeline view for plant growth milestones. Implement task completion tracking and history. Add calendar integration with plant growth stages.
+
+# Test Strategy:
+Test task scheduling and notification delivery. Verify calendar performance with large datasets. Test recurring task generation and completion tracking.

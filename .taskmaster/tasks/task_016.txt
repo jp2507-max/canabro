@@ -1,0 +1,11 @@
+# Task ID: 16
+# Title: Implement Data Synchronization
+# Status: pending
+# Dependencies: 11, 12
+# Priority: high
+# Description: Build robust sync system between WatermelonDB and Supabase with conflict resolution
+# Details:
+Implement bidirectional sync between WatermelonDB and Supabase using sync adapters. Setup conflict resolution strategies (last-write-wins, user-choice). Implement incremental sync with timestamps and change tracking. Create sync status indicators and error handling. Setup automatic sync on app foreground and manual sync triggers. Implement data migration strategies for schema changes. Add sync queue for offline operations.
+
+# Test Strategy:
+Test sync with concurrent modifications. Verify conflict resolution scenarios. Test offline-to-online sync reliability and data integrity.

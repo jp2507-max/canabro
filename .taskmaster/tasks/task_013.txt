@@ -1,0 +1,11 @@
+# Task ID: 13
+# Title: Build Core Plant Management System
+# Status: pending
+# Dependencies: 7, 8, 12
+# Priority: high
+# Description: Create comprehensive plant management features including CRUD operations, photo capture, and growth stage tracking
+# Details:
+Build plant list screen with search and filtering. Create add/edit plant forms with validation using react-hook-form@^7.48.0. Implement photo capture using expo-camera@^15.0.0 and expo-image-picker@^15.0.0. Setup image compression and upload to Supabase Storage. Create growth stage selector with visual indicators. Implement plant detail screen with photo gallery and notes. Add plant health tracking with metrics input. Setup plant deletion with confirmation dialogs.
+
+# Test Strategy:
+Test plant CRUD operations with validation. Verify photo capture and upload functionality. Test growth stage transitions and data persistence.

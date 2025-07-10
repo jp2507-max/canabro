@@ -1,0 +1,69 @@
+# Task ID: 4
+# Title: Apply Database Security and Schema Audit Recommendations
+# Status: pending
+# Dependencies: 3
+# Priority: medium
+# Description: Implement security and schema changes based on audit findings, including enabling RLS on deleted tables, renaming columns, adding generated columns, tightening storage ACLs, dropping redundant indexes, and setting compliant defaults.
+# Details:
+1. Enable Row-Level Security (RLS) on all tables that track deleted records to ensure only authorized users can access or restore deleted data. 
+2. Rename the 'plants.stage' column to the recommended name from the audit, updating all references in queries, models, and documentation.
+3. Add a 'post_id' generated column to relevant tables, ensuring it is correctly populated and indexed for efficient lookups.
+4. Review and tighten access control lists (ACLs) on all storage buckets, restricting access to only necessary roles and enforcing least privilege.
+5. Identify and drop redundant indexes as flagged in the audit to improve performance and reduce maintenance overhead.
+6. Add or update default values for columns as specified by CanaBro business rules, ensuring data integrity and compliance.
+7. Coordinate with development and DevOps teams to ensure all changes are applied in both development and production environments, with proper migration scripts and rollback plans.
+8. Document all changes and communicate updates to affected teams.
+
+# Test Strategy:
+- Verify RLS is enabled and enforced on all relevant tables by attempting access with various user roles.
+- Confirm the 'plants.stage' column is renamed everywhere and that no references to the old name remain.
+- Check that the 'post_id' generated column is present, correctly populated, and indexed.
+- Audit storage bucket ACLs to ensure only authorized roles have access, and attempt unauthorized access to confirm restrictions.
+- Run database performance and integrity tests to ensure redundant indexes are removed and no queries are negatively impacted.
+- Validate that all columns have correct default values and that new records adhere to CanaBro business rules.
+- Review migration logs and perform rollback tests to ensure safe deployment.
+- Solicit feedback from affected teams to confirm no disruptions to workflows.
+
+# Subtasks:
+## 1. Enable Row-Level Security (RLS) on Deleted Tables [pending]
+### Dependencies: None
+### Description: Implement RLS on all tables that track deleted records to restrict access and restoration capabilities to authorized users only.
+### Details:
+Review audit findings to identify relevant tables, configure RLS policies, and test access restrictions for compliance.
+
+## 2. Rename 'plants.stage' Column and Update References [pending]
+### Dependencies: None
+### Description: Rename the 'plants.stage' column to the audit-recommended name and update all references in queries, models, and documentation.
+### Details:
+Coordinate with development teams to identify all code and documentation referencing 'plants.stage', perform the rename, and validate updates.
+
+## 3. Add and Index 'post_id' Generated Column [pending]
+### Dependencies: None
+### Description: Add a generated 'post_id' column to specified tables, ensuring correct population and indexing for efficient lookups.
+### Details:
+Define the generation logic, update table schemas, and create necessary indexes as per audit recommendations.
+
+## 4. Tighten Storage Bucket Access Control Lists (ACLs) [pending]
+### Dependencies: None
+### Description: Review and restrict storage bucket ACLs to enforce least privilege, allowing access only to necessary roles.
+### Details:
+Audit current ACLs, update permissions to remove unnecessary access, and document changes for compliance.
+
+## 5. Drop Redundant Indexes Identified in Audit [pending]
+### Dependencies: None
+### Description: Identify and remove redundant indexes as flagged in the audit to improve database performance and reduce maintenance.
+### Details:
+Review audit report, confirm redundancy, and safely drop indexes with minimal impact on operations.
+
+## 6. Set or Update Default Values for Columns per Business Rules [pending]
+### Dependencies: None
+### Description: Add or update default values for columns as specified by CanaBro business rules to ensure data integrity and compliance.
+### Details:
+Review business rules and audit findings, update schema defaults, and validate data consistency.
+
+## 7. Coordinate, Migrate, and Document All Changes [pending]
+### Dependencies: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6
+### Description: Work with development and DevOps teams to apply changes in all environments, ensure proper migration scripts and rollback plans, and document updates for affected teams.
+### Details:
+Schedule deployments, prepare migration and rollback scripts, update documentation, and communicate changes to stakeholders.
+

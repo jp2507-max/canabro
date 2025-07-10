@@ -25,6 +25,7 @@ import Animated, {
   Easing,
   cancelAnimation,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import ThemedText from './ui/ThemedText';
 import { EnhancedTextInput } from './ui/EnhancedTextInput';
@@ -246,6 +247,7 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
     },
     ref
   ): React.JSX.Element => {
+    const { t } = useTranslation('strains');
     const [searchTerm, setSearchTerm] = useState<string>(initialStrainName);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(searchTerm);
     const [isFocused, setIsFocused] = useState<boolean>(false);
@@ -485,9 +487,9 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
               entering={FadeInDown.duration(300).springify()}
               exiting={FadeOutUp.duration(200)}>
               <View className="p-4">
-                <ThemedText className="mb-1 text-base font-medium">No strains found</ThemedText>
+                <ThemedText className="mb-1 text-base font-medium">{t('noStrainsFound')}</ThemedText>
                 <ThemedText variant="muted" className="text-sm">
-                  Try a different spelling or fewer characters.
+                  {t('tryDifferentSpelling')}
                 </ThemedText>
               </View>
             </Animated.View>
