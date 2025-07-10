@@ -405,7 +405,7 @@
             "description": "Create stable, feature-complete beta builds for both platforms with optimized performance and critical bugs resolved",
             "dependencies": [],
             "details": "Finalize development of essential features, fix known bugs, and optimize app performance for both iOS and Android platforms. Ensure builds are properly signed and configured for distribution through TestFlight and Google Play Internal Testing channels.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Conduct internal QA testing to verify build stability and feature completeness before distribution to external testers"
           },
           {
@@ -416,7 +416,7 @@
               1
             ],
             "details": "Upload the iOS build to App Store Connect, enable TestFlight, create internal and external tester groups, and prepare comprehensive release notes with testing instructions. Configure build settings including expiration dates and test information according to 2025 best practices.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": "Verify TestFlight configuration by sending test invitations to development team members and confirming proper build delivery"
           },
           {
@@ -1005,7 +1005,7 @@
     ],
     "metadata": {
       "created": "2025-06-19T13:07:21.872Z",
-      "updated": "2025-06-19T13:44:16.355Z",
+      "updated": "2025-07-10T07:10:06.406Z",
       "description": "Tasks for master context"
     }
   }

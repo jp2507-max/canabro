@@ -5,6 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, isValid } from '@/lib/utils/date';
 import { router } from 'expo-router';
 import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import {
@@ -28,9 +29,12 @@ import Animated, {
 import { z } from 'zod';
 
 import { StrainAutocomplete, StrainAutocompleteRef } from './StrainAutocomplete';
+
+// Union type for input refs used in AddPlantForm
+type PlantFormInputRef = React.RefObject<TextInput | StrainAutocompleteRef | null>;
 import { OptimizedIcon } from './ui/OptimizedIcon';
 import { EnhancedTextInput } from './ui/EnhancedTextInput';
-import { KeyboardToolbar } from 'react-native-keyboard-controller';
+
 import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 import ThemedText from './ui/ThemedText';
 import ThemedView from './ui/ThemedView';
@@ -70,21 +74,26 @@ interface PlantFormProps {
   notes?: string;
 }
 
-const plantFormSchema = z.object({
-  name: z.string().min(1, 'Plant name is required.'),
-  strain: z.string().min(1, 'Strain is required.'),
-  strain_id: z.string().optional(),
-  planted_date: z.date({ required_error: 'Planted date is required.' }),
-  growth_stage: z.nativeEnum(GrowthStage, { required_error: 'Growth stage is required.' }),
-  cannabis_type: z.nativeEnum(CannabisType).optional(),
-  grow_medium: z.nativeEnum(GrowMedium).optional(),
-  light_condition: z.nativeEnum(LightCondition).optional(),
-  location_description: z.string().min(1, 'Location description is required.'),
-  image_url: z.string().url('Invalid image URL format.').optional().nullable(),
-  notes: z.string().optional(),
-});
 
-type PlantFormData = z.infer<typeof plantFormSchema>;
+type TFunction = (key: string, options?: Record<string, unknown>) => string;
+function getPlantFormSchema(t: TFunction) {
+  return z.object({
+    name: z.string().min(1, t('addPlantForm.validation.nameRequired')),
+    strain: z.string().min(1, t('addPlantForm.validation.strainRequired')),
+    strain_id: z.string().optional(),
+    planted_date: z.date({ required_error: t('addPlantForm.validation.plantedDateRequired') }),
+    growth_stage: z.nativeEnum(GrowthStage, { required_error: t('addPlantForm.validation.growthStageRequired') }),
+    cannabis_type: z.nativeEnum(CannabisType).optional(),
+    grow_medium: z.nativeEnum(GrowMedium).optional(),
+    light_condition: z.nativeEnum(LightCondition).optional(),
+    location_description: z.string().min(1, t('addPlantForm.validation.locationDescriptionRequired')),
+    image_url: z.string().url(t('addPlantForm.validation.invalidImageUrl')).optional().nullable(),
+    notes: z.string().optional(),
+  });
+}
+
+import { Control, FieldErrors, UseFormSetValue, UseFormGetValues } from 'react-hook-form';
+type PlantFormData = z.infer<ReturnType<typeof getPlantFormSchema>>;
 
 interface FormStep {
   id: string;
@@ -96,38 +105,38 @@ interface FormStep {
 const FORM_STEPS: FormStep[] = [
   {
     id: 'photo',
-    title: 'Add Photo',
-    description: 'Add a photo of your plant',
+    title: 'addPlantForm.photoStep.title',
+    description: 'addPlantForm.photoStep.description',
     fields: ['image_url'],
   },
   {
     id: 'basicInfo',
-    title: 'Basic Info',
-    description: 'Name, strain, type, and stage',
+    title: 'addPlantForm.basicInfoStep.title',
+    description: 'addPlantForm.basicInfoStep.description',
     fields: ['name', 'strain', 'cannabis_type', 'growth_stage'],
   },
   {
     id: 'location',
-    title: 'Location',
-    description: 'Where is your plant located?',
+    title: 'addPlantForm.locationStep.title',
+    description: 'addPlantForm.locationStep.description',
     fields: ['location_description'],
   },
   {
     id: 'lighting',
-    title: 'Lighting',
-    description: 'Light conditions for your plant',
+    title: 'addPlantForm.lightingStep.title',
+    description: 'addPlantForm.lightingStep.description',
     fields: ['light_condition'],
   },
   {
     id: 'details',
-    title: 'Growing Details',
-    description: 'Medium and additional notes',
+    title: 'addPlantForm.detailsStep.title',
+    description: 'addPlantForm.detailsStep.description',
     fields: ['grow_medium', 'notes'],
   },
   {
     id: 'dates',
-    title: 'Important Dates',
-    description: 'Key dates for your plant',
+    title: 'addPlantForm.datesStep.title',
+    description: 'addPlantForm.datesStep.description',
     fields: ['planted_date'],
   },
 ];
@@ -150,10 +159,10 @@ interface ErrorClassification {
   logLevel: 'info' | 'warn' | 'error';
 }
 
-function classifyStrainSyncError(error: Error): ErrorClassification {
+function classifyStrainSyncError(error: Error & { code?: string; name?: string }, t: TFunction): ErrorClassification {
   const errorMessage = String(error.message || '').toLowerCase();
-  const errorCode = (error as any).code;
-  const errorName = String((error as any).name || '');
+  const errorCode = error.code;
+  const errorName = String(error.name || '');
 
   if (
     errorName === 'AbortError' ||
@@ -176,7 +185,7 @@ function classifyStrainSyncError(error: Error): ErrorClassification {
   ) {
     return {
       shouldShowToUser: true,
-      userMessage: 'Strain data is incomplete. Please try selecting a different strain.',
+      userMessage: t('addPlantForm.errors.strainDataIncomplete'),
       logLevel: 'warn',
     };
   }
@@ -188,23 +197,15 @@ function classifyStrainSyncError(error: Error): ErrorClassification {
   ) {
     return {
       shouldShowToUser: true,
-      userMessage:
-        'Network error while syncing strain. Please check your connection and try again.',
+      userMessage: t('addPlantForm.errors.networkError'),
       logLevel: 'warn',
     };
   }
   if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
     return {
       shouldShowToUser: true,
-      userMessage: 'Request timed out. Please try again.',
+      userMessage: t('addPlantForm.errors.requestTimeout'),
       logLevel: 'warn',
-    };
-  }
-  if (errorCode && errorCode.startsWith('23')) {
-    return {
-      shouldShowToUser: true,
-      userMessage: 'Database constraint error. Please try selecting a different strain.',
-      logLevel: 'error',
     };
   }
   if (
@@ -215,18 +216,18 @@ function classifyStrainSyncError(error: Error): ErrorClassification {
   ) {
     return {
       shouldShowToUser: true,
-      userMessage: 'Authentication error. Please log in again and try.',
+      userMessage: t('addPlantForm.errors.authenticationError'),
       logLevel: 'error',
     };
   }
   return {
     shouldShowToUser: true,
-    userMessage: `Failed to sync strain: ${error.message}`,
+    userMessage: t('addPlantForm.errors.strainSyncFailed', { message: error.message }),
     logLevel: 'error',
   };
 }
 
-const safeFormatDate = (date: any, formatString: string = 'PPP'): string => {
+const safeFormatDate = (date: Date | string | undefined, formatString: string = 'PPP'): string => {
   try {
     if (!date) return format(new Date(), formatString);
     if (date instanceof Date)
@@ -240,7 +241,6 @@ const safeFormatDate = (date: any, formatString: string = 'PPP'): string => {
     return format(new Date(), formatString);
   }
 };
-
 interface AnimatedButtonProps {
   onPress: () => void;
   children: React.ReactNode;
@@ -377,10 +377,10 @@ const AnimatedSelectionButton: React.FC<AnimatedSelectionButtonProps> = ({
 
 // Step Components
 interface StepProps {
-  control: any;
-  setValue: any;
-  errors: any;
-  getValues: any;
+  control: Control<PlantFormData>;
+  setValue: UseFormSetValue<PlantFormData>;
+  errors: FieldErrors<PlantFormData>;
+  getValues: UseFormGetValues<PlantFormData>;
 }
 
 const PhotoStep: React.FC<
@@ -388,66 +388,70 @@ const PhotoStep: React.FC<
     takePhoto: () => Promise<void>;
     pickImage: () => Promise<void>;
   }
-> = ({ control, setValue, takePhoto, pickImage }) => (
-  <ThemedView className="space-y-6">
-    <Controller
-      control={control}
-      name="image_url"
-      render={({ field: { value } }) => (
-        <ThemedView className="items-center space-y-4">
-          {value ? (
-            <ThemedView className="relative">
-              <Image source={{ uri: value }} className="h-48 w-48 rounded-2xl" />
-              <AnimatedButton
-                onPress={() => setValue('image_url', null)}
-                variant="destructive"
-                className="absolute -right-2 -top-2 h-8 w-8 rounded-full">
-                <OptimizedIcon name="close" size={16} className="text-white" />
+> = ({ control, setValue, takePhoto, pickImage }) => {
+  const { t } = useTranslation();
+  
+  return (
+    <ThemedView className="space-y-6">
+      <Controller
+        control={control}
+        name="image_url"
+        render={({ field: { value } }) => (
+          <ThemedView className="items-center space-y-4">
+            {value ? (
+              <ThemedView className="relative">
+                <Image source={{ uri: value }} className="h-48 w-48 rounded-2xl" />
+                <AnimatedButton
+                  onPress={() => setValue('image_url', null)}
+                  variant="destructive"
+                  className="absolute -right-2 -top-2 h-8 w-8 rounded-full">
+                  <OptimizedIcon name="close" size={16} className="text-white" />
+                </AnimatedButton>
+              </ThemedView>
+            ) : (
+              <ThemedView className="h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-200 dark:border-neutral-600 dark:bg-neutral-700">
+                <OptimizedIcon
+                  name="image-outline"
+                  size={48}
+                  className="text-neutral-400 dark:text-neutral-500"
+                />
+                <ThemedText variant="muted" className="mt-2">
+                  {t('addPlantForm.labels.noPhotoSelected')}
+                </ThemedText>
+              </ThemedView>
+            )}
+
+            <ThemedView className="flex-row space-x-4">
+              <AnimatedButton onPress={takePhoto} variant="primary">
+                <OptimizedIcon name="camera" size={20} className="mr-2 text-white" />
+                <ThemedText className="font-medium text-white">{t('addPlantForm.buttons.camera')}</ThemedText>
+              </AnimatedButton>
+
+              <AnimatedButton onPress={pickImage} variant="secondary">
+                <OptimizedIcon
+                  name="image-outline"
+                  size={20}
+                  className="mr-2 text-neutral-900 dark:text-neutral-100"
+                />
+                <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
+                  {t('addPlantForm.buttons.gallery')}
+                </ThemedText>
               </AnimatedButton>
             </ThemedView>
-          ) : (
-            <ThemedView className="h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 bg-neutral-200 dark:border-neutral-600 dark:bg-neutral-700">
-              <OptimizedIcon
-                name="image-outline"
-                size={48}
-                className="text-neutral-400 dark:text-neutral-500"
-              />
-              <ThemedText variant="muted" className="mt-2">
-                No photo selected
-              </ThemedText>
-            </ThemedView>
-          )}
-
-          <ThemedView className="flex-row space-x-4">
-            <AnimatedButton onPress={takePhoto} variant="primary">
-              <OptimizedIcon name="camera" size={20} className="mr-2 text-white" />
-              <ThemedText className="font-medium text-white">Camera</ThemedText>
-            </AnimatedButton>
-
-            <AnimatedButton onPress={pickImage} variant="secondary">
-              <OptimizedIcon
-                name="image-outline"
-                size={20}
-                className="mr-2 text-neutral-900 dark:text-neutral-100"
-              />
-              <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
-                Gallery
-              </ThemedText>
-            </AnimatedButton>
           </ThemedView>
-        </ThemedView>
-      )}
-    />
-  </ThemedView>
-);
+        )}
+      />
+    </ThemedView>
+  );
+};
 
 const BasicInfoStep: React.FC<
   StepProps & {
-    handleStrainSelectionAndSync: (strain: any) => Promise<void>;
+    handleStrainSelectionAndSync: (strain: RawStrainApiResponse | null) => Promise<void>;
     isSyncingStrain: boolean;
     syncError: string | null;
-    inputRefs?: any[];
-    currentInputIndex?: number;
+    inputRefs?: React.RefObject<TextInput | StrainAutocompleteRef | null>[];
+    _currentInputIndex?: number;
     onInputFocus?: (index: number) => void;
     goToNextStep?: () => void;
   }
@@ -457,10 +461,11 @@ const BasicInfoStep: React.FC<
   isSyncingStrain,
   syncError,
   inputRefs = [],
-  currentInputIndex = 0,
+  _currentInputIndex = 0,
   onInputFocus,
   goToNextStep,
 }) => {
+  const { t } = useTranslation();
   // Create refs for this step's inputs
   const nameInputRef = useRef<TextInput>(null);
   const strainInputRef = useRef<StrainAutocompleteRef>(null);
@@ -484,12 +489,12 @@ const BasicInfoStep: React.FC<
         render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
           <EnhancedTextInput
             ref={nameInputRef}
-            label="Plant Name"
+            label={t('addPlantForm.fields.plantName')}
             value={value || ''}
             onChangeText={onChange}
             onBlur={onBlur}
             onFocus={() => onInputFocus?.(0)}
-            placeholder="My awesome plant"
+            placeholder={t('addPlantForm.placeholders.plantName')}
             error={error?.message}
             leftIcon="flower-tulip-outline"
             returnKeyType="next"
@@ -507,16 +512,16 @@ const BasicInfoStep: React.FC<
       <Controller
         control={control}
         name="strain"
-        render={({ field: { onChange, value }, fieldState: { error } }) => (
+        render={({ field: { onChange: _onChange, value }, fieldState: { error } }) => (
           <ThemedView>
             <ThemedText variant="heading" className="mb-2 text-base">
-              Strain
+              {t('addPlantForm.fields.strain')}
             </ThemedText>
             <StrainAutocomplete
               ref={strainInputRef}
               onStrainSelect={handleStrainSelectionAndSync}
               initialStrainName={value || ''}
-              placeholder="Search for a strain (e.g., OG Kush)"
+              placeholder={t('addPlantForm.placeholders.strain')}
               onFocus={() => onInputFocus?.(1)}
               returnKeyType="next"
               onSubmitEditing={() => {
@@ -527,7 +532,7 @@ const BasicInfoStep: React.FC<
             {isSyncingStrain && (
               <ThemedView className="mt-2 flex-row items-center">
                 <ActivityIndicator size="small" className="mr-2" />
-                <ThemedText variant="muted">Syncing strain data...</ThemedText>
+                <ThemedText variant="muted">{t('addPlantForm.labels.syncingStrain')}</ThemedText>
               </ThemedView>
             )}
             {syncError && (
@@ -547,7 +552,7 @@ const BasicInfoStep: React.FC<
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <ThemedView>
             <ThemedText variant="heading" className="mb-2 text-base">
-              Cannabis Type
+              {t('addPlantForm.fields.cannabisType')}
             </ThemedText>
             <ThemedView className="flex-row space-x-2">
               {Object.values(CannabisType).map((type) => (
@@ -580,7 +585,7 @@ const BasicInfoStep: React.FC<
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <ThemedView>
             <ThemedText variant="heading" className="mb-2 text-base">
-              Growth Stage
+              {t('addPlantForm.fields.growthStage')}
             </ThemedText>
             <ThemedView className="flex-row flex-wrap gap-2">
               {Object.values(GrowthStage).map((stage) => (
@@ -611,21 +616,22 @@ const BasicInfoStep: React.FC<
 
 const LocationStep: React.FC<
   StepProps & {
-    inputClasses: string;
-    placeholderTextColor: string;
-    inputRefs?: any[];
-    currentInputIndex?: number;
+    _inputClasses: string;
+    _placeholderTextColor: string;
+    inputRefs?: React.RefObject<TextInput | null>[];
+    _currentInputIndex?: number;
     onInputFocus?: (index: number) => void;
   }
 > = ({
   control,
   setValue,
-  inputClasses,
-  placeholderTextColor,
+  _inputClasses,
+  _placeholderTextColor,
   inputRefs = [],
-  currentInputIndex = 0,
+  _currentInputIndex = 0,
   onInputFocus,
 }) => {
+  const { t } = useTranslation();
   const [customLocation, setCustomLocation] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
 
@@ -647,14 +653,14 @@ const LocationStep: React.FC<
   };
 
   const predefinedLocations = [
-    'Indoor Grow Tent',
-    'Outdoor Garden',
-    'Greenhouse',
-    'Balcony',
-    'Windowsill',
-    'Basement',
-    'Garage',
-    'Closet',
+    t('addPlantForm.predefinedLocations.indoorGrowTent'),
+    t('addPlantForm.predefinedLocations.outdoorGarden'),
+    t('addPlantForm.predefinedLocations.greenhouse'),
+    t('addPlantForm.predefinedLocations.balcony'),
+    t('addPlantForm.predefinedLocations.windowsill'),
+    t('addPlantForm.predefinedLocations.basement'),
+    t('addPlantForm.predefinedLocations.garage'),
+    t('addPlantForm.predefinedLocations.closet'),
   ];
 
   return (
@@ -665,7 +671,7 @@ const LocationStep: React.FC<
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <ThemedView>
             <ThemedText variant="heading" className="mb-2 text-base">
-              Location
+              {t('addPlantForm.fields.location')}
             </ThemedText>
 
             {/* Predefined Options */}
@@ -704,7 +710,7 @@ const LocationStep: React.FC<
                 className="mr-2 text-neutral-900 dark:text-neutral-100"
               />
               <ThemedText className="text-neutral-900 dark:text-neutral-100">
-                Custom Location
+                {t('addPlantForm.buttons.customLocation')}
               </ThemedText>
             </AnimatedButton>
 
@@ -716,7 +722,7 @@ const LocationStep: React.FC<
                   value={customLocation}
                   onChangeText={setCustomLocation}
                   onFocus={() => onInputFocus?.(0)}
-                  placeholder="Enter custom location"
+                  placeholder={t('addPlantForm.placeholders.customLocation')}
                   leftIcon="location-outline"
                   returnKeyType="done"
                   onSubmitEditing={handleCustomLocationSubmit}
@@ -741,16 +747,19 @@ const LocationStep: React.FC<
   );
 };
 
-const LightingStep: React.FC<StepProps> = ({ control }) => (
-  <ThemedView className="space-y-6">
-    <Controller
-      control={control}
-      name="light_condition"
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <ThemedView>
-          <ThemedText variant="heading" className="mb-2 text-base">
-            Light Conditions
-          </ThemedText>
+const LightingStep: React.FC<StepProps> = ({ control }) => {
+  const { t } = useTranslation();
+  
+  return (
+    <ThemedView className="space-y-6">
+      <Controller
+        control={control}
+        name="light_condition"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <ThemedView>
+            <ThemedText variant="heading" className="mb-2 text-base">
+              {t('addPlantForm.fields.lightConditions')}
+            </ThemedText>
           <ThemedView className="space-y-2">
             {Object.values(LightCondition).map((condition) => (
               <AnimatedSelectionButton
@@ -775,15 +784,17 @@ const LightingStep: React.FC<StepProps> = ({ control }) => (
       )}
     />
   </ThemedView>
-);
+  );
+};
 
 const DetailsStep: React.FC<
   StepProps & {
-    inputRefs?: any[];
-    currentInputIndex?: number;
+    inputRefs?: React.RefObject<TextInput | null>[];
+    _currentInputIndex?: number;
     onInputFocus?: (index: number) => void;
   }
-> = ({ control, inputRefs = [], currentInputIndex = 0, onInputFocus }) => {
+> = ({ control, inputRefs = [], _currentInputIndex = 0, onInputFocus }) => {
+  const { t } = useTranslation();
   const notesInputRef = useRef<TextInput>(null);
 
   // Register refs with parent component
@@ -802,7 +813,7 @@ const DetailsStep: React.FC<
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <ThemedView>
             <ThemedText variant="heading" className="mb-2 text-base">
-              Growing Medium
+              {t('addPlantForm.fields.growingMedium')}
             </ThemedText>
             <ThemedView className="space-y-2">
               {Object.values(GrowMedium).map((medium) => (
@@ -838,12 +849,12 @@ const DetailsStep: React.FC<
         render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
           <EnhancedTextInput
             ref={notesInputRef}
-            label="Notes (Optional)"
+            label={t('addPlantForm.fields.notes')}
             value={value || ''}
             onChangeText={onChange}
             onBlur={onBlur}
             onFocus={() => onInputFocus?.(0)}
-            placeholder="Add any additional notes about your plant..."
+            placeholder={t('addPlantForm.placeholders.notes')}
             multiline
             error={error?.message}
             leftIcon="document-text-outline"
@@ -858,6 +869,7 @@ const DetailsStep: React.FC<
 };
 
 const DatesStep: React.FC<StepProps> = ({ control }) => {
+  const { t } = useTranslation();
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   return (
@@ -868,7 +880,7 @@ const DatesStep: React.FC<StepProps> = ({ control }) => {
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <ThemedView>
             <ThemedText variant="heading" className="mb-2 text-base">
-              Planted Date
+              {t('addPlantForm.fields.plantedDate')}
             </ThemedText>
 
             <AnimatedButton
@@ -881,7 +893,7 @@ const DatesStep: React.FC<StepProps> = ({ control }) => {
                 className="mr-3 text-neutral-900 dark:text-neutral-100"
               />
               <ThemedText className="text-neutral-900 dark:text-neutral-100">
-                {value ? safeFormatDate(value) : 'Select planted date'}
+                {value ? safeFormatDate(value) : t('addPlantForm.labels.selectPlantedDate')}
               </ThemedText>
             </AnimatedButton>
 
@@ -908,23 +920,24 @@ const DatesStep: React.FC<StepProps> = ({ control }) => {
 };
 
 export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
+  const { t } = useTranslation();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const progress = useSharedValue(0);
   const stepTransition = useSharedValue(0);
 
   // Enhanced keyboard handling
-  const inputRefs = useRef<any[]>([]);
+  const inputRefs = useRef<Array<React.RefObject<TextInput | StrainAutocompleteRef | null>>>([]);
   const [fieldNames, setFieldNames] = useState<string[]>([]);
 
   const {
-    isKeyboardVisible,
-    keyboardHeight,
+    isKeyboardVisible: _isKeyboardVisible,
+    keyboardHeight: _keyboardHeight,
     currentIndex,
-    goToNextInput,
-    goToPreviousInput,
-    dismissKeyboard,
-    canGoNext,
-    canGoPrevious,
+    goToNextInput: _goToNextInput,
+    goToPreviousInput: _goToPreviousInput,
+    dismissKeyboard: _dismissKeyboard,
+    canGoNext: _canGoNext,
+    canGoPrevious: _canGoPrevious,
     setActiveInputIndex,
   } = useEnhancedKeyboard(inputRefs.current, fieldNames.length);
 
@@ -936,7 +949,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     getValues,
     trigger,
   } = useForm<PlantFormData>({
-    resolver: zodResolver(plantFormSchema),
+    resolver: zodResolver(getPlantFormSchema(t)),
     mode: 'onChange',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1025,7 +1038,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     } catch (error) {
       const e = error as Error;
       console.error('[AddPlantForm] Strain Sync Error:', e);
-      const classification = classifyStrainSyncError(e);
+      const classification = classifyStrainSyncError(e, t);
       if (classification.shouldShowToUser) {
         setSyncError(classification.userMessage || 'An unexpected error occurred.');
       }
@@ -1067,8 +1080,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       const firstErrorField = currentFields.find((field) => errors[field]);
       if (firstErrorField) {
         Alert.alert(
-          'Incomplete Step',
-          errors[firstErrorField]?.message || 'Please fill out all required fields.'
+          t('addPlantForm.alerts.incompleteStep'),
+          errors[firstErrorField]?.message || t('addPlantForm.alerts.fillRequiredFields')
         );
       }
     }
@@ -1124,7 +1137,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
     if (!user?.id || !database) {
-      Alert.alert('Error', 'User not authenticated or database not available.');
+      Alert.alert(t('common.error'), t('alerts.userNotAuthenticated'));
       return;
     }
 
@@ -1170,9 +1183,9 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         });
       });
 
-      Alert.alert('Success', 'Plant added successfully!', [
+      Alert.alert(t('common.success'), t('alerts.plantAddedSuccess'), [
         {
-          text: 'OK',
+          text: t('common.ok'),
           onPress: () => {
             router.back();
             onSuccess?.();
@@ -1181,7 +1194,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       ]);
     } catch (error) {
       console.error('Error adding plant:', error);
-      Alert.alert('Error', 'Could not add plant. Please try again.');
+  Alert.alert(t('common.error'), t('alerts.plantAddError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1203,19 +1216,21 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     const commonProps = { control, setValue, errors, getValues };
 
     // Create stable input refs with useMemo to maintain focus history
-    const stepInputRefs = useMemo(() => {
-      const currentStepId = FORM_STEPS[currentStepIndex]?.id;
-
-      switch (currentStepId) {
-        case 'basicInfo':
-          return [React.createRef(), React.createRef()]; // Plant Name + Strain
-        case 'location':
-        case 'details':
-          return [React.createRef()];
-        default:
-          return [];
-      }
-    }, [currentStepIndex]);
+  const stepInputRefs: PlantFormInputRef[] = useMemo(() => {
+    const currentStepId = FORM_STEPS[currentStepIndex]?.id;
+    switch (currentStepId) {
+      case 'basicInfo':
+        return [
+          React.createRef<TextInput | StrainAutocompleteRef>(),
+          React.createRef<TextInput | StrainAutocompleteRef>()
+        ]; // Plant Name + Strain
+      case 'location':
+      case 'details':
+        return [React.createRef<TextInput | StrainAutocompleteRef>()];
+      default:
+        return [];
+    }
+  }, [currentStepIndex]);
 
     // Setup field names and refs based on current step
     React.useEffect(() => {
@@ -1224,13 +1239,13 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
       switch (currentStepId) {
         case 'basicInfo':
-          stepFieldNames = ['Plant Name', 'Strain'];
+          stepFieldNames = [t('addPlantForm.fields.plantName'), t('addPlantForm.fields.strain')];
           break;
         case 'location':
-          stepFieldNames = ['Custom Location'];
+          stepFieldNames = [t('addPlantForm.buttons.customLocation')];
           break;
         case 'details':
-          stepFieldNames = ['Notes'];
+          stepFieldNames = [t('addPlantForm.fields.notes')];
           break;
         default:
           stepFieldNames = [];
@@ -1267,14 +1282,15 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         return (
           <LocationStep
             {...enhancedProps}
-            inputClasses={inputClasses}
-            placeholderTextColor={placeholderTextColor}
+            inputRefs={inputRefs.current as React.RefObject<TextInput>[]}
+            _inputClasses={inputClasses}
+            _placeholderTextColor={placeholderTextColor}
           />
         );
       case 'lighting':
         return <LightingStep {...commonProps} />;
       case 'details':
-        return <DetailsStep {...enhancedProps} />;
+        return <DetailsStep {...enhancedProps} inputRefs={inputRefs.current as React.RefObject<TextInput>[]} />;
       case 'dates':
         return <DatesStep {...commonProps} />;
       default:
@@ -1298,7 +1314,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           </AnimatedButton>
 
           <ThemedText variant="heading" className="text-lg">
-            Add Plant
+            {t('addPlantForm.header')}
           </ThemedText>
 
           <ThemedView className="w-10" />
@@ -1314,10 +1330,10 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
         <ThemedView className="mt-2 flex-row justify-between">
           <ThemedText variant="muted" className="text-xs">
-            Step {currentStepIndex + 1} of {FORM_STEPS.length}
+            {t('addPlantForm.progress.step', { current: currentStepIndex + 1, total: FORM_STEPS.length })}
           </ThemedText>
           <ThemedText variant="muted" className="text-xs">
-            {Math.round(((currentStepIndex + 1) / FORM_STEPS.length) * 100)}%
+            {t('addPlantForm.progress.percent', { percent: Math.round(((currentStepIndex + 1) / FORM_STEPS.length) * 100) })}
           </ThemedText>
         </ThemedView>
       </ThemedView>
@@ -1331,10 +1347,10 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           <Animated.View style={stepAnimatedStyle}>
             <ThemedView className="mb-6">
               <ThemedText variant="heading" className="mb-2 text-xl">
-                {currentStep?.title}
+                {t(currentStep?.title || '')}
               </ThemedText>
               {currentStep?.description && (
-                <ThemedText variant="muted">{currentStep.description}</ThemedText>
+                <ThemedText variant="muted">{t(currentStep.description)}</ThemedText>
               )}
             </ThemedView>
 
@@ -1354,14 +1370,14 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                 className="mr-2 text-neutral-900 dark:text-neutral-100"
               />
               <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
-                Back
+                {t('addPlantForm.footer.back')}
               </ThemedText>
             </AnimatedButton>
           )}
 
           {currentStepIndex < FORM_STEPS.length - 1 ? (
             <AnimatedButton onPress={goToNextStep} variant="primary" className="flex-1">
-              <ThemedText className="mr-2 font-medium text-white">Next</ThemedText>
+              <ThemedText className="mr-2 font-medium text-white">{t('addPlantForm.footer.next')}</ThemedText>
               <OptimizedIcon name="chevron-forward" size={16} className="text-white" />
             </AnimatedButton>
           ) : (
@@ -1375,7 +1391,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               ) : (
                 <>
                   <OptimizedIcon name="checkmark" size={16} className="mr-2 text-white" />
-                  <ThemedText className="font-medium text-white">Add Plant</ThemedText>
+                  <ThemedText className="font-medium text-white">{t('addPlantForm.footer.addPlant')}</ThemedText>
                 </>
               )}
             </AnimatedButton>

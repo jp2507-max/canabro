@@ -16,6 +16,7 @@ import Animated, {
   runOnUI,
   runOnJS,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import { SPRING_CONFIGS } from '../../lib/animations/presets';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
@@ -28,6 +29,7 @@ interface PlantDoctorHeroProps {
 
 const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: PlantDoctorHeroProps) {
   const { width } = useWindowDimensions();
+  const { t } = useTranslation('diagnosis');
 
   // Animation values
   const companionScale = useSharedValue(0.8);
@@ -216,11 +218,11 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: Pla
       {/* Subtitle */}
       <Animated.View style={subtitleStyle}>
         <ThemedText className="mb-12 text-center text-lg leading-7 text-neutral-600 dark:text-neutral-300">
-          Take a photo of your plant and get{'\n'}
+          {t('takePhotoDescription')}{'\n'}
           <ThemedText className="font-semibold text-primary-600 dark:text-primary-400">
-            AI-powered diagnosis
+            {t('aiDiagnosis')}
           </ThemedText>{' '}
-          in seconds
+          {t('inSeconds')}
         </ThemedText>
       </Animated.View>
 
@@ -229,15 +231,15 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: Pla
         <Animated.View
           style={buttonStyle}
           accessibilityRole="button"
-          accessibilityLabel="Take a photo"
-          accessibilityHint="Opens camera to capture plant image for diagnosis">
+          accessibilityLabel={t('takePhoto')}
+          accessibilityHint={t('cameraAccessibilityHint')}>
           <View
             className="flex-row items-center justify-center rounded-2xl bg-primary-500 px-8 py-4 shadow-lg shadow-primary-500/25"
             style={{ minWidth: width * 0.7 }}>
             <Animated.View style={[iconStyle, { marginRight: 12 }]}>
               <OptimizedIcon name="camera" size={24} color="white" />
             </Animated.View>
-            <ThemedText className="text-lg font-bold text-white">Take a Photo</ThemedText>
+            <ThemedText className="text-lg font-bold text-white">{t('takePhoto')}</ThemedText>
           </View>
 
           {/* Button glow effect */}

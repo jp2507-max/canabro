@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,24 +6,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import StrainsView from '../../../screens/strains/StrainsView';
 
 import { ActiveFilters } from '@/components/strains/StrainFilterModal';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
 import { useAuth } from '@/lib/contexts/AuthProvider';
+// StrainSpecies import removed: use string union type for species
+// Use React Native's batching utility when updating state from Reanimated callbacks
+
 import { useFavoriteManager } from '@/lib/hooks/strains/useFavoriteManager';
 import { useInfiniteStrains } from '@/lib/hooks/strains/useInfiniteStrains';
 import { Strain as WeedDbStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
 
 export default function StrainsScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { user } = useAuth();
   const userId = user?.id;
 
   // State hooks
-  const [selectedStrainType, setSelectedStrainType] = useState<'sativa' | 'indica' | 'hybrid'>(
-    'indica'
-  );
+  // Remove selectedStrainType; use activeFilters.species as the single source of truth
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
@@ -58,7 +58,7 @@ export default function StrainsScreen() {
     refetch,
   } = useInfiniteStrains({
     search: searchQuery,
-    species: selectedStrainType,
+    species: activeFilters.species ?? undefined,
     activeFilters,
     enabled: true,
   });
@@ -89,14 +89,16 @@ export default function StrainsScreen() {
   );
 
   // Event handlers with useCallback
-  const handleStrainTypeChange = useCallback((type: 'sativa' | 'indica' | 'hybrid') => {
-    try {
-      console.log(`[StrainsScreen] Changing strain type to: ${type}`);
-      setSelectedStrainType(type);
-    } catch (error) {
-      console.error('[StrainsScreen] Error changing strain type:', error);
-    }
-  }, []);
+  // Only update activeFilters.species; this is now the single source of truth
+  const handleStrainTypeChange = useCallback(
+    (type: 'sativa' | 'indica' | 'hybrid') => {
+      setActiveFilters((prev) => ({
+        ...prev,
+        species: type,
+      }));
+    },
+    []
+  );
 
   const handleToggleFavorite = useCallback(
     async (strainId: string) => {
@@ -144,10 +146,13 @@ export default function StrainsScreen() {
     [toggleFavorite, strains]
   );
 
-  const handleApplyFilters = useCallback((newFilters: ActiveFilters) => {
-    setActiveFilters(newFilters);
-    setIsFilterModalVisible(false);
-  }, []);
+  const handleApplyFilters = useCallback(
+    (newFilters: ActiveFilters) => {
+      setActiveFilters(newFilters);
+      setIsFilterModalVisible(false);
+    },
+    []
+  );
 
   const handleRefresh = useCallback(() => {
     refetch();
@@ -187,29 +192,38 @@ export default function StrainsScreen() {
     );
   }
 
+  // Only allow 'sativa', 'indica', or 'hybrid' for selectedStrainType
+  const allowedStrainTypes = ['sativa', 'indica', 'hybrid'] as const;
+  function isAllowedStrainType(
+    species: unknown
+  ): species is 'sativa' | 'indica' | 'hybrid' {
+    return allowedStrainTypes.includes(species as typeof allowedStrainTypes[number]);
+  }
+  const selectedStrainType = isAllowedStrainType(activeFilters.species)
+    ? activeFilters.species
+    : undefined;
+
   return (
-    <ErrorBoundary>
-      <StrainsView
-        router={safeRouter}
-        selectedStrainType={selectedStrainType}
-        setSelectedStrainType={handleStrainTypeChange}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isFilterModalVisible={isFilterModalVisible}
-        setIsFilterModalVisible={setIsFilterModalVisible}
-        strains={strains}
-        isLoading={isLoading || favoritesLoading}
-        isFetching={isFetching}
-  error={error || (favoritesError instanceof Error ? favoritesError : null)}
-        activeFilters={activeFilters}
-        setActiveFilters={setActiveFilters}
-        handleApplyFilters={handleApplyFilters}
-        handleRefresh={handleRefresh}
-        handleLoadMore={handleLoadMore}
-        favoriteStrainIds={favoriteStrainIdSet}
-        onToggleFavorite={handleToggleFavorite}
-        isFetchingNextPage={isFetchingNextPage}
-      />
-    </ErrorBoundary>
+    <StrainsView
+      router={safeRouter}
+      selectedStrainType={selectedStrainType}
+      setSelectedStrainType={handleStrainTypeChange}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      isFilterModalVisible={isFilterModalVisible}
+      setIsFilterModalVisible={setIsFilterModalVisible}
+      strains={strains}
+      isLoading={isLoading || favoritesLoading}
+      isFetching={isFetching}
+      error={error || (favoritesError instanceof Error ? favoritesError : null)}
+      activeFilters={activeFilters}
+      setActiveFilters={setActiveFilters}
+      handleApplyFilters={handleApplyFilters}
+      handleRefresh={handleRefresh}
+      handleLoadMore={handleLoadMore}
+      favoriteStrainIds={favoriteStrainIdSet}
+      onToggleFavorite={handleToggleFavorite}
+      isFetchingNextPage={isFetchingNextPage}
+    />
   );
 }

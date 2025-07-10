@@ -10,6 +10,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { isDevelopment, authConfig } from '../lib/config';
 import { useAuth } from '../lib/contexts/AuthProvider';
@@ -29,6 +30,9 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
   if (!__DEV__) {
     return null;
   }
+  const { t } = useTranslation('devMode');
+  const { t: tCommon } = useTranslation('common');
+  const { t: tDebug } = useTranslation('debug');
   const { devBypassAuth, user } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const insets = useSafeAreaInsets();
@@ -40,12 +44,12 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
   const handleReset = async () => {
     // Confirm before resetting
     Alert.alert(
-      'Reset Database',
-      'This will delete your local database to fix schema issues. This action cannot be undone. Are you sure?',
+      tDebug('resetDatabase'),
+      tDebug('resetDatabaseConfirmation'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: tCommon('cancel'), style: 'cancel' },
         {
-          text: 'Reset',
+          text: tDebug('resetDatabase'),
           style: 'destructive',
           onPress: async () => {
             await resetDatabase();
@@ -104,7 +108,7 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
   if (!showFullDetails) {
     return (
       <View style={styles.miniContainer}>
-        <Text style={styles.miniText}>DEV MODE</Text>
+        <Text style={styles.miniText}>{t('indicator')}</Text>
       </View>
     );
   }
@@ -113,18 +117,18 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
   return (
     <>
       <View style={styles.container}>
-        <Text style={styles.title}>Development Mode</Text>
+        <Text style={styles.title}>{tDebug('developmentMode')}</Text>
         <Text style={styles.detail}>
-          Auth: {authConfig.forceDevBypass ? 'Auto Bypass' : 'Manual'}
+          {tDebug('auth')}: {authConfig.forceDevBypass ? tDebug('autoBypass') : tDebug('manual')}
         </Text>
         {/* Remove reference to non-existent property useMockAdapter */}
-        <Text style={styles.detail}>Mock User: {authConfig.mockUserEmail || 'None'}</Text>
-        <Text style={styles.detail}>User ID: {user?.id || 'Not logged in'}</Text>
+        <Text style={styles.detail}>{tDebug('mockUser')}: {authConfig.mockUserEmail || tDebug('none')}</Text>
+        <Text style={styles.detail}>{tDebug('userId')}: {user?.id || tDebug('notLoggedIn')}</Text>
 
         {!authConfig.forceDevBypass && (
           <GestureDetector gesture={authButtonGesture}>
             <Animated.View style={[styles.button, authButtonAnimatedStyle]}>
-              <Text style={styles.buttonText}>Use Dev Auth</Text>
+              <Text style={styles.buttonText}>{tDebug('useDevAuth')}</Text>
             </Animated.View>
           </GestureDetector>
         )}
@@ -132,7 +136,7 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
 
       <GestureDetector gesture={indicatorGesture}>
         <Animated.View style={[styles.indicator, { top: insets.top + 10 }, indicatorAnimatedStyle]}>
-          <Text style={styles.indicatorText}>DEV</Text>
+          <Text style={styles.indicatorText}>{t('indicator')}</Text>
         </Animated.View>
       </GestureDetector>
 
@@ -143,17 +147,17 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
         onRequestClose={() => setModalVisible(false)}>
         <BlurView intensity={50} style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Developer Options</Text>
+            <Text style={styles.modalTitle}>{tDebug('developerOptions')}</Text>
 
             <View style={styles.buttonSection}>
-              <Text style={styles.sectionTitle}>Database</Text>
+              <Text style={styles.sectionTitle}>{tDebug('database')}</Text>
               <Pressable style={styles.actionButton} onPress={handleReset}>
-                <Text style={styles.actionButtonText}>Reset Database (Fix Schema)</Text>
+                <Text style={styles.actionButtonText}>{tDebug('resetDatabaseSchema')}</Text>
               </Pressable>
             </View>
 
             <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Close</Text>
+              <Text style={styles.closeButtonText}>{tDebug('close')}</Text>
             </Pressable>
           </View>
         </BlurView>

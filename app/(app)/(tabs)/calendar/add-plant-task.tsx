@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../../../lib/contexts/AuthProvider';
@@ -24,7 +25,7 @@ interface PlantTaskFormData {
 }
 
 export default function AddPlantTaskScreen() {
-  const router = useRouter();
+  const router = useSafeRouter();
   const { selectedDate } = useLocalSearchParams<{ selectedDate?: string }>();
   const { session } = useAuth();
   const { database } = useDatabase();

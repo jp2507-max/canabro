@@ -6,6 +6,7 @@ import {
 import { router } from 'expo-router';
 import React, { useCallback } from 'react';
 import { View, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 // Modern animation imports
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -135,6 +136,8 @@ function ActionItem({
 }
 
 export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
+  const { t } = useTranslation('plants');
+  
   const handleGrowJournal = useCallback(() => {
     triggerMediumHaptic();
     router.push({
@@ -145,8 +148,8 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
 
   const handleMetrics = useCallback(() => {
     triggerWarningHaptic();
-    Alert.alert('Coming Soon', 'Plant metrics tracking will be available soon.');
-  }, []);
+    Alert.alert(t('comingSoon'), 'Plant metrics tracking will be available soon.');
+  }, [t]);
 
   const handleDelete = useCallback(() => {
     triggerWarningHaptic();
@@ -155,22 +158,22 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
 
   return (
     <ThemedView variant="card" className="mb-4 mt-2 rounded-3xl p-2 shadow-lg">
-      <ActionItem iconName="journal-outline" label="Grow Journal" onPress={handleGrowJournal} />
+      <ActionItem iconName="journal-outline" label={t('growJournal')} onPress={handleGrowJournal} />
 
       <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
 
       <ActionItem
         iconName="stats-chart-outline"
-        label="Metrics"
+        label={t('metrics')}
         onPress={handleMetrics}
-        subLabel="Coming Soon"
+        subLabel={t('comingSoon')}
       />
 
       <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
 
       <ActionItem
         iconName="trash-outline"
-        label="Delete Plant"
+        label={t('deletePlant')}
         onPress={handleDelete}
         isDestructive
       />

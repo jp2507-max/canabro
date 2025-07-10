@@ -14,7 +14,7 @@ import Animated, {
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 
-const placeholderImageSource = require('../../assets/images/placeholder.png');
+const placeholderImageSource = require('../../assets/placeholder.png');
 
 export interface Plant {
   id: string;

@@ -1,3 +1,8 @@
+// Type guard for allowed species
+function isAllowedSpecies(value: unknown): value is 'sativa' | 'indica' | 'hybrid' | null {
+  return value === 'sativa' || value === 'indica' || value === 'hybrid' || value === null;
+}
+
 import React, { useState } from 'react';
 import { Modal, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -9,7 +14,6 @@ import Animated, {
   runOnUI,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { SPRING_CONFIGS } from '../../lib/animations/presets';
 import { StrainSpecies, StrainEffectType, StrainFlavorType } from '../../lib/types/strain';
 import {
@@ -23,6 +27,8 @@ import PotencySlider from '../ui/PotencySlider';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
+import { useStrainEffectsTranslation, useStrainFlavorsTranslation } from '../../lib/hooks/useTranslation';
+import { useTranslation } from 'react-i18next';
 
 // Species icon color constants for consistency and maintainability
 const SPECIES_ICON_COLORS = {
@@ -36,7 +42,7 @@ const SPECIES_ICON_COLORS = {
 
 // Define the structure for active filters
 export interface ActiveFilters {
-  species: StrainSpecies | null;
+  species: 'sativa' | 'indica' | 'hybrid' | null;
   effects: StrainEffectType[];
   flavors: StrainFlavorType[];
   minThc: number | null;
@@ -56,55 +62,53 @@ interface StrainFilterModalProps {
 }
 
 // Enhanced: Add type-specific styling helpers
-const getSpeciesColor = (species: StrainSpecies | null, isSelected: boolean) => {
+const getSpeciesColor = (species: 'indica' | 'sativa' | 'hybrid' | null, isSelected: boolean) => {
   if (!isSelected) return 'text-neutral-600 dark:text-neutral-400';
-
   switch (species) {
-    case StrainSpecies.INDICA:
+    case 'indica':
       return 'text-purple-600 dark:text-purple-400';
-    case StrainSpecies.SATIVA:
+    case 'sativa':
       return 'text-orange-600 dark:text-orange-400';
-    case StrainSpecies.HYBRID:
+    case 'hybrid':
       return 'text-green-600 dark:text-green-400';
     default:
       return 'text-primary-600 dark:text-primary-400';
   }
 };
 
-const getSpeciesBackgroundColor = (species: StrainSpecies | null, isSelected: boolean) => {
+const getSpeciesBackgroundColor = (species: 'indica' | 'sativa' | 'hybrid' | null, isSelected: boolean) => {
   if (!isSelected) return 'bg-neutral-100 dark:bg-neutral-800';
-
   switch (species) {
-    case StrainSpecies.INDICA:
+    case 'indica':
       return 'bg-purple-100 dark:bg-purple-900/30';
-    case StrainSpecies.SATIVA:
+    case 'sativa':
       return 'bg-orange-100 dark:bg-orange-900/30';
-    case StrainSpecies.HYBRID:
+    case 'hybrid':
       return 'bg-green-100 dark:bg-green-900/30';
     default:
       return 'bg-primary-100 dark:bg-primary-900/30';
   }
 };
 
-const getSpeciesIcon = (species: StrainSpecies | null) => {
+const getSpeciesIcon = (species: 'indica' | 'sativa' | 'hybrid' | null) => {
   switch (species) {
-    case StrainSpecies.INDICA:
+    case 'indica':
       return 'moon-outline';
-    case StrainSpecies.SATIVA:
+    case 'sativa':
       return 'sunny-outline';
-    case StrainSpecies.HYBRID:
-      return 'leaf-outline'; // Use available icon
+    case 'hybrid':
+      return 'leaf-outline';
     default:
-      return 'search'; // Use available icon
+      return 'search';
   }
 };
 
-// Define available options for filters
+// Define available options for filters (names will be translated)
 const SPECIES_OPTIONS = [
-  { id: null, name: 'Any Species' },
-  { id: StrainSpecies.INDICA, name: 'Indica' },
-  { id: StrainSpecies.SATIVA, name: 'Sativa' },
-  { id: StrainSpecies.HYBRID, name: 'Hybrid' },
+  { id: null, nameKey: 'strains.filters.anySpecies' },
+  { id: 'indica', nameKey: 'strains.types.indica' },
+  { id: 'sativa', nameKey: 'strains.types.sativa' },
+  { id: 'hybrid', nameKey: 'strains.types.hybrid' },
 ];
 
 // Get all possible values from the enums
@@ -126,21 +130,22 @@ interface AnimatedSelectionButtonProps {
   className?: string;
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'checkbox' | 'radio';
-  accessibilityState?: any;
+  accessibilityState?: Record<string, boolean>;
   enableHaptics?: boolean;
 }
 
 const AnimatedSelectionButton = React.memo<AnimatedSelectionButtonProps>(
   ({
-    onPress,
-    children,
-    selected,
-    disabled = false,
-    className = '',
-    accessibilityLabel,
-    accessibilityRole,
-    accessibilityState,
-    enableHaptics = true,
+  onPress,
+  children,
+  selected: _selected,
+  disabled = false,
+  className = '',
+  accessibilityLabel,
+  accessibilityRole,
+  accessibilityState,
+  enableHaptics = true,
+  ..._rest
   }) => {
     const scale = useSharedValue(1);
 
@@ -259,6 +264,7 @@ export default function StrainFilterModal({
   const [currentFilters, setCurrentFilters] = useState<ActiveFilters>(initialFilters);
   const [isApplying, setIsApplying] = useState(false);
 
+  const { t } = useTranslation();
   // Enhanced: Improved haptic feedback patterns
   const handleApply = async () => {
     if (enableHaptics) {
@@ -344,9 +350,9 @@ export default function StrainFilterModal({
     });
   };
 
-  const renderFilterSection = (title: string, children: React.ReactNode) => (
+  const renderFilterSection = (titleKey: string, children: React.ReactNode) => (
     <ThemedView variant="card" className="mb-6 p-4">
-      <ThemedText className="mb-3 text-lg font-semibold">{title}</ThemedText>
+      <ThemedText className="mb-3 text-lg font-semibold">{t(titleKey)}</ThemedText>
       {children}
     </ThemedView>
   );
@@ -368,19 +374,29 @@ export default function StrainFilterModal({
                 if (enableHaptics) {
                   triggerSelectionHaptic();
                 }
-                setCurrentFilters({ ...currentFilters, species: option.id });
+                if (isAllowedSpecies(option.id)) {
+                  setCurrentFilters({
+                    ...currentFilters,
+                    species: option.id,
+                  });
+                } else {
+                  setCurrentFilters({
+                    ...currentFilters,
+                    species: null,
+                  });
+                }
               }}
               selected={isSelected}
               disabled={isLoading}
               enableHaptics={enableHaptics}
               className={`
                 flex-row items-center rounded-xl border px-4 py-3
-                ${getSpeciesBackgroundColor(option.id, isSelected)}
+                ${getSpeciesBackgroundColor(isAllowedSpecies(option.id) ? option.id : null, isSelected)}
                 ${isSelected ? 'border-current' : 'border-neutral-200 dark:border-neutral-700'}
                 ${isLoading ? 'opacity-50' : ''}
               `}>
               <OptimizedIcon
-                name={getSpeciesIcon(option.id)}
+                name={getSpeciesIcon(isAllowedSpecies(option.id) ? option.id : null)}
                 size={18}
                 color={
                   isSelected
@@ -388,8 +404,8 @@ export default function StrainFilterModal({
                     : SPECIES_ICON_COLORS.inactive
                 }
               />
-              <ThemedText className={`font-medium ${getSpeciesColor(option.id, isSelected)}`}>
-                {option.name}
+              <ThemedText className={`font-medium ${getSpeciesColor(isAllowedSpecies(option.id) ? option.id : null, isSelected)}`}>
+                {t(option.nameKey)}
               </ThemedText>
             </AnimatedSelectionButton>
           );
@@ -399,9 +415,10 @@ export default function StrainFilterModal({
   );
 
   // Render function for Effects (multi-select)
+  const translatedEffects = useStrainEffectsTranslation(EFFECT_OPTIONS);
   const renderEffectsSelector = () => (
     <View className="flex-row flex-wrap gap-2">
-      {EFFECT_OPTIONS.map((effect) => {
+      {EFFECT_OPTIONS.map((effect, idx) => {
         const isSelected = currentFilters.effects.includes(effect);
         return (
           <AnimatedSelectionButton
@@ -411,7 +428,7 @@ export default function StrainFilterModal({
             enableHaptics={enableHaptics}
             className={`rounded-full px-3 py-1.5 ${
               isSelected
-                ? 'bg-purple-600 dark:bg-purple-700' // Example color for effects
+                ? 'bg-purple-600 dark:bg-purple-700'
                 : 'bg-neutral-200 dark:bg-neutral-700'
             }`}
             accessibilityState={{ selected: isSelected }}
@@ -422,7 +439,7 @@ export default function StrainFilterModal({
                   ? 'text-white dark:text-neutral-100'
                   : 'text-neutral-700 dark:text-neutral-300'
               }`}>
-              {effect}
+              {translatedEffects[idx] || effect}
             </ThemedText>
           </AnimatedSelectionButton>
         );
@@ -431,9 +448,10 @@ export default function StrainFilterModal({
   );
 
   // Render function for Flavors (multi-select)
+  const translatedFlavors = useStrainFlavorsTranslation(FLAVOR_OPTIONS);
   const renderFlavorsSelector = () => (
     <View className="flex-row flex-wrap gap-2">
-      {FLAVOR_OPTIONS.map((flavor) => {
+      {FLAVOR_OPTIONS.map((flavor, idx) => {
         const isSelected = currentFilters.flavors.includes(flavor);
         return (
           <AnimatedSelectionButton
@@ -443,7 +461,7 @@ export default function StrainFilterModal({
             enableHaptics={enableHaptics}
             className={`rounded-full px-3 py-1.5 ${
               isSelected
-                ? 'bg-orange-500 dark:bg-orange-600' // Example color for flavors
+                ? 'bg-orange-500 dark:bg-orange-600'
                 : 'bg-neutral-200 dark:bg-neutral-700'
             }`}
             accessibilityState={{ selected: isSelected }}
@@ -454,7 +472,7 @@ export default function StrainFilterModal({
                   ? 'text-white dark:text-neutral-100'
                   : 'text-neutral-700 dark:text-neutral-300'
               }`}>
-              {flavor}
+              {translatedFlavors[idx] || flavor}
             </ThemedText>
           </AnimatedSelectionButton>
         );
@@ -466,7 +484,7 @@ export default function StrainFilterModal({
   const renderPotencySelector = () => (
     <View className="space-y-4">
       <PotencySlider
-        label="THC Content"
+        label={t('strains.filters.thcContent')}
         min={POTENCY_RANGES.thc.min}
         max={POTENCY_RANGES.thc.max}
         step={POTENCY_RANGES.thc.step}
@@ -484,7 +502,7 @@ export default function StrainFilterModal({
       />
 
       <PotencySlider
-        label="CBD Content"
+        label={t('strains.filters.cbdContent')}
         min={POTENCY_RANGES.cbd.min}
         max={POTENCY_RANGES.cbd.max}
         step={POTENCY_RANGES.cbd.step}
@@ -534,13 +552,13 @@ export default function StrainFilterModal({
               ? 'text-red-600 dark:text-red-400'
               : 'text-neutral-700 dark:text-neutral-300'
           }`}>
-          Show Favorites Only
+          {t('strains.filters.showFavoritesOnly')}
         </ThemedText>
       </View>
 
       {currentFilters.showFavoritesOnly && (
         <View className="rounded-full bg-red-500 px-2 py-1">
-          <ThemedText className="text-xs font-medium text-white">Active</ThemedText>
+          <ThemedText className="text-xs font-medium text-white">{t('strains.filters.active')}</ThemedText>
         </View>
       )}
     </AnimatedSelectionButton>
@@ -561,34 +579,34 @@ export default function StrainFilterModal({
             onPress={handleClose}
             disabled={Boolean(isLoading)}
             enableHaptics={enableHaptics}
-            accessibilityLabel="Close filters"
+            accessibilityLabel={t('strains.filters.closeFilters')}
             accessibilityRole="button"
             className={isLoading ? 'opacity-50' : ''}>
             <OptimizedIcon name="close" size={28} color="#6b7280" />
           </AnimatedActionButton>
           <ThemedText className="text-xl font-bold">
-            {isLoading ? 'Loading Filters...' : 'Filters'}
+            {isLoading ? t('strains.filters.loadingFilters') : t('strains.filters.title')}
           </ThemedText>
           <AnimatedActionButton
             onPress={handleReset}
             disabled={Boolean(isLoading)}
             enableHaptics={enableHaptics}
-            accessibilityLabel="Reset filters"
+            accessibilityLabel={t('strains.filters.resetFilters')}
             accessibilityRole="button"
             className={isLoading ? 'opacity-50' : ''}>
             <ThemedText className="text-base text-primary-600 dark:text-primary-400">
-              Reset
+              {t('strains.filters.reset')}
             </ThemedText>
           </AnimatedActionButton>
         </ThemedView>
 
         {/* Filter Content */}
         <EnhancedKeyboardWrapper className="flex-1 p-4">
-          {renderFilterSection('Species', renderSpeciesSelector())}
-          {renderFilterSection('Favorites', renderFavoritesSelector())}
-          {renderFilterSection('Effects', renderEffectsSelector())}
-          {renderFilterSection('Flavors', renderFlavorsSelector())}
-          {renderFilterSection('Potency Range', renderPotencySelector())}
+          {renderFilterSection('strains.filters.species', renderSpeciesSelector())}
+          {renderFilterSection('strains.filters.favorites', renderFavoritesSelector())}
+          {renderFilterSection('strains.filters.effects', renderEffectsSelector())}
+          {renderFilterSection('strains.filters.flavors', renderFlavorsSelector())}
+          {renderFilterSection('strains.filters.potencyRange', renderPotencySelector())}
         </EnhancedKeyboardWrapper>
 
         {/* Footer / Apply Button */}
@@ -597,24 +615,24 @@ export default function StrainFilterModal({
           className="rounded-none border-t border-neutral-200 px-4 py-4 dark:border-neutral-700">
           <AnimatedActionButton
             onPress={handleApply}
-            disabled={isApplying || isLoading} // Enhanced: Disable when loading
+            disabled={isApplying || isLoading}
             enableHaptics={enableHaptics}
             className={`items-center justify-center rounded-full py-4 ${
               isApplying || isLoading
                 ? 'bg-neutral-400 dark:bg-neutral-600'
                 : 'bg-primary-600 dark:bg-primary-700'
             }`}
-            accessibilityLabel="Apply selected filters"
+            accessibilityLabel={t('strains.filters.applyFilters')}
             accessibilityRole="button">
             {isApplying || isLoading ? (
               <View className="flex-row items-center">
                 <ActivityIndicator size="small" color="white" className="mr-2" />
                 <ThemedText className="text-lg font-bold text-white">
-                  {isLoading ? 'Loading...' : 'Applying...'}
+                  {isLoading ? t('strains.filters.loading') : t('strains.filters.applying')}
                 </ThemedText>
               </View>
             ) : (
-              <ThemedText className="text-lg font-bold text-white">Apply Filters</ThemedText>
+              <ThemedText className="text-lg font-bold text-white">{t('strains.filters.applyFilters')}</ThemedText>
             )}
           </AnimatedActionButton>
         </ThemedView>

@@ -1,0 +1,338 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "language": "Language",
+    "switch_to_german": "Switch to German",
+    "switch_to_english": "Switch to English",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "close": "Close",
+    "retry": "Retry",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "continue": "Continue",
+    "skip": "Skip",
+    "confirm": "Confirm",
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "tryAgain": "Try Again"
+  },
+  "navigation": {
+    "tabs": {
+      "home": "Home",
+      "strains": "Strains", 
+      "calendar": "Calendar",
+      "diagnosis": "Diagnosis",
+      "community": "Community"
+    },
+    "headers": {
+      "addTask": "Add Task",
+      "addPlantTask": "Add Plant Task",
+      "editPlant": "Edit Plant",
+      "newEntry": "New Entry"
+    }
+  },
+  "addPlantForm": {
+    "header": "Add Plant",
+    "photoStep": {
+      "title": "Add Photo",
+      "description": "Add a photo of your plant"
+    },
+    "basicInfoStep": {
+      "title": "Basic Info",
+      "description": "Name, strain, type, and stage"
+    },
+    "locationStep": {
+      "title": "Location",
+      "description": "Where is your plant located?"
+    },
+    "lightingStep": {
+      "title": "Lighting",
+      "description": "Light conditions for your plant"
+    },
+    "detailsStep": {
+      "title": "Growing Details",
+      "description": "Medium and additional notes"
+    },
+    "datesStep": {
+      "title": "Important Dates",
+      "description": "Key dates for your plant"
+    },
+    "progress": {
+      "step": "Step {{current}} of {{total}}",
+      "percent": "{{percent}}%"
+    },
+    "footer": {
+      "back": "Back",
+      "next": "Next",
+      "addPlant": "Add Plant"
+    },
+    "validation": {
+      "nameRequired": "Plant name is required",
+      "strainRequired": "Strain is required",
+      "plantedDateRequired": "Planted date is required",
+      "growthStageRequired": "Growth stage is required",
+      "locationDescriptionRequired": "Location description is required",
+      "invalidImageUrl": "Invalid image URL"
+    },
+    "fields": {
+      "plantName": "Plant Name",
+      "strain": "Strain",
+      "cannabisType": "Cannabis Type",
+      "growthStage": "Growth Stage",
+      "location": "Location",
+      "lightConditions": "Light Conditions",
+      "growingMedium": "Growing Medium",
+      "notes": "Notes (Optional)",
+      "plantedDate": "Planted Date"
+    },
+    "buttons": {
+      "camera": "Camera",
+      "gallery": "Gallery",
+      "customLocation": "Custom Location"
+    },
+    "placeholders": {
+      "plantName": "My awesome plant",
+      "strain": "Search for a strain (e.g., OG Kush)",
+      "customLocation": "Enter custom location",
+      "notes": "Add any additional notes about your plant..."
+    },
+    "labels": {
+      "noPhotoSelected": "No photo selected",
+      "syncingStrain": "Syncing strain data...",
+      "selectPlantedDate": "Select planted date"
+    },
+    "alerts": {
+      "incompleteStep": "Incomplete Step",
+      "fillRequiredFields": "Please fill out all required fields."
+    },
+    "errors": {
+      "strainDataIncomplete": "Strain data is incomplete. Please try selecting a different strain.",
+      "networkError": "Network error while syncing strain. Please check your connection and try again.",
+      "requestTimeout": "Request timed out. Please try again.",
+      "authenticationError": "Authentication error. Please log in again and try.",
+      "strainSyncFailed": "Failed to sync strain: {{message}}"
+    },
+    "predefinedLocations": {
+      "indoorGrowTent": "Indoor Grow Tent",
+      "outdoorGarden": "Outdoor Garden",
+      "greenhouse": "Greenhouse",
+      "balcony": "Balcony",
+      "windowsill": "Windowsill",
+      "basement": "Basement",
+      "garage": "Garage",
+      "closet": "Closet"
+    }
+  },
+  "plants": {
+    "health": "Health",
+    "watering": "Watering",
+    "nutrients": "Nutrients",
+    "nextWateringDays": "{{count}}d",
+    "nextNutrientDays": "{{count}}d",
+    "growJournal": "Grow Journal",
+    "metrics": "Metrics",
+    "comingSoon": "Coming Soon",
+    "deletePlant": "Delete Plant"
+  },
+  "tasks": {
+    "taskType": "Task Type",
+    "selectPlant": "Select Plant",
+    "selectTaskType": "Please select a task type",
+    "noPlants": "No Plants",
+    "noPlantsMessage": "No plants found to add tasks to",
+    "success": "Success",
+    "taskAddedToPlants": "Task added to {{count}} plant",
+    "taskAddedToPlants_other": "Task added to {{count}} plants!",
+    "taskAddedSuccessfully": "Task added successfully!",
+    "error": "Error",
+    "failedToCreateTasks": "Failed to create tasks",
+    "failedToLoadPlants": "Failed to load plants",
+    "selectPlantAndTaskType": "Please select a plant and task type",
+    "markCompleted": "Mark task as completed",
+    "ok": "OK",
+    "addTaskToAllPlants": "Add Task to All Plants",
+    "dueDate": "Due Date",
+    "selectDueDate": "Select due date",
+    "currently": "currently",
+    "types": {
+      "watering": "Watering",
+      "feeding": "Feeding", 
+      "pruning": "Pruning",
+      "harvesting": "Harvesting"
+    }
+  },
+  "forms": {
+    "placeholders": {
+      "selectStrain": "Select a strain to test",
+      "addNotes": "Add any notes for this task..."
+    },
+    "validation": {
+      "required": "This field is required",
+      "invalid": "Invalid input"
+    }
+  },
+  "community": {
+    "createPost": "Create Post",
+    "askQuestion": "Ask Question",
+    "selectPostType": "Please select a post type before submitting.",
+    "postCreated": "Post created successfully!",
+    "deleting": "Deleting...",
+    "delete": "Delete"
+  },
+  "alerts": {
+    "userNotAuthenticated": "User not authenticated or database not available.",
+    "plantAddedSuccess": "Plant added successfully!",
+    "plantAddError": "Could not add plant. Please try again.",
+    "resetFailed": "Failed to reset the database. Please try again.",
+    "noUserSession": "No user session found",
+    "cleanupFailed": "Cleanup failed: {{message}}",
+    "resetNotNeeded": "Database reset not needed or couldn't be completed."
+  },
+  "accessibility": {
+    "logout": "Logout (temporary testing button)",
+    "closeModal": "Close modal", 
+    "retryLoading": "Retry loading image",
+    "closeDebugPanel": "Close debug panel",
+    "resetDatabase": "Reset local database",
+    "memoryMonitor": "Memory monitor",
+    "clearErrorReports": "Clear error reports",
+    "openDebugPanel": "Open debug panel",
+    "toggleDarkMode": "Toggle dark mode",
+    "retryOperation": "Retry operation",
+    "retryNavigation": "Retry navigation",
+    "openSettingsMenu": "Open settings menu",
+    "switchCamera": "Switch to {{type}} camera",
+    "addNewPlant": "Add new plant",
+    "goBack": "Go back"
+  },
+  "diagnosis": {
+    "takePhoto": "Take a Photo",
+    "goBack": "Go Back",
+    "plantDoctor": "Plant Doctor",
+    "analyzePlant": "Analyze Plant",
+    "takePhotoDescription": "Take a photo of your plant and get",
+    "aiDiagnosis": "AI-powered diagnosis",
+    "inSeconds": "in seconds",
+    "cameraAccessibilityHint": "Opens camera to capture plant image for diagnosis"
+  },
+  "debug": {
+    "resetDatabase": "Reset Database",
+    "forceGarbageCollection": "Force Garbage Collection",
+    "clear": "Clear",
+    "memoryUsage": "Memory Usage",
+    "issuesDetected": "Issues Detected",
+    "debugPanel": "Debug Panel",
+    "resetDatabaseConfirmation": "This will delete your local database to fix schema issues. This action cannot be undone. Are you sure?",
+    "developmentMode": "Development Mode",
+    "auth": "Auth",
+    "autoBypass": "Auto Bypass",
+    "manual": "Manual",
+    "mockUser": "Mock User",
+    "none": "None",
+    "userId": "User ID",
+    "notLoggedIn": "Not logged in",
+    "useDevAuth": "Use Dev Auth",
+    "developerOptions": "Developer Options",
+    "database": "Database",
+    "resetDatabaseSchema": "Reset Database (Fix Schema)",
+    "close": "Close"
+  },
+  "strains": {
+    "type": {
+      "sativa": "Sativa",
+      "indica": "Indica",
+      "hybrid": "Hybrid"
+    },
+    "effects": {
+      "relaxed": "Relaxed",
+      "happy": "Happy",
+      "euphoric": "Euphoric",
+      "uplifted": "Uplifted",
+      "creative": "Creative",
+      "energetic": "Energetic",
+      "focused": "Focused",
+      "hungry": "Hungry",
+      "talkative": "Talkative",
+      "tingly": "Tingly",
+      "sleepy": "Sleepy",
+      "giggly": "Giggly",
+      "aroused": "Aroused"
+    },
+    "flavors": {
+      "earthy": "Earthy",
+      "sweet": "Sweet",
+      "citrus": "Citrus",
+      "fruity": "Fruity",
+      "pine": "Pine",
+      "woody": "Woody",
+      "spicy": "Spicy",
+      "herbal": "Herbal",
+      "pungent": "Pungent",
+      "diesel": "Diesel",
+      "skunk": "Skunk",
+      "cheese": "Cheese",
+      "floral": "Floral",
+      "tropical": "Tropical",
+      "berry": "Berry",
+      "grape": "Grape",
+      "lemon": "Lemon",
+      "lime": "Lime",
+      "orange": "Orange",
+      "mango": "Mango",
+      "blueberry": "Blueberry",
+      "vanilla": "Vanilla",
+      "mint": "Mint",
+      "coffee": "Coffee",
+      "chocolate": "Chocolate",
+      "chemical": "Chemical",
+      "pepper": "Pepper",
+      "flowery": "Flowery",
+      "lavender": "Lavender"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "beginner": "Beginner",
+      "moderate": "Moderate",
+      "intermediate": "Intermediate",
+      "hard": "Hard",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "unknownStrain": "Unknown Strain",
+    "noDescription": "No description available.",
+    "removeFromFavorites": "Remove from favorites",
+    "addToFavorites": "Add to favorites",
+    "filterByCategory": "Filter by {{category}}",
+    "noStrainsFound": "No strains found.",
+    "noStrainsFoundMatching": "No strains found matching \"{{query}}\"",
+    "tryAgain": "Try Again",
+    "failedToLoad": "Failed to load strains",
+    "loading": "Loading cannabis strains...",
+    "strainUuidTest": "Strain UUID Test",
+    "noPlantsFound": "No plants found",
+    "applyFilters": "Apply Filters",
+    "active": "Active",
+    "tryDifferentSpelling": "Try a different spelling or fewer characters.",
+    "searchStrain": "Search Strain",
+    "typeToSearch": "Type to search..."
+  },
+  "devMode": {
+    "indicator": "DEV MODE",
+    "dev": "DEV"
+  }
+}

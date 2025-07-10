@@ -123,15 +123,21 @@ export class DataIntegrityService {
     };
 
     try {
-      // Step 1: Check posts for orphaned references
+      // Step 1: Clean up orphaned local posts
+      await this.cleanupOrphanedLocalPosts(result);
+      
+      // Step 2: Check posts for orphaned references (deprecated)
       await this.checkPostIntegrity(result, options);
       
-      // Step 2: Validate image references
+      // Step 3: Validate image references
       if (fixBrokenImages) {
         await this.validateImageReferences(result, options);
       }
       
-      // Step 3: Check cross-references between local and remote data
+      // Step 4: Fix legacy images that point to removed posts bucket
+      await this.fixLegacyCommunityImages(result, options);
+
+      // Step 5: Check cross-references between local and remote data
       await this.validateCrossReferences(result, options);
 
       logger.log('[DataIntegrity] Integrity check completed', result);
@@ -214,6 +220,132 @@ export class DataIntegrityService {
       const errorMessage = `Cross-reference validation failed: ${error instanceof Error ? error.message : String(error)}`;
       result.errors.push(errorMessage);
       logger.error('[DataIntegrity] Cross-reference validation error', error);
+    }
+  }
+
+  /**
+   * Validate image_url fields for community_questions and community_plant_shares.
+   * If the URL still points to the deprecated `posts/` storage bucket we consider it broken and
+   * set image_url to NULL so the UI will fall back to placeholder instead of retry-looping.
+   */
+  private async fixLegacyCommunityImages(result: DataIntegrityResult, _options: CleanupOptions): Promise<void> {
+    // Handle community_questions table (has image_url column)
+    try {
+      const { data: questionRows, error: questionError } = await supabase
+        .from('community_questions')
+        .select('id, image_url')
+        .ilike('image_url', '%posts/%');
+
+      if (questionError) {
+        throw questionError;
+      }
+
+      if (questionRows && questionRows.length > 0) {
+        const questionIdsToFix: string[] = [];
+        questionRows.forEach((row) => {
+          const url = row.image_url as string | null;
+          if (url && url.startsWith('posts/')) {
+            questionIdsToFix.push(row.id as string);
+            result.brokenImageReferences++;
+          }
+        });
+
+        if (questionIdsToFix.length && !_options.dryRun && _options.fixBrokenImages !== false) {
+          const { error: updateError } = await supabase
+            .from('community_questions')
+            .update({ image_url: null })
+            .in('id', questionIdsToFix);
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          result.cleanedRecords += questionIdsToFix.length;
+          logger.log(`[DataIntegrity] Cleared legacy post images for ${questionIdsToFix.length} community_questions`);
+        }
+      }
+    } catch (err) {
+      const msg = `[DataIntegrity] Failed to clean legacy images in community_questions: ${err instanceof Error ? err.message : String(err)}`;
+      result.errors.push(msg);
+      logger.error(msg);
+    }
+
+    // Handle community_plant_shares table (has images_urls array column)
+    try {
+      const { data: shareRows, error: shareError } = await supabase
+        .from('community_plant_shares')
+        .select('id, images_urls')
+        .not('images_urls', 'is', null);
+
+      if (shareError) {
+        throw shareError;
+      }
+
+      if (shareRows && shareRows.length > 0) {
+        const shareIdsToFix: string[] = [];
+        shareRows.forEach((row) => {
+          const urls = row.images_urls as string[] | null;
+          if (urls && Array.isArray(urls)) {
+            const hasLegacyUrls = urls.some(url => url && url.startsWith('posts/'));
+            if (hasLegacyUrls) {
+              shareIdsToFix.push(row.id as string);
+              result.brokenImageReferences++;
+            }
+          }
+        });
+
+        if (shareIdsToFix.length && !_options.dryRun && _options.fixBrokenImages !== false) {
+          // For each record, filter out the legacy URLs
+          for (const id of shareIdsToFix) {
+            const record = shareRows.find(r => r.id === id);
+            if (record && record.images_urls) {
+              const cleanUrls = (record.images_urls as string[]).filter(url => !url.startsWith('posts/'));
+              
+              const { error: updateError } = await supabase
+                .from('community_plant_shares')
+                .update({ images_urls: cleanUrls.length > 0 ? cleanUrls : null })
+                .eq('id', id);
+
+              if (updateError) {
+                throw updateError;
+              }
+            }
+          }
+
+          result.cleanedRecords += shareIdsToFix.length;
+          logger.log(`[DataIntegrity] Cleared legacy post images for ${shareIdsToFix.length} community_plant_shares`);
+        }
+      }
+    } catch (err) {
+      const msg = `[DataIntegrity] Failed to clean legacy images in community_plant_shares: ${err instanceof Error ? err.message : String(err)}`;
+      result.errors.push(msg);
+      logger.error(msg);
+    }
+  }
+
+  /**
+   * Clean up orphaned local posts records that no longer exist in Supabase
+   * Since the posts table has been removed from Supabase, we need to remove any local posts
+   */
+  private async cleanupOrphanedLocalPosts(result: DataIntegrityResult): Promise<void> {
+    // Check if posts table exists in local WatermelonDB
+    const postsCollection = this.database.collections.get('posts');
+    if (!postsCollection) {
+      logger.log('[DataIntegrity] Posts collection not found locally - skipping orphaned local posts cleanup (expected after migration)');
+      return;
+    }
+
+    const localPosts = await postsCollection.query().fetch();
+    if (localPosts.length > 0) {
+      logger.log(`[DataIntegrity] Found ${localPosts.length} orphaned local posts. Removing them...`);
+      // Delete all local posts since the table no longer exists in Supabase
+      await this.database.write(async () => {
+        for (const post of localPosts) {
+          await post.markAsDeleted();
+        }
+      });
+      result.cleanedRecords += localPosts.length;
+      logger.log(`[DataIntegrity] Removed ${localPosts.length} orphaned local posts`);
     }
   }
 
@@ -413,6 +545,95 @@ export class DataIntegrityService {
         message: errorMsg
       };
     }
+  }
+
+  /**
+   * Force cleanup of local community data that no longer exists in Supabase
+   */
+  async forceCleanupLocalCommunityData(): Promise<{ cleaned: number; errors: string[] }> {
+    const result: { cleaned: number; errors: string[] } = { cleaned: 0, errors: [] };
+    
+    try {
+      // Get all community data from Supabase
+      const supabaseQuestions = await supabase
+        .from('community_questions')
+        .select('id');
+      
+      const supabaseShares = await supabase
+        .from('community_plant_shares')
+        .select('id');
+        
+      if (supabaseQuestions.error) {
+        throw new Error(`Failed to fetch questions: ${supabaseQuestions.error.message}`);
+      }
+      
+      if (supabaseShares.error) {
+        throw new Error(`Failed to fetch plant shares: ${supabaseShares.error.message}`);
+      }
+      
+      const supabaseQuestionIds = new Set((supabaseQuestions.data || []).map(q => q.id));
+      const supabaseShareIds = new Set((supabaseShares.data || []).map(s => s.id));
+      
+      logger.log(`[DataIntegrity] Found ${supabaseQuestionIds.size} questions and ${supabaseShareIds.size} plant shares in Supabase`);
+      
+      // Check for orphaned local community questions
+      try {
+        const localQuestions = await this.database.collections.get('community_questions').query().fetch();
+        
+        for (const localQuestion of localQuestions) {
+          if (!supabaseQuestionIds.has(localQuestion.id)) {
+            await this.database.write(async () => {
+              await localQuestion.destroyPermanently();
+            });
+            result.cleaned++;
+            logger.log(`[DataIntegrity] Removed orphaned local question: ${localQuestion.id}`);
+          }
+        }
+      } catch (_err) {
+        logger.log('[DataIntegrity] Community questions table not found locally (expected after schema migration)');
+      }
+      
+      // Check for orphaned local community plant shares
+      try {
+        const localShares = await this.database.collections.get('community_plant_shares').query().fetch();
+        
+        for (const localShare of localShares) {
+          if (!supabaseShareIds.has(localShare.id)) {
+            await this.database.write(async () => {
+              await localShare.destroyPermanently();
+            });
+            result.cleaned++;
+            logger.log(`[DataIntegrity] Removed orphaned local plant share: ${localShare.id}`);
+          }
+        }
+      } catch (_err) {
+        logger.log('[DataIntegrity] Community plant shares table not found locally (expected after schema migration)');
+      }
+      
+      // Check for orphaned local posts (from old schema)
+      const postsCollection = this.database.collections.get('posts');
+      if (!postsCollection) {
+        logger.log('[DataIntegrity] Posts collection not found locally (expected after schema migration)');
+      } else {
+        const localPosts = await postsCollection.query().fetch();
+        for (const localPost of localPosts) {
+          await this.database.write(async () => {
+            await localPost.destroyPermanently();
+          });
+          result.cleaned++;
+          logger.log(`[DataIntegrity] Removed orphaned local post: ${localPost.id}`);
+        }
+      }
+      
+      logger.log(`[DataIntegrity] Force cleanup completed. Cleaned ${result.cleaned} orphaned records`);
+      
+    } catch (error) {
+      const errorMsg = `Force cleanup failed: ${error instanceof Error ? error.message : String(error)}`;
+      result.errors.push(errorMsg);
+      logger.error('[DataIntegrity]', errorMsg);
+    }
+    
+    return result;
   }
 }
 

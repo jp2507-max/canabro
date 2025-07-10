@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -11,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
@@ -48,8 +49,9 @@ const TASK_TYPES = [
 ];
 
 export default function AddTaskToAllPlantsScreen() {
+  const { t } = useTranslation('tasks');
   const { isDark } = useTheme();
-  const router = useRouter();
+  const router = useSafeRouter();
   const { database } = useWatermelon();
 
   const [selectedTaskType, setSelectedTaskType] = useState<string | null>(null);
@@ -147,13 +149,13 @@ export default function AddTaskToAllPlantsScreen() {
               className="text-neutral-700 dark:text-neutral-300"
             />
           </TouchableOpacity>
-          <ThemedText className="flex-1 text-xl font-bold">Add Task to All Plants</ThemedText>
+          <ThemedText className="flex-1 text-xl font-bold">{t('addTaskToAllPlants')}</ThemedText>
         </View>
 
         <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
           {/* Task Type Selection */}
           <View className="mb-6">
-            <ThemedText className="mb-3 text-lg font-semibold">Task Type</ThemedText>
+            <ThemedText className="mb-3 text-lg font-semibold">{t('taskType')}</ThemedText>
             <View className="space-y-2">
               {TASK_TYPES.map((taskType) => (
                 <TouchableOpacity
@@ -193,14 +195,14 @@ export default function AddTaskToAllPlantsScreen() {
 
           {/* Due Date Selection */}
           <View className="mb-6">
-            <ThemedText className="mb-3 text-lg font-semibold">Due Date</ThemedText>
+            <ThemedText className="mb-3 text-lg font-semibold">{t('dueDate')}</ThemedText>
             <TouchableOpacity
               className={`rounded-xl border-2 p-4 ${
                 isDark ? 'border-neutral-700 bg-neutral-800' : 'border-neutral-200 bg-white'
               }`}
               onPress={() => setShowDatePicker(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Select due date, currently ${formatDate(dueDate)}`}>
+              accessibilityLabel={`${t('selectDueDate')}, ${t('currently')} ${formatDate(dueDate)}`}>
               <View className="flex-row items-center">
                 <Ionicons
                   name="calendar-outline"
@@ -246,7 +248,7 @@ export default function AddTaskToAllPlantsScreen() {
             onPress={handleAddTaskToAllPlants}
             disabled={!selectedTaskType || isCreating}
             accessibilityRole="button"
-            accessibilityLabel="Add task to all plants"
+            accessibilityLabel={t('addTaskToAllPlants')}
             accessibilityState={{
               disabled: !selectedTaskType || isCreating,
             }}>
@@ -254,7 +256,7 @@ export default function AddTaskToAllPlantsScreen() {
               <ActivityIndicator size="small" color="white" />
             ) : (
               <ThemedText className="text-center text-lg font-semibold text-white">
-                Add Task to All Plants
+                {t('addTaskToAllPlants')}
               </ThemedText>
             )}
           </TouchableOpacity>

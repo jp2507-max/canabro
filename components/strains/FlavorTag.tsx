@@ -2,7 +2,9 @@ import React from 'react';
 import { View } from 'react-native';
 
 // Removed StrainFlavorType import as we now accept strings
+
 import ThemedText from '../ui/ThemedText';
+import { useStrainFlavorsTranslation } from '../../lib/hooks/useTranslation';
 
 interface FlavorTagProps {
   flavor: string; // Accept string (aroma) from API
@@ -109,18 +111,16 @@ const defaultStyle = {
   text: 'text-neutral-800 dark:text-neutral-300',
 };
 
-/**
- * Renders a tag representing a strain flavor/aroma with appropriate styling.
- * Accepts flavor/aroma as a string from the API.
- */
-export default function FlavorTag({ flavor, emoji }: FlavorTagProps) {
+
+const FlavorTag: React.FC<FlavorTagProps> = ({ flavor, emoji }) => {
   if (typeof flavor !== 'string' || !flavor.trim()) return null;
   // Normalize the flavor/aroma string (lowercase) for mapping
   const normalizedFlavor = flavor.toLowerCase();
   const style = flavorColors[normalizedFlavor] || defaultStyle;
 
-  // Capitalize the first letter for display
-  const displayFlavor = flavor.charAt(0).toUpperCase() + flavor.slice(1);
+  // Use translation hook for flavor
+  const [translatedFlavor] = useStrainFlavorsTranslation([flavor]);
+  const displayFlavor = translatedFlavor || (flavor.charAt(0).toUpperCase() + flavor.slice(1));
 
   // Emoji mapping for flavors
   const flavorEmojis: Record<string, string> = {
@@ -157,4 +157,6 @@ export default function FlavorTag({ flavor, emoji }: FlavorTagProps) {
       </ThemedText>
     </View>
   );
-}
+};
+
+export default FlavorTag;

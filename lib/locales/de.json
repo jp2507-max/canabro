@@ -1,0 +1,339 @@
+{
+  "common": {
+    "welcome": "Willkommen",
+    "language": "Sprache",
+    "switch_to_german": "Wechseln zu Deutsch",
+    "switch_to_english": "Wechseln zu Englisch",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "update": "Aktualisieren",
+    "submit": "Absenden",
+    "back": "Zurück",
+    "next": "Weiter",
+    "done": "Fertig",
+    "close": "Schließen",
+    "retry": "Wiederholen",
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "success": "Erfolgreich",
+    "warning": "Warnung",
+    "info": "Info",
+    "ok": "OK",
+    "yes": "Ja",
+    "no": "Nein",
+    "continue": "Fortfahren",
+    "skip": "Überspringen",
+    "confirm": "Bestätigen",
+    "somethingWentWrong": "Etwas ist schiefgelaufen",
+    "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "tryAgain": "Erneut versuchen"
+    },
+  "navigation": {
+    "tabs": {
+      "home": "Startseite",
+      "strains": "Sorten", 
+      "calendar": "Kalender",
+      "diagnosis": "Diagnose",
+      "community": "Community"
+    },
+    "headers": {
+      "addTask": "Aufgabe hinzufügen",
+      "addPlantTask": "Pflanzenaufgabe hinzufügen",
+      "editPlant": "Pflanze bearbeiten",
+      "newEntry": "Neuer Eintrag"
+    }
+  },
+  "addPlantForm": {
+    "header": "Pflanze hinzufügen",
+    "photoStep": {
+      "title": "Foto hinzufügen",
+      "description": "Fügen Sie ein Foto Ihrer Pflanze hinzu"
+    },
+    "basicInfoStep": {
+      "title": "Grundlegende Informationen",
+      "description": "Name, Sorte, Typ und Stadium"
+    },
+    "locationStep": {
+      "title": "Standort",
+      "description": "Wo befindet sich Ihre Pflanze?"
+    },
+    "lightingStep": {
+      "title": "Beleuchtung",
+      "description": "Lichtverhältnisse für Ihre Pflanze"
+    },
+    "detailsStep": {
+      "title": "Anbaudetails",
+      "description": "Medium und zusätzliche Notizen"
+    },
+    "datesStep": {
+      "title": "Wichtige Daten",
+      "description": "Wichtige Daten für Ihre Pflanze"
+    },
+    "progress": {
+      "step": "Schritt {{current}} von {{total}}",
+      "percent": "{{percent}}%"
+    },
+    "footer": {
+      "back": "Zurück",
+      "next": "Weiter",
+      "addPlant": "Pflanze hinzufügen"
+    },
+    "validation": {
+      "nameRequired": "Pflanzenname ist erforderlich",
+      "strainRequired": "Sorte ist erforderlich",
+      "plantedDateRequired": "Pflanzdatum ist erforderlich",
+      "growthStageRequired": "Wachstumsstadium ist erforderlich",
+      "locationDescriptionRequired": "Standortbeschreibung ist erforderlich",
+      "invalidImageUrl": "Ungültige Bild-URL"
+    },
+    "fields": {
+      "plantName": "Pflanzenname",
+      "strain": "Sorte",
+      "cannabisType": "Cannabis-Typ",
+      "growthStage": "Wachstumsstadium",
+      "location": "Standort",
+      "lightConditions": "Lichtverhältnisse",
+      "growingMedium": "Anbaumedium",
+      "notes": "Notizen (Optional)",
+      "plantedDate": "Pflanzdatum"
+    },
+    "buttons": {
+      "camera": "Kamera",
+      "gallery": "Galerie",
+      "customLocation": "Benutzerdefinierter Standort"
+    },
+    "placeholders": {
+      "plantName": "Meine tolle Pflanze",
+      "strain": "Nach einer Sorte suchen (z.B. OG Kush)",
+      "customLocation": "Benutzerdefinierten Standort eingeben",
+      "notes": "Fügen Sie zusätzliche Notizen zu Ihrer Pflanze hinzu..."
+    },
+    "labels": {
+      "noPhotoSelected": "Kein Foto ausgewählt",
+      "syncingStrain": "Sortendaten werden synchronisiert...",
+      "selectPlantedDate": "Pflanzdatum auswählen"
+    },
+    "alerts": {
+      "incompleteStep": "Unvollständiger Schritt",
+      "fillRequiredFields": "Bitte füllen Sie alle erforderlichen Felder aus."
+    },
+    "errors": {
+      "strainDataIncomplete": "Sortendaten sind unvollständig. Bitte versuchen Sie, eine andere Sorte auszuwählen.",
+      "networkError": "Netzwerkfehler beim Synchronisieren der Sorte. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+      "requestTimeout": "Zeitüberschreitung der Anfrage. Bitte versuchen Sie es erneut.",
+      "authenticationError": "Authentifizierungsfehler. Bitte melden Sie sich erneut an und versuchen Sie es.",
+      "strainSyncFailed": "Synchronisierung der Sorte fehlgeschlagen: {{message}}"
+    },
+    "predefinedLocations": {
+      "indoorGrowTent": "Indoor-Grow-Zelt",
+      "outdoorGarden": "Außengarten",
+      "greenhouse": "Gewächshaus",
+      "balcony": "Balkon",
+      "windowsill": "Fensterbank",
+      "basement": "Keller",
+      "garage": "Garage",
+      "closet": "Schrank"
+  }
+  
+  },
+  "plants": {
+    "health": "Gesundheit",
+    "watering": "Bewässerung",
+    "nutrients": "Nährstoffe",
+    "nextWateringDays": "{{count}}t",
+    "nextNutrientDays": "{{count}}t",
+    "growJournal": "Anbautagebuch",
+    "metrics": "Metriken",
+    "comingSoon": "Demnächst verfügbar",
+    "deletePlant": "Pflanze löschen"
+  },
+  "tasks": {
+    "taskType": "Aufgabentyp",
+    "selectPlant": "Pflanze auswählen",
+    "selectTaskType": "Bitte wählen Sie einen Aufgabentyp",
+    "noPlants": "Keine Pflanzen",
+    "noPlantsMessage": "Keine Pflanzen gefunden, um Aufgaben hinzuzufügen",
+    "success": "Erfolg",
+    "taskAddedToPlants": "Aufgabe zu {{count}} Pflanze hinzugefügt!",
+    "taskAddedToPlants_other": "Aufgabe zu {{count}} Pflanzen hinzugefügt!",
+    "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt!",
+    "error": "Fehler",
+    "failedToCreateTasks": "Aufgaben konnten nicht erstellt werden",
+    "failedToLoadPlants": "Pflanzen konnten nicht geladen werden",
+    "selectPlantAndTaskType": "Bitte wählen Sie eine Pflanze und einen Aufgabentyp",
+    "markCompleted": "Aufgabe als erledigt markieren",
+    "ok": "OK",
+    "addTaskToAllPlants": "Aufgabe zu allen Pflanzen hinzufügen",
+    "dueDate": "Fälligkeitsdatum",
+    "selectDueDate": "Fälligkeitsdatum auswählen",
+    "currently": "aktuell",
+    "types": {
+      "watering": "Bewässerung",
+      "feeding": "Düngung",
+      "pruning": "Beschneidung",
+      "harvesting": "Ernte"
+    }
+  },
+  "forms": {
+    "placeholders": {
+      "selectStrain": "Wählen Sie eine Sorte zum Testen",
+      "addNotes": "Fügen Sie Notizen für diese Aufgabe hinzu..."
+    },
+    "validation": {
+      "required": "Dieses Feld ist erforderlich",
+      "invalid": "Ungültige Eingabe"
+    }
+  },
+  "community": {
+    "createPost": "Beitrag erstellen",
+    "askQuestion": "Frage stellen",
+    "selectPostType": "Bitte wählen Sie einen Beitragstyp vor dem Absenden.",
+    "postCreated": "Beitrag erfolgreich erstellt!",
+    "deleting": "Wird gelöscht...",
+    "delete": "Löschen"
+  },
+  "alerts": {
+    "userNotAuthenticated": "Benutzer nicht authentifiziert oder Datenbank nicht verfügbar.",
+    "plantAddedSuccess": "Pflanze erfolgreich hinzugefügt!",
+    "plantAddError": "Pflanze konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+    "resetFailed": "Zurücksetzen der Datenbank fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "noUserSession": "Keine Benutzersitzung gefunden",
+    "cleanupFailed": "Bereinigung fehlgeschlagen: {{message}}",
+    "resetNotNeeded": "Datenbankzurücksetzung nicht erforderlich oder konnte nicht abgeschlossen werden."
+  },
+  "accessibility": {
+    "logout": "Abmelden (temporärer Test-Button)",
+    "closeModal": "Modal schließen", 
+    "retryLoading": "Bildladen wiederholen",
+    "closeDebugPanel": "Debug-Panel schließen",
+    "resetDatabase": "Lokale Datenbank zurücksetzen",
+    "memoryMonitor": "Speichermonitor",
+    "clearErrorReports": "Fehlerberichte löschen",
+    "openDebugPanel": "Debug-Panel öffnen",
+    "toggleDarkMode": "Dunklen Modus umschalten",
+    "retryOperation": "Vorgang wiederholen",
+    "retryNavigation": "Navigation wiederholen",
+    "openSettingsMenu": "Einstellungsmenü öffnen",
+    "switchCamera": "Zur {{type}}-Kamera wechseln",
+    "addNewPlant": "Neue Pflanze hinzufügen",
+    "goBack": "Zurück gehen"
+  },
+  "diagnosis": {
+    "takePhoto": "Foto aufnehmen",
+    "goBack": "Zurück gehen",
+    "plantDoctor": "Pflanzenarzt",
+    "analyzePlant": "Pflanze analysieren",
+    "takePhotoDescription": "Machen Sie ein Foto Ihrer Pflanze und erhalten Sie",
+    "aiDiagnosis": "KI-gestützte Diagnose",
+    "inSeconds": "in Sekunden",
+    "cameraAccessibilityHint": "Öffnet die Kamera, um ein Pflanzenbild für die Diagnose aufzunehmen"
+  },
+  "debug": {
+    "resetDatabase": "Datenbank zurücksetzen",
+    "forceGarbageCollection": "Garbage Collection erzwingen",
+    "clear": "Löschen",
+    "memoryUsage": "Speicherverbrauch",
+    "issuesDetected": "Probleme erkannt",
+    "debugPanel": "Debug-Panel",
+    "resetDatabaseConfirmation": "Dies wird Ihre lokale Datenbank löschen, um Schema-Probleme zu beheben. Diese Aktion kann nicht rückgängig gemacht werden. Sind Sie sicher?",
+    "developmentMode": "Entwicklermodus",
+    "auth": "Authentifizierung",
+    "autoBypass": "Auto-Umgehung",
+    "manual": "Manuell",
+    "mockUser": "Mock-Benutzer",
+    "none": "Keine",
+    "userId": "Benutzer-ID",
+    "notLoggedIn": "Nicht angemeldet",
+    "useDevAuth": "Dev-Auth verwenden",
+    "developerOptions": "Entwickleroptionen",
+    "database": "Datenbank",
+    "resetDatabaseSchema": "Datenbank zurücksetzen (Schema reparieren)",
+    "close": "Schließen"
+  },
+  "strains": {
+    "type": {
+      "sativa": "Sativa",
+      "indica": "Indica",
+      "hybrid": "Hybrid"
+    },
+    "effects": {
+      "relaxed": "Entspannt",
+      "happy": "Glücklich",
+      "euphoric": "Euphorisch",
+      "uplifted": "Erhebend",
+      "creative": "Kreativ",
+      "energetic": "Energetisch",
+      "focused": "Fokussiert",
+      "hungry": "Hungrig",
+      "talkative": "Gesprächig",
+      "tingly": "Prickelnd",
+      "sleepy": "Schläfrig",
+      "giggly": "Kichernd",
+      "aroused": "Erregt"
+    },
+    "flavors": {
+      "earthy": "Erdig",
+      "sweet": "Süß",
+      "citrus": "Zitrus",
+      "fruity": "Fruchtig",
+      "pine": "Kiefer",
+      "woody": "Holzig",
+      "spicy": "Würzig",
+      "herbal": "Kräuterig",
+      "pungent": "Stechend",
+      "diesel": "Diesel",
+      "skunk": "Skunk",
+      "cheese": "Käse",
+      "floral": "Blumig",
+      "tropical": "Tropisch",
+      "berry": "Beere",
+      "grape": "Traube",
+      "lemon": "Zitrone",
+      "lime": "Limette",
+      "orange": "Orange",
+      "mango": "Mango",
+      "blueberry": "Blaubeere",
+      "vanilla": "Vanille",
+      "mint": "Minze",
+      "coffee": "Kaffee",
+      "chocolate": "Schokolade",
+      "chemical": "Chemisch",
+      "pepper": "Pfeffer",
+      "flowery": "Blumig",
+      "lavender": "Lavendel"
+    },
+    "difficulty": {
+      "easy": "Einfach",
+      "beginner": "Anfänger",
+      "moderate": "Mittelschwer",
+      "intermediate": "Fortgeschritten",
+      "hard": "Schwer",
+      "advanced": "Fortgeschritten",
+      "expert": "Experte"
+    },
+    "unknownStrain": "Unbekannte Sorte",
+    "noDescription": "Keine Beschreibung verfügbar.",
+    "removeFromFavorites": "Aus Favoriten entfernen",
+    "addToFavorites": "Zu Favoriten hinzufügen",
+    "filterByCategory": "Nach {{category}} filtern",
+    "noStrainsFound": "Keine Sorten gefunden.",
+    "noStrainsFoundMatching": "Keine Sorten gefunden, die \"{{query}}\" entsprechen",
+    "tryAgain": "Erneut versuchen",
+    "failedToLoad": "Sorten konnten nicht geladen werden",
+    "loading": "Sorten werden geladen...",
+    "strainUuidTest": "Sorten-UUID-Test",
+    "noPlantsFound": "Keine Pflanzen gefunden",
+    "applyFilters": "Filter anwenden",
+    "active": "Aktiv",
+    "tryDifferentSpelling": "Versuchen Sie eine andere Schreibweise oder weniger Zeichen.",
+    "searchStrain": "Sorte suchen",
+    "typeToSearch": "Zum Suchen tippen..."
+  },
+  "devMode": {
+    "indicator": "ENTWICKLERMODUS",
+    "dev": "ENT"
+  }
+}

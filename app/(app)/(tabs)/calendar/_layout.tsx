@@ -1,6 +1,9 @@
 import { Stack } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function CalendarLayout() {
+  const { t } = useTranslation('navigation');
+  
   return (
     <Stack
       screenOptions={{
@@ -16,7 +19,7 @@ export default function CalendarLayout() {
         name="add-task"
         options={{
           headerShown: true,
-          headerTitle: 'Add Task',
+          headerTitle: t('headers.addTask'),
           presentation: 'modal',
         }}
       />
@@ -24,7 +27,7 @@ export default function CalendarLayout() {
         name="add-plant-task"
         options={{
           headerShown: true,
-          headerTitle: 'Add Plant Task',
+          headerTitle: t('headers.addPlantTask'),
           presentation: 'modal',
         }}
       />

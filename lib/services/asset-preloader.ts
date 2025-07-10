@@ -7,7 +7,6 @@
 import { Platform } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { Asset } from 'expo-asset';
-import { FontDisplay } from 'expo-font';
 import * as Font from 'expo-font';
 
 import { Logger, assetOptimizations, memoryOptimization } from '../utils/production-utils';
@@ -17,7 +16,7 @@ const CRITICAL_IMAGES = [
   require('../../assets/icon.png'),
   require('../../assets/adaptive-icon.png'),
   require('../../assets/splash.png'),
-  require('../../assets/images/placeholder.png'),
+  require('../../assets/placeholder.png'),
 ] as const;
 
 // Critical fonts (if you add custom fonts)
@@ -63,7 +62,7 @@ interface PreloadResult {
   overall: {
     success: boolean;
     duration: number;
-    memoryUsage?: any;
+  memoryUsage?: Record<string, unknown> | null;
   };
 }
 
@@ -189,7 +188,7 @@ class AssetPreloaderService {
       // Use Asset.loadAsync for local images - more efficient than ExpoImage.prefetch for bundled assets
       const batches: (typeof CRITICAL_IMAGES[number])[][] = [];
       for (let i = 0; i < CRITICAL_IMAGES.length; i += batchSize) {
-        batches.push(CRITICAL_IMAGES.slice(i, i + batchSize) as any);
+        batches.push(CRITICAL_IMAGES.slice(i, i + batchSize));
       }
 
       for (const batch of batches) {
@@ -235,9 +234,10 @@ class AssetPreloaderService {
 
     try {
       // Use Font.loadAsync for better performance and caching
-      const fontLoadPromises = fontEntries.map(async ([fontName, fontSource]) => {        try {
+      const fontLoadPromises = fontEntries.map(async ([fontName, fontSource]) => {
+        try {
           await Font.loadAsync({
-            [fontName]: fontSource as any,
+            [fontName]: fontSource as number,
           });
           result.loaded++;
           Logger.debug(`Preloaded font: ${fontName}`);
@@ -277,7 +277,7 @@ class AssetPreloaderService {
       // Batch remote asset loading to avoid overwhelming the network
       const batches: (typeof CRITICAL_REMOTE_ASSETS[number])[][] = [];
       for (let i = 0; i < CRITICAL_REMOTE_ASSETS.length; i += batchSize) {
-        batches.push(CRITICAL_REMOTE_ASSETS.slice(i, i + batchSize) as any);
+        batches.push(CRITICAL_REMOTE_ASSETS.slice(i, i + batchSize));
       }
 
       for (const batch of batches) {

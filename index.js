@@ -7,6 +7,37 @@
 // Import polyfills first - MUST be before any other imports
 import './lib/polyfills/index.js';
 
+import { LogBox } from 'react-native';
+
+// The Tab navigator can momentarily mount outside a NavigationContainer
+// during hot-reload. Ignore that dev-only warning; real errors
+// (anything else) still surface normally.
+LogBox.ignoreLogs([
+  "Couldn't find a navigation context. Have you wrapped your app with 'NavigationContainer'?",
+]);
+
+// ⬇️ ADD GLOBAL ERROR HANDLER
+// Use built-in React Native global error handler instead of external dependency
+if (typeof global.ErrorUtils !== 'undefined' && global.ErrorUtils?.setGlobalHandler) {
+  const defaultHandler = global.ErrorUtils.getGlobalHandler?.();
+
+  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
+    if (error?.message?.includes('navigation context') || error?.message?.includes('NavigationContainer')) {
+      // Suppress noisy development-only navigation context errors that are retried by NavigationErrorBoundary
+      if (__DEV__) {
+        console.warn('[GlobalHandler] Suppressed transient navigation context error');
+      }
+      return; // Prevent red box
+    }
+
+    console.error('[GLOBAL-JS-ERROR]', error?.message, '\n', error?.stack, { isFatal });
+
+    // Fall back to the default RN handler after custom logging
+    defaultHandler?.(error, isFatal);
+  });
+}
+// ⬆️ END GLOBAL ERROR HANDLER
+
 // Import gesture handler before other React Native components
 import 'react-native-gesture-handler';
 import { enableScreens } from 'react-native-screens';

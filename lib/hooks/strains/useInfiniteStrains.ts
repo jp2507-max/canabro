@@ -89,6 +89,15 @@ export function useInfiniteStrains({
   const maxThc = activeFilters?.maxThc ?? undefined;
   const speciesFilter = activeFilters?.species ?? species;
 
+  // Debug logging for strain type filtering
+  console.log('[useInfiniteStrains] Filtering parameters:', {
+    species,
+    'activeFilters.species': activeFilters?.species,
+    speciesFilter,
+    debouncedSearch,
+    queryKey: ['strains', debouncedSearch, speciesFilter, effect, flavor, minThc, maxThc, limit]
+  });
+
   return useInfiniteQuery<StrainQueryResponse, Error, StrainQueryResponse, (string | number | undefined)[], number>({
     queryKey: [
       'strains',
@@ -153,11 +162,20 @@ export function useInfiniteStrains({
 
       // 2. Type filter (species) - Use paginated API
       if (speciesFilter) {
+        console.log(`[useInfiniteStrains] Using type filter: "${speciesFilter}" (page ${pageParam})`);
         const resp = await WeedDbService.filterByTypePaginated(
           speciesFilter as 'sativa' | 'indica' | 'hybrid',
           pageParam,
           limit
         );
+        
+        console.log(`[useInfiniteStrains] Type filter response:`, {
+          type: speciesFilter,
+          total: resp.data.total_count,
+          pageItems: resp.data.items.length,
+          page: resp.data.page,
+          totalPages: resp.data.total_pages
+        });
         
         return {
           strains: resp.data.items.map(mapWeedDbStrainToAppStrain),
@@ -167,6 +185,7 @@ export function useInfiniteStrains({
       }
 
       // 3. Fallback to simple paginated list
+      console.log(`[useInfiniteStrains] Using fallback list (page ${pageParam})`);
       const resp = await WeedDbService.listPaginated(pageParam, limit);
       return {
         strains: resp.data.items.map(mapWeedDbStrainToAppStrain),

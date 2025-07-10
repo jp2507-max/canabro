@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -11,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
@@ -49,8 +50,9 @@ const TASK_TYPES = [
 
 export default function AddTaskToAllPlantsScreen() {
   const { isDark } = useTheme();
-  const router = useRouter();
+  const router = useSafeRouter();
   const { database } = useWatermelon();
+  const { t } = useTranslation('tasks');
 
   const [selectedTaskType, setSelectedTaskType] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState(new Date());
@@ -60,7 +62,7 @@ export default function AddTaskToAllPlantsScreen() {
 
   const handleAddTaskToAllPlants = useCallback(async () => {
     if (!selectedTaskType) {
-      Alert.alert('Error', 'Please select a task type');
+      Alert.alert(t('error'), t('selectTaskType'));
       return;
     }
 
@@ -72,7 +74,7 @@ export default function AddTaskToAllPlantsScreen() {
       const allPlants = await plantsCollection.query().fetch();
 
       if (allPlants.length === 0) {
-        Alert.alert('No Plants', 'No plants found to add tasks to');
+        Alert.alert(t('noPlants'), t('noPlantsMessage'));
         return;
       }
 
@@ -95,11 +97,11 @@ export default function AddTaskToAllPlantsScreen() {
       });
 
       Alert.alert(
-        'Success',
-        `Task added to ${allPlants.length} plant${allPlants.length === 1 ? '' : 's'}!`,
+        t('success'),
+        t('taskAddedToPlants', { count: allPlants.length }),
         [
           {
-            text: 'OK',
+            text: t('ok'),
             onPress: () => {
               router.back();
             },
@@ -108,7 +110,7 @@ export default function AddTaskToAllPlantsScreen() {
       );
     } catch (error) {
       console.error('Error creating tasks:', error);
-      Alert.alert('Error', 'Failed to create tasks');
+      Alert.alert(t('error'), t('failedToCreateTasks'));
     } finally {
       setIsCreating(false);
     }

@@ -108,6 +108,34 @@ export function DebugPanel({ visible = false, onClose }: DebugPanelProps) {
     }
   };
 
+  const handleForceCommunityCleanup = async () => {
+    setIsCleaningUp(true);
+    try {
+      const integrityService = new DataIntegrityService(database.database);
+      const result = await integrityService.forceCleanupLocalCommunityData();
+      
+      Alert.alert(
+        'Community Data Sync',
+        `Cleaned up ${result.cleaned} orphaned local records.${result.errors.length > 0 ? ` Errors: ${result.errors.length}` : ''}`,
+        [
+          ...(result.errors.length > 0 ? [
+            {
+              text: 'Show Errors',
+              onPress: () => {
+                Alert.alert('Cleanup Errors', result.errors.join('\n'));
+              }
+            }
+          ] : []),
+          { text: 'OK' }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', `Community cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsCleaningUp(false);
+    }
+  };
+
   return (
     <View className="absolute inset-0 z-50 bg-black/80">
       <View className="flex-1 justify-center px-6">
@@ -298,6 +326,16 @@ export function DebugPanel({ visible = false, onClose }: DebugPanelProps) {
               >
                 <Text className="text-white font-medium text-center">
                   {isCleaningUp ? 'Cleaning up orphaned records...' : 'Emergency Cleanup (Orphaned Posts)'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleForceCommunityCleanup}
+                disabled={isCleaningUp}
+                className="mt-2 p-3 bg-red-500 rounded-lg disabled:opacity-50"
+              >
+                <Text className="text-white font-medium text-center">
+                  {isCleaningUp ? 'Force syncing community data...' : 'Force Sync Community Data'}
                 </Text>
               </Pressable>
             </View>

@@ -123,7 +123,7 @@ export function PlantHeroImage({
   // Determine the image source based on URL and load status
   const imageSource =
     imageLoadError || !processedUrl
-      ? require('../../assets/images/placeholder.png')
+  ? require('../../assets/placeholder.png')
       : { uri: processedUrl };
 
   console.log('[PlantHeroImage] original imageUrl:', imageUrl);
@@ -141,7 +141,7 @@ export function PlantHeroImage({
         accessibilityHint="Tap to view full size image">
         <AnimatedImage
           source={imageSource}
-          placeholder={require('../../assets/images/placeholder.png')}
+          placeholder={require('../../assets/placeholder.png')}
           style={[
             {
               width: '100%',

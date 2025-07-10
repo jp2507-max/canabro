@@ -1,11 +1,12 @@
-import { triggerLightHapticSync } from '@/lib/utils/haptics';
+
 import React, { memo, useRef } from 'react';
 import { View, TextInput } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-
+import { triggerLightHapticSync } from '@/lib/utils/haptics';
 import { useButtonAnimation } from '../../lib/animations/useButtonAnimation';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { useTranslation } from 'react-i18next';
 
 interface StrainSearchProps {
   searchQuery: string;
@@ -14,7 +15,9 @@ interface StrainSearchProps {
 }
 
 const StrainSearch = memo<StrainSearchProps>(
-  ({ searchQuery, onSearchChange, placeholder = 'Search strains...' }) => {
+  ({ searchQuery, onSearchChange, placeholder }) => {
+    const { t } = useTranslation();
+    const localizedPlaceholder = placeholder || t('strains.searchPlaceholder', 'Search strains...');
     const inputRef = useRef<TextInput>(null);
     const { animatedStyle: clearButtonStyle, handlers: clearHandlers } = useButtonAnimation({
       pressedScale: 0.9,
@@ -51,15 +54,15 @@ const StrainSearch = memo<StrainSearchProps>(
               ref={inputRef}
               value={searchQuery}
               onChangeText={onSearchChange}
-              placeholder={placeholder}
+              placeholder={localizedPlaceholder}
               placeholderTextColor="#9ca3af"
               className="flex-1 text-base text-neutral-900 dark:text-white"
               returnKeyType="search"
               autoCorrect={false}
               autoCapitalize="none"
               accessible
-              accessibilityLabel="Search strains"
-              accessibilityHint="Type to search for specific strains"
+              accessibilityLabel={t('strains.searchLabel', 'Search strains')}
+              accessibilityHint={t('strains.searchHint', 'Type to search for specific strains')}
               testID="strain-search-input"
             />
 
@@ -71,7 +74,7 @@ const StrainSearch = memo<StrainSearchProps>(
                   className="ml-2 rounded-full bg-neutral-200 p-1 dark:bg-neutral-600"
                   accessible
                   accessibilityRole="button"
-                  accessibilityLabel="Clear search"
+                  accessibilityLabel={t('strains.clearSearch', 'Clear search')}
                   testID="clear-search-button">
                   <OptimizedIcon
                     name="close"

@@ -2,7 +2,7 @@
 
 import { Database, Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 import React, { useEffect } from 'react';
 import { View, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 
@@ -67,7 +67,7 @@ const PlantListComponent = React.memo(
     refreshing = false,
     onRefresh,
   }: PlantListComponentProps) => {
-    const router = useRouter();
+    const router = useSafeRouter();
 
     useEffect(() => {
       if (onCountChange) {

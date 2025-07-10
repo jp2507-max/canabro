@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   ScrollView,
@@ -29,38 +30,39 @@ interface TaskType {
 
 export default function AddTaskToPlantScreen() {
   const { isDark } = useTheme();
-  const router = useRouter();
+  const router = useSafeRouter();
   const { database } = useWatermelon();
+  const { t } = useTranslation('tasks');
 
   // Define task types with associated colors and icons
   const TASK_TYPES: TaskType[] = useMemo(
     () => [
       {
         id: 'watering',
-        name: 'Watering',
+        name: t('types.watering'),
         icon: 'water-outline',
         colorKey: '#3b82f6',
       },
       {
         id: 'feeding',
-        name: 'Feeding',
+        name: t('types.feeding'),
         icon: 'leaf-outline',
         colorKey: '#8b5cf6',
       },
       {
         id: 'pruning',
-        name: 'Pruning',
+        name: t('types.pruning'),
         icon: 'cut-outline',
         colorKey: '#10b981',
       },
       {
         id: 'harvesting',
-        name: 'Harvesting',
+        name: t('types.harvesting'),
         icon: 'basket-outline',
         colorKey: '#f59e0b',
       },
     ],
-    []
+    [t]
   );
 
   const [plants, setPlants] = useState<Plant[]>([]);
@@ -84,7 +86,7 @@ export default function AddTaskToPlantScreen() {
       setPlants(allPlants);
     } catch (error) {
       console.error('Error loading plants:', error);
-      Alert.alert('Error', 'Failed to load plants');
+      Alert.alert(t('error'), t('failedToLoadPlants'));
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +94,7 @@ export default function AddTaskToPlantScreen() {
 
   const handleAddTask = useCallback(async () => {
     if (!selectedPlant || !selectedTaskType) {
-      Alert.alert('Error', 'Please select a plant and task type');
+      Alert.alert(t('error'), t('selectPlantAndTaskType'));
       return;
     }
 
@@ -112,9 +114,9 @@ export default function AddTaskToPlantScreen() {
         });
       });
 
-      Alert.alert('Success', 'Task added successfully!', [
+      Alert.alert(t('success'), t('taskAddedSuccessfully'), [
         {
-          text: 'OK',
+          text: t('ok'),
           onPress: () => {
             router.back();
           },
@@ -122,7 +124,7 @@ export default function AddTaskToPlantScreen() {
       ]);
     } catch (error) {
       console.error('Error creating task:', error);
-      Alert.alert('Error', 'Failed to create task');
+      Alert.alert(t('error'), t('failedToCreateTasks'));
     } finally {
       setIsCreating(false);
     }
