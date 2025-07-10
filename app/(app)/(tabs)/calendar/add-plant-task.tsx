@@ -24,6 +24,11 @@ interface PlantTaskFormData {
   category: 'watering' | 'feeding' | 'pruning' | 'inspection' | 'other';
 }
 
+/**
+ * React Native screen for creating a new plant-related task.
+ *
+ * Displays a form allowing users to select a plant, enter task details, set priority and category, and save the task to the local database. Handles loading plant data, form validation, and user feedback. Navigates back on successful creation or cancellation.
+ */
 export default function AddPlantTaskScreen() {
   const router = useSafeRouter();
   const { selectedDate } = useLocalSearchParams<{ selectedDate?: string }>();

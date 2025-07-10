@@ -76,6 +76,14 @@ interface PlantFormProps {
 
 
 type TFunction = (key: string, options?: Record<string, unknown>) => string;
+/**
+ * Returns a Zod validation schema for the plant form with localized error messages.
+ *
+ * The schema validates required fields such as name, strain, planted date, growth stage, and location description, and applies appropriate validation for optional fields. Error messages are localized using the provided translation function.
+ *
+ * @param t - Translation function for localizing validation messages
+ * @returns Zod schema for validating plant form data
+ */
 function getPlantFormSchema(t: TFunction) {
   return z.object({
     name: z.string().min(1, t('addPlantForm.validation.nameRequired')),
@@ -159,6 +167,13 @@ interface ErrorClassification {
   logLevel: 'info' | 'warn' | 'error';
 }
 
+/**
+ * Classifies errors encountered during strain synchronization and determines user visibility, log level, and localized user messages.
+ *
+ * @param error - The error object to classify, which may include code and name properties.
+ * @param t - The translation function for generating localized user messages.
+ * @returns An object indicating whether the error should be shown to the user, an optional localized user message, and the appropriate log level.
+ */
 function classifyStrainSyncError(error: Error & { code?: string; name?: string }, t: TFunction): ErrorClassification {
   const errorMessage = String(error.message || '').toLowerCase();
   const errorCode = error.code;
@@ -919,6 +934,13 @@ const DatesStep: React.FC<StepProps> = ({ control }) => {
   );
 };
 
+/**
+ * Displays a multi-step, animated form for adding a new plant, including image selection, strain synchronization, and localized validation.
+ *
+ * Guides the user through photo upload, basic info, location, lighting, details, and date steps, with real-time validation and keyboard navigation. Integrates with local and remote databases to persist plant data and synchronize strain information. All user-facing text and validation messages are localized. On successful submission, saves the plant and triggers the optional `onSuccess` callback.
+ *
+ * @param onSuccess - Optional callback invoked after a plant is successfully added
+ */
 export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const { t } = useTranslation();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);

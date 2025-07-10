@@ -69,8 +69,16 @@ function mapWeedDbStrainToAppStrain(weedDbStrain: WeedDbStrain): Strain {
 }
 
 /**
- * React Query based infinite query hook for paginated strains data.
- * Fetches data from Supabase via strain-service using limit/offset strategy.
+ * Infinite query hook for fetching paginated cannabis strain data with support for search, filtering, and offline mode.
+ *
+ * Fetches strain data from Weed DB or a local service, applying debounced search, species, effect, flavor, and THC filters. Supports infinite scrolling via React Query, with automatic handling of online and offline scenarios.
+ *
+ * @param search - Optional search string to filter strains by name or description
+ * @param species - Optional species filter (e.g., 'sativa', 'indica', 'hybrid')
+ * @param limit - Number of strains to fetch per page (default: 20)
+ * @param enabled - Whether the query is enabled (default: true)
+ * @param activeFilters - Additional filters including effects, flavors, and THC range
+ * @returns A React Query infinite query result containing paginated strain data and metadata
  */
 export function useInfiniteStrains({
   search = '',

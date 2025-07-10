@@ -17,6 +17,13 @@ import { useInfiniteStrains } from '@/lib/hooks/strains/useInfiniteStrains';
 import { Strain as WeedDbStrain } from '@/lib/types/weed-db';
 import { ensureUuid } from '@/lib/utils/uuid';
 
+/**
+ * Displays the main screen for browsing, searching, filtering, and favoriting cannabis strains.
+ *
+ * Handles user authentication, manages filter and search state, fetches paginated strain data, and provides favorite management. Renders a list of strains with filtering and search capabilities, and allows users to mark strains as favorites. If the user is not authenticated, prompts for login.
+ *
+ * @returns The rendered strains screen component.
+ */
 export default function StrainsScreen() {
   const router = useSafeRouter();
   const { user } = useAuth();

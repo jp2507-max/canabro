@@ -20,14 +20,21 @@ const CACHE_EXPIRY_MS = 1000 * 60 * 30; // 30 minutes
 const cacheTimestamps: { [key: string]: number } = {};
 
 /**
- * Cache key generator for consistent caching
+ * Generates a normalized cache key by combining a type prefix and a lowercased, trimmed value.
+ *
+ * @param type - The category or type of the value to be cached
+ * @param value - The string value to be normalized and included in the cache key
+ * @returns A consistent cache key in the format `type:value`
  */
 function generateCacheKey(type: string, value: string): string {
   return `${type}:${value.toLowerCase().trim()}`;
 }
 
 /**
- * Check if cache entry is expired
+ * Determines whether a cached translation entry has expired based on its timestamp.
+ *
+ * @param key - The cache key to check for expiration
+ * @returns True if the cache entry is expired or missing; otherwise, false
  */
 function isCacheExpired(key: string): boolean {
   const timestamp = cacheTimestamps[key];
@@ -36,7 +43,9 @@ function isCacheExpired(key: string): boolean {
 }
 
 /**
- * Store translation in cache
+ * Stores a translated string in the cache for a specific key and language, and updates its timestamp.
+ *
+ * Overwrites any existing cached translation for the given key and language.
  */
 function cacheTranslation(key: string, language: string, translation: string): void {
   if (!translationCache[key]) {
@@ -47,7 +56,11 @@ function cacheTranslation(key: string, language: string, translation: string): v
 }
 
 /**
- * Get translation from cache
+ * Retrieves a cached translation for the specified key and language if it exists and is not expired.
+ *
+ * @param key - The cache key representing the translation entry
+ * @param language - The language code for the desired translation
+ * @returns The cached translation string, or `null` if not found or expired
  */
 function getCachedTranslation(key: string, language: string): string | null {
   if (isCacheExpired(key)) {
@@ -59,7 +72,12 @@ function getCachedTranslation(key: string, language: string): string | null {
 }
 
 /**
- * Core translation function with fallback mechanisms
+ * Attempts to translate a given key using i18n, returning a fallback value if translation is unavailable or fails.
+ *
+ * @param translationKey - The key to translate
+ * @param fallbackValue - The value to return if translation is missing or an error occurs
+ * @param options - Optional parameters to pass to the translation function
+ * @returns The translated string, or the fallback value if translation is not found or an error occurs
  */
 function translateWithFallback(
   translationKey: string,
@@ -76,7 +94,12 @@ function translateWithFallback(
 }
 
 /**
- * Translate strain type with proper German grammar
+ * Translates a strain type string, applying proper German grammar and caching the result.
+ *
+ * If a translation is unavailable, returns the original type with the first letter capitalized.
+ *
+ * @param type - The strain type to translate
+ * @returns The translated strain type string
  */
 export function translateStrainType(type: string): string {
   if (!type || typeof type !== 'string') return type;
@@ -100,7 +123,10 @@ export function translateStrainType(type: string): string {
 }
 
 /**
- * Translate strain effects array
+ * Translates an array of strain effect strings into the current language, applying caching and fallback to capitalized originals if translations are unavailable.
+ *
+ * @param effects - The array of strain effect strings to translate
+ * @returns An array of translated effect strings
  */
 export function translateStrainEffects(effects: string[]): string[] {
   if (!Array.isArray(effects)) return effects || [];
@@ -129,7 +155,10 @@ export function translateStrainEffects(effects: string[]): string[] {
 }
 
 /**
- * Translate strain flavors array
+ * Translates an array of strain flavor strings into the current language, applying caching and fallback to capitalized originals if translations are unavailable.
+ *
+ * @param flavors - The array of flavor strings to translate
+ * @returns An array of translated flavor strings
  */
 export function translateStrainFlavors(flavors: string[]): string[] {
   if (!Array.isArray(flavors)) return flavors || [];
@@ -158,7 +187,12 @@ export function translateStrainFlavors(flavors: string[]): string[] {
 }
 
 /**
- * Translate grow difficulty with German-specific terms
+ * Translates a grow difficulty string, applying German-specific terminology and caching the result.
+ *
+ * If a translation is unavailable, returns the original difficulty string with the first letter capitalized.
+ *
+ * @param difficulty - The grow difficulty label to translate
+ * @returns The translated grow difficulty string
  */
 export function translateGrowDifficulty(difficulty: string): string {
   if (!difficulty || typeof difficulty !== 'string') return difficulty;
@@ -182,7 +216,12 @@ export function translateGrowDifficulty(difficulty: string): string {
 }
 
 /**
- * Translate strain description with smart text handling
+ * Translates a strain description, applying pattern-based translation for German language.
+ *
+ * If the input is an array, joins it into a single string. For German, replaces common English phrases with German equivalents using pattern matching; for other languages, returns the original text.
+ *
+ * @param description - The strain description as a string or array of strings
+ * @returns The translated or original description string
  */
 export function translateStrainDescription(description: string | string[]): string {
   if (!description) return '';
@@ -208,7 +247,12 @@ export function translateStrainDescription(description: string | string[]): stri
 }
 
 /**
- * Pattern-based translation for common strain description terms
+ * Translates common English phrases in strain descriptions to their German equivalents using pattern matching.
+ *
+ * Applies regex-based replacements for frequently occurring terms to improve translation consistency in German strain descriptions.
+ *
+ * @param text - The original strain description text
+ * @returns The description with recognized English phrases replaced by German translations
  */
 function translateDescriptionPatterns(text: string): string {
   if (!text) return text;
@@ -242,8 +286,12 @@ function translateDescriptionPatterns(text: string): string {
 }
 
 /**
- * Comprehensive strain data translation function
- * Translates all translatable fields in a strain object
+ * Translates all supported fields of a strain data object, including type, effects, flavors, grow difficulty, and description.
+ *
+ * Returns a new object with translated fields. If translation fails, the original object is returned.
+ *
+ * @param strainData - The strain data object to translate
+ * @returns A new strain data object with translated fields, or the original object if an error occurs
  */
 export function translateStrainData<T extends {
   type?: string;
@@ -291,7 +339,12 @@ export function translateStrainData<T extends {
 }
 
 /**
- * Translate array of strain data
+ * Translates all translatable fields of each strain object in an array.
+ *
+ * Applies translation to the `type`, `effects`, `flavors`, `growDifficulty`, and `description` fields of each strain object, returning a new array with translated objects.
+ *
+ * @param strains - Array of strain data objects to translate
+ * @returns Array of strain data objects with translated fields
  */
 export function translateStrainsArray<T extends {
   type?: string;
@@ -307,7 +360,9 @@ export function translateStrainsArray<T extends {
 }
 
 /**
- * Clear translation cache (useful for language switching)
+ * Removes all cached translations and their timestamps.
+ *
+ * Useful for resetting the cache when the application language changes.
  */
 export function clearTranslationCache(): void {
   Object.keys(translationCache).forEach(key => {
@@ -320,7 +375,9 @@ export function clearTranslationCache(): void {
 }
 
 /**
- * Get cache statistics for monitoring
+ * Returns statistics about the current translation cache, including the total number of cached entries and the list of languages present.
+ *
+ * @returns An object containing the total number of cache entries and an array of language codes found in the cache.
  */
 export function getTranslationCacheStats(): {
   totalEntries: number;

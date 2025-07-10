@@ -189,7 +189,9 @@ function useFavoriteStrains(
 }
 
 /**
- * Favorite strains screen component
+ * Displays the user's favorite cannabis strains with search, filtering, and favorite toggling functionality.
+ *
+ * Renders a screen that allows authenticated users to browse, search, and filter their favorite strains. Handles user authentication state, manages filter and search UI, and integrates with favorite management and strain data fetching hooks. If the user is not authenticated, prompts for login.
  */
 export function FavoriteStrainsScreen() {
   const router = useSafeRouter();

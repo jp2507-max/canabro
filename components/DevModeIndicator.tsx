@@ -22,8 +22,11 @@ interface DevModeIndicatorProps {
 }
 
 /**
- * A component that displays a development mode indicator
- * Only visible in development mode - completely removed in production builds
+ * Displays a development mode indicator UI, visible only in development builds.
+ *
+ * Renders either a minimal or detailed indicator based on the `showFullDetails` prop. The detailed view provides authentication details, mock user information, and access to developer options such as resetting the database schema. Includes animated interactions and internationalized text. The component is omitted entirely in production builds.
+ *
+ * @param showFullDetails - If true, shows detailed developer information and options; otherwise, displays a minimal indicator.
  */
 export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorProps) {
   // Completely remove from production builds

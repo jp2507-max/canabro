@@ -13,6 +13,11 @@ interface CalendarScreenContainerProps {
   onDateSelect: (date: Date) => void;
 }
 
+/**
+ * Displays and manages the calendar screen, including task retrieval, date selection, and task action controls.
+ *
+ * Handles loading and refreshing of plant tasks for the selected date, manages task action UI visibility, and provides navigation for adding new tasks.
+ */
 function CalendarScreenContainer({
   selectedDate,
   userId,

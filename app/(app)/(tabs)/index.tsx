@@ -21,6 +21,11 @@ interface HomeScreenProps {
 // Define specific route types for better type safety
 type TaskRoute = '/(app)/(tabs)/calendar/add-plant-task' | '/(app)/(tabs)/calendar/add-task';
 
+/**
+ * Displays the home screen with a list of plants, pull-to-refresh, and a floating action button menu for adding plants or tasks.
+ *
+ * Provides access to plant management features, including adding new plants, creating tasks for individual or all plants, and viewing the current plant list. Integrates modal dialogs and navigation for task creation.
+ */
 function HomeScreen({ database }: HomeScreenProps) {
   const { t } = useTranslation();
   const router = useSafeRouter();

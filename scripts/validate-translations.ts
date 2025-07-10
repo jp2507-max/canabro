@@ -1,4 +1,3 @@
-
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
@@ -22,6 +21,15 @@ const TranslationValueSchema: z.ZodType<TranslationValue> = z.lazy(() =>
 type TranslationValue = string | number | boolean | { [key: string]: TranslationValue };
 type TranslationObject = { [key: string]: TranslationValue };
 
+/**
+ * Flattens a nested translation object into a single-level record with dot-separated keys.
+ *
+ * Validates the input object against the translation schema before flattening. Nested keys are concatenated with dots to represent the hierarchy.
+ *
+ * @param obj - The translation object to flatten
+ * @param prefix - Optional prefix for nested keys
+ * @returns A flat record mapping dot-separated key paths to their corresponding string, number, or boolean values
+ */
 function flatten(obj: TranslationObject, prefix = ''): Record<string, string | number | boolean> {
   // Validate input using Zod
   TranslationValueSchema.parse(obj);
@@ -37,6 +45,11 @@ function flatten(obj: TranslationObject, prefix = ''): Record<string, string | n
 }
 
 
+/**
+ * Validates that all translation files contain the same keys as the default language file.
+ *
+ * Reads the default language translation file and each comparison language file, validates their structure, and checks for missing translation keys. Logs errors for missing or invalid files and warnings for missing keys. Exits the process with a failure code if any issues are found.
+ */
 function validateTranslations(): void {
   let hasError = false;
   const defaultFile = path.join(baseDir, `${defaultLang}.json`);

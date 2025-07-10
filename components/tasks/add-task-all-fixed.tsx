@@ -48,6 +48,13 @@ const TASK_TYPES = [
   },
 ];
 
+/**
+ * React Native screen for adding a specified task to all plants in the database.
+ *
+ * Allows users to select a task type, due date, and optional notes, then creates the task for every plant. Provides localized UI and feedback, including alerts for errors and success. Handles loading state and accessibility for all interactive elements.
+ *
+ * @returns The rendered React component for the "Add Task to All Plants" screen.
+ */
 export default function AddTaskToAllPlantsScreen() {
   const { isDark } = useTheme();
   const router = useSafeRouter();

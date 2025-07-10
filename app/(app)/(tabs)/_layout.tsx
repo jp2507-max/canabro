@@ -43,6 +43,13 @@ const createTabBarIcon = (sfSymbol: string): TabBarIconFunction => {
   };
 };
 
+/**
+ * Renders the main bottom tab navigation layout with localized tab titles and dynamic SF Symbol icons.
+ *
+ * The layout includes five tabs: strains, home, calendar, diagnosis, and community. Tab titles are localized using the 'navigation' namespace, and icons adapt to the focus state. Logs mount and unmount events for debugging. Throws and logs any critical errors encountered during rendering.
+ *
+ * @returns The bottom tab navigator React element.
+ */
 export default function TabsLayout() {
   const { t } = useTranslation('navigation');
 

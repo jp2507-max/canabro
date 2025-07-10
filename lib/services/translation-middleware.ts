@@ -66,14 +66,20 @@ const defaultConfig: TranslationMiddlewareConfig = {
 let middlewareConfig = { ...defaultConfig };
 
 /**
- * Configure translation middleware
+ * Updates the translation middleware configuration with the provided options.
+ *
+ * Merges the given partial configuration into the current middleware settings.
+ *
+ * @param config - Partial configuration options to override the current middleware settings
  */
 export function configureTranslationMiddleware(config: Partial<TranslationMiddlewareConfig>): void {
   middlewareConfig = { ...middlewareConfig, ...config };
 }
 
 /**
- * Check if data contains translatable strain fields
+ * Determines whether the provided data object contains any fields eligible for strain translation.
+ *
+ * Returns `true` if the object has at least one of the translatable strain fields: `type`, `effects`, `flavors`, `growDifficulty`, or `description`.
  */
 function isTranslatableStrainData(data: unknown): data is TranslatableStrainData {
   if (!data || typeof data !== 'object') return false;
@@ -89,7 +95,11 @@ function isTranslatableStrainData(data: unknown): data is TranslatableStrainData
 }
 
 /**
- * Middleware function for single strain API responses
+ * Translates the strain data in a single API response if translation is enabled and applicable.
+ *
+ * If translation is not enabled or the response data is not translatable, returns the original response. On translation errors, either returns the original response or rethrows the error based on configuration.
+ *
+ * @returns The API response with translated strain data if applicable
  */
 export function translateStrainApiResponse<T extends TranslatableStrainData>(
   response: ApiResponse<T>
@@ -129,7 +139,11 @@ export function translateStrainApiResponse<T extends TranslatableStrainData>(
 }
 
 /**
- * Middleware function for strain array API responses
+ * Translates an array of strain data objects within an API response if translation is enabled.
+ *
+ * If translation is disabled or the response data is not an array, returns the original response. Errors during translation are logged and, depending on configuration, either the original response is returned or the error is rethrown.
+ *
+ * @returns The API response with translated strain data array if applicable
  */
 export function translateStrainsApiResponse<T extends TranslatableStrainData>(
   response: ApiResponse<T[]>
@@ -169,7 +183,11 @@ export function translateStrainsApiResponse<T extends TranslatableStrainData>(
 }
 
 /**
- * Middleware function for paginated strain API responses
+ * Translates the `items` array within a paginated strain API response if translation is enabled.
+ *
+ * If translation is disabled or the response does not contain items, returns the original response. On translation errors, either returns the original response or rethrows the error based on configuration.
+ *
+ * @returns The paginated API response with translated strain items if applicable.
  */
 export function translatePaginatedStrainsApiResponse<T extends TranslatableStrainData>(
   response: PaginatedApiResponse<T>
@@ -213,7 +231,11 @@ export function translatePaginatedStrainsApiResponse<T extends TranslatableStrai
 }
 
 /**
- * Generic middleware that detects response type and applies appropriate translation
+ * Translates strain-related data in an API response by detecting its structure and applying the appropriate translation function.
+ *
+ * If the response contains a paginated list, an array, or a single strain object, the corresponding translation is performed. Returns the original response if translation is disabled, not applicable, or if an error occurs and error translation is disabled.
+ *
+ * @returns The translated API response, or the original response if translation is not performed.
  */
 export function translateApiResponse(response: unknown): unknown {
   if (!middlewareConfig.enableTranslation || !response) {
@@ -267,7 +289,11 @@ export function translateApiResponse(response: unknown): unknown {
 }
 
 /**
- * Utility to create a translation wrapper for API functions
+ * Returns a wrapped version of an asynchronous API function that automatically translates its response using the translation middleware.
+ *
+ * The wrapper intercepts the API function's response and applies translation logic if applicable. Errors during the API call or translation are logged and rethrown.
+ *
+ * @returns The wrapped API function with automatic response translation
  */
 export function createTranslationWrapper<T extends (...args: unknown[]) => Promise<unknown>>(
   apiFunction: T
@@ -284,7 +310,12 @@ export function createTranslationWrapper<T extends (...args: unknown[]) => Promi
 }
 
 /**
- * Batch translation utility for multiple API responses
+ * Translates an array of API responses, applying translation to each response if enabled.
+ *
+ * If translation is disabled or the input is not an array, returns the original responses. Errors during translation are logged; depending on configuration, either the original responses are returned or the error is rethrown.
+ *
+ * @param responses - The array of API responses to translate
+ * @returns The array of translated API responses, or the original array if translation is not applied
  */
 export function translateBatchApiResponses<T = unknown>(responses: T[]): T[] {
   if (!middlewareConfig.enableTranslation || !Array.isArray(responses)) {
@@ -305,14 +336,16 @@ export function translateBatchApiResponses<T = unknown>(responses: T[]): T[] {
 }
 
 /**
- * Get current middleware configuration
+ * Returns a copy of the current translation middleware configuration.
+ *
+ * @returns The current middleware configuration object.
  */
 export function getTranslationMiddlewareConfig(): TranslationMiddlewareConfig {
   return { ...middlewareConfig };
 }
 
 /**
- * Reset middleware configuration to defaults
+ * Resets the translation middleware configuration to its default settings.
  */
 export function resetTranslationMiddlewareConfig(): void {
   middlewareConfig = { ...defaultConfig };

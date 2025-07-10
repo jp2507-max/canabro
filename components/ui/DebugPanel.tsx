@@ -17,6 +17,15 @@ interface DebugPanelProps {
   onClose?: () => void;
 }
 
+/**
+ * Displays a real-time debug panel overlay with crash reports, memory usage, and resource statistics, and provides manual controls for garbage collection and data cleanup.
+ *
+ * The panel shows memory warnings, crash report summaries, active resource counts, and highlights potential issues. It allows users to force garbage collection, clear crash reports, perform emergency cleanup of orphaned posts, and force synchronization of community data. The panel is only rendered when `visible` is true and can be closed via the provided callback.
+ *
+ * @param visible - Whether the debug panel is visible
+ * @param onClose - Callback to close the panel
+ * @returns The debug panel UI overlay, or `null` if not visible
+ */
 export function DebugPanel({ visible = false, onClose }: DebugPanelProps) {
   const [resourceStats, setResourceStats] = useState({
     intervals: 0,

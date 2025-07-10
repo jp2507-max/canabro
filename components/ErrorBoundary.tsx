@@ -80,7 +80,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Higher-order component for easy wrapping
+/**
+ * Wraps a component with an error boundary, rendering a fallback UI if an error occurs.
+ *
+ * @param Component - The component to be wrapped with error handling
+ * @param fallback - Optional UI to display when an error is caught
+ * @returns A new component that renders the original component inside an error boundary
+ */
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   fallback?: ReactNode
@@ -92,7 +98,13 @@ export function withErrorBoundary<P extends object>(
   );
 }
 
-// Translated ErrorBoundary wrapper
+/**
+ * Provides an error boundary with automatically translated UI strings using the "common" translation namespace.
+ *
+ * Wraps child components in an `ErrorBoundary` and supplies localized error messages and button text. Accepts an optional fallback UI and error callback.
+ *
+ * @returns The wrapped children inside a localized error boundary.
+ */
 export function TranslatedErrorBoundary({ children, fallback, onError }: Omit<Props, 'translations'>) {
   const { t } = useTranslation('common');
   

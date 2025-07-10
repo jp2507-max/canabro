@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { View } from 'react-native';
 import ThemedText from '../ui/ThemedText';
@@ -92,8 +91,14 @@ const effectEmojis: Record<string, string> = {
 };
 
 /**
- * Renders a tag representing a strain effect with appropriate styling.
- * Accepts effect as a string from the API.
+ * Displays a styled tag for a strain effect, optionally including an emoji and localized effect name.
+ *
+ * Returns `null` if the provided effect is not a non-empty string.
+ *
+ * @param effect - The strain effect string from the API to display.
+ * @param size - Optional tag size, either 'small' or 'large'. Defaults to 'small'.
+ * @param emoji - Optional flag to include an emoji representing the effect.
+ * @returns A React element representing the effect tag, or `null` if input is invalid.
  */
 export default function EffectTag({ effect, size = 'small', emoji }: EffectTagProps) {
   if (typeof effect !== 'string' || !effect.trim()) return null;

@@ -43,6 +43,16 @@ const customTransition = SharedTransition.custom((values) => {
   };
 });
 
+/**
+ * Displays an interactive plant image with animated gesture feedback, error handling, and accessibility support.
+ *
+ * Shows a plant image that responds to tap gestures with scaling and overlay animations. If the image fails to load or is unavailable, a placeholder image and error indicator are shown. Provides haptic feedback and alerts based on image availability. Supports shared element transitions for smooth navigation animations.
+ *
+ * @param imageUrl - The URL of the plant image to display, or null if unavailable.
+ * @param plantId - The unique identifier for the plant, used for accessibility and transition tags.
+ * @param imageHeight - Optional height for the image container; defaults to a preset value.
+ * @returns A React element rendering the plant image with gesture and error handling.
+ */
 export function PlantHeroImage({
   imageUrl,
   plantId,

@@ -12,7 +12,12 @@ import translationService from '../services/translation-service';
 import { logger } from '../config/production';
 
 /**
- * Hook for translating individual strain data objects
+ * Translates a single strain data object using the current language context.
+ *
+ * Returns the translated strain object, or the original object if translation fails. Returns `null` if the input is `null` or `undefined`.
+ *
+ * @param strainData - The strain data object to translate, or `null`/`undefined`
+ * @returns The translated strain data object, or `null` if input is `null`/`undefined`
  */
 export function useStrainTranslation<T extends {
   type?: string;
@@ -39,7 +44,11 @@ export function useStrainTranslation<T extends {
 }
 
 /**
- * Hook for translating arrays of strain data
+ * Translates an array of strain data objects based on the current language.
+ *
+ * Returns an empty array if the input is not a valid array. If translation fails, the original array is returned.
+ *
+ * @returns The translated array of strain data objects, or the original array on error.
  */
 export function useStrainsTranslation<T extends {
   type?: string;
@@ -66,7 +75,12 @@ export function useStrainsTranslation<T extends {
 }
 
 /**
- * Hook for translating individual strain effects
+ * Translates an array of strain effect strings into the current language.
+ *
+ * Returns an empty array if the input is not a valid array. If translation fails, returns the original effects array.
+ *
+ * @param effects - The array of strain effect strings to translate
+ * @returns The translated array of effect strings, or the original array on error
  */
 export function useStrainEffectsTranslation(effects: string[] | null | undefined): string[] {
   const { i18n } = useTranslation();
@@ -86,7 +100,12 @@ export function useStrainEffectsTranslation(effects: string[] | null | undefined
 }
 
 /**
- * Hook for translating individual strain flavors
+ * Translates an array of strain flavor strings into the current language.
+ *
+ * Returns an empty array if the input is not a valid array. If translation fails, returns the original array.
+ *
+ * @param flavors - The array of strain flavor strings to translate
+ * @returns The translated array of flavor strings, or the original array on error
  */
 export function useStrainFlavorsTranslation(flavors: string[] | null | undefined): string[] {
   const { i18n } = useTranslation();
@@ -106,7 +125,12 @@ export function useStrainFlavorsTranslation(flavors: string[] | null | undefined
 }
 
 /**
- * Hook for translating strain type
+ * Translates a strain type string based on the current language.
+ *
+ * Returns an empty string if the input is null or undefined. If translation fails, returns the original type string.
+ *
+ * @param type - The strain type to translate
+ * @returns The translated strain type string, or an empty string if input is missing
  */
 export function useStrainTypeTranslation(type: string | null | undefined): string {
   const { i18n } = useTranslation();
@@ -126,7 +150,12 @@ export function useStrainTypeTranslation(type: string | null | undefined): strin
 }
 
 /**
- * Hook for translating grow difficulty
+ * Translates a grow difficulty string based on the current language.
+ *
+ * Returns an empty string if the input is null or undefined. If translation fails, returns the original difficulty string.
+ *
+ * @param difficulty - The grow difficulty string to translate
+ * @returns The translated grow difficulty string, or an empty string if input is missing
  */
 export function useGrowDifficultyTranslation(difficulty: string | null | undefined): string {
   const { i18n } = useTranslation();
@@ -146,7 +175,9 @@ export function useGrowDifficultyTranslation(difficulty: string | null | undefin
 }
 
 /**
- * Hook that provides translation utilities
+ * Provides utility functions for managing and performing strain data translations within the current language context.
+ *
+ * Returns functions to clear the translation cache, retrieve cache statistics, translate a single strain object, translate an array of strain objects, and access the current language.
  */
 export function useTranslationUtils() {
   const { i18n } = useTranslation();
@@ -191,7 +222,10 @@ export function useTranslationUtils() {
 }
 
 /**
- * Hook for getting translation cache statistics
+ * Returns translation cache statistics from the translation service.
+ *
+ * The statistics are memoized and computed only once on mount.
+ * @returns An object containing translation cache statistics.
  */
 export function useTranslationCacheStats() {
   const stats = useMemo(() => {

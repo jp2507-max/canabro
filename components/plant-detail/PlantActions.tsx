@@ -35,7 +35,17 @@ interface ActionItemProps {
   subLabel?: string;
 }
 
-// Modern animated action item component
+/**
+ * Renders an animated, interactive action button with an icon, label, and optional sub-label.
+ *
+ * Provides visual and haptic feedback on press, with styling that adapts for destructive actions. Displays a chevron icon for non-destructive actions without a sub-label.
+ *
+ * @param iconName - The name of the icon to display.
+ * @param label - The main text label for the action.
+ * @param onPress - Callback invoked when the action is pressed.
+ * @param isDestructive - If true, styles the action as destructive.
+ * @param subLabel - Optional secondary label displayed below the main label.
+ */
 function ActionItem({
   iconName,
   label,
@@ -135,6 +145,13 @@ function ActionItem({
   );
 }
 
+/**
+ * Renders a card with interactive action buttons for plant-related operations, such as viewing the grow journal, accessing metrics, and deleting the plant.
+ *
+ * @param plantId - The unique identifier of the plant for which actions are displayed.
+ * @param onDelete - Callback invoked when the delete action is triggered.
+ * @returns A React element containing action items for the specified plant.
+ */
 export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
   const { t } = useTranslation('plants');
   

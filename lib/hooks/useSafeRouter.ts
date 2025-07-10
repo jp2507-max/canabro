@@ -2,10 +2,11 @@ import { useRouter } from 'expo-router';
 import type { Router } from 'expo-router';
 
 /**
- * A safe wrapper around Expo Router's `useRouter` that prevents the
- * "Couldn't find a navigation context" crash when the hook is executed
- * outside of a valid NavigationContainer (e.g. during transient renders
- * triggered by Reanimated or startTransition).
+ * Returns a router instance that is safe to use even when the navigation context is unavailable.
+ *
+ * Attempts to retrieve the current Expo Router instance. If called outside a valid navigation context, returns a stub router with no-op methods that log warnings in development mode, preventing crashes during transient renders.
+ *
+ * @returns A fully functional router if available, or a safe stub router if not
  */
 export function useSafeRouter(): Router {
   try {

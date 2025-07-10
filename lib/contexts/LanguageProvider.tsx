@@ -16,6 +16,13 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Provides the current application language and a setter function to its children via React context.
+ *
+ * Initializes the language state from the i18n framework and persists language changes to storage. Ensures that any component within this provider can access and update the language preference.
+ *
+ * @param children - React nodes that will have access to the language context
+ */
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [languageState, setLanguageState] = useState<SupportedLanguage>(i18n.language as SupportedLanguage);
 

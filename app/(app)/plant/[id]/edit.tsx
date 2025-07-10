@@ -11,6 +11,11 @@ import { useDatabase } from '../../../../lib/contexts/DatabaseProvider';
 import { Plant } from '../../../../lib/models/Plant';
 import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 
+/**
+ * Displays a screen for editing an existing plant's data, handling data loading, error states, and localization.
+ *
+ * Fetches the plant by ID from the database, shows loading and error messages as needed, and renders an edit form when data is available. Navigates back upon successful update.
+ */
 export default function EditPlantScreen() {
   const router = useRouter();
   const { id: plantId } = useLocalSearchParams<{ id: string }>();

@@ -1,4 +1,9 @@
-// Type guard for allowed species
+/**
+ * Determines whether a value is one of the allowed strain species ('sativa', 'indica', 'hybrid') or null.
+ *
+ * @param value - The value to check
+ * @returns True if the value is 'sativa', 'indica', 'hybrid', or null; otherwise, false
+ */
 function isAllowedSpecies(value: unknown): value is 'sativa' | 'indica' | 'hybrid' | null {
   return value === 'sativa' || value === 'indica' || value === 'hybrid' || value === null;
 }
@@ -253,6 +258,13 @@ const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(
   }
 );
 
+/**
+ * Displays a full-screen modal for filtering cannabis strains by species, effects, flavors, potency, and favorites.
+ *
+ * Allows users to select filter criteria using animated, accessible controls with optional haptic feedback and internationalized labels. Supports resetting filters to defaults, applying filters asynchronously, and disabling interactions during loading or application.
+ *
+ * @returns The React element representing the filter modal UI.
+ */
 export default function StrainFilterModal({
   isVisible,
   onClose,

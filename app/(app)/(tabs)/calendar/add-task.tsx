@@ -15,6 +15,11 @@ interface TaskFormData {
   category: 'watering' | 'feeding' | 'pruning' | 'inspection' | 'other';
 }
 
+/**
+ * Displays a screen for creating a new task with form inputs for title, description, due date, priority, and category.
+ *
+ * Presents a user interface for entering task details, validates the input, and navigates back upon saving or canceling. Task creation is currently a placeholder and only logs the form data.
+ */
 export default function AddTaskScreen() {
   const router = useSafeRouter();
   const { selectedDate } = useLocalSearchParams<{ selectedDate?: string }>();

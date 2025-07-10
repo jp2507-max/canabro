@@ -28,6 +28,13 @@ interface TaskType {
   colorKey: string;
 }
 
+/**
+ * Displays a screen for adding a new task to a selected plant.
+ *
+ * Allows users to select a plant, choose a task type, set a due date, add optional notes, and create the task. Handles loading plant data, input validation, task creation in the local database, and provides localized UI and feedback messages.
+ *
+ * The screen adapts to dark mode and supports accessibility features.
+ */
 export default function AddTaskToPlantScreen() {
   const { isDark } = useTheme();
   const router = useSafeRouter();

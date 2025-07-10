@@ -18,6 +18,13 @@ import '../lib/types/react-query';
 import '../global.css';
 
 
+/**
+ * Provides the root layout and global context providers for the Expo Router-based React Native application.
+ *
+ * Wraps the app with gesture handling, safe area, keyboard, language, error boundary, data fetching, authentication, database, and notification contexts, and renders the navigation stack.
+ *
+ * @returns The root layout component tree for the application
+ */
 function RootLayout() {
   return (
     <GestureHandlerRootView className="flex-1">

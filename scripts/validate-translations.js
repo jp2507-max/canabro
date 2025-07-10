@@ -5,6 +5,12 @@ const baseDir = path.join(__dirname, '../lib/locales');
 const defaultLang = 'en';
 const compareLangs = ['de'];
 
+/**
+ * Recursively flattens a nested object into a single-level object with dot-separated keys.
+ * @param {Object} obj - The object to flatten.
+ * @param {string} [prefix=''] - The prefix for nested keys, used internally during recursion.
+ * @return {Object} A new object with flattened keys representing the original nested structure.
+ */
 function flatten(obj, prefix = '') {
   const res = {};
   for (const key in obj) {
@@ -17,6 +23,12 @@ function flatten(obj, prefix = '') {
   return res;
 }
 
+/**
+ * Validates translation JSON files by checking for missing keys compared to the default language file.
+ *
+ * Reads the default language JSON, flattens its structure, and compares its keys against each specified translation file.
+ * Logs errors for missing files and warnings for missing keys. Exits the process with a non-zero status code if any issues are found.
+ */
 function validateTranslations() {
   const defaultFile = path.join(baseDir, `${defaultLang}.json`);
   const defaultData = JSON.parse(fs.readFileSync(defaultFile, 'utf8'));

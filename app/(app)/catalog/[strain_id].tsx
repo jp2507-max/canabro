@@ -349,6 +349,11 @@ const AnimatedWebsiteButton = ({ onPress, url }: { onPress: () => void; url: str
   );
 };
 
+/**
+ * Displays a detailed, animated page for a cannabis strain, including image, stats, effects, flavors, expandable sections, and interactive favorite and website buttons.
+ *
+ * Fetches strain data based on the current route's `strain_id`, manages favorite status, and handles loading and error states. Provides animated UI elements for navigation, favoriting, and expandable content, with accessibility and dark mode support.
+ */
 export default function StrainDetailPage() {
   const { strain_id } = useLocalSearchParams<{ strain_id: string }>();
   const router = useRouter();

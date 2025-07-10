@@ -30,7 +30,9 @@ export const useI18n = () => {
 };
 
 /**
- * Hook for common translations (most frequently used namespace)
+ * Provides the translation function scoped to the 'common' namespace.
+ *
+ * @returns An object containing the translation function `t` for the 'common' namespace
  */
 export function useCommonTranslations() {
   const { t } = useTranslation('common');
@@ -38,7 +40,9 @@ export function useCommonTranslations() {
 }
 
 /**
- * Hook for navigation translations
+ * Provides the translation function scoped to the 'navigation' namespace.
+ *
+ * @returns An object containing the translation function `t` for navigation-related keys
  */
 export function useNavigationTranslations() {
   const { t } = useTranslation('navigation');
@@ -46,7 +50,9 @@ export function useNavigationTranslations() {
 }
 
 /**
- * Hook for form translations
+ * Provides the translation function scoped to the 'forms' namespace.
+ *
+ * @returns An object containing the translation function `t` for form-related translations.
  */
 export function useFormTranslations() {
   const { t } = useTranslation('forms');
@@ -54,7 +60,9 @@ export function useFormTranslations() {
 }
 
 /**
- * Hook for task translations
+ * Provides the translation function scoped to the 'tasks' namespace.
+ *
+ * @returns An object containing the translation function `t` for task-related translations
  */
 export function useTaskTranslations() {
   const { t } = useTranslation('tasks');
@@ -62,7 +70,9 @@ export function useTaskTranslations() {
 }
 
 /**
- * Hook for plant translations
+ * Provides the translation function scoped to the 'plants' namespace.
+ *
+ * @returns An object containing the translation function `t` for plant-related translations
  */
 export function usePlantTranslations() {
   const { t } = useTranslation('plants');
