@@ -40,6 +40,8 @@ interface NetworkResilientImageProps {
   quality?: number;
   // Progressive loading
   thumbnailUrl?: string;
+  // Delay before initial load (useful for freshly uploaded images)
+  initialLoadDelayMs?: number;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -193,6 +195,7 @@ export default function NetworkResilientImage({
   optimize = true,
   quality = 80,
   thumbnailUrl,
+  initialLoadDelayMs = 0,
 }: NetworkResilientImageProps) {
   // State management
   const [isLoading, setIsLoading] = useState(!!url);
@@ -258,28 +261,40 @@ export default function NetworkResilientImage({
       return;
     }
 
-    // Start with thumbnail if available
-    if (thumbnailUrl && currentImageSrc !== url) {
-      setCurrentImageSrc(thumbnailUrl);
-      
-      // Pre-load full image using expo-image
-      const fullImageUrl = getOptimizedImageUrl(url, retryCount, optimize, quality);
-      Image.prefetch(fullImageUrl)
-        .then(() => {
-          if (isMountedRef.current) {
-            setCurrentImageSrc(url);
-          }
-        })
-        .catch((error) => {
-          console.warn('Failed to prefetch full image:', error);
-          if (isMountedRef.current) {
-            setCurrentImageSrc(url); // Fallback to original URL
-          }
-        });
-    } else {
-      setCurrentImageSrc(url);
-    }
-  }, [url, thumbnailUrl, retryCount, optimize, quality, currentImageSrc]);
+    // Add delay for freshly uploaded images if specified
+    const loadWithDelay = async () => {
+      if (initialLoadDelayMs > 0) {
+        console.log(`Delaying image load by ${initialLoadDelayMs}ms for freshly uploaded image`);
+        await new Promise(resolve => setTimeout(resolve, initialLoadDelayMs));
+        
+        if (!isMountedRef.current) return;
+      }
+
+      // Start with thumbnail if available
+      if (thumbnailUrl && currentImageSrc !== url) {
+        setCurrentImageSrc(thumbnailUrl);
+        
+        // Pre-load full image using expo-image
+        const fullImageUrl = getOptimizedImageUrl(url, retryCount, optimize, quality);
+        Image.prefetch(fullImageUrl)
+          .then(() => {
+            if (isMountedRef.current) {
+              setCurrentImageSrc(url);
+            }
+          })
+          .catch((error) => {
+            console.warn('Failed to prefetch full image:', error);
+            if (isMountedRef.current) {
+              setCurrentImageSrc(url); // Fallback to original URL
+            }
+          });
+      } else {
+        setCurrentImageSrc(url);
+      }
+    };
+
+    loadWithDelay();
+  }, [url, thumbnailUrl, retryCount, optimize, quality, currentImageSrc, initialLoadDelayMs]);
 
   // Handle URL changes - reset state and animations
   useEffect(() => {

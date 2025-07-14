@@ -1,29 +1,43 @@
 import React, { memo, useMemo } from 'react';
 import { View, Pressable, Alert } from 'react-native';
 import Animated, { FadeInDown, FadeInLeft } from 'react-native-reanimated';
+import { router } from 'expo-router';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { OptimizedIcon } from './OptimizedIcon';
 import SyncStatus from './SyncStatus';
 import ThemedText from './ThemedText';
 import ThemedView from './ThemedView';
+import UserAvatar from '../community/UserAvatar';
+import * as Haptics from '@/lib/utils/haptics';
 
 interface HomeHeaderProps {
   plantCount: number;
 }
 
 export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
-  const { signOut } = useAuth();
+  const { user, getProfile } = useAuth();
+  const [userProfile, setUserProfile] = React.useState<any>(null);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout? (This is a temporary button for testing)',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: signOut },
-      ]
-    );
+  // Fetch user profile for avatar
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      if (user?.id) {
+        try {
+          const profile = await getProfile(user.id);
+          setUserProfile(profile);
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [user?.id, getProfile]);
+
+  const handleProfilePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/(app)/profile');
   };
 
   // Memoize greeting and plant count message for performance
@@ -61,7 +75,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
   }, [plantCount]);
 
   return (
-    <ThemedView className="mx-4 mb-4 mt-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+    <ThemedView className="mx-4 mb-4 mt-6 rounded-2xl border border-component-300 bg-component-50 p-6 shadow-lg dark:border-component-400 dark:bg-component-100">
       <Animated.View
         entering={FadeInDown.delay(100).duration(600)}
         className="flex-row items-center justify-between">
@@ -97,24 +111,17 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
           </View>
         </Animated.View>
 
-        {/* Right side - Sync status and temporary logout button */}
-        <Animated.View entering={FadeInDown.delay(400).duration(500)} className="ml-4 items-end space-y-2">
-          <SyncStatus compact />
+        {/* Right side - Profile avatar and sync status */}
+        <Animated.View entering={FadeInDown.delay(400).duration(500)} className="ml-4 items-end space-y-3">
+          {/* Profile Avatar Button */}
+          <UserAvatar
+            uri={userProfile?.avatar_url || ''}
+            size={44}
+            onPress={handleProfilePress}
+            accessibilityLabel="Open profile screen"
+          />
           
-          {/* Temporary logout button for testing */}
-          <Pressable
-            onPress={handleLogout}
-            className="rounded-lg bg-red-500 px-3 py-1.5 shadow-sm"
-            accessible
-            accessibilityLabel="Logout (temporary testing button)"
-            accessibilityRole="button">
-            <View className="flex-row items-center">
-              <OptimizedIcon name="close-outline" size={16} className="text-white" />
-              <ThemedText className="ml-1 text-xs font-medium text-white">
-                Logout
-              </ThemedText>
-            </View>
-          </Pressable>
+          <SyncStatus compact />
         </Animated.View>
       </Animated.View>
 

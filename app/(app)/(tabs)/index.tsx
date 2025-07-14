@@ -10,6 +10,7 @@ import AddPlantModal from '../../../components/ui/AddPlantModal';
 import FloatingActionButton from '../../../components/ui/FloatingActionButton';
 import HomeHeader from '../../../components/ui/HomeHeader';
 import ThemedText from '../../../components/ui/ThemedText';
+
 import usePullToRefresh from '../../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
 import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
@@ -96,6 +97,8 @@ function HomeScreen({ database }: HomeScreenProps) {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100 dark:bg-neutral-900">
+
+      
       <EnhancedPlantList
         database={database}
         isLoading={isLoading}

@@ -16,6 +16,11 @@ import { isDevelopment, authConfig } from '../lib/config';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { resetDatabase } from '../lib/utils/database';
 import { triggerLightHapticSync, triggerMediumHapticSync } from '../lib/utils/haptics';
+import { useI18n } from '../lib/hooks/useI18n';
+import LanguageToggle from './ui/LanguageToggle';
+
+// Add import for AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface DevModeIndicatorProps {
   showFullDetails?: boolean;
@@ -33,6 +38,11 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
   const { t } = useTranslation('devMode');
   const { t: tCommon } = useTranslation('common');
   const { t: tDebug } = useTranslation('debug');
+  
+  // Add i18n debugging
+  const { t: tNav } = useTranslation('navigation');
+  const { currentLanguage, isReady } = useI18n();
+  
   const { devBypassAuth, user } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const insets = useSafeAreaInsets();
@@ -57,6 +67,17 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
         },
       ]
     );
+  };
+
+  const handleClearLanguageStorage = async () => {
+    try {
+      await AsyncStorage.removeItem('language');
+      console.log('[DevMode] Language storage cleared, app will use device language on next restart');
+      Alert.alert('Success', 'Language storage cleared. Restart the app to use device language detection.');
+    } catch (error) {
+      console.error('[DevMode] Error clearing language storage:', error);
+      Alert.alert('Error', 'Failed to clear language storage');
+    }
   };
 
   // Animated styles
@@ -124,6 +145,11 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
         {/* Remove reference to non-existent property useMockAdapter */}
         <Text style={styles.detail}>{tDebug('mockUser')}: {authConfig.mockUserEmail || tDebug('none')}</Text>
         <Text style={styles.detail}>{tDebug('userId')}: {user?.id || tDebug('notLoggedIn')}</Text>
+        
+        {/* Add i18n debugging */}
+        <Text style={styles.detail}>Language: {currentLanguage} ({isReady ? 'ready' : 'loading'})</Text>
+        <Text style={styles.detail}>Home tab: {tNav('tabs.home')}</Text>
+        <Text style={styles.detail}>Welcome: {tCommon('welcome')}</Text>
 
         {!authConfig.forceDevBypass && (
           <GestureDetector gesture={authButtonGesture}>
@@ -153,6 +179,16 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
               <Text style={styles.sectionTitle}>{tDebug('database')}</Text>
               <Pressable style={styles.actionButton} onPress={handleReset}>
                 <Text style={styles.actionButtonText}>{tDebug('resetDatabaseSchema')}</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.buttonSection}>
+              <Text style={styles.sectionTitle}>Language Settings</Text>
+              <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+                <LanguageToggle showLabel />
+              </View>
+              <Pressable style={styles.actionButton} onPress={handleClearLanguageStorage}>
+                <Text style={styles.actionButtonText}>Clear Language Storage</Text>
               </Pressable>
             </View>
 

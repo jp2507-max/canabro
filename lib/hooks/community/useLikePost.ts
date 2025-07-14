@@ -23,7 +23,7 @@ export function useLikePost() {
       }
   throw new Error(`Unsupported post_type: ${post.post_type}`);
     },
-    onMutate: async ({ post }) => {
+    onMutate: async ({ post, userId }) => {
       const currentlyLiked = post.user_has_liked;
       // Trigger haptic feedback immediately
       if (currentlyLiked) {
@@ -32,17 +32,49 @@ export function useLikePost() {
         await triggerMediumHaptic();
       }
 
-      // Determine the correct query key based on post type
-      const queryKey = post.post_type === 'question' ? ['questions'] : post.post_type === 'plant_share' ? ['plantShares'] : ['posts'];
+      // Use the correct query keys that match the actual infinite posts implementation
+      const queryKeys = [
+        ['posts', 'infinite', userId], // Main infinite posts query
+        ['posts'], // Legacy posts query (if still used)
+        ['community-questions'], // Specific question queries
+        ['community-plant-shares'], // Specific plant share queries
+      ];
 
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await queryClient.cancelQueries({ queryKey });
+      // Cancel any outgoing refetches for all relevant query keys
+      await Promise.all(
+        queryKeys.map(queryKey => 
+          queryClient.cancelQueries({ queryKey })
+        )
+      );
 
-      // Snapshot the previous value
-      const previousPosts = queryClient.getQueryData<PostData[]>(queryKey);
+      // Snapshot the previous values for all query keys
+      const previousData = queryKeys.reduce((acc, queryKey) => {
+        acc[queryKey.join('-')] = queryClient.getQueryData(queryKey);
+        return acc;
+      }, {} as Record<string, unknown>);
 
-      // Optimistically update the cache
-      queryClient.setQueryData<PostData[]>(queryKey, (old) => {
+      // Optimistically update the infinite posts cache
+      queryClient.setQueryData(['posts', 'infinite', userId], (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: PostData[]) =>
+            page.map(item => {
+              if (item.id === post.id) {
+                return {
+                  ...item,
+                  user_has_liked: !currentlyLiked,
+                  likes_count: currentlyLiked ? item.likes_count - 1 : item.likes_count + 1
+                };
+              }
+              return item;
+            })
+          )
+        };
+      });
+
+      // Also update legacy posts cache if it exists
+      queryClient.setQueryData(['posts'], (old: PostData[] | undefined) => {
         if (!old) return old;
         return old.map(item => {
           if (item.id === post.id) {
@@ -56,13 +88,59 @@ export function useLikePost() {
         });
       });
 
-      // Return a context object with the snapshotted value and queryKey
-      return { previousPosts, queryKey };
+      // Update specific type-based caches
+      if (post.post_type === 'question') {
+        queryClient.setQueryData(['community-questions'], (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any[]) =>
+              page.map(item => {
+                if (item.id === post.id) {
+                  return {
+                    ...item,
+                    user_has_liked: !currentlyLiked,
+                    likes_count: currentlyLiked ? item.likes_count - 1 : item.likes_count + 1
+                  };
+                }
+                return item;
+              })
+            )
+          };
+        });
+      } else if (post.post_type === 'plant_share') {
+        queryClient.setQueryData(['community-plant-shares'], (old: any) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any[]) =>
+              page.map(item => {
+                if (item.id === post.id) {
+                  return {
+                    ...item,
+                    user_has_liked: !currentlyLiked,
+                    likes_count: currentlyLiked ? item.likes_count - 1 : item.likes_count + 1
+                  };
+                }
+                return item;
+              })
+            )
+          };
+        });
+      }
+
+      // Return a context object with the snapshotted values
+      return { previousData, queryKeys, userId, post };
     },
     onError: (err, _args, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousPosts && context?.queryKey) {
-        queryClient.setQueryData(context.queryKey, context.previousPosts);
+      if (context?.previousData && context?.queryKeys) {
+        context.queryKeys.forEach(queryKey => {
+          const key = queryKey.join('-');
+          if (context.previousData[key] !== undefined) {
+            queryClient.setQueryData(queryKey, context.previousData[key]);
+          }
+        });
       }
       console.error('Error toggling like:', err);
       Alert.alert(
@@ -73,8 +151,10 @@ export function useLikePost() {
     },
     onSettled: (_data, _error, _variables, context) => {
       // Always refetch after error or success to ensure we have the latest data
-      if (context?.queryKey) {
-        queryClient.invalidateQueries({ queryKey: context.queryKey });
+      if (context?.queryKeys) {
+        context.queryKeys.forEach(queryKey => {
+          queryClient.invalidateQueries({ queryKey });
+        });
       }
     },
   });
