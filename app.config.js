@@ -64,7 +64,7 @@ export default {
     scheme: 'canabro',
     orientation: 'portrait',
     icon: './assets/icon.png',
-    userInterfaceStyle: 'light',
+    userInterfaceStyle: 'automatic', // Allow automatic dark/light mode switching
     splash: {
       image: './assets/splash.png',
       resizeMode: 'contain',

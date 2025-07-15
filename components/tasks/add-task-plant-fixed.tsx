@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
 import { Plant } from '../../lib/models/Plant';
-import { useTheme } from '../../lib/contexts/ThemeContext';
+import { useColorScheme } from 'nativewind';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 
@@ -29,7 +29,8 @@ interface TaskType {
 }
 
 export default function AddTaskToPlantScreen() {
-  const { isDark } = useTheme();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const router = useSafeRouter();
   const { database } = useWatermelon();
   const { t } = useTranslation('tasks');

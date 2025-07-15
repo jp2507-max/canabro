@@ -8,6 +8,7 @@ import { ImageSourcePropType } from 'react-native';
 import type { AppleIcon } from 'react-native-bottom-tabs';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useColorScheme } from 'nativewind';
 
 // Create the native bottom tab navigator and wrap it with Expo Router context
 const BottomTabNavigator = createNativeBottomTabNavigator().Navigator;
@@ -21,10 +22,6 @@ const Tabs = withLayoutContext<
 
 // Typing helper for SF Symbol icons
 type TabBarIconFunction = (props: { focused: boolean }) => ImageSourcePropType | AppleIcon;
-
-const baseScreenOptions = {
-  headerShown: false,
-} as NativeBottomTabNavigationOptions;
 
 // Utility to return an AppleIcon (sfSymbol) that changes based on focus state
 const createTabBarIcon = (sfSymbol: string): TabBarIconFunction => {
@@ -45,12 +42,22 @@ const createTabBarIcon = (sfSymbol: string): TabBarIconFunction => {
 
 export default function TabsLayout() {
   const { t } = useTranslation('navigation');
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   /*  DEBUG: track unexpected unmounts  */
   useEffect(() => {
     console.log('[RootLayout] mounted');
     return () => console.log('[RootLayout] *** UNMOUNTED ***');
   }, []);
+
+  // Log theme changes for debugging
+  useEffect(() => {
+    console.log('[TabsLayout] Theme changed to:', colorScheme);
+  }, [colorScheme]);
+
+  // Base screen options - let native tabs follow system appearance
+  const baseScreenOptions: NativeBottomTabNavigationOptions = {};
 
   try {
     return (

@@ -9,3 +9,41 @@ Install expo-localization@^15.0.0 and i18next@^23.7.0 with react-i18next@^13.5.0
 
 # Test Strategy:
 Test language switching and persistence. Verify German translations accuracy and completeness. Test locale-aware formatting across different regions.
+
+# Subtasks:
+## 1. Create LanguageToggle component and add to Profile screen [completed]
+### Dependencies: None
+### Description: Create LanguageToggle component following ThemeToggle pattern and add to Profile screen for users to switch between English/German
+### Details:
+✅ COMPLETED: Created LanguageToggle.tsx component with animated toggle, country flags, haptic feedback, and accessibility support. Added to ProfileScreenBase.tsx next to ThemeToggle. Enhanced DevModeIndicator with language debugging tools.
+
+## 2. Install date-fns for locale-aware date formatting [pending]
+### Dependencies: None
+### Description: Install date-fns@^3.0.0 package as required by task specification for locale-aware date/time formatting
+### Details:
+Install date-fns@^3.0.0 to enable German locale date formatting (DD.MM.YYYY vs MM/DD/YYYY). This is required by the task specification for comprehensive localization system.
+
+## 3. Create locale-aware date formatting utilities [pending]
+### Dependencies: 19.2
+### Description: Create date formatting utilities using date-fns that respect German vs English locale preferences
+### Details:
+Create utilities in lib/utils/date.ts that format dates according to German locale (DD.MM.YYYY) vs English locale (MM/DD/YYYY). Update existing date displays throughout the app to use locale-aware formatting. Ensure dates respect current i18n language setting.
+
+## 4. Create German locale number formatting utilities [pending]
+### Dependencies: None
+### Description: Create number and currency formatting utilities that respect German locale conventions
+### Details:
+Create utilities for German locale number formatting (comma as decimal separator, period as thousands separator). Update THC/CBD percentage displays and any other numeric content to use locale-aware formatting. Ensure numbers respect current i18n language setting.
+
+## 5. Test language switching and translation completeness [pending]
+### Dependencies: 19.1
+### Description: Verify language switching functionality works correctly and German translations display throughout the app
+### Details:
+Test the LanguageToggle component functionality, verify device language detection works properly, ensure German translations appear correctly across all app sections (navigation, forms, strain data, etc.), and validate translation persistence across app restarts. Test on both iOS and Android if possible.
+
+## 6. Setup translation key extraction and validation tools [pending]
+### Dependencies: None
+### Description: Enhance existing validation scripts and create translation key extraction tools as specified in task requirements
+### Details:
+Enhance the existing scripts/validate-translations.ts script with better extraction and validation capabilities. Create tools to automatically extract translation keys from components and verify completeness. Set up automated checks for missing translations and proper namespacing. This addresses the 'Setup translation key extraction and validation tools' requirement from the task specification.
+

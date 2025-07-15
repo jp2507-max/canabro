@@ -77,7 +77,7 @@ const StatItem: React.FC<StatItemProps> = React.memo(function StatItem({
     <Animated.View
       entering={FadeIn.delay(index * 100).duration(600)}
       style={animatedStyle}
-      className="mx-1.5 flex-1 items-center rounded-2xl bg-white p-4 shadow-lg shadow-neutral-200 dark:bg-neutral-800 dark:shadow-neutral-950">
+      className="flex-1 items-center rounded-2xl bg-white p-6 shadow-lg shadow-neutral-200 dark:bg-neutral-800 dark:shadow-neutral-950">
       <OptimizedIcon
         name={icon}
         size={24}

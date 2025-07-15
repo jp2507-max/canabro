@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import supabase, { getSupabaseUrl } from '../supabase';
+import Constants from 'expo-constants';
 
 /**
  * Supported storage buckets for image uploads
@@ -17,7 +18,10 @@ export type UploadErrorType =
   | 'UPLOAD_FAILED'
   | 'URL_GENERATION_FAILED'
   | 'INVALID_FILE'
-  | 'UNKNOWN_ERROR';
+  | 'UNKNOWN_ERROR'
+  | 'AUTHENTICATION_ERROR'
+  | 'UPLOAD_ERROR'
+  | 'PUBLIC_URL_ERROR';
 
 /**
  * Upload configuration options
@@ -42,7 +46,7 @@ export interface UploadImageOptions {
 }
 
 /**
- * Detailed upload error information
+ * Upload error details
  */
 export interface UploadError {
   type: UploadErrorType;
@@ -50,14 +54,20 @@ export interface UploadError {
   details?: string;
   maxSizeMB?: number;
   actualSizeMB?: number;
+  statusCode?: number;
+  response?: string;
+  originalError?: unknown;
 }
 
 /**
- * Upload result with detailed error information
+ * Upload result
  */
 export interface UploadResult {
   success: boolean;
   publicUrl?: string;
+  uploadPath?: string;
+  fileSize?: number;
+  filename?: string;
   error?: UploadError;
 }
 
@@ -135,18 +145,62 @@ function generateFilename(bucket: StorageBucket, options: UploadImageOptions): s
   
   switch (bucket) {
     case 'community-questions':
-      return `question_${options.filenamePrefix || timestamp}.jpg`;
+      return `${options.filenamePrefix || 'question'}_${timestamp}_${randomSuffix}.jpg`;
     case 'community-plant-shares':
-      return `share_${options.filenamePrefix || timestamp}.jpg`;
+      return `${options.filenamePrefix || 'share'}_${timestamp}_${randomSuffix}.jpg`;
     case 'plants':
-      return `${options.filenamePrefix || 'plant'}_${timestamp}.jpg`;
+      return `${options.filenamePrefix || 'plant'}_${timestamp}_${randomSuffix}.jpg`;
     case 'diary_entries':
-      return `diary_${options.plantId || 'entry'}_${timestamp}.jpg`;
+      return `diary_${options.plantId || 'entry'}_${timestamp}_${randomSuffix}.jpg`;
     case 'plant-images':
       return `plant-${timestamp}-${randomSuffix}.jpg`;
     default:
-      return `image_${timestamp}.jpg`;
+      return `image_${timestamp}_${randomSuffix}.jpg`;
   }
+}
+
+/**
+ * Verify that an uploaded image URL is accessible
+ * @param url The image URL to verify
+ * @param maxAttempts Maximum number of verification attempts
+ * @param delayMs Delay between attempts
+ * @returns Promise<boolean> True if URL is accessible
+ */
+async function verifyImageAccessibility(
+  url: string, 
+  maxAttempts: number = 3, 
+  delayMs: number = 1000
+): Promise<boolean> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`Verifying image accessibility (attempt ${attempt}/${maxAttempts}): ${url}`);
+      
+      const response = await fetch(url, {
+        method: 'HEAD',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Accept': 'image/*',
+        }
+      });
+      
+      if (response.ok) {
+        console.log('Image URL verified as accessible');
+        return true;
+      }
+      
+      console.warn(`Image URL verification failed with status ${response.status}`);
+    } catch (error) {
+      console.warn(`Image URL verification attempt ${attempt} failed:`, error);
+    }
+    
+    // Wait before next attempt (except on last attempt)
+    if (attempt < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  
+  console.error('Image URL could not be verified as accessible after all attempts');
+  return false;
 }
 
 /**
@@ -207,96 +261,97 @@ export async function uploadImage(options: UploadImageOptions): Promise<UploadRe
 
     // Step 4: Get authentication session
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
+    if (!session) {
       return {
         success: false,
         error: {
-          type: 'NO_SESSION',
-          message: 'No valid authentication session for upload',
-          details: 'User must be logged in to upload images',
+          type: 'AUTHENTICATION_ERROR',
+          message: 'Authentication required for image upload',
         }
       };
     }
 
-    // Step 5: Get Supabase URL from client configuration
-    let supabaseUrl: string;
-    try {
-      supabaseUrl = getSupabaseUrl();
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          type: 'CONFIG_ERROR',
-          message: 'Supabase URL not configured',
-          details: error instanceof Error ? error.message : 'Failed to get Supabase URL from client',
-        }
-      };
-    }
-
-    // Step 6: Generate filename and file path
+    // Step 5: Generate filename and upload path
     const filename = generateFilename(bucket, options);
-    const filePath = getFilePath(bucket, userId, filename);
+    const uploadPath = `${userId}/${filename}`;
     
-    console.log(`Uploading to ${bucket} bucket at path: ${filePath}`);
+    console.log(`Uploading to ${bucket} bucket at path: ${uploadPath}`);
 
-    // Step 7: Upload using FileSystem for memory efficiency
-    const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`;
-    
-    const uploadResult = await FileSystem.uploadAsync(uploadUrl, manipResult.uri, {
-      httpMethod: 'POST',
-      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      fieldName: 'file',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // Step 6: Memory-efficient streaming upload using FileSystem.uploadAsync
+    const uploadResult = await FileSystem.uploadAsync(
+      `${Constants.expoConfig?.extra?.supabaseUrl}/storage/v1/object/${bucket}/${uploadPath}`,
+      manipResult.uri,
+      {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'multipart/form-data',
+          'x-upsert': 'true', // Allow overwriting existing files
+        },
+      }
+    );
 
+    // Step 7: Handle upload response
     if (uploadResult.status !== 200) {
-      const errorText = uploadResult.body || 'Unknown upload error';
-      console.error('Upload failed:', errorText);
+      const errorMessage = `Upload failed with status ${uploadResult.status}`;
+      console.error(errorMessage, uploadResult.body);
       
       return {
         success: false,
         error: {
-          type: 'UPLOAD_FAILED',
-          message: `Upload failed with status ${uploadResult.status}`,
-          details: errorText,
+          type: 'UPLOAD_ERROR',
+          message: errorMessage,
+          statusCode: uploadResult.status,
+          response: uploadResult.body,
         }
       };
     }
 
     // Step 8: Get public URL
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
-    
-    if (!urlData?.publicUrl) {
-      console.error('Could not get public URL for path:', filePath);
+    const { data: publicUrlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(uploadPath);
+
+    if (!publicUrlData?.publicUrl) {
       return {
         success: false,
         error: {
-          type: 'URL_GENERATION_FAILED',
-          message: 'Could not generate public URL after upload',
-          details: `Failed to get public URL for path: ${filePath}`,
+          type: 'PUBLIC_URL_ERROR',
+          message: 'Failed to get public URL after successful upload',
         }
       };
     }
 
-    console.log(`Image uploaded successfully. Public URL: ${urlData.publicUrl}`);
+    console.log(`Image uploaded successfully. Public URL: ${publicUrlData.publicUrl}`);
+
+    // Step 9: Verify image URL accessibility (new step)
+    console.log('Verifying uploaded image accessibility...');
+    const isAccessible = await verifyImageAccessibility(publicUrlData.publicUrl, 3, 1500);
     
+    if (!isAccessible) {
+      console.warn('Image uploaded but URL not immediately accessible - proceeding anyway');
+      // Don't fail the upload, just warn. The image might become accessible shortly.
+    }
+
     return {
       success: true,
-      publicUrl: urlData.publicUrl,
+      publicUrl: publicUrlData.publicUrl,
+      uploadPath,
+      fileSize: fileInfo.exists ? fileInfo.size : undefined,
+      filename,
     };
 
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('Image upload error:', error);
     
     return {
       success: false,
       error: {
-        type: 'UNKNOWN_ERROR',
-        message: 'An unexpected error occurred during upload',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        type: 'UPLOAD_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown upload error',
+        originalError: error,
       }
     };
   }
@@ -402,4 +457,50 @@ export const uploadPlantShareImageWithOptions = (userId: string, imageUri: strin
     imageUri, 
     ...options,
     filenamePrefix: 'share'
-  }); 
+  });
+
+export const uploadPlantShareImageWithVerification = async (userId: string, imageUri: string): Promise<UploadResult> => {
+  const result = await uploadImage({ 
+    bucket: 'community-plant-shares', 
+    userId, 
+    imageUri, 
+    filenamePrefix: 'share',
+    maxSizeBytes: 2 * 1024 * 1024, // Smaller size for community posts
+    compressionQuality: 0.8, // Higher quality for community sharing
+  });
+  
+  // If upload successful but accessibility verification failed, 
+  // add a warning but don't fail the upload
+  if (result.success && result.publicUrl) {
+    console.log('Plant share image uploaded successfully, verifying accessibility...');
+    const isAccessible = await verifyImageAccessibility(result.publicUrl, 2, 2000);
+    if (!isAccessible) {
+      console.warn('Plant share image uploaded but may have delayed accessibility');
+    }
+  }
+  
+  return result;
+};
+
+export const uploadQuestionImageWithVerification = async (userId: string, imageUri: string): Promise<UploadResult> => {
+  const result = await uploadImage({ 
+    bucket: 'community-questions', 
+    userId, 
+    imageUri, 
+    filenamePrefix: 'question',
+    maxSizeBytes: 2 * 1024 * 1024, // Smaller size for community posts
+    compressionQuality: 0.8, // Higher quality for community sharing
+  });
+  
+  // If upload successful but accessibility verification failed, 
+  // add a warning but don't fail the upload
+  if (result.success && result.publicUrl) {
+    console.log('Question image uploaded successfully, verifying accessibility...');
+    const isAccessible = await verifyImageAccessibility(result.publicUrl, 2, 2000);
+    if (!isAccessible) {
+      console.warn('Question image uploaded but may have delayed accessibility');
+    }
+  }
+  
+  return result;
+};

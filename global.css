@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 /* NativeWind v4 Configuration */
-@cssInterop set darkMode class dark;
-@cssInterop set nativewind;
+@theme {
+  /* This directive ensures NativeWind v4 CSS variables are properly processed */
+}
 
 /* CSS Variables for Dynamic Theming - NativeWind v4 Best Practices */
 :root {
@@ -20,7 +21,7 @@
   --color-primary-800: 6 95 70;
   --color-primary-900: 6 78 59;
 
-  /* Neutral palette */
+  /* Neutral palette - Original Earth Tones */
   --color-neutral-50: 253 251 247;
   --color-neutral-100: 251 246 239;
   --color-neutral-200: 245 234 220;
@@ -279,6 +280,18 @@
   --color-harvesting-800: 146 64 14;
   --color-harvesting-900: 120 53 15;
 
+  /* Component-specific Light Green Colors */
+  --color-component-50: 247 254 231;   /* Very light green for headers/tabs */
+  --color-component-100: 236 252 203;  /* Light green for component backgrounds */
+  --color-component-200: 217 249 157;  /* Medium light green */
+  --color-component-300: 190 242 100;  /* Brighter light green */
+  --color-component-400: 163 230 53;   /* Green accents */
+  --color-component-500: 132 204 22;   /* Main component green */
+  --color-component-600: 101 163 13;   /* Darker green */
+  --color-component-700: 77 124 15;    /* Dark green text */
+  --color-component-800: 63 98 18;     /* Very dark green */
+  --color-component-900: 54 83 20;     /* Darkest green */
+
   /* Semantic UI Color Aliases - Light Mode */
   --color-favorite-50: var(--color-rose-50);
   --color-favorite-100: var(--color-rose-100);
@@ -317,6 +330,7 @@
   --color-primary-800: 6 95 70;
   --color-primary-900: 6 78 59;
 
+  /* Dark mode neutral - Original Brown Tones */
   --color-neutral-50: 75 63 51;
   --color-neutral-100: 97 81 65;
   --color-neutral-200: 127 106 86;
@@ -327,6 +341,18 @@
   --color-neutral-700: 245 234 220;
   --color-neutral-800: 251 246 239;
   --color-neutral-900: 253 251 247;
+
+  /* Dark mode component colors - Dark Green Theme */
+  --color-component-50: 20 30 20;      /* Dark green background */
+  --color-component-100: 25 35 25;     /* Slightly lighter dark green */
+  --color-component-200: 30 45 30;     /* Medium dark green */
+  --color-component-300: 40 55 40;     /* Lighter dark green */
+  --color-component-400: 50 70 50;     /* Green accents */
+  --color-component-500: 65 85 65;     /* Main component green */
+  --color-component-600: 80 105 80;    /* Brighter green */
+  --color-component-700: 100 125 100;  /* Light green text */
+  --color-component-800: 120 145 120;  /* Very light green */
+  --color-component-900: 140 165 140;  /* Lightest green */
 }
 
 /* Common utility classes */
@@ -335,11 +361,24 @@
 }
 
 .btn-secondary {
-  @apply bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 rounded-lg px-4 py-2 font-semibold;
+  @apply bg-neutral-200 dark:bg-neutral-200 text-neutral-900 dark:text-neutral-900 rounded-lg px-4 py-2 font-semibold;
 }
 
 .card {
   @apply bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700;
+}
+
+/* Component-specific utility classes */
+.component-bg {
+  @apply bg-component-50 dark:bg-component-100;
+}
+
+.component-border {
+  @apply border-component-300 dark:border-component-400;
+}
+
+.component-card {
+  @apply bg-component-50 dark:bg-component-100 rounded-lg shadow-sm border border-component-300 dark:border-component-400;
 }
 
 /* Safe area utilities */

@@ -185,23 +185,23 @@ export function PlantCard({ plant, onPress }: PlantCardProps) {
 
           {/* Enhanced Stats Section */}
           <View className="flex-row items-center justify-between gap-2">
-            <View className="flex-1 flex-row items-center justify-center rounded-xl bg-neutral-50 px-3.5 py-2.5 dark:bg-zinc-800">
+            <View className="flex-1 flex-row items-center justify-center rounded-xl bg-component-100 px-3.5 py-2.5 dark:bg-component-200">
               <OptimizedIcon name="heart-outline" size={18} className="text-primary-500" />
-              <ThemedText className="ml-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+              <ThemedText className="ml-2 text-sm font-semibold text-component-700 dark:text-component-800">
                 {plant.healthPercentage}%
               </ThemedText>
             </View>
 
-            <View className="flex-1 flex-row items-center justify-center rounded-xl bg-neutral-50 px-3.5 py-2.5 dark:bg-zinc-800">
+            <View className="flex-1 flex-row items-center justify-center rounded-xl bg-component-100 px-3.5 py-2.5 dark:bg-component-200">
               <OptimizedIcon name="water-outline" size={18} className="text-primary-500" />
-              <ThemedText className="ml-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+              <ThemedText className="ml-2 text-sm font-semibold text-component-700 dark:text-component-800">
                 {plant.nextWateringDays}d
               </ThemedText>
             </View>
 
-            <View className="flex-1 flex-row items-center justify-center rounded-xl bg-neutral-50 px-3.5 py-2.5 dark:bg-zinc-800">
+            <View className="flex-1 flex-row items-center justify-center rounded-xl bg-component-100 px-3.5 py-2.5 dark:bg-component-200">
               <OptimizedIcon name="leaf-outline" size={18} className="text-primary-500" />
-              <ThemedText className="ml-2 text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+              <ThemedText className="ml-2 text-sm font-semibold text-component-700 dark:text-component-800">
                 {plant.nextNutrientDays}d
               </ThemedText>
             </View>

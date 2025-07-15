@@ -24,7 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { CommunityService } from '../../lib/services/community-service';
-import { uploadQuestionImage, uploadPlantShareImage } from '../../lib/utils/upload-image';
+import { uploadQuestionImage, uploadPlantShareImage, uploadQuestionImageWithVerification, uploadPlantShareImageWithVerification } from '../../lib/utils/upload-image';
+import NetworkResilientImage from '../ui/NetworkResilientImage';
 import { triggerLightHaptic, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import { EnhancedTextInput } from '../ui/EnhancedTextInput';
 import ThemedText from '../ui/ThemedText';
@@ -418,24 +419,25 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [image, setImage] = useState<string | null>(null);
+  const [isImageFreshlyUploaded, setIsImageFreshlyUploaded] = useState(false);
   
   // Plant share specific form fields
   const [plantName, setPlantName] = useState('');
-  const [growthStage, setGrowthStage] = useState<'seedling' | 'vegetative' | 'flowering' | 'harvest'>('vegetative');
-  const [environment, setEnvironment] = useState<'indoor' | 'outdoor' | 'greenhouse'>('indoor');
+  const [growthStage, setGrowthStage] = useState<'seedling' | 'vegetative' | 'flowering' | 'harvest' | 'curing'>('vegetative');
+  const [environment, setEnvironment] = useState<'indoor' | 'outdoor' | 'greenhouse' | 'mixed'>('indoor');
 
   const contentInputRef = useRef<TextInput>(null);
 
   // Fix: Ensure canPost is always boolean and postType is defined
   const canPost = Boolean(
     postType &&
-    (content.trim().length > 0 || image) &&
+    (content.trim().length >= 10 || image) && // ✅ Now requires 10+ characters
     (postType !== 'plant_share' || plantName.trim().length > 0)
   );
 
   // Image upload function using appropriate upload function based on post type
   const handleImageUpload = async (userId: string, imageUri: string): Promise<string | null> => {
-    const uploadFunction = postType === 'question' ? uploadQuestionImage : uploadPlantShareImage;
+    const uploadFunction = postType === 'question' ? uploadQuestionImageWithVerification : uploadPlantShareImageWithVerification;
     const result = await uploadFunction(userId, imageUri);
     return result.success ? result.publicUrl || null : null;
   };
@@ -445,6 +447,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
     const result = await selectFromGallery();
     if (result) {
       setImage(result.uri);
+      setIsImageFreshlyUploaded(false); // Local image, not freshly uploaded
     }
   }, []);
 
@@ -452,6 +455,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
     const result = await takePhoto();
     if (result) {
       setImage(result.uri);
+      setIsImageFreshlyUploaded(false); // Local image, not freshly uploaded
     }
   }, []);
 
@@ -469,6 +473,10 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
           setIsSubmitting(false);
           return;
         }
+        
+        // Mark the uploaded image URL as freshly uploaded for better handling
+        setImage(imageUrl);
+        setIsImageFreshlyUploaded(true);
       }
 
       if (postType === 'question') {
@@ -503,6 +511,7 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
   const handleReset = () => {
     setContent('');
     setImage(null);
+    setIsImageFreshlyUploaded(false);
     setPlantName('');
     setGrowthStage('vegetative');
     setEnvironment('indoor');
@@ -605,6 +614,12 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
                   accessibilityLabel="Post content"
                   editable={!!postType && !isSubmitting}
                 />
+                {/* Content validation feedback */}
+                {content.length > 0 && content.trim().length < 10 && (
+                  <ThemedText className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                    Content must be at least 10 characters long ({content.trim().length}/10)
+                  </ThemedText>
+                )}
               </FormSection>
 
               {/* Plant Share Form Fields */}
@@ -668,6 +683,14 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
                         subtitle="Ready to harvest">
                         Harvest
                       </ModernSelectionCard>
+                      
+                      <ModernSelectionCard
+                        onPress={() => setGrowthStage('curing')}
+                        selected={growthStage === 'curing'}
+                        disabled={isSubmitting || !postType}
+                        subtitle="Drying & curing">
+                        🏺 Curing
+                      </ModernSelectionCard>
                     </View>
                   </FormSection>
 
@@ -700,6 +723,14 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
                         subtitle="Protected growing">
                         Greenhouse
                       </ModernSelectionCard>
+                      
+                      <ModernSelectionCard
+                        onPress={() => setEnvironment('mixed')}
+                        selected={environment === 'mixed'}
+                        disabled={isSubmitting || !postType}
+                        subtitle="Indoor & outdoor">
+                        🔄 Mixed
+                      </ModernSelectionCard>
                     </View>
                   </FormSection>
                 </>
@@ -707,19 +738,29 @@ export default function CreatePostScreen({ visible, onClose, onSuccess, postType
 
               {/* Show selected image preview */}
               {image && (
-                                 <FormSection title="Selected Image" icon="image-outline">
-                   <View className="relative rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-700 h-40 items-center justify-center">
-                     <Pressable 
-                       onPress={() => setImage(null)} 
-                       className="absolute top-2 right-2 z-10 w-8 h-8 bg-black/50 rounded-full items-center justify-center">
-                       <NativeIconSymbol name="close" size={20} tintColor="#FFFFFF" />
-                     </Pressable>
-                     <OptimizedIcon name="image-outline" size={32} className="text-neutral-500 dark:text-neutral-400" />
-                     <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
-                       Image selected
-                     </ThemedText>
-                   </View>
-                 </FormSection>
+                <FormSection title="Selected Image" icon="image-outline">
+                  <View className="relative rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-700 h-40">
+                    <Pressable 
+                      onPress={() => setImage(null)} 
+                      className="absolute top-2 right-2 z-10 w-8 h-8 bg-black/50 rounded-full items-center justify-center">
+                      <NativeIconSymbol name="close" size={20} tintColor="#FFFFFF" />
+                    </Pressable>
+                    <NetworkResilientImage 
+                      url={image} 
+                      width="100%" 
+                      height={160}
+                      contentFit="cover" 
+                      fallbackIconName="image-outline"
+                      fallbackIconSize={32}
+                      maxRetries={3}
+                      retryDelayMs={800}
+                      timeoutMs={6000}
+                      enableRetry={true}
+                      showProgress={true}
+                      initialLoadDelayMs={isImageFreshlyUploaded ? 2000 : 0}
+                    />
+                  </View>
+                </FormSection>
               )}
             </View>
           </ScrollView>
