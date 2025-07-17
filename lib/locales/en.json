@@ -479,6 +479,20 @@
     }
   },
   "ui": {
+  },
+  "plantImageSection": {
+    "error": "Error",
+    "failedToProcessImage": "Failed to process image. Please try again.",
+    "galleryError": "Gallery Error",
+    "failedToAccessGallery": "Failed to access gallery. Please try again.",
+    "failedToTakePicture": "Failed to take picture. Please try again.",
+    "processing": "Processing image...",
+    "plantImagePreview": "Plant image preview",
+    "pickImageFromGallery": "Pick image from gallery",
+    "pickImage": "Pick Image",
+    "takeNewPicture": "Take new picture",
+    "takePicture": "Take Picture"
+  ,
     "undoToast": {
       "undo": "Undo"
     },

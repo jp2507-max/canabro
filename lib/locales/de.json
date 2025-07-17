@@ -39,9 +39,11 @@
     "tryAgain": "Erneut versuchen"
   },
   "plantCard": {
-    "health": "Gesundheit: {{value}}%",
-    "watering": "Wässern in {{count}}T",
-    "nutrients": "Nährstoffe in {{count}}T"
+  "health": "Gesundheit: {{value}}%",
+  "watering_one": "Wässern in 1 Tag",
+  "watering_other": "Wässern in {{count}} Tagen",
+  "nutrients_one": "Nährstoffe in 1 Tag",
+  "nutrients_other": "Nährstoffe in {{count}} Tagen"
   },
   "navigation": {
     "tabs": {
@@ -66,7 +68,9 @@
       "evening": "Guten Abend"
     },
     "plantCountMessages": {
-      "one": "Du kümmerst dich um 1 schöne Pflanze",
+  "zero": "Du hast noch keine Pflanzen",
+  "one": "Du kümmerst dich um 1 schöne Pflanze",
+  "many": "Du pflegst viele Pflanzen ({{count}})",
   "other": "Du pflegst {{count}} tolle Pflanzen"
     },
     "stats": {
@@ -873,6 +877,20 @@
     }
   },
   "ui": {
+  },
+  "plantImageSection": {
+    "error": "Fehler",
+    "failedToProcessImage": "Bild konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.",
+    "galleryError": "Galerie-Fehler",
+    "failedToAccessGallery": "Zugriff auf Galerie fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "failedToTakePicture": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+    "processing": "Bild wird verarbeitet...",
+    "plantImagePreview": "Pflanzenbild-Vorschau",
+    "pickImageFromGallery": "Bild aus Galerie auswählen",
+    "pickImage": "Bild auswählen",
+    "takeNewPicture": "Neues Foto aufnehmen",
+    "takePicture": "Foto aufnehmen"
+  ,
     "undoToast": {
       "undo": "Rückgängig"
     },

@@ -42,7 +42,7 @@ function AnimatedButton({
   variant = 'primary',
   icon,
 }: AnimatedButtonProps) {
-  const { t } = useTranslation('translation');
+  const { t } = useTranslation('common');
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => {
