@@ -12,10 +12,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
-import { OptimizedIcon, IconName } from '@/components/ui/OptimizedIcon';
+import { OptimizedIcon, IconName, IconSVG } from '@/components/ui/OptimizedIcon';
 // Type guard to ensure only valid icon names are used
 function isValidIconName(name: string): name is IconName {
-  return name in (require('@/components/ui/OptimizedIcon').IconSVG);
+  return name in IconSVG;
 }
 import { PlantMetrics } from '@/lib/models/PlantMetrics';
 

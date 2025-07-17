@@ -158,10 +158,10 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       return null;
     }
 
-    // Filter and sort data - use createdAt (camelCase)
+    // Filter and sort data - use recordedAt (camelCase)
     const filteredData = metricsData 
       .filter(metric => metric[selectedMetric] != null) 
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); 
+      .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime()); 
 
     if (filteredData.length === 0) {
       return null;
@@ -184,7 +184,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
     };
 
     const labels = filteredData.map(metric =>  
-      dayjs(metric.createdAt).format(getDateFormat(selectedTimeRange))
+      dayjs(metric.recordedAt).format(getDateFormat(selectedTimeRange))
     );
 
     const values = filteredData.map(metric => {
@@ -242,7 +242,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       const metric = metricsData[data.index];
       if (metric) {
         const value = metric[selectedMetric] as number;
-        const date = dayjs(metric.createdAt).format('MMM DD, YYYY'); 
+        const date = dayjs(metric.recordedAt).format('MMM DD, YYYY'); 
         
         Alert.alert(
           t('metricsChart.dataPoint.title'),
