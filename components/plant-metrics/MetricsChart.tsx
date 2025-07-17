@@ -9,7 +9,7 @@
  * - Dark mode support
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, Dimensions, Alert, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
@@ -19,12 +19,11 @@ import dayjs from 'dayjs';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
-import { usePlantMetrics } from '@/lib/hooks/plants/usePlantMetrics';
-import { PlantMetrics as PlantMetricsType } from '@/lib/types/plant';
+import { usePlantMetricsWatermelon } from '@/lib/hooks/plants/usePlantMetricsWatermelon';
+import { PlantMetrics } from '@/lib/models/PlantMetrics';
 import { triggerLightHaptic } from '@/lib/utils/haptics';
 
-// Get screen dimensions for responsive chart sizing
-const screenWidth = Dimensions.get('window').width;
+// (Removed static screenWidth; will use responsive state inside component)
 
 // Time range options
 type TimeRange = '7d' | '30d' | '90d' | 'all';
@@ -37,7 +36,7 @@ interface TimeRangeOption {
 
 // Metric type definitions with optimal ranges
 interface MetricConfig {
-  key: keyof PlantMetricsType;
+  key: keyof PlantMetrics;
   label: string;
   unit: string;
   optimalRange?: [number, number];
@@ -50,45 +49,45 @@ const METRIC_CONFIGS: MetricConfig[] = [
     key: 'height',
     label: 'metricsChart.metrics.height',
     unit: 'cm',
-    color: '#3b82f6', // blue-500
-    darkColor: '#60a5fa', // blue-400
+    color: 'hsl(var(--color-blue-500))',
+    darkColor: 'hsl(var(--color-blue-400))',
   },
   {
-    key: 'ph_level',
+    key: 'phLevel',
     label: 'metricsChart.metrics.phLevel',
     unit: 'pH',
     optimalRange: [6.0, 7.0],
-    color: '#f59e0b', // amber-500
-    darkColor: '#fbbf24', // amber-400
+    color: 'hsl(var(--color-amber-500))',
+    darkColor: 'hsl(var(--color-amber-400))',
   },
   {
     key: 'temperature',
     label: 'metricsChart.metrics.temperature',
     unit: '°C',
     optimalRange: [20, 26],
-    color: '#ef4444', // red-500
-    darkColor: '#f87171', // red-400
+    color: 'hsl(var(--color-red-500))',
+    darkColor: 'hsl(var(--color-red-400))',
   },
   {
     key: 'humidity',
     label: 'metricsChart.metrics.humidity',
     unit: '%',
     optimalRange: [40, 60],
-    color: '#06b6d4', // cyan-500
-    darkColor: '#22d3ee', // cyan-400
+    color: 'hsl(var(--color-cyan-500))',
+    darkColor: 'hsl(var(--color-cyan-400))',
   },
   {
-    key: 'node_count',
+    key: 'nodeCount',
     label: 'metricsChart.metrics.nodeCount',
     unit: '',
-    color: '#8b5cf6', // violet-500
-    darkColor: '#a78bfa', // violet-400
+    color: 'hsl(var(--color-violet-500))',
+    darkColor: 'hsl(var(--color-violet-400))',
   },
 ];
 
 interface MetricsChartProps {
   plantId: string;
-  metricType?: keyof PlantMetricsType;
+  metricType?: keyof PlantMetrics;
   timeRange?: TimeRange;
   showOptimalRange?: boolean;
   className?: string;
@@ -101,12 +100,26 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
   showOptimalRange = true,
   className = '',
 }) => {
+  // Responsive screen width state
+  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+
+  useEffect(() => {
+    const onChange = ({ window }: { window: { width: number } }) => {
+      setScreenWidth(window.width);
+    };
+    const subscription = Dimensions.addEventListener('change', onChange);
+    return () => {
+      if (typeof subscription?.remove === 'function') {
+        subscription.remove();
+      }
+    };
+  }, []);
   const { t } = useTranslation();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>(initialTimeRange);
-  const [selectedMetric, setSelectedMetric] = useState<keyof PlantMetricsType>(metricType);
+  const [selectedMetric, setSelectedMetric] = useState<keyof PlantMetrics>(metricType);
 
   // Time range options
   const timeRangeOptions: TimeRangeOption[] = [
@@ -118,19 +131,19 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
 
   // Calculate date range for data fetching
   const dateRange = useMemo(() => {
-    const endDate = dayjs().format('YYYY-MM-DD');
-    let startDate: string | undefined;
+    const endDate = new Date();
+    let startDate: Date | undefined;
 
     const selectedOption = timeRangeOptions.find(option => option.value === selectedTimeRange);
     if (selectedOption?.days) {
-      startDate = dayjs().subtract(selectedOption.days, 'day').format('YYYY-MM-DD');
+      startDate = dayjs().subtract(selectedOption.days, 'day').toDate();
     }
 
     return { startDate, endDate };
   }, [selectedTimeRange]);
 
   // Fetch metrics data
-  const { data: metricsData, loading, error, refetch } = usePlantMetrics(plantId, {
+  const { data: metricsData, loading, error, refetch } = usePlantMetricsWatermelon(plantId, {
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
     fetchOnMount: true,
@@ -145,18 +158,33 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       return null;
     }
 
-    // Filter and sort data - use created_at (snake_case)
+    // Filter and sort data - use createdAt (camelCase)
     const filteredData = metricsData 
       .filter(metric => metric[selectedMetric] != null) 
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); 
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); 
 
     if (filteredData.length === 0) {
       return null;
     }
 
-    // Prepare chart data
+    // Prepare chart data with proper date formatting based on time range
+    const getDateFormat = (timeRange: TimeRange): string => {
+      switch (timeRange) {
+        case '7d':
+          return 'MM/DD';
+        case '30d':
+          return 'MM/DD';
+        case '90d':
+          return 'MMM';
+        case 'all':
+          return 'MMM YY';
+        default:
+          return 'MM/DD';
+      }
+    };
+
     const labels = filteredData.map(metric =>  
-      dayjs(metric.created_at).format(selectedTimeRange === '7d' ? 'MM/DD' : 'MM/DD') 
+      dayjs(metric.createdAt).format(getDateFormat(selectedTimeRange))
     );
 
     const values = filteredData.map(metric => {
@@ -180,9 +208,6 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
   const chartConfig = {
     backgroundColor: 'transparent',
     backgroundGradientFrom: isDark ? '#1f2937' : '#ffffff',
-    backgroundGradientTo: isDark ? '#1f2937' : '#ffffff',
-    decimalPlaces: currentMetricConfig?.key === 'ph_level' ? 1 : 0,
-    color: (_opacity = 1) => isDark ? `rgba(156, 163, 175, ${_opacity})` : `rgba(107, 114, 128, ${_opacity})`,
     labelColor: (_opacity = 1) => isDark ? `rgba(209, 213, 219, ${_opacity})` : `rgba(55, 65, 81, ${_opacity})`,
     style: {
       borderRadius: 16,
@@ -206,7 +231,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
   };
 
   // Handle metric selection
-  const handleMetricChange = (metric: keyof PlantMetricsType) => {
+  const handleMetricChange = (metric: keyof PlantMetrics) => {
     setSelectedMetric(metric);
     triggerLightHaptic();
   };
@@ -217,13 +242,13 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       const metric = metricsData[data.index];
       if (metric) {
         const value = metric[selectedMetric] as number;
-        const date = dayjs(metric.created_at).format('MMM DD, YYYY'); 
+        const date = dayjs(metric.createdAt).format('MMM DD, YYYY'); 
         
         Alert.alert(
           t('metricsChart.dataPoint.title'),
           t('metricsChart.dataPoint.message', {
             metric: t(currentMetricConfig?.label || ''),
-            value: value?.toFixed(currentMetricConfig?.key === 'ph_level' ? 1 : 0),
+            value: value?.toFixed(currentMetricConfig?.key === 'phLevel' ? 1 : 0),
             unit: currentMetricConfig?.unit || '',
             date,
           })
@@ -292,7 +317,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
           <ThemedView className="flex-row space-x-2">
             {METRIC_CONFIGS.map((config) => (
               <TouchableOpacity
-                key={config.key}
+                key={String(config.key)}
                 onPress={() => handleMetricChange(config.key)}
               >
                 <ThemedView
@@ -380,25 +405,31 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
               </ThemedView>
             )}
 
-            {/* Chart */}
-            <LineChart
-              data={chartData}
-              width={screenWidth - 64} // Account for padding
-              height={220}
-              chartConfig={chartConfig}
-              bezier
-              style={{
-                marginVertical: 8,
-                borderRadius: 16,
-              }}
-              onDataPointClick={handleDataPointClick}
-              withInnerLines={true}
-              withOuterLines={true}
-              withVerticalLines={true}
-              withHorizontalLines={true}
-              withDots={true}
-              withShadow={false}
-            />
+            {/* Chart with accessibility wrapper */}
+            <ThemedView
+              accessible={true}
+              accessibilityLabel="Plant metrics line chart"
+              accessibilityHint="Displays trends in plant metrics over time"
+            >
+              <LineChart
+                data={chartData}
+                width={screenWidth - 64} // Responsive: recalculate on orientation change
+                height={220}
+                chartConfig={chartConfig}
+                bezier
+                style={{
+                  marginVertical: 8,
+                  borderRadius: 16,
+                }}
+                onDataPointClick={handleDataPointClick}
+                withInnerLines={true}
+                withOuterLines={true}
+                withVerticalLines={true}
+                withHorizontalLines={true}
+                withDots={true}
+                withShadow={false}
+              />
+            </ThemedView>
 
             {/* Chart Legend */}
             <ThemedView className="mt-4 flex-row items-center justify-center space-x-4">

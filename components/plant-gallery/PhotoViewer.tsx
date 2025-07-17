@@ -9,20 +9,14 @@ import {
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { 
-  PanGestureHandler, 
-  PinchGestureHandler,
-  PanGestureHandlerGestureEvent, 
-  PinchGestureHandlerGestureEvent 
-} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedGestureHandler,
   withSpring,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
 import { format } from '@/lib/utils/date';
 
@@ -193,23 +187,19 @@ export const PhotoViewer = memo(function PhotoViewer({
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
 
+
   // Animation values for zoom and pan
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const focalX = useSharedValue(0);
   const focalY = useSharedValue(0);
-
   // Swipe gesture values
   const swipeTranslateX = useSharedValue(0);
 
-  const pinchRef = useRef<PinchGestureHandler>(null);
-  const panRef = useRef<PanGestureHandler>(null);
-  const swipeRef = useRef<PanGestureHandler>(null);
-
   // Reset transform values
   const resetTransform = useCallback(() => {
-    'worklet';
+    // 'worklet' directive removed: this is a regular JS callback, not a worklet
     scale.value = withSpring(1);
     translateX.value = withSpring(0);
     translateY.value = withSpring(0);
@@ -234,67 +224,65 @@ export const PhotoViewer = memo(function PhotoViewer({
     }
   }, [currentIndex, photos.length, resetTransform]);
 
-  // Pinch gesture handler for zoom
-  const pinchGestureHandler = useAnimatedGestureHandler<PinchGestureHandlerGestureEvent, { startScale: number }>({
-    onStart: (event, context) => {
-      context.startScale = scale.value;
+
+
+  // Pinch gesture for zoom
+  const pinchGesture = Gesture.Pinch()
+    .onStart((event) => {
       focalX.value = event.focalX;
       focalY.value = event.focalY;
-    },
-    onActive: (event, context) => {
-      scale.value = Math.max(0.5, Math.min(context.startScale * event.scale, 4));
-    },
-    onEnd: () => {
+    })
+    .onUpdate((event) => {
+      scale.value = Math.max(0.5, Math.min(event.scale, 4));
+    })
+    .onEnd(() => {
       if (scale.value < 1) {
         scale.value = withSpring(1);
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
       }
-    },
-  });
+    });
 
-  // Pan gesture handler for image movement
-  const panGestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, { startX: number; startY: number }>({
-    onStart: (_, context) => {
-      context.startX = translateX.value;
-      context.startY = translateY.value;
-    },
-    onActive: (event, context) => {
-      translateX.value = context.startX + event.translationX;
-      translateY.value = context.startY + event.translationY;
-    },
-    onEnd: () => {
-      // Snap back to center if zoomed out too much
+  // Pan gesture for image movement
+  const panGesture = Gesture.Pan()
+    .minPointers(1)
+    .maxPointers(1)
+    .onStart(() => {
+      // Store the initial position when pan starts
+    })
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd(() => {
       if (scale.value <= 1) {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
       }
-    },
-  });
+    });
 
-  // Swipe gesture handler for photo navigation
-  const swipeGestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
+  // Swipe gesture for photo navigation
+  const swipeGesture = Gesture.Pan()
+    .onStart(() => {
       swipeTranslateX.value = 0;
-    },
-    onActive: (event) => {
+    })
+    .onUpdate((event) => {
       if (scale.value <= 1) {
         swipeTranslateX.value = event.translationX;
       }
-    },
-    onEnd: (event) => {
+    })
+    .onEnd((event) => {
       if (scale.value <= 1) {
         const threshold = screenWidth * 0.3;
-        
         if (Math.abs(event.translationX) > threshold) {
           const direction = event.translationX > 0 ? 'right' : 'left';
           runOnJS(handleSwipeNavigation)(direction);
         }
-        
         swipeTranslateX.value = withSpring(0);
       }
-    },
-  });
+    })
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-50, 50]);
 
   // Animated styles
   const imageStyle = useAnimatedStyle(() => {
@@ -366,51 +354,26 @@ export const PhotoViewer = memo(function PhotoViewer({
       onRequestClose={onClose}
     >
       <StatusBar hidden={Platform.OS === 'ios'} />
-      
       <ThemedView className="flex-1 bg-black">
         <Pressable
           onPress={toggleControls}
           className="flex-1 items-center justify-center"
         >
-          <PinchGestureHandler
-            ref={pinchRef}
-            onGestureEvent={pinchGestureHandler}
-            simultaneousHandlers={[panRef]}
-          >
-            <Animated.View className="flex-1 w-full">
-              <PanGestureHandler
-                ref={panRef}
-                onGestureEvent={panGestureHandler}
-                simultaneousHandlers={[pinchRef, swipeRef]}
-                minPointers={1}
-                maxPointers={1}
-              >
-                <Animated.View className="flex-1 w-full">
-                  <PanGestureHandler
-                    ref={swipeRef}
-                    onGestureEvent={swipeGestureHandler}
-                    simultaneousHandlers={[panRef]}
-                    activeOffsetX={[-10, 10]}
-                    failOffsetY={[-50, 50]}
-                  >
-                    <Animated.View className="flex-1 items-center justify-center">
-                      <Animated.View style={imageStyle}>
-                        <Image
-                          source={currentPhoto.imageUrl}
-                          style={{
-                            width: screenWidth,
-                            height: screenHeight,
-                          }}
-                          contentFit="contain"
-                          transition={300}
-                        />
-                      </Animated.View>
-                    </Animated.View>
-                  </PanGestureHandler>
-                </Animated.View>
-              </PanGestureHandler>
+          <GestureDetector gesture={Gesture.Simultaneous(pinchGesture, panGesture, swipeGesture)}>
+            <Animated.View className="flex-1 items-center justify-center">
+              <Animated.View style={imageStyle}>
+                <Image
+                  source={currentPhoto.imageUrl}
+                  style={{
+                    width: screenWidth,
+                    height: screenHeight,
+                  }}
+                  contentFit="contain"
+                  transition={300}
+                />
+              </Animated.View>
             </Animated.View>
-          </PinchGestureHandler>
+          </GestureDetector>
         </Pressable>
 
         <PhotoControls

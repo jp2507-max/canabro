@@ -1,9 +1,11 @@
 
 
 import React, { memo, useCallback } from 'react';
-import { FlatList, Pressable, Dimensions } from 'react-native';
+import { Pressable, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
+
+import { FlashListWrapper } from '../ui/FlashListWrapper';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedView from '../ui/ThemedView';
@@ -172,18 +174,14 @@ export const PhotoGallery = memo(function PhotoGallery({
 
   return (
     <ThemedView className="flex-1">
-      <FlatList
+      <FlashListWrapper
         data={data}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         numColumns={numColumns}
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
-        getItemLayout={(data, index) => ({
-          length: itemSize + 8,
-          offset: Math.floor(index / numColumns) * (itemSize + 8),
-          index,
-        })}
+        estimatedItemSize={itemSize + 8}
       />
     </ThemedView>
   );

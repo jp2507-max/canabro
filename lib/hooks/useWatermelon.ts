@@ -15,6 +15,7 @@ import { GrowJournal } from '../models/GrowJournal';
 import { GrowLocation } from '../models/GrowLocation';
 import { JournalEntry } from '../models/JournalEntry';
 import { Plant } from '../models/Plant';
+import { PlantMetrics } from '../models/PlantMetrics';
 import { PlantTask } from '../models/PlantTask';
 // Removed: import { Post } from '../models/Post'; - Post model has been deleted
 import { Profile } from '../models/Profile';
@@ -29,6 +30,7 @@ interface WatermelonContextType {
   growLocations: Collection<GrowLocation>;
   diaryEntries: Collection<DiaryEntry>;
   plantTasks: Collection<PlantTask>;
+  plantMetrics: Collection<PlantMetrics>;
   // Removed: posts: Collection<Post>; - posts table has been removed
   sync: (options?: { showFeedback?: boolean; force?: boolean }) => Promise<boolean>;
   isInitialized: boolean;
@@ -56,6 +58,7 @@ export default function useWatermelon(): WatermelonContextType {
   const growLocations = database.get<GrowLocation>('grow_locations');
   const diaryEntries = database.get<DiaryEntry>('diary_entries');
   const plantTasks = database.get<PlantTask>('plant_tasks');
+  const plantMetrics = database.get<PlantMetrics>('plant_metrics');
   // Removed: const posts = database.get<Post>('posts'); - posts table has been removed
 
   // Enhanced sync function that updates lastSyncTime
@@ -91,6 +94,7 @@ export default function useWatermelon(): WatermelonContextType {
     growLocations,
     diaryEntries,
     plantTasks,
+    plantMetrics,
     // Removed: posts, - posts table has been removed
     sync: syncWithTracking,
     isInitialized: true,

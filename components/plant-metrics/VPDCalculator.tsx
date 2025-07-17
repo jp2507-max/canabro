@@ -12,7 +12,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
-import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
+import { OptimizedIcon, IconName } from '@/components/ui/OptimizedIcon';
+// Type guard to ensure only valid icon names are used
+function isValidIconName(name: string): name is IconName {
+  return name in (require('@/components/ui/OptimizedIcon').IconSVG);
+}
 import { PlantMetrics } from '@/lib/models/PlantMetrics';
 
 interface VPDCalculatorProps {
@@ -95,10 +99,10 @@ export const VPDCalculator: React.FC<VPDCalculatorProps> = ({
     <ThemedView className={`p-4 rounded-lg border ${status.bgColor} ${status.borderColor} ${className}`}>
       <ThemedView className="flex-row items-center justify-between">
         <ThemedView className="flex-row items-center space-x-2">
-          <OptimizedIcon 
-            name={status.icon as any} 
-            size={18} 
-            className={status.color} 
+          <OptimizedIcon
+            name={isValidIconName(status.icon) ? status.icon : 'default'}
+            size={18}
+            className={status.color}
           />
           <ThemedText className={`font-medium ${status.color}`}>
             VPD: {vpd} kPa
