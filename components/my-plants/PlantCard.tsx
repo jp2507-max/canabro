@@ -1,6 +1,7 @@
 import * as Haptics from '@/lib/utils/haptics';
 import { Image as ExpoImage } from 'expo-image';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -45,6 +46,7 @@ const customCardImageTransition = SharedTransition.custom((values) => {
 });
 
 export function PlantCard({ plant, onPress }: PlantCardProps) {
+  const { t } = useTranslation(['plantCard']);
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
   const shadowOpacity = useSharedValue(0.15);
@@ -188,21 +190,21 @@ export function PlantCard({ plant, onPress }: PlantCardProps) {
             <View className="flex-1 flex-row items-center justify-center rounded-xl bg-component-100 px-3.5 py-2.5 dark:bg-component-200">
               <OptimizedIcon name="heart-outline" size={18} className="text-primary-500" />
               <ThemedText className="ml-2 text-sm font-semibold text-component-700 dark:text-component-800">
-                {plant.healthPercentage}%
+                {t('health', { value: plant.healthPercentage })}
               </ThemedText>
             </View>
 
             <View className="flex-1 flex-row items-center justify-center rounded-xl bg-component-100 px-3.5 py-2.5 dark:bg-component-200">
               <OptimizedIcon name="water-outline" size={18} className="text-primary-500" />
               <ThemedText className="ml-2 text-sm font-semibold text-component-700 dark:text-component-800">
-                {plant.nextWateringDays}d
+                {t('watering', { count: plant.nextWateringDays })}
               </ThemedText>
             </View>
 
             <View className="flex-1 flex-row items-center justify-center rounded-xl bg-component-100 px-3.5 py-2.5 dark:bg-component-200">
               <OptimizedIcon name="leaf-outline" size={18} className="text-primary-500" />
               <ThemedText className="ml-2 text-sm font-semibold text-component-700 dark:text-component-800">
-                {plant.nextNutrientDays}d
+                {t('nutrients', { count: plant.nextNutrientDays })}
               </ThemedText>
             </View>
           </View>

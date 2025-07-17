@@ -1,11 +1,12 @@
 import React, { memo, useMemo } from 'react';
-import { View, Pressable, Alert } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeInDown, FadeInLeft } from 'react-native-reanimated';
 import { router } from 'expo-router';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { OptimizedIcon } from './OptimizedIcon';
 import SyncStatus from './SyncStatus';
+import { useTranslation } from 'react-i18next';
 import ThemedText from './ThemedText';
 import ThemedView from './ThemedView';
 import UserAvatar from '../community/UserAvatar';
@@ -17,6 +18,7 @@ interface HomeHeaderProps {
 
 export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
   const { user, getProfile } = useAuth();
+  const { t } = useTranslation('home');
   const [userProfile, setUserProfile] = React.useState<any>(null);
 
   // Fetch user profile for avatar
@@ -46,33 +48,33 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
     if (hour < 12) {
       return {
         icon: 'sunny-outline' as const,
-        greeting: 'Good Morning',
+        greeting: t('home.greetings.morning'),
         colorClass: 'text-amber-500',
       };
     } else if (hour < 18) {
       return {
         icon: 'sunny-outline' as const,
-        greeting: 'Good Afternoon',
+        greeting: t('home.greetings.afternoon'),
         colorClass: 'text-orange-500',
       };
     } else {
       return {
         icon: 'moon-outline' as const,
-        greeting: 'Good Evening',
+        greeting: t('home.greetings.evening'),
         colorClass: 'text-violet-500',
       };
     }
-  }, []);
+  }, [t]);
 
   const plantCountMessage = useMemo(() => {
     if (plantCount === 0) {
-      return 'Ready to start your grow journey?';
+      return t('home.plantCountMessages.zero');
     } else if (plantCount === 1) {
-      return 'Caring for 1 beautiful plant 🌱';
+      return t('home.plantCountMessages.one');
     } else {
-      return `Growing ${plantCount} amazing plants 🌿`;
+      return t('home.plantCountMessages.many', { count: plantCount });
     }
-  }, [plantCount]);
+  }, [plantCount, t]);
 
   return (
     <ThemedView className="mx-4 mb-4 mt-6 rounded-2xl border border-component-300 bg-component-50 p-6 shadow-lg dark:border-component-400 dark:bg-component-100">
@@ -95,7 +97,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
 
           {/* Main title */}
           <ThemedText className="mb-1 text-3xl font-bold text-neutral-900 dark:text-white">
-            My Garden
+            {t('home.title')}
           </ThemedText>
 
           {/* Plant count with personalized message */}
@@ -138,7 +140,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 className="text-violet-500 dark:text-violet-400"
               />
               <ThemedText className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                Active
+                {t('home.stats.active')}
               </ThemedText>
               <ThemedText className="text-sm font-bold text-neutral-900 dark:text-white">
                 {plantCount}
@@ -152,7 +154,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 className="text-blue-500 dark:text-blue-400"
               />
               <ThemedText className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                This Week
+                {t('home.stats.thisWeek')}
               </ThemedText>
               <ThemedText className="text-sm font-bold text-neutral-900 dark:text-white">
                 {Math.ceil(plantCount * 2.5)}
@@ -166,7 +168,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 className="text-emerald-500 dark:text-emerald-400"
               />
               <ThemedText className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                Fed
+                {t('home.stats.fed')}
               </ThemedText>
               <ThemedText className="text-sm font-bold text-neutral-900 dark:text-white">
                 {Math.ceil(plantCount * 0.8)}

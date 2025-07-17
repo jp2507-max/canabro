@@ -12,6 +12,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import ProfileDetail from './ProfileDetail';
 import StatItem from './StatItem';
@@ -46,6 +47,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
   isRefreshing = false,
   onRefresh,
 }) {
+  const { t } = useTranslation();
   const { triggerSync } = useSyncContext();
 
   const syncButtonScale = useSharedValue(1);
@@ -122,7 +124,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100"
               accessibilityRole="header">
-              Profile
+              {t('profile.title')}
             </ThemedText>
             <Animated.View 
               entering={FadeIn.delay(200).duration(500)} 
@@ -142,12 +144,12 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              Statistics
+              {t('profile.sections.statistics')}
             </ThemedText>
             <ThemedView className="flex-row space-x-4">
               <StatItem
                 value={plantsCount}
-                label="Plants"
+                label={t('profile.statistics.plants')}
                 icon="leaf"
                 index={0}
                 // onPress={() => {
@@ -157,7 +159,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               />
               <StatItem
                 value={postsCount}
-                label="Posts"
+                label={t('profile.statistics.posts')}
                 icon="chatbubble-ellipses"
                 index={1}
                 // onPress={() => {
@@ -176,28 +178,28 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              Information
+              {t('profile.sections.information')}
             </ThemedText>
             <ProfileDetail 
-              label="Username" 
+              label={t('profile.information.username')} 
               value={profile?.username} 
               icon="person" 
               index={0} 
             />
             <ProfileDetail 
-              label="User ID" 
+              label={t('profile.information.userId')} 
               value={profile?.userId} 
               icon="mail" 
               index={1} 
             />
             <ProfileDetail
-              label="Experience"
+              label={t('profile.information.experience')}
               value={profile?.experienceLevel}
               icon="medal"
               index={2}
             />
             <ProfileDetail
-              label="Grow Method"
+              label={t('profile.information.growMethod')}
               value={profile?.preferredGrowMethod}
               icon="flower"
               index={3}
@@ -212,7 +214,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              Data Synchronization
+              {t('profile.sections.synchronization')}
             </ThemedText>
             <GestureDetector gesture={syncGesture}>
               <Animated.View style={syncAnimatedStyle}>

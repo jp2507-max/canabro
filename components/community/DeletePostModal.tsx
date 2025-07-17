@@ -10,6 +10,7 @@ import { BlurView } from 'expo-blur';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
+import { useTranslation } from 'react-i18next';
 
 interface DeletePostModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ export default function DeletePostModal({
   deleting = false,
   postType = 'post'
 }: DeletePostModalProps) {
+  const { t } = useTranslation('community');
 
   // Modal fade animation
   const fadeOpacity = useSharedValue(0);
@@ -46,10 +48,8 @@ export default function DeletePostModal({
 
   // Determine the label for the type being deleted
   const getTypeLabel = () => {
-    if (postType === 'plantShare') return 'Plant Share';
-    if (postType === 'question') return 'Question';
-    if (postType === 'comment') return 'Comment';
-    return 'Post';
+    const key = postType === 'plantShare' ? 'plantShare' : postType;
+    return t(`deletePostModal.types.${key}`);
   };
 
   // Animated scale values for tactile feedback
@@ -91,13 +91,13 @@ export default function DeletePostModal({
                 />
               </View>
               <ThemedText className="text-lg font-semibold text-center">
-                Delete {getTypeLabel()}?
+                {t('deletePostModal.title', { type: getTypeLabel() })}
               </ThemedText>
             </View>
 
             {/* Message */}
             <ThemedText className="text-center text-neutral-600 dark:text-neutral-400 mb-6 leading-relaxed">
-              This {getTypeLabel().toLowerCase()} will be permanently deleted. This action cannot be undone.
+              {t('deletePostModal.message', { type: getTypeLabel().toLowerCase() })}
             </ThemedText>
 
             {/* Actions */}
@@ -117,7 +117,7 @@ export default function DeletePostModal({
                 }}
               >
                 <Text className="font-medium text-neutral-700 dark:text-neutral-300">
-                  Cancel
+                  {t('deletePostModal.cancel')}
                 </Text>
               </AnimatedPressable>
 
@@ -144,7 +144,7 @@ export default function DeletePostModal({
                     />
                   )}
                   <Text className="font-medium text-white">
-                    {deleting ? 'Deleting...' : 'Delete'}
+                    {deleting ? t('deletePostModal.deleting') : t('deletePostModal.delete')}
                   </Text>
                 </View>
               </AnimatedPressable>

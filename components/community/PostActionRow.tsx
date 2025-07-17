@@ -13,6 +13,7 @@ import Animated, {
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { triggerLightHapticSync } from '../../lib/utils/haptics';
 import { SPRING_CONFIGS, SCALE_VALUES } from '../../lib/constants/animations';
+import { useTranslation } from 'react-i18next';
 
 interface PostActionRowProps {
   likes_count: number;
@@ -41,6 +42,7 @@ export default function PostActionRow({
   accentColor = 'neutral',
   className = '',
 }: PostActionRowProps) {
+  const { t } = useTranslation('community');
   const likeScale = useSharedValue(1);
   const commentScale = useSharedValue(1);
   const deleteScale = useSharedValue(1);
@@ -140,7 +142,7 @@ export default function PostActionRow({
           disabled={liking}
           className="flex-row items-center"
           accessibilityRole="button"
-          accessibilityLabel={`${user_has_liked ? 'Unlike' : 'Like'} post`}
+          accessibilityLabel={`${user_has_liked ? t('postActionRow.unlikePost') : t('postActionRow.likePost')}`}
           accessibilityState={{ selected: user_has_liked }}
         >
           <OptimizedIcon
@@ -162,7 +164,7 @@ export default function PostActionRow({
           onPress={handleComment}
           className="flex-row items-center"
           accessibilityRole="button"
-          accessibilityLabel={`View ${comments_count} comments`}
+          accessibilityLabel={t('postActionRow.viewComments', { count: comments_count })}
         >
           <OptimizedIcon
             name="chatbubble-outline"
@@ -179,7 +181,7 @@ export default function PostActionRow({
       <Pressable
         className="flex-row items-center"
         accessibilityRole="button"
-        accessibilityLabel="Share post"
+        accessibilityLabel={t('postActionRow.sharePost')}
       >
         <OptimizedIcon
           name="share"
@@ -196,7 +198,7 @@ export default function PostActionRow({
             disabled={deleting}
             className="flex-row items-center"
             accessibilityRole="button"
-            accessibilityLabel="Delete post"
+            accessibilityLabel={t('postActionRow.deletePost')}
           >
             <OptimizedIcon
               name={deleting ? "loading1" : "trash-outline"}

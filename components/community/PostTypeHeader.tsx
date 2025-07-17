@@ -1,11 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text } from 'react-native';
 import Animated, {
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  interpolateColor as rInterpolateColor,
+
 } from 'react-native-reanimated';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { PostData } from '@/lib/types/community';
@@ -15,6 +16,7 @@ interface PostTypeHeaderProps {
 }
 
 const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
+  const { t } = useTranslation('community');
   const badgeScale = useSharedValue(0);
   const badgeOpacity = useSharedValue(0);
 
@@ -29,7 +31,7 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
       case 'question':
         return {
           icon: 'help-circle' as const,
-          label: 'Question',
+          label: t('postTypeHeader.question'),
           color: 'text-blue-600 dark:text-blue-400',
           bgColor: 'bg-blue-50 dark:bg-blue-950/30',
           borderColor: 'border-blue-200/60 dark:border-blue-800/40',
@@ -42,7 +44,7 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
       case 'plant_share':
         return {
           icon: 'leaf' as const,
-          label: 'Plant Share',
+          label: t('postTypeHeader.plantShare'),
           color: 'text-green-600 dark:text-green-400',
           bgColor: 'bg-green-50 dark:bg-green-950/30',
           borderColor: 'border-green-200/60 dark:border-green-800/40',
@@ -55,7 +57,7 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
       default:
         return {
           icon: 'chatbubble-outline' as const,
-          label: 'Post',
+          label: t('postTypeHeader.post'),
           color: 'text-slate-600 dark:text-slate-400',
           bgColor: 'bg-slate-50 dark:bg-slate-950/30',
           borderColor: 'border-slate-200/60 dark:border-slate-800/40',
@@ -81,17 +83,17 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
   });
 
   const renderQuestionHeader = () => (
-    <Animated.View 
+    <Animated.View
       entering={FadeInDown.delay(100).duration(400).springify()}
       className={`mb-4 rounded-2xl border ${config.borderColor} ${config.bgColor} backdrop-blur-sm`}
     >
       {/* Gradient background overlay */}
       <View className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${config.gradientFrom} ${config.gradientTo} ${config.darkGradientFrom} ${config.darkGradientTo} opacity-60`} />
-      
+
       <View className="relative p-4">
-        {/* Header with badge and category */}
+        {/* Header with badge and status */}
         <View className="flex-row items-center justify-between mb-3">
-          <Animated.View 
+          <Animated.View
             style={animatedBadgeStyle}
             className={`flex-row items-center px-3 py-1.5 rounded-full ${config.bgColor} ${config.borderColor} border backdrop-blur-md shadow-sm`}
           >
@@ -105,19 +107,18 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
               {config.label.toUpperCase()}
             </Text>
           </Animated.View>
-          
-          {post.category && (
-            <Animated.View 
+
+          {typeof post.is_solved === 'boolean' && (
+            <Animated.View
               entering={FadeInDown.delay(200).duration(300)}
-              className="px-3 py-1 bg-white/80 dark:bg-slate-800/80 rounded-full border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm"
-            >
-              <Text className="text-xs font-medium text-slate-600 dark:text-slate-400 capitalize">
-                {post.category.replace('_', ' ')}
+              className={`px-3 py-1.5 rounded-full border backdrop-blur-sm ${post.is_solved ? 'bg-green-100/80 dark:bg-green-900/40 border-green-200/50 dark:border-green-800/30' : 'bg-amber-100/80 dark:bg-amber-900/40 border-amber-200/50 dark:border-amber-800/30'}`}>
+              <Text className={`text-xs font-medium ${post.is_solved ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300'}`}>
+                {t(post.is_solved ? 'postTypeHeader.answered' : 'postTypeHeader.unanswered')}
               </Text>
             </Animated.View>
           )}
         </View>
-        
+
         {/* Question title */}
         {post.title && (
           <Animated.View entering={FadeInDown.delay(150).duration(400)}>
@@ -126,10 +127,10 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
             </Text>
           </Animated.View>
         )}
-        
+
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
-          <Animated.View 
+          <Animated.View
             entering={FadeInDown.delay(250).duration(400)}
             className="flex-row flex-wrap gap-2"
           >
@@ -151,17 +152,17 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
   );
 
   const renderPlantShareHeader = () => (
-    <Animated.View 
+    <Animated.View
       entering={FadeInDown.delay(100).duration(400).springify()}
       className={`mb-4 rounded-2xl border ${config.borderColor} ${config.bgColor} backdrop-blur-sm overflow-hidden`}
     >
       {/* Gradient background overlay */}
       <View className={`absolute inset-0 bg-gradient-to-br ${config.gradientFrom} ${config.gradientTo} ${config.darkGradientFrom} ${config.darkGradientTo} opacity-60`} />
-      
+
       <View className="relative p-4">
         {/* Header with badge and growth stage */}
         <View className="flex-row items-center justify-between mb-3">
-          <Animated.View 
+          <Animated.View
             style={animatedBadgeStyle}
             className={`flex-row items-center px-3 py-1.5 rounded-full ${config.bgColor} ${config.borderColor} border backdrop-blur-md shadow-sm`}
           >
@@ -175,19 +176,19 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
               {config.label.toUpperCase()}
             </Text>
           </Animated.View>
-          
+
           {post.growth_stage && (
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.delay(200).duration(300)}
               className="px-3 py-1 bg-green-100/80 dark:bg-green-900/40 rounded-full border border-green-200/50 dark:border-green-800/30 backdrop-blur-sm"
             >
-              <Text className="text-xs font-medium text-green-700 dark:text-green-300 capitalize">
-                {post.growth_stage.replace('_', ' ')}
+              <Text className="text-xs font-medium text-green-700 dark:text-green-300">
+                {t(`growthStage.${post.growth_stage}` as const)}
               </Text>
             </Animated.View>
           )}
         </View>
-        
+
         {/* Plant name */}
         {post.plant_name && (
           <Animated.View entering={FadeInDown.delay(150).duration(400)}>
@@ -196,10 +197,10 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
             </Text>
           </Animated.View>
         )}
-        
+
         {/* Care tips */}
         {post.care_tips && (
-          <Animated.View 
+          <Animated.View
             entering={FadeInDown.delay(250).duration(400)}
             className="mt-3 p-4 bg-white/60 dark:bg-slate-800/60 rounded-xl border border-green-200/30 dark:border-green-800/20 backdrop-blur-sm"
           >
@@ -210,7 +211,7 @@ const PostTypeHeader: React.FC<PostTypeHeaderProps> = ({ post }) => {
                 className="text-green-600 dark:text-green-400 mr-2"
               />
               <Text className="text-sm font-semibold text-green-800 dark:text-green-200">
-                Care Tips
+                {t('postTypeHeader.careTips')}
               </Text>
             </View>
             <Text className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">

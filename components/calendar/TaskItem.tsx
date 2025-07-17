@@ -15,6 +15,7 @@ import { Plant } from '../../lib/models/Plant';
 import { PlantTask } from '../../lib/models/PlantTask';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
+import { useTranslation } from 'react-i18next';
 import ThemedView from '../ui/ThemedView';
 import { triggerLightHapticSync, triggerSuccessHaptic } from '@/lib/utils/haptics';
 
@@ -37,6 +38,8 @@ function TaskItemBase({
   onNavigate,
   onPress,
 }: TaskItemProps & { plant: Plant | null }) {
+  const { t } = useTranslation();
+  const plantName = plant?.name || t('calendar.task_item.unknown_plant', 'Unknown Plant');
   // Animation values
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.08);
@@ -146,8 +149,12 @@ function TaskItemBase({
           },
         ]}
         accessibilityRole="button"
-        accessibilityLabel={`Task: ${task.title} for ${plant?.name || 'plant'}`}
-        accessibilityHint="Tap to view task details">
+        accessibilityLabel={t('calendar.task_item.accessibility_label', {
+          title: task.title,
+          plant: plantName,
+          defaultValue: `Task: ${task.title} for ${plantName}`,
+        })}
+        accessibilityHint={t('calendar.task_item.view_details_hint', 'Tap to view task details')}>
         <ThemedView className="flex-row items-center p-4">
           {/* Task Type Icon */}
           <ThemedView className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
@@ -160,7 +167,7 @@ function TaskItemBase({
               {task.title}
             </ThemedText>
             <ThemedText className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              {plant?.name || 'Unknown Plant'}
+              {plantName}
             </ThemedText>
             {task.description && (
               <ThemedText className="mt-1 text-xs text-neutral-500 dark:text-neutral-500">
@@ -176,8 +183,8 @@ function TaskItemBase({
                 className="ml-3 h-10 w-10 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/20"
                 style={completeButtonAnimatedStyle}
                 accessibilityRole="button"
-                accessibilityLabel="Mark task as completed"
-                accessibilityHint="Tap to complete this task">
+                accessibilityLabel={t('calendar.task_item.complete_button_label', 'Mark task as completed')}
+                accessibilityHint={t('calendar.task_item.complete_button_hint', 'Tap to complete this task')}>
                 <OptimizedIcon name="checkmark-circle" size={24} color="#10b981" />
               </AnimatedPressable>
             </GestureDetector>

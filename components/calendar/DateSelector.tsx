@@ -14,6 +14,7 @@ import Animated, {
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import { useTranslation } from 'react-i18next';
 
 // Reanimated AnimatedPressable
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -31,6 +32,7 @@ interface DateItemProps {
 
 // Individual date item component with animations
 const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
+  const { t } = useTranslation();
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.1);
   const elevation = useSharedValue(1);
@@ -50,20 +52,20 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
     // Validate date before using it
     if (!date || typeof date.getTime !== 'function' || isNaN(date.getTime())) {
       console.warn('[DateSelector] Invalid date in getDateLabel:', date);
-      return 'Invalid';
+      return t('calendar.date_selector.invalid_date', 'Invalid');
     }
 
-    if (isCurrentToday) return 'Today';
-    if (isCurrentYesterday) return 'Yesterday';
-    if (isCurrentTomorrow) return 'Tomorrow';
+    if (isCurrentToday) return t('calendar.date_selector.today', 'Today');
+    if (isCurrentYesterday) return t('calendar.date_selector.yesterday', 'Yesterday');
+    if (isCurrentTomorrow) return t('calendar.date_selector.tomorrow', 'Tomorrow');
 
     try {
       return format(date, 'E');
     } catch (error) {
       console.error('[DateSelector] Error formatting date label:', error);
-      return 'Invalid';
+      return t('calendar.date_selector.invalid_date', 'Invalid');
     }
-  }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow, date]);
+  }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow, date, t]);
 
   // Pre-compute a serialisable primitive so the worklet never touches Date methods
   const timestamp = useMemo(() => {

@@ -1,25 +1,23 @@
-import { OptimizedIcon, IconName } from '../../components/ui/OptimizedIcon';
+import { OptimizedIcon } from '../../components/ui/OptimizedIcon';
 import * as Haptics from '@/lib/utils/haptics';
 import { Link } from 'expo-router';
 import React, { useState, useRef } from 'react';
 import {
   View,
   ScrollView,
-  ActivityIndicator,
   Pressable,
   Platform,
   TextInput,
 } from 'react-native';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
+
   FadeIn,
   FadeInDown,
   SlideInDown,
 } from 'react-native-reanimated';
 
 import ThemedText from '../../components/ui/ThemedText';
+import { useTranslation } from 'react-i18next';
 import ThemedView from '../../components/ui/ThemedView';
 import { isDevelopment, authConfig } from '../../lib/config';
 import { useAuth } from '../../lib/contexts/AuthProvider';
@@ -27,124 +25,20 @@ import { useAuth } from '../../lib/contexts/AuthProvider';
 // Lightweight keyboard handling components
 import { EnhancedTextInput } from '../../components/ui/EnhancedTextInput';
 import SimpleFormWrapper from '../../components/keyboard/SimpleFormWrapper';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-interface AnimatedButtonProps {
-  title: string;
-  onPress: () => void;
-  loading?: boolean;
-  disabled?: boolean;
-  variant?: 'primary' | 'secondary';
-  icon?: IconName;
-}
-
-function AnimatedButton({
-  title,
-  onPress,
-  loading = false,
-  disabled = false,
-  variant = 'primary',
-  icon,
-}: AnimatedButtonProps) {
-  const scale = useSharedValue(1);
-  const shadowOpacity = useSharedValue(0.2);
-
-  const buttonScaleStyle = useAnimatedStyle(() => {
-    'worklet';
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-
-  const buttonShadowStyle = useAnimatedStyle(() => {
-    'worklet';
-    return {
-      shadowOpacity: shadowOpacity.value,
-    };
-  });
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
-    shadowOpacity.value = withSpring(0.1, { damping: 15, stiffness: 400 });
-
-    if (Platform.OS === 'ios') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
-    shadowOpacity.value = withSpring(0.2, { damping: 15, stiffness: 400 });
-  };
-
-  const isPrimary = variant === 'primary';
-
-  return (
-    <AnimatedPressable
-      style={[
-        buttonScaleStyle,
-        buttonShadowStyle,
-        {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowRadius: 8,
-          elevation: 4,
-        },
-      ]}
-      className={`
-        mb-4 rounded-2xl px-6 py-4 
-        ${isPrimary ? 'bg-primary-500 dark:bg-primary-600' : 'bg-neutral-200 dark:bg-neutral-700'}
-        ${disabled || loading ? 'opacity-70' : ''}
-      `}
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      disabled={disabled || loading}
-      accessible
-      accessibilityLabel={title}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading }}>
-      <View className="flex-row items-center justify-center">
-        {loading ? (
-          <ActivityIndicator
-            color={isPrimary ? 'white' : '#6B7280'}
-            size="small"
-            className="mr-2"
-          />
-        ) : icon ? (
-          <OptimizedIcon
-            name={icon}
-            size={18}
-            className={`mr-2 ${
-              isPrimary ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'
-            }`}
-          />
-        ) : null}
-
-        <ThemedText
-          variant="default"
-          className={`font-semibold ${
-            isPrimary ? 'text-white' : 'text-neutral-700 dark:text-neutral-300'
-          }`}>
-          {loading ? 'Please wait...' : title}
-        </ThemedText>
-      </View>
-    </AnimatedPressable>
-  );
-}
+import AnimatedButton from '@/components/buttons/AnimatedButton';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const { t } = useTranslation('auth');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, devBypassAuth } = useAuth();
 
   // Lightweight keyboard handling
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
-  const inputRefs = [emailRef, passwordRef];
+
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -190,7 +84,7 @@ export default function LoginScreen() {
         }
         // Navigation or other success actions would typically follow here
       }
-    } catch (error) {
+    } catch (_error) {
       setErrors({ password: 'An unexpected error occurred. Please try again.' });
       if (Platform.OS === 'ios') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -238,7 +132,7 @@ export default function LoginScreen() {
                 CanaBro
               </ThemedText>
               <ThemedText variant="muted" className="mt-2 text-center text-lg">
-                Welcome back to your garden
+                {t('login.welcomeSubtitle')}
               </ThemedText>
             </Animated.View>
 
@@ -267,7 +161,7 @@ export default function LoginScreen() {
               <EnhancedTextInput
                 ref={emailRef}
                 leftIcon="mail"
-                placeholder="Email"
+                placeholder={t('login.emailPlaceholder')}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -284,7 +178,7 @@ export default function LoginScreen() {
               <EnhancedTextInput
                 ref={passwordRef}
                 leftIcon="lock-closed"
-                placeholder="Password"
+                placeholder={t('login.passwordPlaceholder')}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -294,7 +188,7 @@ export default function LoginScreen() {
               />
 
               <AnimatedButton
-                title="Sign In"
+                title={t('login.signIn')}
                 onPress={handleLogin}
                 loading={isLoading}
                 icon="log-in"
@@ -302,7 +196,7 @@ export default function LoginScreen() {
 
               {showDevOptions && (
                 <AnimatedButton
-                  title="Developer Login"
+                  title={t('login.developerLogin')}
                   onPress={handleDevBypass}
                   loading={isLoading}
                   variant="secondary"
@@ -316,7 +210,7 @@ export default function LoginScreen() {
               entering={FadeInDown.duration(800).delay(600)}
               className="mt-8 flex-row justify-center">
               <ThemedText variant="muted" className="text-base">
-                Don't have an account?{' '}
+                {t('login.noAccount')}{' '}
               </ThemedText>
               <Link href="/(auth)/register" asChild>
                 <Pressable
@@ -325,7 +219,7 @@ export default function LoginScreen() {
                   accessibilityLabel="Go to registration screen"
                   accessibilityRole="link">
                   <ThemedText className="text-base font-semibold text-primary-500 dark:text-primary-400">
-                    Sign Up
+                    {t('login.signUp')}
                   </ThemedText>
                 </Pressable>
               </Link>

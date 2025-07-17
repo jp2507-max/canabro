@@ -1,6 +1,13 @@
 {
   "common": {
     "welcome": "Willkommen",
+    "justNow": "Gerade eben",
+    "minutesAgo": "vor {{count}}m",
+    "hoursAgo": "vor {{count}}h",
+    "daysAgo": "vor {{count}}d",
+    "weeksAgo": "vor {{count}}w",
+    "monthsAgo": "vor {{count}}mo",
+    "yearsAgo": "vor {{count}}j",
     "language": "Sprache",
     "switch_to_german": "Wechseln zu Deutsch",
     "switch_to_english": "Wechseln zu Englisch",
@@ -30,11 +37,18 @@
     "somethingWentWrong": "Etwas ist schiefgelaufen",
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "tryAgain": "Erneut versuchen"
-    },
+  },
+  "plantCard": {
+  "health": "Gesundheit: {{value}}%",
+  "watering_one": "Wässern in 1 Tag",
+  "watering_other": "Wässern in {{count}} Tagen",
+  "nutrients_one": "Nährstoffe in 1 Tag",
+  "nutrients_other": "Nährstoffe in {{count}} Tagen"
+  },
   "navigation": {
     "tabs": {
       "home": "Startseite",
-      "strains": "Sorten", 
+      "strains": "Sorten",
       "calendar": "Kalender",
       "diagnosis": "Diagnose",
       "community": "Community"
@@ -44,6 +58,25 @@
       "addPlantTask": "Pflanzenaufgabe hinzufügen",
       "editPlant": "Pflanze bearbeiten",
       "newEntry": "Neuer Eintrag"
+    }
+  },
+  "home": {
+    "title": "Mein Garten",
+    "greetings": {
+      "morning": "Guten Morgen",
+      "afternoon": "Guten Tag",
+      "evening": "Guten Abend"
+    },
+    "plantCountMessages": {
+  "zero": "Du hast noch keine Pflanzen",
+  "one": "Du kümmerst dich um 1 schöne Pflanze",
+  "many": "Du pflegst viele Pflanzen ({{count}})",
+  "other": "Du pflegst {{count}} tolle Pflanzen"
+    },
+    "stats": {
+      "active": "Aktiv",
+      "thisWeek": "Diese Woche",
+      "fed": "Gefüttert"
     }
   },
   "addPlantForm": {
@@ -136,45 +169,6 @@
       "basement": "Keller",
       "garage": "Garage",
       "closet": "Schrank"
-  }
-  
-  },
-  "plants": {
-    "health": "Gesundheit",
-    "watering": "Bewässerung",
-    "nutrients": "Nährstoffe",
-    "nextWateringDays": "{{count}}t",
-    "nextNutrientDays": "{{count}}t",
-    "growJournal": "Anbautagebuch",
-    "metrics": "Metriken",
-    "comingSoon": "Demnächst verfügbar",
-    "deletePlant": "Pflanze löschen"
-  },
-  "tasks": {
-    "taskType": "Aufgabentyp",
-    "selectPlant": "Pflanze auswählen",
-    "selectTaskType": "Bitte wählen Sie einen Aufgabentyp",
-    "noPlants": "Keine Pflanzen",
-    "noPlantsMessage": "Keine Pflanzen gefunden, um Aufgaben hinzuzufügen",
-    "success": "Erfolg",
-    "taskAddedToPlants": "Aufgabe zu {{count}} Pflanze hinzugefügt!",
-    "taskAddedToPlants_other": "Aufgabe zu {{count}} Pflanzen hinzugefügt!",
-    "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt!",
-    "error": "Fehler",
-    "failedToCreateTasks": "Aufgaben konnten nicht erstellt werden",
-    "failedToLoadPlants": "Pflanzen konnten nicht geladen werden",
-    "selectPlantAndTaskType": "Bitte wählen Sie eine Pflanze und einen Aufgabentyp",
-    "markCompleted": "Aufgabe als erledigt markieren",
-    "ok": "OK",
-    "addTaskToAllPlants": "Aufgabe zu allen Pflanzen hinzufügen",
-    "dueDate": "Fälligkeitsdatum",
-    "selectDueDate": "Fälligkeitsdatum auswählen",
-    "currently": "aktuell",
-    "types": {
-      "watering": "Bewässerung",
-      "feeding": "Düngung",
-      "pruning": "Beschneidung",
-      "harvesting": "Ernte"
     }
   },
   "forms": {
@@ -187,14 +181,6 @@
       "invalid": "Ungültige Eingabe"
     }
   },
-  "community": {
-    "createPost": "Beitrag erstellen",
-    "askQuestion": "Frage stellen",
-    "selectPostType": "Bitte wählen Sie einen Beitragstyp vor dem Absenden.",
-    "postCreated": "Beitrag erfolgreich erstellt!",
-    "deleting": "Wird gelöscht...",
-    "delete": "Löschen"
-  },
   "alerts": {
     "userNotAuthenticated": "Benutzer nicht authentifiziert oder Datenbank nicht verfügbar.",
     "plantAddedSuccess": "Pflanze erfolgreich hinzugefügt!",
@@ -206,7 +192,7 @@
   },
   "accessibility": {
     "logout": "Abmelden (temporärer Test-Button)",
-    "closeModal": "Modal schließen", 
+    "closeModal": "Modal schließen",
     "retryLoading": "Bildladen wiederholen",
     "closeDebugPanel": "Debug-Panel schließen",
     "resetDatabase": "Lokale Datenbank zurücksetzen",
@@ -221,39 +207,27 @@
     "addNewPlant": "Neue Pflanze hinzufügen",
     "goBack": "Zurück gehen"
   },
-  "diagnosis": {
-    "takePhoto": "Foto aufnehmen",
-    "goBack": "Zurück gehen",
-    "plantDoctor": "Pflanzenarzt",
-    "analyzePlant": "Pflanze analysieren",
-    "takePhotoDescription": "Machen Sie ein Foto Ihrer Pflanze und erhalten Sie",
-    "aiDiagnosis": "KI-gestützte Diagnose",
-    "inSeconds": "in Sekunden",
-    "cameraAccessibilityHint": "Öffnet die Kamera, um ein Pflanzenbild für die Diagnose aufzunehmen"
-  },
-  "debug": {
-    "resetDatabase": "Datenbank zurücksetzen",
-    "forceGarbageCollection": "Garbage Collection erzwingen",
-    "clear": "Löschen",
-    "memoryUsage": "Speicherverbrauch",
-    "issuesDetected": "Probleme erkannt",
-    "debugPanel": "Debug-Panel",
-    "resetDatabaseConfirmation": "Dies wird Ihre lokale Datenbank löschen, um Schema-Probleme zu beheben. Diese Aktion kann nicht rückgängig gemacht werden. Sind Sie sicher?",
-    "developmentMode": "Entwicklermodus",
-    "auth": "Authentifizierung",
-    "autoBypass": "Auto-Umgehung",
-    "manual": "Manuell",
-    "mockUser": "Mock-Benutzer",
-    "none": "Keine",
-    "userId": "Benutzer-ID",
-    "notLoggedIn": "Nicht angemeldet",
-    "useDevAuth": "Dev-Auth verwenden",
-    "developerOptions": "Entwickleroptionen",
-    "database": "Datenbank",
-    "resetDatabaseSchema": "Datenbank zurücksetzen (Schema reparieren)",
-    "close": "Schließen"
-  },
+
   "strains": {
+    "thc": "THC",
+    "cbd": "CBD",
+    "effectsLabel": "Effekte",
+    "noEffects": "N/A",
+    "viewDetails": "Details anzeigen",
+    "accessibility": {
+      "openDetails": "Details für {{name}} öffnen",
+      "thcContent": "THC-Gehalt",
+      "thcValue": "THC {{value}} Prozent",
+      "cbdContent": "CBD-Gehalt",
+      "cbdValue": "CBD {{value}} Prozent",
+      "effectsLabel": "Effekte Beschriftung",
+      "effects": "Effekte: {{effects}}",
+      "description": "Beschreibung: {{description}}",
+      "cardLabel": "Kartenansicht für Sorte {{name}}",
+      "cardHint": "Doppeltippen, um Details und Informationen zur {{type}}-Sorte anzuzeigen",
+      "addFavorite": "Zu Favoriten hinzufügen",
+      "removeFavorite": "Aus Favoriten entfernen"
+    },
     "type": {
       "sativa": "Sativa",
       "indica": "Indica",
@@ -332,8 +306,625 @@
     "searchStrain": "Sorte suchen",
     "typeToSearch": "Zum Suchen tippen..."
   },
+  "diagnosis": {
+    "title": "Pflanzenarzt",
+    "takePhotoDescription": "Mache ein klares Foto deiner Pflanze und lasse die KI es analysieren.",
+    "aiDiagnosis": "KI-Diagnose",
+    "inSeconds": "in Sekunden",
+    "takePhoto": "Foto aufnehmen",
+    "cameraAccessibilityHint": "Öffnet die Kamera, um ein Pflanzenfoto zu machen",
+    "features": {
+      "detectDiseases": "Krankheiten & Schädlinge erkennen",
+      "nutrientDeficiency": "Analyse von Nährstoffmangel",
+      "personalizedRecommendations": "Personalisierte Empfehlungen"
+    }
+  },
+  "community": {
+    "segment": {
+      "all": "Alle Beiträge",
+      "questions": "Fragen",
+      "plant_shares": "Pflanzenteilungen"
+    },
+    "accessibility": {
+      "filterBy": "Filtern nach {{segment}}"
+    },
+    "emptyState": {
+      "offlineTitle": "Community ist offline",
+      "offlineDescription": "Verbinde dich mit dem Internet, um Beiträge zu sehen und mit der Community zu interagieren.",
+      "noPostsTitle": "Noch keine Beiträge",
+      "noPostsDescription": "Sei der Erste, der seine Pflanzen teilt oder eine Frage stellt!"
+    },
+    "createPostModal": {
+      "title": "Erstellen",
+      "sharePlantTitle": "Pflanze teilen",
+      "sharePlantDescription": "Teile Fotos und Updates deiner Pflanzen",
+      "askQuestionTitle": "Frage stellen",
+      "askQuestionDescription": "Hole dir Hilfe von der Community bei Anbauproblemen"
+    },
+    "deletePostModal": {
+      "title": "{{type}} löschen?",
+      "message": "Dieser {{type}} wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "deleting": "Wird gelöscht...",
+      "types": {
+        "post": "Beitrag",
+        "comment": "Kommentar",
+        "question": "Frage",
+        "plantShare": "Pflanzenteilung"
+      }
+    },
+    "postTypeHeader": {
+      "question": "Frage",
+      "plantShare": "Pflanzenteilung",
+      "post": "Beitrag",
+      "answered": "Beantwortet",
+      "unanswered": "Unbeantwortet",
+      "careTips": "Pflegetipps"
+    },
+    "postAuthorRow": {
+      "you": "Du",
+      "privacyOptions": {
+        "everyone": "Jeder",
+        "followers": "Follower",
+        "private": "Privat"
+      },
+      "accessibility": {
+        "userAvatar": "{{userName}}s Avatar",
+        "privacySetting": "Privatsphäre-Einstellung: {{privacy}}",
+        "privacyHint": "Tippen, um Privatsphäre-Einstellungen zu ändern",
+        "setPrivacy": "Privatsphäre auf {{privacy}} setzen"
+      }
+    },
+    "postItem": {
+      "unknownUser": "Unbekannter Benutzer",
+      "userFallback": "Benutzer {{id}}"
+    },
+    "commentItem": {
+      "unknownUser": "Unbekannter Benutzer",
+      "you": "Du",
+      "reply": "Antworten",
+      "deleteDialogTitle": "Kommentar löschen?",
+      "deleteDialogMessage": "Dieser Kommentar wird dauerhaft gelöscht.",
+      "deleteError": "Der Kommentar konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
+    },
+    "time": {
+      "unknown": "Unbekannte Zeit",
+      "invalid": "Ungültige Zeit",
+      "s": "s",
+      "m": "m",
+      "h": "h",
+      "d": "t",
+      "w": "w",
+      "y": "j"
+    },
+    "communitySegmentedControl": {
+      "all": "Alle",
+      "questions": "Fragen",
+      "plant_shares": "Pflanzenteilungen",
+      "accessibility": {
+        "filterLabel": "Beiträge nach Kategorie filtern"
+      }
+    },
+    "questionPostItem": {
+      "anonymousUser": "Anonymer Benutzer",
+      "solved": "Gelöst",
+      "urgent": "Dringend",
+      "answers": "{{count}} Antworten",
+      "answers_one": "{{count}} Antwort",
+      "accessibility": {
+        "questionBy": "Frage: {{title}} von {{displayName}}",
+        "viewQuestion": "Frage ansehen: {{title}}",
+        "viewProfile": "Profil von {{name}} ansehen",
+        "viewProfileHint": "Doppeltippen, um das Benutzerprofil anzuzeigen",
+        "viewImage": "Fragebild ansehen",
+        "viewImageHint": "Doppeltippen, um das Bild im Vollbildmodus anzuzeigen",
+        "viewAnswers": "Antworten ansehen",
+        "deleteQuestion": "Frage löschen"
+      }
+    },
+    "growthStage": {
+      "seedling": "Sämling",
+      "vegetative": "Wachstum",
+      "flowering": "Blüte",
+      "fruiting": "Fruchtbildung",
+      "harvest": "Ernte",
+      "dormant": "Ruhend"
+    },
+    "commentModal": {
+      "inputPlaceholder": "Kommentar hinzufügen...",
+      "attachPhotoTitle": "Foto anhängen",
+      "attachPhotoMessage": "Wähle eine Option:",
+      "takePhoto": "Foto aufnehmen...",
+      "chooseFromLibrary": "Aus Bibliothek wählen...",
+      "cancel": "Abbrechen",
+      "removeImage": "Bild entfernen",
+      "attachPhoto": "Foto anhängen",
+      "sendComment": "Kommentar senden",
+      "failedToTakePhoto": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+      "failedToPickImage": "Bild konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
+      "failedToAddComment": "Kommentar konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+      "failedToAddCommentPostMissing": "Kommentar konnte nicht hinzugefügt werden. Der zugehörige Beitrag existiert möglicherweise nicht mehr.",
+      "commentAddedWarning": "Kommentar hinzugefügt, konnte aber nicht sofort angezeigt werden.",
+      "commentPotentialWarningTitle": "Warnung",
+      "commentPotentialWarningMessage": "Kommentar wurde möglicherweise erstellt, konnte aber nicht sofort angezeigt werden."
+    }
+  },
+  "auth": {
+    "login": {
+      "emailPlaceholder": "E-Mail",
+      "passwordPlaceholder": "Passwort",
+      "signIn": "Anmelden",
+      "developerLogin": "Entwickler-Anmeldung",
+      "noAccount": "Noch kein Konto?",
+      "signUp": "Registrieren",
+      "welcomeSubtitle": "Willkommen zurück in deinem Garten"
+    },
+    "forgotPassword": {
+      "title": "Passwort vergessen?",
+      "subtitle": "Kein Problem! Gib deine E-Mail ein und wir senden dir einen Reset-Link.",
+      "emailPlaceholder": "E-Mail eingeben",
+      "button": "Reset-Link senden",
+      "buttonLoading": "Wird gesendet...",
+      "successTitle": "Überprüfe dein Postfach!",
+      "successMessage": "Ein Passwort-Reset-Link wurde an deine E-Mail-Adresse gesendet.",
+      "errorTitle": "Senden fehlgeschlagen",
+      "errorMessage": "Passwort-Reset-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+    },
+    "resetPassword": {
+      "title": "Passwort zurücksetzen",
+      "button": "Neues Passwort speichern",
+      "successTitle": "Passwort aktualisiert!",
+      "successMessage": "Du kannst dich jetzt mit deinem neuen Passwort anmelden.",
+      "errorTitle": "Aktualisierung fehlgeschlagen"
+    },
+    "register": {
+      "usernamePlaceholder": "Benutzername",
+      "emailPlaceholder": "E-Mail",
+      "passwordPlaceholder": "Passwort",
+      "confirmPasswordPlaceholder": "Passwort bestätigen",
+      "createAccount": "Konto erstellen",
+      "joinCommunity": "Der wachsenden Community beitreten",
+      "alreadyAccount": "Bereits ein Konto?",
+      "signIn": "Anmelden"
+    }
+  },
   "devMode": {
-    "indicator": "ENTWICKLERMODUS",
-    "dev": "ENT"
+    "indicator": "DEV-MODUS",
+    "dev": "DEV"
+  },
+  "editPlantForm": {
+    "title": "Pflanze bearbeiten",
+    "labels": {
+      "plantName": "Pflanzenname*",
+      "strain": "Sorte*",
+      "cannabisType": "Cannabis-Typ",
+      "growthStage": "Wachstumsphase*",
+      "plantedDate": "Pflanzdatum*",
+      "location": "Standort*",
+      "growMedium": "Wachsmedium",
+      "lightCondition": "Lichtverhältnisse",
+      "notes": "Notizen"
+    },
+    "placeholders": {
+      "plantName": "Pflanzennamen eingeben",
+      "strain": "Suche nach einer Sorte...",
+      "notes": "Zusätzliche Notizen zu deiner Pflanze...",
+      "location": "Einen Standort eingeben"
+    },
+    "buttons": {
+      "updatePlant": "Pflanze aktualisieren",
+      "saving": "Speichern...",
+      "takePhoto": "Foto aufnehmen",
+      "selectFromGallery": "Aus Galerie auswählen",
+      "removePhoto": "Foto entfernen"
+    },
+    "alerts": {
+      "successTitle": "Pflanze aktualisiert",
+      "successMessage": "Deine Pflanze wurde erfolgreich aktualisiert.",
+      "errorTitle": "Fehler",
+      "errorMessage": "Pflanze konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+      "selectImageTitle": "Bild auswählen",
+      "selectImageMessage": "Wähle eine Option",
+      "imageError": "Bild konnte nicht ausgewählt werden.",
+      "photoRequiredTitle": "Foto erforderlich",
+      "photoRequiredMessage": "Bitte wähle ein Foto aus oder nimm eines auf."
+    },
+    "validation": {
+      "nameRequired": "Pflanzenname ist erforderlich",
+      "nameTooShort": "Der Pflanzenname muss mindestens 3 Zeichen lang sein",
+      "strainRequired": "Sorte ist erforderlich",
+      "plantedDateRequired": "Pflanzdatum ist erforderlich",
+      "growthStageRequired": "Wachstumsstadium ist erforderlich",
+      "locationRequired": "Standort ist erforderlich"
+    },
+    "accessibility": {
+      "removePhotoHint": "Tippen, um dieses Foto von der Pflanze zu entfernen",
+      "dateLabel": "Datum: {{date}}",
+      "dateHint": "Tippen, um das Datum zu ändern",
+      "submitHint": "Tippen, um zu {{label}}",
+      "submitInProgress": "{{label}} wird bearbeitet"
+    }
+  },
+  "tasks": {
+  "taskType": "Aufgabentyp",
+  "selectPlant": "Pflanze auswählen",
+  "selectTaskType": "Bitte einen Aufgabentyp auswählen",
+  "noPlants": "Keine Pflanzen",
+  "noPlantsMessage": "Keine Pflanzen gefunden, um Aufgaben hinzuzufügen",
+  "success": "Erfolg",
+  "taskAddedToPlants_one": "Aufgabe zu {{count}} Pflanze hinzugefügt!",
+  "taskAddedToPlants_other": "Aufgabe zu {{count}} Pflanzen hinzugefügt!",
+  "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt!",
+    "error": "Fehler",
+    "failedToCreateTasks": "Aufgaben konnten nicht erstellt werden",
+    "failedToLoadPlants": "Pflanzen konnten nicht geladen werden",
+    "selectPlantAndTaskType": "Bitte eine Pflanze und einen Aufgabentyp auswählen",
+    "markCompleted": "Aufgabe als erledigt markieren",
+    "ok": "OK",
+    "addTaskToAllPlants": "Aufgabe zu allen Pflanzen hinzufügen",
+    "dueDate": "Fälligkeitsdatum",
+    "selectDueDate": "Fälligkeitsdatum auswählen",
+    "currently": "aktuell",
+    "types": {
+      "watering": "Gießen",
+      "feeding": "Düngen",
+      "pruning": "Beschneiden",
+      "harvesting": "Ernten"
+    },
+    "addTask": "Aufgabe hinzufügen",
+    "addTaskToPlant": "Aufgabe zu Pflanze hinzufügen",
+    "addTaskToPlantSubtitle": "Erstelle eine Aufgabe für eine bestimmte Pflanze",
+    "addTaskToAll": "Aufgabe zu allen Pflanzen hinzufügen",
+    "addTaskToAllSubtitle": "Erstelle eine Aufgabe, die für alle deine Pflanzen gilt",
+    "taskTitle": "Aufgabentitel",
+    "taskTitlePlaceholder": "Aufgabentitel eingeben",
+    "description": "Beschreibung (Optional)",
+    "descriptionPlaceholder": "Aufgabendetails hinzufügen...",
+    "priority": "Priorität",
+    "category": "Kategorie",
+    "selectPlantPlaceholder": "Wähle eine Pflanze für diese Aufgabe",
+    "saveTask": "Aufgabe speichern",
+    "saving": "Wird gespeichert...",
+    "cancel": "Abbrechen",
+    "priorities": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "categories": {
+      "watering": "Gießen",
+      "feeding": "Düngen",
+      "pruning": "Beschneiden",
+      "inspection": "Inspektion",
+      "other": "Andere"
+    },
+    "validation": {
+      "titleRequired": "Aufgabentitel ist erforderlich",
+      "plantRequired": "Bitte eine Pflanze auswählen"
+    },
+    "alerts": {
+      "successTitle": "Aufgabe erstellt",
+      "successMessage": "Deine Aufgabe wurde erfolgreich erstellt.",
+      "errorTitle": "Fehler",
+      "errorMessage": "Aufgabe konnte nicht erstellt werden. Bitte versuche es erneut.",
+      "noPlants": "Keine Pflanzen gefunden. Bitte füge zuerst eine Pflanze hinzu."
+    }
+  },
+  "plantTasks": {
+    "title": "Pflanzenaufgabe hinzufügen",
+    "selectPlant": "Pflanze auswählen",
+    "selectPlantPlaceholder": "Wähle eine Pflanze für diese Aufgabe",
+    "taskTitle": "Aufgabentitel",
+    "taskTitlePlaceholder": "Aufgabentitel eingeben",
+    "description": "Beschreibung (Optional)",
+    "descriptionPlaceholder": "Aufgabendetails hinzufügen...",
+    "priority": "Priorität",
+    "category": "Kategorie",
+    "dueDate": "Fälligkeitsdatum",
+    "saveTask": "Aufgabe speichern",
+    "saving": "Wird gespeichert...",
+    "cancel": "Abbrechen",
+    "loadingPlants": "Pflanzen werden geladen...",
+    "priorities": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "categories": {
+      "watering": "Gießen",
+      "feeding": "Düngen",
+      "pruning": "Beschneiden",
+      "inspection": "Inspektion",
+      "other": "Andere"
+    },
+    "validation": {
+      "titleRequired": "Aufgabentitel ist erforderlich",
+      "plantRequired": "Bitte eine Pflanze auswählen"
+    },
+    "alerts": {
+      "successTitle": "Aufgabe erstellt",
+      "successMessage": "Deine Aufgabe wurde erfolgreich erstellt.",
+      "errorTitle": "Fehler",
+      "errorMessage": "Aufgabe konnte nicht erstellt werden. Bitte versuche es erneut.",
+      "noPlants": "Keine Pflanzen gefunden. Bitte füge zuerst eine Pflanze hinzu.",
+      "failedToLoadPlants": "Pflanzen konnten nicht geladen werden. Bitte versuche es erneut.",
+      "validationError": "Validierungsfehler",
+      "selectPlantAndTitle": "Bitte eine Pflanze auswählen und einen Titel eingeben.",
+      "authenticationError": "Authentifizierungsfehler",
+      "pleaseLogInToCreateTasks": "Bitte melde dich an, um Aufgaben zu erstellen.",
+      "databaseError": "Datenbankfehler",
+      "databaseNotAvailable": "Datenbank ist nicht verfügbar. Bitte versuche es später erneut.",
+      "plantTaskCreatedSuccessfully": "Pflanzenaufgabe wurde erfolgreich erstellt."
+    },
+    "headers": {
+      "selectPlant": "Pflanze auswählen",
+      "taskTitle": "Aufgabentitel",
+      "description": "Beschreibung",
+      "priority": "Priorität",
+      "category": "Kategorie"
+    },
+    "placeholders": {
+      "enterTaskTitle": "Aufgabentitel eingeben",
+      "addTaskDetails": "Aufgabendetails hinzufügen..."
+    },
+    "priorityLevels": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "categoryTypes": {
+      "watering": "Gießen",
+      "feeding": "Düngen",
+      "pruning": "Beschneiden",
+      "inspection": "Inspektion",
+      "other": "Andere"
+    },
+    "buttons": {
+      "cancel": "Abbrechen",
+      "saveTask": "Aufgabe speichern",
+      "saving": "Wird gespeichert..."
+    }
+  },
+  "tasksFixed": {
+    "title": "Aufgabe zu Pflanze hinzufügen",
+    "selectPlant": "Pflanze auswählen",
+    "selectTaskType": "Aufgabentyp auswählen",
+    "dueDate": "Fälligkeitsdatum",
+    "notesOptional": "Notizen (Optional)",
+    "addNotesPlaceholder": "Füge Notizen für diese Aufgabe hinzu...",
+    "addTask": "Aufgabe hinzufügen",
+    "error": "Fehler",
+    "failedToLoadPlants": "Pflanzen konnten nicht geladen werden.",
+    "selectPlantAndTaskType": "Bitte eine Pflanze und einen Aufgabentyp auswählen.",
+    "success": "Erfolg",
+    "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt.",
+    "failedToCreateTasks": "Aufgabe konnte nicht erstellt werden.",
+    "ok": "OK",
+    "selectDueDateAccessibility": "Fälligkeitsdatum auswählen, aktuell {{currentDate}}",
+    "taskNotesAccessibility": "Aufgabennotizen Eingabe",
+    "taskNotesHint": "Gib hier zusätzliche Details zur Aufgabe ein",
+    "types": {
+      "watering": "Gießen",
+      "feeding": "Düngen",
+      "pruning": "Beschneiden",
+      "harvesting": "Ernten"
+    }
+  },
+  "plants": {
+    "health": "Gesundheit",
+    "watering": "Bewässerung",
+    "nutrients": "Nährstoffe",
+    "nextWateringDays": "{{count}}t",
+    "nextNutrientDays": "{{count}}t",
+    "growJournal": "Anbautagebuch",
+    "metrics": "Metriken",
+    "comingSoon": "Kommt bald",
+    "deletePlant": "Pflanze löschen"
+  },
+  "journal_calendar": {
+    "week_info": "Woche {{week}} • Tag {{day}}",
+    "invalid_date_range": "Ungültiger Datumsbereich",
+    "date_error": "Datumsfehler"
+  },
+  "calendar": {
+    "date_selector": {
+      "today": "Heute",
+      "yesterday": "Gestern",
+      "tomorrow": "Morgen",
+      "invalid_date": "Ungültig"
+    },
+    "add_task": {
+      "title": "Aufgabentitel",
+      "title_placeholder": "Aufgabentitel eingeben",
+      "description": "Beschreibung (Optional)",
+      "description_placeholder": "Aufgabendetails hinzufügen...",
+      "priority": "Priorität",
+      "category": "Kategorie",
+      "cancel": "Abbrechen",
+      "save_task": "Aufgabe speichern",
+      "priority_levels": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch"
+      },
+      "categories": {
+        "watering": "Gießen",
+        "feeding": "Düngen",
+        "pruning": "Beschneiden",
+        "inspection": "Inspektion",
+        "other": "Andere"
+      }
+    },
+    "task_actions": {
+      "add_task_to_plant": "Aufgabe zur Pflanze hinzufügen",
+      "add_task_to_plant_subtitle": "Erstelle eine Aufgabe für eine bestimmte Pflanze",
+      "add_task_to_all": "Aufgabe für alle Pflanzen hinzufügen",
+      "add_task_to_all_subtitle": "Erstelle eine Aufgabe, die für alle deine Pflanzen gilt"
+    },
+    "task_item": {
+      "unknown_plant": "Unbekannte Pflanze",
+      "accessibility_label": "Aufgabe: {{title}} für {{plant}}",
+      "view_details_hint": "Tippe, um Aufgabendetails anzuzeigen",
+      "complete_button_label": "Aufgabe als erledigt markieren",
+      "complete_button_hint": "Tippe, um diese Aufgabe abzuschließen"
+    },
+    "screen": {
+      "no_tasks_scheduled": "Keine Aufgaben geplant",
+      "tap_to_add_task": "Tippe auf die + Schaltfläche, um deine erste Aufgabe für diesen Tag hinzuzufügen",
+      "loading_tasks": "Aufgaben werden geladen...",
+      "add_task_button": "Aufgabe hinzufügen"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "loading": "Ihr Profil wird geladen...",
+    "sections": {
+      "statistics": "Statistiken",
+      "information": "Informationen",
+      "synchronization": "Datensynchronisation"
+    },
+    "statistics": {
+      "plants": "Pflanzen",
+      "posts": "Beiträge"
+    },
+    "information": {
+      "username": "Benutzername",
+      "userId": "Benutzer-ID",
+      "experience": "Erfahrung",
+      "growMethod": "Anbaumethode"
+    }
+  },
+  "debug": {
+    "title": "Debug-Panel",
+    "subtitle": "Debug-Panel zur Untersuchung von App-Abstürzen",
+    "sections": {
+      "resourceMonitoring": "📊 Ressourcenüberwachung",
+      "memoryUsage": "🧠 Speichernutzung",
+      "crashReports": "💥 Absturzberichte",
+      "potentialIssues": "⚠️ Potenzielle Probleme"
+    },
+    "resources": {
+      "intervals": "Intervalle",
+      "timeouts": "Timeouts",
+      "subscriptions": "Abonnements",
+      "listeners": "Listener",
+      "animations": "Animationen",
+      "totalResources": "Ressourcen gesamt"
+    },
+    "memory": {
+      "warnings": "Speicherwarnungen",
+      "forceGC": "Speicherbereinigung erzwingen"
+    },
+    "crashes": {
+      "clearReports": "Berichte löschen",
+      "noCrashes": "Keine Absturzberichte (gut!)",
+      "recentCrashes": "Aktuelle Abstürze"
+    },
+    "actions": {
+      "emergencyCleanup": "Notfall-Bereinigung (Verwaiste Beiträge)",
+      "forceCommunitySync": "Community-Daten erzwingen",
+      "cleaningUp": "Verwaiste Datensätze werden bereinigt...",
+      "forceSyncing": "Community-Daten werden erzwungen..."
+    },
+    "warnings": {
+      "highIntervals": "• Hohe Intervallanzahl - möglicher Speicherleck",
+      "manySubscriptions": "• Viele aktive Abonnements - Bereinigung prüfen",
+      "memoryWarnings": "• Speicherwarnungen erkannt - Nutzung optimieren",
+      "multipleCrashes": "• Mehrere Abstürze - Fehlermuster untersuchen",
+      "highResources": "• Hohe Ressourcenanzahl - Bereinigungslogik überprüfen",
+      "noIssues": "✅ Keine offensichtlichen Probleme erkannt"
+    },
+    "alerts": {
+      "error": "Fehler",
+      "noUserSession": "Keine Benutzersitzung gefunden",
+      "success": "Erfolgreich",
+      "warning": "Warnung",
+      "details": "Details",
+      "ok": "OK",
+      "communityDataSync": "Community-Datensynchronisation",
+      "cleanupDetails": "Bereinigungsdetails",
+      "showErrors": "Fehler anzeigen",
+      "cleanupErrors": "Bereinigungsfehler",
+      "cleanupFailed": "Bereinigung fehlgeschlagen: {{error}}",
+      "cleanedRecords": "{{count}} verwaiste lokale Datensätze bereinigt.{{errors}}",
+      "withErrors": " Fehler: {{count}}"
+    },
+    "status": {
+      "gcNotAvailable": "⚠️ Speicherbereinigung nicht verfügbar",
+      "forcedGC": "🗑️ Speicherbereinigung erzwungen",
+      "errorForcingGC": "Fehler beim Erzwingen der Speicherbereinigung: {{error}}"
+    },
+    "legacy": {
+      "resetDatabase": "Datenbank zurücksetzen",
+      "forceGarbageCollection": "Garbage Collection erzwingen",
+      "clear": "Löschen",
+      "resetDatabaseConfirmation": "Dies wird Ihre lokale Datenbank löschen, um Schema-Probleme zu beheben. Diese Aktion kann nicht rückgängig gemacht werden. Sind Sie sicher?",
+      "developmentMode": "Entwicklermodus",
+      "auth": "Authentifizierung",
+      "autoBypass": "Auto-Umgehung",
+      "manual": "Manuell",
+      "mockUser": "Mock-Benutzer",
+      "none": "Keine",
+      "notLoggedIn": "Nicht angemeldet",
+      "useDevAuth": "Dev-Auth verwenden",
+      "developerOptions": "Entwickleroptionen",
+      "database": "Datenbank",
+      "resetDatabaseSchema": "Datenbank zurücksetzen (Schema reparieren)",
+      "close": "Schließen"
+    }
+  },
+  "ui": {
+  },
+  "plantImageSection": {
+    "error": "Fehler",
+    "failedToProcessImage": "Bild konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.",
+    "galleryError": "Galerie-Fehler",
+    "failedToAccessGallery": "Zugriff auf Galerie fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "failedToTakePicture": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+    "processing": "Bild wird verarbeitet...",
+    "plantImagePreview": "Pflanzenbild-Vorschau",
+    "pickImageFromGallery": "Bild aus Galerie auswählen",
+    "pickImage": "Bild auswählen",
+  "takeNewPicture": "Neues Foto aufnehmen",
+  "takePicture": "Foto aufnehmen",
+    "undoToast": {
+      "undo": "Rückgängig"
+    },
+    "floatingActionButton": {
+      "add": "Hinzufügen"
+    },
+    "errorBoundary": {
+      "title": "Etwas ist schiefgelaufen",
+      "subtitle": "Ein unerwarteter Fehler ist in der Anwendung aufgetreten",
+      "description": "Wir entschuldigen uns für die Unannehmlichkeiten. Der Fehler wurde protokolliert und unser Team wird ihn untersuchen.",
+      "showDetails": "Details anzeigen",
+      "hideDetails": "Details ausblenden",
+      "retry": "Erneut versuchen",
+      "errorDetails": "Fehlerdetails",
+      "componentStack": "Komponenten-Stack",
+      "navigationIssue": "Navigationsproblem",
+      "navigationUnavailable": "Navigationskontext vorübergehend nicht verfügbar.",
+      "autoRetryFailed": "Automatischer Wiederholungsversuch fehlgeschlagen. Bitte versuchen Sie, die Seite zu aktualisieren.",
+      "retryNavigation": "Navigation wiederholen",
+      "attemptingReconnect": "Verbindungsversuch... ({{current}}/{{max}})"
+    },
+    "syncStatus": {
+      "syncing": "Synchronisiert...",
+      "syncStatus": "Sync-Status",
+      "synchronizing": "Synchronisierung mit Server...",
+      "errorPrefix": "Fehler: ",
+      "unknownError": "Unbekannter Fehler während der Synchronisation",
+      "successRate": "Erfolgsrate:",
+      "avgDuration": "Durchschn. Dauer:",
+      "slowestOp": "Langsamste Op.:",
+      "tapToSync": "Zum Synchronisieren tippen",
+      "neverSynced": "Nie synchronisiert",
+      "justNow": "Gerade eben",
+      "minutesAgo": "vor {{count}}m",
+      "hoursAgo": "vor {{count}}h",
+      "daysAgo": "vor {{count}}d"
+    }
   }
 }
+

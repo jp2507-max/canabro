@@ -25,6 +25,8 @@ import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { triggerSuccessHaptic, triggerErrorHaptic } from '@/lib/utils/haptics';
+import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 
 interface CommentItemProps {
   comment: Comment & {
@@ -44,35 +46,37 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
  * Format a date string into a relative time string (e.g. "2m ago")
+ * Uses the 'common' namespace for time-related translations.
  */
-function formatRelativeTime(dateString: string): string {
+function formatRelativeTime(dateString: string, t: TFunction): string {
   if (!dateString) {
     console.warn('[CommentItem] Empty dateString provided to formatRelativeTime');
-    return 'Unknown time';
+    return t('common:justNow');
   }
 
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
     console.warn('[CommentItem] Invalid dateString provided to formatRelativeTime:', dateString);
-    return 'Invalid time';
+    return t('common:justNow');
   }
 
   const now = new Date();
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
-  if (diffSeconds < 60) return `${diffSeconds}s`;
+  if (diffSeconds < 10) return t('common:justNow');
   const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m`;
+  if (diffMinutes < 1) return t('common:justNow');
+  if (diffMinutes < 60) return t('common:minutesAgo', { count: diffMinutes });
   const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h`;
+  if (diffHours < 24) return t('common:hoursAgo', { count: diffHours });
   const diffDays = Math.round(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d`;
+  if (diffDays < 7) return t('common:daysAgo', { count: diffDays });
   const diffWeeks = Math.round(diffDays / 7);
-  if (diffWeeks < 4) return `${diffWeeks}w`;
+  if (diffWeeks < 4) return t('common:weeksAgo', { count: diffWeeks });
   const diffMonths = Math.round(diffDays / 30);
-  if (diffMonths < 12) return `${diffMonths}mo`;
+  if (diffMonths < 12) return t('common:monthsAgo', { count: diffMonths });
   const diffYears = Math.round(diffDays / 365);
-  return `${diffYears}y`;
+  return t('common:yearsAgo', { count: diffYears });
 }
 
 /**
@@ -84,6 +88,7 @@ export default React.memo(function CommentItem({
   currentUserId,
   onReply,
 }: CommentItemProps) {
+  const { t } = useTranslation(['community', 'common']);
   // 🎬 Enhanced animation system using custom hooks
   const cardAnimation = useCardAnimation({
     enableShadowAnimation: true,
@@ -116,7 +121,7 @@ export default React.memo(function CommentItem({
   
   const [userProfile, setUserProfile] = useState(
     comment.profile || {
-      username: 'Unknown User',
+      username: t('commentItem.unknownUser'),
       avatar_url: null,
     }
   );
@@ -222,42 +227,46 @@ export default React.memo(function CommentItem({
   const handleDelete = async () => {
     if (!isOwnComment || !currentUserId) return;
 
-    Alert.alert('Delete Comment', 'Are you sure you want to delete this comment?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            // First get the post_id before deleting the comment
-            const postId = comment.post_id;
+    Alert.alert(
+      t('commentItem.delete.title'),
+      t('commentItem.delete.message'),
+      [
+        { text: t('commentItem.delete.cancel'), style: 'cancel' },
+        {
+          text: t('commentItem.delete.confirm'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // First get the post_id before deleting the comment
+              const postId = comment.post_id;
 
-            // Delete the comment
-            const { error } = await supabase
-              .from('comments')
-              .delete()
-              .eq('id', comment.id)
-              .eq('user_id', currentUserId);
+              // Delete the comment
+              const { error } = await supabase
+                .from('comments')
+                .delete()
+                .eq('id', comment.id)
+                .eq('user_id', currentUserId);
 
-            if (error) throw error;
+              if (error) throw error;
 
-            // Decrement the post's comment count
-            await supabase.rpc('decrement_comment_count', { post_id: postId }).throwOnError();
+              // Decrement the post's comment count
+              await supabase.rpc('decrement_comment_count', { post_id: postId }).throwOnError();
 
-            // ✅ Success haptic feedback
-            triggerSuccessHaptic();
-          } catch (error) {
-            console.error('Error deleting comment:', error);
-            Alert.alert('Error', 'Failed to delete comment. Please try again.');
-            // ✅ Error haptic feedback
-            triggerErrorHaptic();
-          }
+              // Success haptic feedback
+              triggerSuccessHaptic();
+            } catch (error) {
+              console.error('Error deleting comment:', error);
+              Alert.alert(t('commentItem.delete.errorTitle'), t('commentItem.delete.errorMessage'));
+              // Error haptic feedback
+              triggerErrorHaptic();
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
-  // 🎯 Modern gesture handlers using Gesture.Tap() API
+  // Modern gesture handlers using Gesture.Tap() API
   const likeGesture = Gesture.Tap()
     .enabled(!commentLikeMutation.isPending && !!currentUserId)
     .onBegin(() => {
@@ -322,13 +331,15 @@ export default React.memo(function CommentItem({
     <Animated.View
       style={[cardAnimation.animatedStyle, shadowStyle, entranceStyle]}
       className="mx-4 mb-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900 dark:shadow-zinc-800/50"
-      accessibilityLabel={`Comment by ${userProfile.username}`}>
+      accessibilityLabel={t('commentItem.accessibility.commentBy', { username: userProfile.username })}
+    >
       <View className="flex-row">
         {/* User Avatar */}
         <View className="mr-3">
           <View
             className="h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
-            accessibilityLabel={`${userProfile.username}'s avatar`}>
+            accessibilityLabel={t('commentItem.accessibility.avatar', { username: userProfile.username })}
+          >
             {userProfile.avatar_url ? (
               <ExpoImage
                 source={generateCDNImageURL(userProfile.avatar_url, 'thumbnail')}
@@ -359,13 +370,13 @@ export default React.memo(function CommentItem({
               {isOwnComment && (
                 <View className="rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-900">
                   <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
-                    You
+                    {t('commentItem.you')}
                   </Text>
                 </View>
               )}
             </View>
-            <Text className="text-xs text-zinc-500 dark:text-zinc-400">
-              {formatRelativeTime(comment.created_at)}
+            <Text className="text-xs text-zinc-400 dark:text-zinc-500">
+              {formatRelativeTime(comment.created_at, t)}
             </Text>
           </View>
 
@@ -391,13 +402,14 @@ export default React.memo(function CommentItem({
 
           {/* Enhanced Actions with Modern Gesture System */}
           <View className="flex-row items-center">
-            {/* 💝 Enhanced Like Button with Sophisticated Animations */}
+            {/* Like Button */}
             <GestureDetector gesture={likeGesture}>
               <Animated.View style={likeButtonAnimation.animatedStyle} className="mr-4">
                 <AnimatedPressable
                   className="flex-row items-center rounded-lg px-2 py-1 active:bg-zinc-100 dark:active:bg-zinc-800"
-                  accessibilityLabel={isLiked ? 'Unlike comment' : 'Like comment'}
-                  hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                  accessibilityLabel={t(isLiked ? 'commentItem.accessibility.unlike' : 'commentItem.accessibility.like')}
+                  hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                >
                   <OptimizedIcon
                     name={isLiked ? 'heart' : 'heart-outline'}
                     size={16}
@@ -412,20 +424,20 @@ export default React.memo(function CommentItem({
               </Animated.View>
             </GestureDetector>
 
-            {/* 💬 Enhanced Reply Button */}
+            {/* Reply Button */}
             {onReply && (
               <GestureDetector gesture={replyGesture}>
                 <Animated.View style={replyButtonAnimation.animatedStyle} className="mr-4">
                   <AnimatedPressable
                     className="flex-row items-center rounded-lg px-2 py-1 active:bg-zinc-100 dark:active:bg-zinc-800"
-                    accessibilityLabel="Reply to comment"
+                    accessibilityLabel={t('commentItem.accessibility.reply')}
                     hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                     <OptimizedIcon
                       name="chatbubble-outline"
                       size={16}
                       color="#71717a" // zinc-500
                     />
-                    <Text className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">Reply</Text>
+                    <Text className="ml-1 text-xs text-zinc-500 dark:text-zinc-400">{t('commentItem.reply')}</Text>
                   </AnimatedPressable>
                 </Animated.View>
               </GestureDetector>
@@ -437,14 +449,14 @@ export default React.memo(function CommentItem({
                 <Animated.View style={deleteButtonAnimation.animatedStyle}>
                   <AnimatedPressable
                     className="flex-row items-center rounded-lg px-2 py-1 active:bg-red-50 dark:active:bg-red-900/20"
-                    accessibilityLabel="Delete comment"
+                    accessibilityLabel={t('commentItem.accessibility.delete')}
                     hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                     <OptimizedIcon
                       name="trash-outline"
                       size={16}
                       color="#ef4444" // red-500
                     />
-                    <Text className="ml-1 text-xs text-red-500 dark:text-red-400">Delete</Text>
+                    <Text className="ml-1 text-xs text-red-500 dark:text-red-400">{t('commentItem.delete.button')}</Text>
                   </AnimatedPressable>
                 </Animated.View>
               </GestureDetector>

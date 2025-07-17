@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import EnhancedKeyboardWrapper from '../../../../components/keyboard/EnhancedKeyboardWrapper';
 
 import { useAuth } from '../../../../lib/contexts/AuthProvider';
+import { useTranslation } from 'react-i18next';
 
 interface TaskFormData {
   title: string;
@@ -16,6 +17,7 @@ interface TaskFormData {
 }
 
 export default function AddTaskScreen() {
+  const { t } = useTranslation();
   const router = useSafeRouter();
   const { selectedDate } = useLocalSearchParams<{ selectedDate?: string }>();
   const { session: _session } = useAuth();
@@ -74,11 +76,11 @@ export default function AddTaskScreen() {
             {/* Task Title */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Task Title
+                {t('calendar.add_task.title', 'Task Title')}
               </Text>
               <TextInput
                 className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                placeholder="Enter task title"
+                placeholder={t('calendar.add_task.title_placeholder', 'Enter task title')}
                 placeholderTextColor="#9CA3AF"
                 value={formData.title}
                 onChangeText={(title) => setFormData((prev) => ({ ...prev, title }))}
@@ -88,11 +90,11 @@ export default function AddTaskScreen() {
             {/* Description */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Description (Optional)
+                {t('calendar.add_task.description', 'Description (Optional)')}
               </Text>
               <TextInput
                 className="h-24 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                placeholder="Add task details..."
+                placeholder={t('calendar.add_task.description_placeholder', 'Add task details...')}
                 placeholderTextColor="#9CA3AF"
                 multiline
                 textAlignVertical="top"
@@ -104,7 +106,7 @@ export default function AddTaskScreen() {
             {/* Priority Selection */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Priority
+                {t('calendar.add_task.priority', 'Priority')}
               </Text>
               <View className="flex-row space-x-3">
                 {(['low', 'medium', 'high'] as const).map((priority) => (
@@ -122,7 +124,7 @@ export default function AddTaskScreen() {
                           ? 'text-white'
                           : 'text-gray-900 dark:text-white'
                       }`}>
-                      {priority}
+                      {t(`calendar.add_task.priority_levels.${priority}`, priority)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -132,7 +134,7 @@ export default function AddTaskScreen() {
             {/* Category Selection */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Category
+                {t('calendar.add_task.category', 'Category')}
               </Text>
               <View className="space-y-2">
                 {(['watering', 'feeding', 'pruning', 'inspection', 'other'] as const).map(
@@ -151,7 +153,7 @@ export default function AddTaskScreen() {
                             ? 'text-white'
                             : 'text-gray-900 dark:text-white'
                         }`}>
-                        {category}
+                        {t(`calendar.add_task.categories.${category}`, category)}
                       </Text>
                     </TouchableOpacity>
                   )
@@ -167,7 +169,7 @@ export default function AddTaskScreen() {
             <TouchableOpacity
               className="flex-1 rounded-lg bg-gray-200 py-4 dark:bg-gray-700"
               onPress={handleCancel}>
-              <Text className="text-center font-semibold text-gray-900 dark:text-white">Cancel</Text>
+              <Text className="text-center font-semibold text-gray-900 dark:text-white">{t('calendar.add_task.cancel', 'Cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               className={`flex-1 rounded-lg py-4 ${
@@ -175,7 +177,7 @@ export default function AddTaskScreen() {
               }`}
               onPress={handleSave}
               disabled={!formData.title.trim()}>
-              <Text className="text-center font-semibold text-white">Save Task</Text>
+              <Text className="text-center font-semibold text-white">{t('calendar.add_task.save_task', 'Save Task')}</Text>
             </TouchableOpacity>
           </View>
         </View>

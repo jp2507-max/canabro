@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 'use client';
 
 // ✅ React Native & Expo imports - following 2025 best practices
@@ -6,8 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from '@/lib/utils/date';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import type { JSX } from 'react';
 import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
+import type { TFunction } from 'i18next';
 import {
   TextInput,
   Alert,
@@ -18,7 +21,6 @@ import {
   Pressable,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { z } from 'zod';
 
 // ✅ Reanimated v3 minimal import - using custom animation hooks for better performance
 
@@ -38,7 +40,7 @@ import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapp
 import { useButtonAnimation } from '@/lib/animations';
 import { searchStrainsByName } from '@/lib/data/strains';
 import { useDatabase } from '@/lib/hooks/useDatabase';
-import { useEnhancedKeyboard } from '@/lib/hooks/keyboard/useEnhancedKeyboard';
+
 import { Plant } from '@/lib/models/Plant';
 import { findOrCreateLocalStrain } from '@/lib/services/sync/strain-sync.service';
 import { WeedDbService } from '@/lib/services/weed-db.service';
@@ -98,9 +100,11 @@ interface PlantUpdatePayload {
 interface EnumOptionProps {
   label: string;
   onPress: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
-const EnumOption = ({ label, onPress }: EnumOptionProps) => {
+const EnumOption = ({ label, onPress, accessibilityLabel, accessibilityHint }: EnumOptionProps) => {
   const { animatedStyle, handlers } = useButtonAnimation({
     onPress,
     enableHaptics: true,
@@ -108,7 +112,12 @@ const EnumOption = ({ label, onPress }: EnumOptionProps) => {
   });
 
   return (
-    <Pressable {...handlers}>
+    <Pressable 
+      {...handlers}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole="button"
+    >
       <Animated.View
         style={animatedStyle}
         className="mb-1 flex-row items-center justify-between rounded-lg border border-neutral-300 px-4 py-3 dark:border-neutral-600">
@@ -126,9 +135,11 @@ const EnumOption = ({ label, onPress }: EnumOptionProps) => {
 interface LocationOptionProps {
   location: string;
   onPress: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
-const LocationOption = ({ location, onPress }: LocationOptionProps) => {
+const LocationOption = ({ location, onPress, accessibilityLabel, accessibilityHint }: LocationOptionProps) => {
   const { animatedStyle, handlers } = useButtonAnimation({
     onPress,
     enableHaptics: true,
@@ -136,7 +147,12 @@ const LocationOption = ({ location, onPress }: LocationOptionProps) => {
   });
 
   return (
-    <Pressable {...handlers}>
+    <Pressable 
+      {...handlers}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole="button"
+    >
       <Animated.View
         style={animatedStyle}
         className="border-b border-neutral-200 py-4 dark:border-neutral-700">
@@ -150,21 +166,28 @@ const LocationOption = ({ location, onPress }: LocationOptionProps) => {
 // Using the already imported enums from @/lib/types/plant
 // GrowthStage is already imported as PlantGrowthStage
 
-// Zod Validation Schema (similar to AddPlantForm, adjust if needed)
-const plantFormSchema = z.object({
-  name: z.string().min(1, 'Plant name is required.'),
-  strain: z.string().min(1, 'Strain is required.'), // This will be the string name
-  planted_date: z.date({ required_error: 'Planted date is required.' }),
-  growth_stage: z.nativeEnum(PlantGrowthStage, { required_error: 'Growth stage is required.' }),
-  cannabis_type: z.nativeEnum(CannabisType).optional(),
-  grow_medium: z.nativeEnum(GrowMedium).optional(),
-  light_condition: z.nativeEnum(LightCondition).optional(),
-  location_description: z.string().min(1, 'Location description is required.'),
-  image_url: z.string().url('Invalid image URL format.').optional().nullable(),
-  notes: z.string().optional(),
-});
+// Zod Validation Schema builder with i18n support
+const buildPlantFormSchema = (t: TFunction<'editPlantForm' | 'common'>) =>
+  z.object({
+    name: z
+      .string()
+      .min(3, t('editPlantForm:validation.nameTooShort'))
+      .nonempty(t('editPlantForm:validation.nameRequired')),
+    strain: z.string().nonempty(t('editPlantForm:validation.strainRequired')),
+    planted_date: z.date({ required_error: t('editPlantForm:validation.plantedDateRequired') }),
+    growth_stage: z.nativeEnum(PlantGrowthStage, {
+      required_error: t('editPlantForm:validation.growthStageRequired'),
+    }),
+    notes: z.string().optional(),
+    image_url: z.string().optional(),
+    cannabis_type: z.nativeEnum(CannabisType),
+    grow_medium: z.nativeEnum(GrowMedium),
+    light_condition: z.nativeEnum(LightCondition),
+    location: z.string().nonempty(t('editPlantForm:validation.locationRequired')),
+  });
 
-type PlantFormData = z.infer<typeof plantFormSchema>;
+type PlantFormSchema = ReturnType<typeof buildPlantFormSchema>;
+type PlantFormData = z.infer<PlantFormSchema>;
 
 interface EditPlantFormProps {
   plant: Plant;
@@ -195,6 +218,9 @@ interface EditPlantFormProps {
  * - Optimistic UI updates with proper loading states
  */
 export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormProps) {
+  const { t } = useTranslation(['editPlantForm', 'common', 'addPlantForm']);
+  // Build validation schema with translations
+  const plantFormSchema = useMemo(() => buildPlantFormSchema(t), [t]);
   const { database } = useDatabase();
 
   const {
@@ -215,8 +241,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       cannabis_type: (plant.cannabisType as CannabisType) || CannabisType.Unknown,
       grow_medium: (plant.growMedium as GrowMedium) || GrowMedium.Soil,
       light_condition: (plant.lightCondition as LightCondition) || LightCondition.Artificial,
-      location_description: plant.locationDescription || PlantGrowLocation.Indoor,
-      image_url: plant.imageUrl ?? null,
+      location: plant.locationDescription || PlantGrowLocation.Indoor,
+      image_url: plant.imageUrl ?? undefined,
       notes: plant.notes || '',
     },
   });
@@ -224,9 +250,9 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
   const [selectedStrain, setSelectedStrain] = useState<RawStrainApiResponse | null>(null); // Will hold the full strain object
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreviewUri, setImagePreviewUri] = useState<string | null>(plant.imageUrl ?? null); // Use ??
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [processingImage, setProcessingImage] = useState(false);
+  const [imagePreviewUri, setImagePreviewUri] = useState<string | null>(plant.imageUrl ?? null); // Use ??
+
   const [showLocationModal, setShowLocationModal] = useState(false);
   // Initialize with plant's current location or a default from the enum if custom is not set
   const [tempCustomLocation, setTempCustomLocation] = useState(
@@ -245,28 +271,14 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
   // Enhanced keyboard handling setup - single source of truth for field configuration
   const keyboardFields = useMemo(() => [
     { name: 'name', ref: useRef<TextInput>(null) },
-    { name: 'location_description', ref: useRef<TextInput>(null) },
+    { name: 'location', ref: useRef<TextInput>(null) },
     { name: 'notes', ref: useRef<TextInput>(null) },
   ], []);
 
   const inputRefs = useMemo(() => keyboardFields.map(field => field.ref), [keyboardFields]);
   const fieldNames = useMemo(() => keyboardFields.map(field => field.name), [keyboardFields]);
 
-  const {
-    isKeyboardVisible,
-    keyboardHeight,
-    currentIndex,
-    goToNextInput,
-    goToPreviousInput,
-    dismissKeyboard,
-    canGoNext,
-    canGoPrevious,
-    setCurrentIndex,
-  } = useEnhancedKeyboard(inputRefs, inputRefs.length);
-  
-  const getCurrentFieldName = () => {
-    return fieldNames[currentIndex] || 'Unknown Field';
-  };
+
   // Populate form with plant data on mount and when plant prop changes
   useEffect(() => {
     reset({
@@ -277,8 +289,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       cannabis_type: (plant.cannabisType as CannabisType) || CannabisType.Unknown,
       grow_medium: (plant.growMedium as GrowMedium) || GrowMedium.Soil,
       light_condition: (plant.lightCondition as LightCondition) || LightCondition.Artificial,
-      location_description: plant.locationDescription || PlantGrowLocation.Indoor,
-      image_url: plant.imageUrl ?? null,
+      location: plant.locationDescription || PlantGrowLocation.Indoor,
+      image_url: plant.imageUrl ?? undefined,
       notes: plant.notes || '',
     });
     setImagePreviewUri(plant.imageUrl ?? null);
@@ -334,14 +346,14 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                 : strainFromApi.flavors
                   ? [strainFromApi.flavors]
                   : [],
-              terpenes: (strainFromApi as any).terpenes,
+              terpenes: undefined, // Strain interface doesn't have terpenes
               image_url: strainFromApi.imageUrl ?? strainFromApi.image,
               imageUrl: strainFromApi.imageUrl,
               image: strainFromApi.image,
               link: strainFromApi.url ?? strainFromApi.link,
               parents: strainFromApi.parents,
               breeder: strainFromApi.breeder,
-              origin: (strainFromApi as any).origin,
+              origin: strainFromApi.origin ?? undefined,
             };
 
             setSelectedStrain(strainForState);
@@ -366,7 +378,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             const localStrain = localMatches[0];
             // Construct an object that matches RawStrainApiResponse
             const strainForState: RawStrainApiResponse = {
-              id: (localStrain as any).external_db_id ?? 0, // Use a numeric ID if available, else placeholder
+              id: String(Date.now()), // Generate a unique string ID for local strain
               api_id: localStrain.id, // Use local string UUID as api_id
               name: localStrain.name,
               type: mapLocalTypeToApiType(localStrain.type as string),
@@ -375,19 +387,19 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
               description: localStrain.description ?? undefined,
               effects: localStrain.effects || [],
               flavors: localStrain.flavors || [],
-              // Add other fields from RawStrainApiResponse with default values if not in localStrain
-              lineage: (localStrain as any).lineage ?? undefined,
-              terpenes: (localStrain as any).terpenes ?? undefined,
-              images: (localStrain as any).images ?? undefined,
-              seed_company: (localStrain as any).seed_company ?? undefined,
-              genetics: (localStrain as any).genetics ?? undefined,
-              flowering_time_min: (localStrain as any).flowering_time_min ?? undefined,
-              flowering_time_max: (localStrain as any).flowering_time_max ?? undefined,
-              yield_min: (localStrain as any).yield_min ?? undefined,
-              yield_max: (localStrain as any).yield_max ?? undefined,
-              difficulty: (localStrain as any).difficulty ?? undefined,
-              rating: (localStrain as any).rating ?? 0,
-              reviews_count: (localStrain as any).reviews_count ?? 0,
+              // Add other fields from RawStrainApiResponse with default values
+              lineage: undefined,
+              terpenes: undefined,
+              images: undefined,
+              seed_company: undefined,
+              genetics: undefined,
+              flowering_time_min: undefined,
+              flowering_time_max: undefined,
+              yield_min: undefined,
+              yield_max: undefined,
+              difficulty: localStrain.growDifficulty,
+              rating: 0,
+              reviews_count: 0,
             };
             setSelectedStrain(strainForState);
             console.log(
@@ -437,7 +449,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                   bestMatchFromApiSearch.parents && bestMatchFromApiSearch.parents.length > 0
                     ? bestMatchFromApiSearch.parents
                     : undefined,
-                terpenes: (bestMatchFromApiSearch as any).terpenes ?? undefined, // Strain doesn't explicitly have terpenes
+                terpenes: undefined, // Strain interface doesn't have terpenes
                 images: bestMatchFromApiSearch.image
                   ? [bestMatchFromApiSearch.image]
                   : bestMatchFromApiSearch.imageUrl
@@ -449,23 +461,17 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                 genetics: bestMatchFromApiSearch.genetics ?? undefined,
                 floweringTime: bestMatchFromApiSearch.floweringTime ?? undefined, // Direct assignment
                 // Remove flowering_time_min and flowering_time_max as Strain doesn't directly provide them for parsing here
-                yield_min:
-                  (bestMatchFromApiSearch.yieldIndoor ||
-                    (bestMatchFromApiSearch as any).yield_min) ??
-                  undefined,
-                yield_max:
-                  (bestMatchFromApiSearch.yieldOutdoor ||
-                    (bestMatchFromApiSearch as any).yield_max) ??
-                  undefined,
+                yield_min: bestMatchFromApiSearch.yieldIndoor ?? undefined,
+                yield_max: bestMatchFromApiSearch.yieldOutdoor ?? undefined,
                 difficulty: bestMatchFromApiSearch.growDifficulty ?? undefined,
                 rating: bestMatchFromApiSearch.rating ?? 0,
-                reviews_count: (bestMatchFromApiSearch as any).reviews_count ?? 0, // Strain doesn't explicitly have reviews_count
+                reviews_count: 0, // Default value since Strain doesn't have reviews_count
                 link: bestMatchFromApiSearch.url ?? bestMatchFromApiSearch.link ?? undefined,
                 parents: bestMatchFromApiSearch.parents ?? undefined,
                 breeder: bestMatchFromApiSearch.breeder ?? undefined,
-                origin: (bestMatchFromApiSearch as any).origin ?? undefined,
+                origin: bestMatchFromApiSearch.origin ?? undefined,
                 floweringType: bestMatchFromApiSearch.floweringType ?? undefined,
-                fromSeedToHarvest: (bestMatchFromApiSearch as any).fromSeedToHarvest ?? undefined, // Strain doesn't explicitly have this
+                fromSeedToHarvest: undefined, // Strain interface doesn't have fromSeedToHarvest
                 growDifficulty: bestMatchFromApiSearch.growDifficulty ?? undefined,
                 yieldIndoor:
                   bestMatchFromApiSearch.yieldIndoor ??
@@ -534,13 +540,13 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       if (result) {
         console.log('[EditPlantForm] Image selected');
         setImagePreviewUri(result.uri);
-        setValue('image_url', null, { shouldDirty: true });
+        setValue('image_url', undefined, { shouldDirty: true });
       }
     } catch (error) {
       console.error('[EditPlantForm] Error picking image:', error);
       Alert.alert(
-        'Gallery Error',
-        'Failed to access photo gallery. Please try again or restart the app if the problem persists.'
+        t('editPlantForm:alerts.galleryErrorTitle'),
+        t('editPlantForm:alerts.galleryErrorMessage')
       );
     }
   };
@@ -549,7 +555,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     const result = await takePhoto();
     if (result) {
       setImagePreviewUri(result.uri);
-      setValue('image_url', null, { shouldDirty: true });
+      setValue('image_url', undefined, { shouldDirty: true });
     }
   };
 
@@ -593,12 +599,12 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       setUploadingImage(false);
     }
   };
-  const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
+  const onSubmit = async (data: PlantFormData) => {
     // Enhanced check for meaningful changes including strain data
     if (
       !isDirty &&
       imagePreviewUri === (plant.imageUrl ?? null) &&
-      data.location_description === plant.locationDescription &&
+      data.location === plant.locationDescription &&
       data.strain === plant.strain &&
       data.name === plant.name
     ) {
@@ -661,8 +667,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         finalImageUrl = await handleImageUpload(user.id);
         if (!finalImageUrl && imagePreviewUri) {
           Alert.alert(
-            'Image Upload Failed',
-            'Could not upload the new image. Please try again or remove the photo selection.'
+            t('editPlantForm:alerts.imageUploadFailedTitle'),
+            t('editPlantForm:alerts.imageUploadFailedMessage')
           );
           setIsSubmitting(false);
           return;
@@ -814,7 +820,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         cannabisType: (data.cannabis_type as CannabisType) || CannabisType.Unknown,
         growMedium: (data.grow_medium as GrowMedium) || GrowMedium.Soil,
         lightCondition: (data.light_condition as LightCondition) || LightCondition.Artificial,
-        locationDescription: (data.location_description as string) || '',
+        locationDescription: (data.location as string) || '',
       };
 
       console.log('[EditPlantForm] Final update payload:', JSON.stringify(updatePayload, null, 2)); // Execute the plant update in the database
@@ -843,14 +849,14 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
       if (result) {
         console.log('[EditPlantForm] Plant updated successfully');
-        Alert.alert('Success', 'Plant updated successfully.');
+        Alert.alert(t('editPlantForm:alerts.successTitle'), t('editPlantForm:alerts.successMessage'));
         if (onUpdateSuccess) onUpdateSuccess();
       } else {
-        Alert.alert('Error', 'Failed to update plant. Please try again.');
+        Alert.alert(t('editPlantForm:alerts.errorTitle'), t('editPlantForm:alerts.errorMessage'));
       }
     } catch (error) {
       console.error('[EditPlantForm] Error updating plant:', error);
-      Alert.alert('Error', 'An error occurred while updating the plant.');
+      Alert.alert(t('editPlantForm:alerts.errorTitle'), t('editPlantForm:alerts.imageError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -878,12 +884,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             value={value?.toString() || ''}
             onChangeText={onChange}
             onBlur={onBlur}
-            onFocus={() => inputIndex >= 0 && setCurrentIndex(inputIndex)}
-            onSubmitEditing={() => {
-              if (!multiline) {
-                goToNextInput();
-              }
-            }}
+            onFocus={() => {}}
+            onSubmitEditing={() => {}}
             keyboardType={keyboardType}
             multiline={multiline}
             maxLength={maxLength}
@@ -891,25 +893,27 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             error={errors[fieldName]?.message}
             returnKeyType={multiline ? 'default' : 'next'}
             blurOnSubmit={multiline}
+            accessibilityLabel={t(`editPlantForm:accessibility.${fieldName}Label`)}
+            accessibilityHint={t(`editPlantForm:accessibility.${fieldName}Hint`)}
           />
         )}
       />
     );
   };
 
-  const renderEnumPicker = (fieldName: keyof PlantFormData, enumObject: any, title: string) => {
+  const renderEnumPicker = (fieldName: keyof PlantFormData, enumObject: Record<string, string>, title: string) => {
     const formatLabel = (str: string) =>
       str.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 
     const handleEnumSelection = () => {
       // Use Alert.alert for enum picker
-      Alert.alert(title, 'Select an option', [
+      Alert.alert(title, t('enumPicker.selectOption'), [
         ...Object.values(enumObject).map((option: unknown) => ({
           text: formatLabel(String(option)),
           onPress: () =>
-            setValue(fieldName, option as any, { shouldValidate: true, shouldDirty: true }),
+            setValue(fieldName, option as PlantFormData[typeof fieldName], { shouldValidate: true, shouldDirty: true }),
         })),
-        { text: 'Cancel', style: 'cancel' as const },
+        { text: t('common.cancel'), style: 'cancel' as const },
       ]);
     };
 
@@ -919,16 +923,22 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         name={fieldName}
         render={({ field: { value } }) => (
           <EnumOption
-            label={value ? formatLabel(String(value)) : `Select ${title}`}
+            label={
+            value
+              ? formatLabel(String(value))
+              : t('enumPicker.selectField', { field: title })
+          }
             onPress={handleEnumSelection}
+            accessibilityLabel={t(`editPlantForm:accessibility.${fieldName}Label`)}
+            accessibilityHint={t(`editPlantForm:accessibility.${fieldName}Hint`)}
           />
         )}
       />
     );
   };
 
-  const renderLocationPicker = () => {
-    const currentValue = watch('location_description');
+  const renderLocationPicker = (): JSX.Element => {
+    const currentValue = watch('location');
 
     return (
       <>
@@ -937,7 +947,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             style={locationPickerAnimation.animatedStyle}
             className="mb-1 flex-row items-center justify-between rounded-lg border border-neutral-300 px-4 py-3 dark:border-neutral-600">
             <ThemedText className="text-neutral-800 dark:text-neutral-100">
-              {currentValue || 'Select Location'}
+              {currentValue || t('locationPicker.selectLocation')}
             </ThemedText>
             <OptimizedIcon
               name="chevron-down"
@@ -947,9 +957,9 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           </Animated.View>
         </Pressable>
 
-        {errors.location_description && (
+        {errors.location && (
           <ThemedText className="text-status-danger mt-1 text-xs">
-            {errors.location_description.message}
+            {errors.location.message}
           </ThemedText>
         )}
 
@@ -967,13 +977,15 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                     key={loc}
                     location={loc}
                     onPress={() => {
-                      setValue('location_description', loc, {
+                      setValue('location', loc, {
                         shouldValidate: true,
                         shouldDirty: true,
                       });
                       setTempCustomLocation('');
                       setShowLocationModal(false);
                     }}
+                    accessibilityLabel={t(`editPlantForm:accessibility.locationOptionLabel`, { location: loc })}
+                    accessibilityHint={t(`editPlantForm:accessibility.locationOptionHint`, { location: loc })}
                   />
                 ))}
 
@@ -981,29 +993,33 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                 <ThemedView className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-700">
                   <TextInput
                     className="mb-3 rounded-lg border border-neutral-300 px-4 py-3 text-base text-neutral-800 placeholder:text-neutral-500 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder:text-neutral-400"
-                    placeholder="Or type a custom location..."
+                    placeholder={t('locationPicker.customLocationPlaceholder')}
                     value={tempCustomLocation}
                     onChangeText={setTempCustomLocation}
+                    accessibilityLabel={t('editPlantForm:accessibility.customLocationLabel')}
+                    accessibilityHint={t('editPlantForm:accessibility.customLocationHint')}
                   />
 
                   <AnimatedSubmitButton
                     onPress={() => {
                       if (tempCustomLocation.trim()) {
-                        setValue('location_description', tempCustomLocation.trim(), {
+                        setValue('location', tempCustomLocation.trim(), {
                           shouldValidate: true,
                           shouldDirty: true,
                         });
-                      }
-                      setShowLocationModal(false);
-                    }}
-                    isSubmitting={false}
-                    label="Done"
-                  />
-                </ThemedView>
-              </ScrollView>
-            </ThemedView>
-          </Pressable>
-        </Modal>
+                    }
+                    setShowLocationModal(false);
+                  }}
+                  isSubmitting={false}
+                  label={t('common.done')}
+                  accessibilityHint={t('editPlantForm:accessibility.customLocationDoneHint')}
+                  accessibilityInProgressLabel={t('editPlantForm:accessibility.customLocationDoneInProgress')}
+                />
+              </ThemedView>
+            </ScrollView>
+          </ThemedView>
+        </Pressable>
+      </Modal>
       </>
     );
   };
@@ -1011,164 +1027,174 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
   return (
     <ThemedView className="flex-1">
       <EnhancedKeyboardWrapper className="flex-1 p-5">
-        <ThemedText variant="heading" className="mb-5 text-center">
-          Edit Plant Details
-        </ThemedText>
+        {/* Main Form Content */}
+      <ThemedText variant="heading" className="mb-5 text-center">
+        {t('editPlantForm:title')}
+      </ThemedText>
 
-        {/* Image Picker */}
-        <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Plant Image
-        </ThemedText>
-        <ThemedView className="mb-4 items-center">
-          {imagePreviewUri ? (
-            <Image
-              source={{ uri: imagePreviewUri }}
-              className="mb-3 rounded-lg border border-neutral-300 dark:border-neutral-600"
-              style={{ width: 200, height: 150 }}
-            />
-          ) : (
-            <ThemedView
-              className="mb-3 items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600"
-              style={{ width: 200, height: 150 }}>
-              <OptimizedIcon
-                name="image-outline"
-                size={50}
-                className="text-neutral-400 dark:text-neutral-500"
-              />
-            </ThemedView>
-          )}
-
-          <ThemedView className="max-w-75 w-full flex-row justify-around">
-            <AnimatedImageButton
-              onPress={pickImage}
-              icon="images-outline"
-              label="Gallery"
-              disabled={processingImage}
-            />
-            <AnimatedImageButton
-                                onPress={takePhotoHandler}
-              icon="camera-outline"
-              label="Camera"
-              disabled={processingImage}
+      {/* Image Picker */}
+      <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
+        {t('editPlantForm:labels.image')}
+      </ThemedText>
+      <ThemedView className="mb-4 items-center">
+        {imagePreviewUri ? (
+          <Image
+            source={{ uri: imagePreviewUri }}
+            className="mb-3 rounded-lg border border-neutral-300 dark:border-neutral-600"
+            style={{ width: 200, height: 150 }}
+            accessibilityLabel={t('editPlantForm:accessibility.imagePreviewLabel')}
+            accessibilityHint={t('editPlantForm:accessibility.imagePreviewHint')}
+          />
+        ) : (
+          <ThemedView
+            className="mb-3 items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600"
+            style={{ width: 200, height: 150 }}
+            accessibilityLabel={t('editPlantForm:accessibility.imagePlaceholderLabel')}
+            accessibilityHint={t('editPlantForm:accessibility.imagePlaceholderHint')}
+          >
+            <OptimizedIcon
+              name="image-outline"
+              size={50}
+              className="text-neutral-400 dark:text-neutral-500"
             />
           </ThemedView>
-
-          {imagePreviewUri && (
-            <AnimatedRemoveButton
-              onPress={() => {
-                setImagePreviewUri(null);
-                setValue('image_url', null, { shouldDirty: true });
-              }}
-            />
-          )}
-
-          {(uploadingImage || processingImage) && (
-            <ThemedView className="mt-3 items-center">
-              <ActivityIndicator size="small" className="text-primary-500" />
-              <ThemedText className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                {processingImage ? 'Processing image...' : 'Uploading...'}
-              </ThemedText>
-            </ThemedView>
-          )}
-        </ThemedView>
-        {errors.image_url && (
-          <ThemedText className="text-status-danger mb-3 text-xs">
-            {errors.image_url.message}
-          </ThemedText>
         )}
 
-        {/* Plant Name */}
-        <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Plant Name*
+        <ThemedView className="max-w-75 w-full flex-row justify-around">
+          <AnimatedImageButton
+            onPress={pickImage}
+            icon="images-outline"
+            label={t('editPlantForm:buttons.gallery')}
+            disabled={isSubmitting}
+            accessibilityHint={t('editPlantForm:accessibility.submitHint', { label: t('editPlantForm:buttons.gallery') })}
+          />
+          <AnimatedImageButton
+            onPress={takePhotoHandler}
+            icon="camera-outline"
+            label={t('editPlantForm:buttons.camera')}
+            disabled={isSubmitting}
+            accessibilityHint={t('editPlantForm:accessibility.submitHint', { label: t('editPlantForm:buttons.camera') })}
+          />
+        </ThemedView>
+
+        {imagePreviewUri && (
+          <AnimatedRemoveButton 
+            onPress={() => {
+              setImagePreviewUri(null);
+              setValue('image_url', undefined, { shouldDirty: true });
+            }}
+            accessibilityLabel={t('editPlantForm:accessibility.removePhotoLabel')}
+            accessibilityHint={t('editPlantForm:accessibility.removePhotoHint')}
+          />
+        )}
+
+        {uploadingImage && (
+          <ThemedView className="mt-3 items-center">
+            <ActivityIndicator size="small" className="text-primary-500" />
+            <ThemedText className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+              {t('editPlantForm:labels.uploading')}
+            </ThemedText>
+          </ThemedView>
+        )}
+      </ThemedView>
+      {errors.image_url && (
+        <ThemedText className="text-status-danger mb-3 text-xs">
+          {errors.image_url.message}
         </ThemedText>
-        {renderTextInput('name', 'e.g., Bruce Banner', 'default', false, 50)}
+      )}
 
-        {/* Strain Autocomplete */}
-        <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Strain*
-        </ThemedText>
-        <Controller
-          control={control}
-          name="strain"
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
-            <ThemedView>
-              <StrainAutocomplete
-                initialStrainName={value || ''}
-                onStrainSelect={(strainObj: RawStrainApiResponse | null) => {
-                  if (strainObj) {
-                    console.log(
-                      '[EditPlantForm StrainAutocomplete onSelect] Selected strainObj:',
-                      JSON.stringify(strainObj, null, 2)
+      {/* Plant Name */}
+      <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
+        {t('editPlantForm:labels.plantName')}
+      </ThemedText>
+      {renderTextInput('name', t('editPlantForm:placeholders.plantName'), 'default', false, 50)}
+
+      {/* Strain Autocomplete */}
+      <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
+        {t('editPlantForm:labels.strain')}
+      </ThemedText>
+      <Controller
+        control={control}
+        name="strain"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <ThemedView>
+            <StrainAutocomplete
+              initialStrainName={value || ''}
+              onStrainSelect={(strainObj: RawStrainApiResponse | null) => {
+                if (strainObj) {
+                  console.log(
+                    '[EditPlantForm StrainAutocomplete onSelect] Selected strainObj:',
+                    JSON.stringify(strainObj, null, 2)
+                  );
+                  onChange(strainObj.name);
+                  setSelectedStrain(strainObj);
+
+                  // Auto-fill cannabis type from strain data if available
+                  if (strainObj.type) {
+                    setValue(
+                      'cannabis_type',
+                      capitalizeFirstLetter(strainObj.type) as CannabisType,
+                      { shouldValidate: true, shouldDirty: true }
                     );
-                    onChange(strainObj.name);
-                    setSelectedStrain(strainObj);
-
-                    // Auto-fill cannabis type from strain data if available
-                    if (strainObj.type) {
-                      setValue(
-                        'cannabis_type',
-                        capitalizeFirstLetter(strainObj.type) as CannabisType,
-                        { shouldValidate: true, shouldDirty: true }
-                      );
-                      console.log(
-                        `[EditPlantForm] Auto-filled cannabis_type to ${strainObj.type} from strain data`
-                      );
-                    }
-
                     console.log(
-                      '[EditPlantForm StrainAutocomplete onSelect] RHF strain field set to:',
-                      strainObj.name
-                    );
-                  } else {
-                    // Handle null selection (clear)
-                    onChange('');
-                    setSelectedStrain(null);
-                    console.log(
-                      '[EditPlantForm StrainAutocomplete onSelect] Strain selection cleared'
+                      `[EditPlantForm] Auto-filled cannabis_type to ${strainObj.type} from strain data`
                     );
                   }
-                }}
-                placeholder="Search for a strain (e.g., OG Kush)"
-              />
-              {error && (
-                <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
-              )}
 
-              {/* Display selected strain details if available */}
-              {selectedStrain && (
-                <ThemedView className="mt-2 rounded-lg bg-primary-50 p-2 dark:bg-primary-900/20">
-                  <ThemedView className="mb-1 flex-row items-center">
-                    <OptimizedIcon
-                      name={
-                        selectedStrain.type?.toLowerCase().includes('indica')
-                          ? 'moon-outline'
-                          : selectedStrain.type?.toLowerCase().includes('sativa')
-                            ? 'sun'
-                            : 'leaf'
-                      }
-                      size={16}
-                      className="mr-1.5 text-primary-500"
-                    />
-                    <ThemedText className="text-sm font-medium text-primary-500">
-                      {selectedStrain.type || 'Unknown Type'}
-                      {selectedStrain.floweringTime
-                        ? ` • ~${selectedStrain.floweringTime} week flowering`
-                        : ''}
-                    </ThemedText>
-                  </ThemedView>
+                  console.log(
+                    '[EditPlantForm StrainAutocomplete onSelect] RHF strain field set to:',
+                    strainObj.name
+                  );
+                } else {
+                  // Handle null selection (clear)
+                  onChange('');
+                  setSelectedStrain(null);
+                  console.log(
+                    '[EditPlantForm StrainAutocomplete onSelect] Strain selection cleared'
+                  );
+                }
+              }}
+              placeholder={t('editPlantForm:placeholders.strain')}
+            />
+            {error && (
+              <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
+            )}
 
-                  {selectedStrain.thc || selectedStrain.cbd ? (
-                    <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
-                      {selectedStrain.thc ? `THC: ${selectedStrain.thc}%` : ''}
-                      {selectedStrain.thc && selectedStrain.cbd ? ' • ' : ''}
-                      {selectedStrain.cbd ? `CBD: ${selectedStrain.cbd}%` : ''}
-                    </ThemedText>
-                  ) : null}
+            {/* Display selected strain details if available */}
+            {selectedStrain && (
+              <ThemedView className="mt-2 rounded-lg bg-primary-50 p-2 dark:bg-primary-900/20">
+                <ThemedView className="mb-1 flex-row items-center">
+                  <OptimizedIcon
+                    name={
+                      selectedStrain.type?.toLowerCase().includes('indica')
+                        ? 'moon-outline'
+                        : selectedStrain.type?.toLowerCase().includes('sativa')
+                          ? 'sun'
+                          : 'leaf'
+                    }
+                    size={16}
+                    className="mr-1.5 text-primary-500"
+                  />
+                  <ThemedText className="text-sm font-medium text-primary-500">
+                    {selectedStrain.type || t('editPlantForm:labels.unknownType')}
+                    {selectedStrain.floweringTime
+                      ? ` • ~${selectedStrain.floweringTime} week flowering`
+                      : ''}
+                  </ThemedText>
                 </ThemedView>
-              )}
-            </ThemedView>
-          )}
-        />
+
+                {selectedStrain.thc || selectedStrain.cbd ? (
+                  <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
+                    {selectedStrain.thc ? `THC: ${selectedStrain.thc}%` : ''}
+                    {selectedStrain.thc && selectedStrain.cbd ? ' • ' : ''}
+                    {selectedStrain.cbd ? `CBD: ${selectedStrain.cbd}%` : ''}
+                  </ThemedText>
+                ) : null}
+              </ThemedView>
+            )}
+          </ThemedView>
+        )}
+      />
         {errors.strain && (
           <ThemedText className="text-status-danger mt-1 text-xs">
             {errors.strain.message}
@@ -1177,19 +1203,19 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
         {/* Cannabis Type */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Cannabis Type
+          {t('editPlantForm:labels.cannabisType')}
         </ThemedText>
-        {renderEnumPicker('cannabis_type', CannabisType, 'Cannabis Type')}
+        {renderEnumPicker('cannabis_type', CannabisType, t('editPlantForm:labels.cannabisType'))}
 
         {/* Growth Stage */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Growth Stage*
+          {t('editPlantForm:labels.growthStage')}
         </ThemedText>
-        {renderEnumPicker('growth_stage', PlantGrowthStage, 'Growth Stage')}
+        {renderEnumPicker('growth_stage', PlantGrowthStage, t('editPlantForm:labels.growthStage'))}
 
         {/* Planted Date */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Planted Date*
+          {t('editPlantForm:labels.plantedDate')}
         </ThemedText>
         <Controller
           control={control}
@@ -1197,16 +1223,18 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           render={({ field: { value, onChange: onDateChange } }) => {
             return (
               <>
-                <AnimatedDateButton
-                  onPress={() => setShowDatePicker(true)}
-                  value={value || new Date()}
-                />
+                <AnimatedDateButton 
+                  onPress={() => setShowDatePicker(true)} 
+                  value={value} 
+                  accessibilityLabel={t('editPlantForm:accessibility.dateLabel', { date: format(value, 'PPP') })}
+                  accessibilityHint={t('editPlantForm:accessibility.dateHint')}
+                />                
                 {showDatePicker && (
                   <DateTimePicker
                     value={value || new Date()}
                     mode="date"
                     display="default"
-                    onChange={(_event: any, selectedDate?: Date) => {
+                    onChange={(_event: unknown, selectedDate?: Date) => {
                       setShowDatePicker(false);
                       if (selectedDate) {
                         onDateChange(selectedDate);
@@ -1217,6 +1245,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                       }
                     }}
                     maximumDate={new Date()}
+                    accessibilityLabel={t('editPlantForm:accessibility.datePickerLabel')}
+                    accessibilityHint={t('editPlantForm:accessibility.datePickerHint')}
                   />
                 )}
               </>
@@ -1231,32 +1261,34 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
         {/* Location Description */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Location*
+          {t('editPlantForm:labels.location')}
         </ThemedText>
         {renderLocationPicker()}
 
         {/* Grow Medium */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Grow Medium
+          {t('editPlantForm:labels.growMedium')}
         </ThemedText>
-        {renderEnumPicker('grow_medium', GrowMedium, 'Grow Medium')}
+        {renderEnumPicker('grow_medium', GrowMedium, t('editPlantForm:labels.growMedium'))}
 
         {/* Light Condition */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Light Condition
+          {t('editPlantForm:labels.lightCondition')}
         </ThemedText>
-        {renderEnumPicker('light_condition', LightCondition, 'Light Condition')}
+        {renderEnumPicker('light_condition', LightCondition, t('editPlantForm:labels.lightCondition'))}
 
         {/* Notes */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Notes
+          {t('editPlantForm:labels.notes')}
         </ThemedText>
-        {renderTextInput('notes', 'Additional notes about your plant...', 'default', true, 500)}
+        {renderTextInput('notes', t('editPlantForm:placeholders.notes'), 'default', true, 500)}
 
         <AnimatedSubmitButton
           onPress={handleSubmit(onSubmit)}
           isSubmitting={isSubmitting}
-          label="Update Plant"
+          label={isSubmitting ? t('editPlantForm:buttons.saving') : t('editPlantForm:buttons.updatePlant')}
+          accessibilityHint={t('editPlantForm:accessibility.submitHint', { label: t('editPlantForm:buttons.updatePlant') })}
+          accessibilityInProgressLabel={t('editPlantForm:accessibility.submitInProgress', { label: t('editPlantForm:buttons.updatePlant') })}
         />
       </EnhancedKeyboardWrapper>
     </ThemedView>

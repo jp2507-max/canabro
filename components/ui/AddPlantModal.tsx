@@ -2,6 +2,7 @@ import { BlurView as ExpoBlurView } from 'expo-blur';
 import * as Haptics from '@/lib/utils/haptics';
 import React, { useEffect } from 'react';
 import { Modal, Platform, useWindowDimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -26,6 +27,7 @@ interface AddPlantModalProps {
 }
 
 export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProps) {
+  const { t } = useTranslation('addPlantModal');
   const { height: screenHeight } = useWindowDimensions();
 
   // Reanimated v3 shared values for sophisticated modal animations
@@ -220,10 +222,10 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
               <ThemedView className="flex-row items-center justify-between p-6 pb-4">
                 <ThemedView className="flex-1">
                   <ThemedText className="text-2xl font-extrabold text-neutral-900 dark:text-white">
-                    Add New Plant
+                    {t('addNewPlant')}
                   </ThemedText>
                   <ThemedText className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                    Start your growing journey
+                    {t('startGrowingJourney')}
                   </ThemedText>
                 </ThemedView>
 
@@ -234,7 +236,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
                       name="close"
                       size={24}
                       color="#6b7280"
-                      accessibilityLabel="Close modal"
+                      accessibilityLabel={t('closeModal')}
                     />
                   </Animated.View>
                 </GestureDetector>

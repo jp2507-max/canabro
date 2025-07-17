@@ -11,6 +11,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
+import { useTranslation } from 'react-i18next';
 import { OptimizedIcon } from './OptimizedIcon';
 import { triggerLightHaptic } from '../../lib/utils/haptics';
 
@@ -29,6 +30,7 @@ export default function UndoToast({
   onDismiss,
   duration = 5000, // 5 seconds default
 }: UndoToastProps) {
+  const { t } = useTranslation();
   const translateY = useSharedValue(100);
   const opacity = useSharedValue(0);
 
@@ -101,7 +103,7 @@ export default function UndoToast({
               className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 rounded-lg mr-2"
             >
               <Text className="text-white text-sm font-semibold">
-                Undo
+                {t('ui.undoToast.undo')}
               </Text>
             </Pressable>
 

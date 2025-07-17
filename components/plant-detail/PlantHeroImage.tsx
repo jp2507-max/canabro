@@ -2,6 +2,7 @@ import * as Haptics from '@/lib/utils/haptics';
 import { Image } from 'expo-image';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
   SharedTransition,
@@ -48,6 +49,7 @@ export function PlantHeroImage({
   plantId,
   imageHeight = DEFAULT_IMAGE_HEIGHT,
 }: PlantHeroImageProps) {
+  const { t } = useTranslation('plants');
   const [imageLoadError, setImageLoadError] = useState(false);
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
 
@@ -93,14 +95,14 @@ export function PlantHeroImage({
   const handleImagePress = useCallback(() => {
     if (imageLoadError || !processedUrl) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('No Image', 'No image available for this plant.');
+      Alert.alert(t('noImage'), t('noImageAvailable'));
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // TODO: Add image viewer modal or navigation to edit screen
-    Alert.alert('Plant Image', 'Image viewer coming soon!');
-  }, [imageLoadError, processedUrl]);
+    Alert.alert(t('plantImage'), t('imageViewerComingSoon'));
+  }, [imageLoadError, processedUrl, t]);
 
   // Modern tap gesture
   const tapGesture = Gesture.Tap()
@@ -136,9 +138,9 @@ export function PlantHeroImage({
         className="relative w-full overflow-hidden"
         style={{ height: imageHeight }}
         accessible
-        accessibilityLabel={`Plant image for ${plantId}`}
+        accessibilityLabel={t('plantImageAccessibilityLabel', { plantId })}
         accessibilityRole="button"
-        accessibilityHint="Tap to view full size image">
+        accessibilityHint={t('plantImageAccessibilityHint')}>
         <AnimatedImage
           source={imageSource}
           placeholder={require('../../assets/placeholder.png')}
@@ -156,7 +158,7 @@ export function PlantHeroImage({
           onLoad={(_e) => {
             console.log('[PlantHeroImage] Image loaded successfully');
           }}
-          onError={(event: any) => {
+          onError={(event: { nativeEvent?: { error?: string }; error?: string }) => {
             const err = event.nativeEvent?.error ?? event.error ?? 'unknown error';
             console.error('[PlantHeroImage] Image load error:', err);
             setImageLoadError(true);

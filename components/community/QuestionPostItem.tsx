@@ -37,6 +37,7 @@ import {
   COMMUNITY_ANIMATION_CONFIG, 
   COMMUNITY_SCALE_VALUES,
 } from '@/lib/types/community';
+import { useTranslation } from 'react-i18next';
 import type { CommunityQuestion } from '../../lib/types/community';
 
 dayjs.extend(relativeTime);
@@ -71,6 +72,7 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
     liking = false,
     deleting = false,
   }) => {
+    const { t } = useTranslation('community');
     // State for delete confirmation modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -110,9 +112,9 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
     }, []);
 
     // Optimized computed values for performance
-    const displayName = useMemo(
-      () => question.username || `User ${question.user_id.slice(0, 8)}`,
-      [question.username, question.user_id]
+            const displayName = useMemo(
+      () => question.username || t('questionPostItem.anonymousUser', { userId: question.user_id.slice(0, 8) }),
+      [question.username, question.user_id, t]
     );
 
     const timeAgo = useMemo(() => dayjs(question.created_at).fromNow(), [question.created_at]);
@@ -236,13 +238,13 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
         ]}
         className="mb-6 overflow-hidden rounded-3xl border border-blue-100 bg-white dark:border-blue-900/30 dark:bg-neutral-900"
         accessibilityRole="text"
-        accessibilityLabel={`Question: ${question.title} by ${displayName}`}
+        accessibilityLabel={t('questionPostItem.accessibility.questionBy', { title: question.title, displayName })}
       >
         <GestureDetector gesture={onPress ? cardPressGesture : Gesture.Tap()}>
           <Pressable
             className="active:opacity-90"
             accessibilityRole="button"
-            accessibilityLabel={`View question: ${question.title}`}
+            accessibilityLabel={t('questionPostItem.accessibility.viewQuestion', { title: question.title })}
           >
             {/* Header */}
             <View className="flex-row items-center p-5 pb-4">
@@ -252,8 +254,8 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                   size={14}
                   className="text-blue-600 dark:text-blue-400 mr-1"
                 />
-                <Text className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                  Question
+                <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400 ml-2">
+                  {t('postTypeHeader.question')}
                 </Text>
               </View>
 
@@ -270,8 +272,9 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                   <OptimizedIcon
                     name="checkmark-circle"
                     size={14}
-                    className="text-green-600 dark:text-green-400"
+                    className="text-green-600 dark:text-green-400 mr-1"
                   />
+                  <Text className="text-xs font-medium text-green-600 dark:text-green-400">{t('questionPostItem.solved')}</Text>
                 </View>
               )}
             </View>
@@ -281,8 +284,8 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
               <Pressable
                 className="flex-row items-center px-5 pb-4 active:opacity-90"
                 accessibilityRole="button"
-                accessibilityLabel={`View ${displayName}'s profile`}
-                accessibilityHint="Double-tap to view user profile"
+                accessibilityLabel={t('questionPostItem.accessibility.viewProfile', { name: displayName })}
+                accessibilityHint={t('questionPostItem.accessibility.viewProfileHint')}
               >
                 <UserAvatar
                   uri={question.avatar_url || ''}
@@ -341,8 +344,8 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                 <Pressable
                   className="mx-5 mb-5 overflow-hidden rounded-2xl bg-neutral-100 active:opacity-95 dark:bg-neutral-800"
                   accessibilityRole="imagebutton"
-                  accessibilityLabel="View question image"
-                  accessibilityHint="Double-tap to view image in full screen"
+                  accessibilityLabel={t('questionPostItem.accessibility.viewImage')}
+                  accessibilityHint={t('questionPostItem.accessibility.viewImageHint')}
                 >
                   <View className="aspect-[4/3]">
                     <NetworkResilientImage
@@ -371,7 +374,7 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                   disabled={liking}
                   className="flex-row items-center mr-6 active:opacity-70"
                   accessibilityRole="button"
-                  accessibilityLabel={isLiked ? 'Unlike question' : 'Like question'}
+                  accessibilityLabel={t(isLiked ? 'postActionRow.unlikePost' : 'postActionRow.likePost')}
                 >
                   <OptimizedIcon
                     name={isLiked ? 'heart' : 'heart-outline'}
@@ -387,7 +390,7 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                   onPress={handleComment}
                   className="flex-row items-center mr-6 active:opacity-70"
                   accessibilityRole="button"
-                  accessibilityLabel="View answers"
+                  accessibilityLabel={t('questionPostItem.accessibility.viewAnswers')}
                 >
                   <OptimizedIcon
                     name="chatbubble-outline"
@@ -395,7 +398,7 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                     className="text-neutral-500 dark:text-neutral-400"
                   />
                   <Text className="text-base font-medium text-neutral-600 dark:text-neutral-400 ml-2">
-                    {question.answers_count} {question.answers_count === 1 ? 'answer' : 'answers'}
+                    {t('questionPostItem.answers', { count: question.answers_count })}
                   </Text>
                 </Pressable>
 
@@ -415,7 +418,7 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                 {question.priority_level > 3 && (
                   <View className="bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full mr-3">
                     <Text className="text-xs font-medium text-orange-600 dark:text-orange-400">
-                      Urgent
+                      {t('questionPostItem.urgent')}
                     </Text>
                   </View>
                 )}
@@ -426,7 +429,7 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                     disabled={deleting}
                     className="p-2 active:opacity-70"
                     accessibilityRole="button"
-                    accessibilityLabel="Delete question"
+                    accessibilityLabel={t('questionPostItem.accessibility.deleteQuestion')}
                   >
                     <OptimizedIcon
                       name="trash-outline"

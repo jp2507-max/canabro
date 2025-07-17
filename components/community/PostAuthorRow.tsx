@@ -19,6 +19,7 @@ import Animated, {
 import { triggerLightHaptic } from '@/lib/utils/haptics';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
+import { useTranslation } from 'react-i18next';
 import UserAvatar from '@/components/community/UserAvatar';
 import { NativeIconSymbol } from '@/components/ui/NativeIconSymbol';
 
@@ -38,9 +39,9 @@ const SPRING_CONFIG = {
 } as const;
 
 const PRIVACY_OPTIONS = [
-  { value: 'everyone' as const, label: 'Everyone', icon: 'globe' },
-  { value: 'followers' as const, label: 'Followers', icon: 'person.2' },
-  { value: 'private' as const, label: 'Private', icon: 'lock' },
+  { value: 'everyone' as const, key: 'everyone', icon: 'globe' },
+  { value: 'followers' as const, key: 'followers', icon: 'person.2' },
+  { value: 'private' as const, key: 'private', icon: 'lock' },
 ];
 
 /**
@@ -48,17 +49,24 @@ const PRIVACY_OPTIONS = [
  */
 export function PostAuthorRow({
   userAvatarUrl = '',
-  userName = 'You',
+  userName: initialUserName,
   privacy = 'everyone',
   onPrivacyChange,
   disabled = false,
 }: PostAuthorRowProps) {
+  const { t } = useTranslation('community');
+  const userName = initialUserName || t('postAuthorRow.you');
   const [showPrivacyDropdown, setShowPrivacyDropdown] = useState(false);
   const privacyScale = useSharedValue(1);
-  const currentPrivacyOption = PRIVACY_OPTIONS.find((option) => option.value === privacy);
+    const privacyOptionsWithLabels = React.useMemo(() => 
+    PRIVACY_OPTIONS.map(option => ({...option, label: t(`postAuthorRow.privacyOptions.${option.key}`)})),
+    [t]
+  );
+
+  const currentPrivacyOption = privacyOptionsWithLabels.find((option) => option.value === privacy);
 
   // Type guard to ensure currentPrivacyOption is never undefined
-  const safePrivacyOption = currentPrivacyOption || PRIVACY_OPTIONS[0]!;
+  const safePrivacyOption = currentPrivacyOption || privacyOptionsWithLabels[0]!;
 
   const privacyAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: privacyScale.value }],
@@ -89,7 +97,7 @@ export function PostAuthorRow({
         <UserAvatar
           uri={userAvatarUrl || ''}
           size={48}
-          accessibilityLabel={`${userName}'s avatar`}
+          accessibilityLabel={t('postAuthorRow.accessibility.userAvatar', { userName })}
         />
         <ThemedText className="ml-4 text-lg font-medium text-neutral-900 dark:text-neutral-100">
           {userName}
@@ -108,8 +116,8 @@ export function PostAuthorRow({
             style={{
               backgroundColor: '#F2F2F7',
             }}
-            accessibilityLabel={`Privacy setting: ${safePrivacyOption.label}`}
-            accessibilityHint="Tap to change privacy settings"
+            accessibilityLabel={t('postAuthorRow.accessibility.privacySetting', { privacy: safePrivacyOption.label })}
+            accessibilityHint={t('postAuthorRow.accessibility.privacyHint')}
             accessibilityRole="button">
             <NativeIconSymbol
               name={safePrivacyOption.icon}
@@ -135,12 +143,12 @@ export function PostAuthorRow({
             entering={FadeInDown.duration(200)}
             className="absolute right-0 top-12 z-50 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
             style={{ minWidth: 120 }}>
-            {PRIVACY_OPTIONS.map((option) => (
+            {privacyOptionsWithLabels.map((option) => (
               <Pressable
                 key={option.value}
                 onPress={() => handlePrivacySelect(option.value)}
                 className="flex-row items-center px-3 py-2.5 active:bg-neutral-100 dark:active:bg-neutral-700"
-                accessibilityLabel={`Set privacy to ${option.label}`}
+                accessibilityLabel={t('postAuthorRow.accessibility.setPrivacy', { privacy: option.label })}
                 accessibilityRole="button">
                 <NativeIconSymbol
                   name={option.icon}

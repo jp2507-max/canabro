@@ -8,10 +8,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import en from '../locales/en.json';
 import de from '../locales/de.json';
 
+// Keep a single namespace to simplify keys like 'common.welcome' and 'strains.viewDetails'
+// Provide only named namespaces (common, navigation, etc.), no 'translation' namespace
 const resources = {
-  en: { translation: en },
-  de: { translation: de },
-};
+  en: { ...en },
+  de: { ...de },
+} as const;
+
+// Collect all namespace keys from the English resource (assuming all languages have the same keys)
+const availableNamespaces = Object.keys(en);
 
 // Get device language synchronously for immediate initialization
 const getDeviceLanguage = (): string => {
@@ -41,6 +46,11 @@ if (__DEV__) {
 }
 
 i18n.use(initReactI18next).init({
+  ns: availableNamespaces,
+  defaultNS: 'common',
+  fallbackNS: 'common',
+  nsSeparator: '.', // allow "namespace.key" pattern
+
   compatibilityJSON: 'v4',
   resources,
   lng: detectedLanguage, // Start with device language immediately

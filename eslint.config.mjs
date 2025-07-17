@@ -3,6 +3,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import pluginReact from "eslint-plugin-react";
 import pluginReactNative from "eslint-plugin-react-native";
+import i18nextPlugin from "eslint-plugin-i18next";
 
 export default [
   // Base JavaScript configuration
@@ -47,8 +48,16 @@ export default [
     },
     plugins: {
       "react-native": pluginReactNative,
+      "i18next": i18nextPlugin,
     },
     rules: {
+      // i18n: Block hard-coded strings except in test, debug, and script files
+      "i18next/no-literal-string": ["error", {
+        "markupOnly": false,
+        "ignoreAttribute": ["testID", "accessibilityLabel", "accessibilityHint", "placeholder", "aria-label", "aria-labelledby", "aria-describedby"],
+        "ignoreCallee": ["require", "t", "i18n.t", "console.log", "console.warn", "console.error"],
+        "ignoreProperty": ["testID", "accessibilityLabel", "accessibilityHint", "placeholder", "aria-label", "aria-labelledby", "aria-describedby"]
+      }],
       // React Native specific rules - optimized for NativeWind v4 + Reanimated v3
       "react-native/no-unused-styles": "error",
       "react-native/split-platform-components": "error",
@@ -138,7 +147,7 @@ export default [
     },
   },
 
-  // Configuration and polyfill files
+  // Configuration, script, and polyfill files
   {
     files: [
       "*.config.{js,mjs,ts}", 
@@ -156,10 +165,11 @@ export default [
       "@typescript-eslint/no-require-imports": "off", // Config files need require()
       "@typescript-eslint/no-var-requires": "off",
       "no-console": "off", // Allow console in config files
+      "i18next/no-literal-string": "off", // Allow hard-coded strings in config/scripts
     },
   },
 
-  // Development and debug files - more lenient rules
+  // Development, test, and debug files - more lenient rules
   {
     files: [
       "**/*debug*.{ts,tsx}",
@@ -172,6 +182,7 @@ export default [
       "no-console": "off", // Allow all console methods in debug files
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "i18next/no-literal-string": "off", // Allow hard-coded strings in test/debug/dev files
     },
   },
 

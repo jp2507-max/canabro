@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { of as of$ } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
+import { useTranslation } from 'react-i18next';
 
 import ProfileScreenBase from '../../components/profile/ProfileScreenBase';
 import ThemedText from '../../components/ui/ThemedText';
@@ -93,6 +94,7 @@ const useProfileData = (userId: string): ProfileData => {
 };
 
 const LoadingScreen: React.FC = () => {
+  const { t } = useTranslation();
   const spinnerOpacity = useSharedValue(0.6);
   const spinnerScale = useSharedValue(1);
 
@@ -141,7 +143,7 @@ const LoadingScreen: React.FC = () => {
           className="mt-4 text-base font-medium text-neutral-600 dark:text-neutral-400"
           accessibilityRole="text"
           accessibilityLabel="Loading your profile">
-          Loading your profile...
+          {t('profile.loading')}
         </ThemedText>
       </Animated.View>
     </ThemedView>

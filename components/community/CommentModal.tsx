@@ -14,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -43,6 +44,7 @@ import { EnhancedTextInput } from '../ui/EnhancedTextInput';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
+import { useTranslation } from 'react-i18next';
 
 // Animation configuration
 const SPRING_CONFIG = {
@@ -75,7 +77,7 @@ interface AnimatedActionButtonProps {
   disabled?: boolean;
   children: React.ReactNode;
   className?: string;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
   hapticStyle?: ImpactFeedbackStyle;
 }
@@ -156,6 +158,7 @@ const AnimatedActionButton: React.FC<AnimatedActionButtonProps> = ({
 function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentModalProps) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation('community');
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -212,7 +215,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      Alert.alert(t('common.error'), t('commentModal.failedToTakePhoto'));
     }
   };
 
@@ -225,19 +228,19 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      Alert.alert(t('common.error'), t('commentModal.failedToPickImage'));
     }
   };
 
   // Present choice between camera and library
   const handleAttachPhoto = () => {
     Alert.alert(
-      'Attach Photo',
-      'Choose an option:',
+      t('commentModal.attachPhotoTitle'),
+      t('commentModal.attachPhotoMessage'),
       [
-        { text: 'Take Photo...', onPress: handleTakePhoto },
-        { text: 'Choose from Library...', onPress: handlePickImage },
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('commentModal.takePhoto'), onPress: handleTakePhoto },
+        { text: t('commentModal.chooseFromLibrary'), onPress: handlePickImage },
+        { text: t('commentModal.cancel'), style: 'cancel' },
       ],
       { cancelable: true }
     );
@@ -284,9 +287,9 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
       if (rpcError) {
         console.error('Error calling create_comment RPC:', rpcError);
         if (rpcError.message.includes('violates foreign key constraint')) {
-          Alert.alert('Error', 'Could not add comment. The associated post may no longer exist.');
+          Alert.alert(t('common.error'), t('commentModal.failedToAddCommentPostMissing'));
         } else {
-          Alert.alert('Error', 'Failed to add comment. Please try again.');
+          Alert.alert(t('common.error'), t('commentModal.failedToAddComment'));
         }
         throw rpcError;
       }
@@ -306,7 +309,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
 
         if (fetchError) {
           console.error('Error fetching newly created comment:', fetchError);
-          Alert.alert('Warning', 'Comment added, but could not immediately display it.');
+          Alert.alert(t('common.warning'), t('commentModal.commentAddedWarning'));
         } else if (commentData) {
           // React Query will automatically update the cache via real-time subscriptions
           // Call the callback if provided
@@ -315,13 +318,13 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
       } else {
         console.warn('RPC function did not return comment ID.');
         Alert.alert(
-          'Warning',
-          'Comment may have been created, but could not immediately display it.'
+          t('common.warning'),
+          t('commentModal.commentPotentialWarningMessage')
         );
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      Alert.alert('Error', 'Failed to add comment. Please try again.');
+      Alert.alert(t('common.error'), t('commentModal.failedToAddComment'));
     } finally {
       setCommentText('');
       setSelectedImage(null);
@@ -383,7 +386,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
                 {/* Header is outside KAV */}
                 <ThemedView className="flex-row items-center justify-between border-b border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
                   <View className="flex-row items-center">
-                    <ThemedText className="text-lg font-bold">Comments</ThemedText>
+                    <ThemedText className="text-lg font-bold">{t('commentModal.title')}</ThemedText>
                     {commentsCount > 0 ? (
                       <ThemedText className="ml-2 text-sm font-medium text-neutral-500 dark:text-neutral-400">
                         {commentsCount}
@@ -393,7 +396,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
                   <AnimatedActionButton
                     onPress={onClose}
                     className="rounded-full p-2"
-                    accessibilityLabel="Close comments"
+                    accessibilityLabel={t('commentModal.close')}
                     hapticStyle={ImpactFeedbackStyle.Medium}>
                     <OptimizedIcon
                       name="close"
@@ -427,14 +430,14 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
                               className="text-neutral-300 dark:text-neutral-600"
                             />
                             <ThemedText className="mt-3 text-center text-base text-neutral-500 dark:text-neutral-400">
-                              No comments yet. Be the first to share your thoughts!
+                              {t('commentModal.noComments')}
                             </ThemedText>
                             <AnimatedActionButton
                               onPress={focusCommentInput}
                               className="mt-4 rounded-full bg-primary-500 px-5 py-2"
-                              accessibilityLabel="Add Comment"
+                              accessibilityLabel={t('commentModal.addComment')}
                               hapticStyle={ImpactFeedbackStyle.Medium}>
-                              <ThemedText className="font-medium text-white">Add Comment</ThemedText>
+                              <ThemedText className="font-medium text-white">{t('commentModal.addComment')}</ThemedText>
                             </AnimatedActionButton>
                           </ThemedView>
                         }
@@ -470,7 +473,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
                           <AnimatedActionButton
                             onPress={() => setSelectedImage(null)}
                             className="absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-full bg-black/50"
-                            accessibilityLabel="Remove image"
+                            accessibilityLabel={t('commentModal.removeImage')}
                             hapticStyle={ImpactFeedbackStyle.Light}>
                             <OptimizedIcon name="close" size={16} className="text-white" />
                           </AnimatedActionButton>
@@ -481,7 +484,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
                       <EnhancedTextInput
                         ref={inputRef}
                         className="max-h-[100px] flex-1"
-                        placeholder="Add a comment..."
+                        placeholder={t('commentModal.inputPlaceholder')}
                         value={commentText}
                         onChangeText={setCommentText}
                         multiline
@@ -500,7 +503,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
                       onPress={handleAttachPhoto} // Changed to present choice
                       disabled={isSubmitting || isUploading}
                       className="ml-2 rounded-full bg-neutral-300 p-2 dark:bg-neutral-700"
-                      accessibilityLabel="Attach photo"
+                      accessibilityLabel={t('commentModal.attachPhoto')}
                       hapticStyle={ImpactFeedbackStyle.Light}>
                       <OptimizedIcon
                         name="camera"
@@ -522,7 +525,7 @@ function CommentModal({ postId, isVisible, onClose, onCommentAdded }: CommentMod
                             ? '#e5e7eb'
                             : '#10b981',
                       }}
-                      accessibilityLabel="Send comment"
+                      accessibilityLabel={t('commentModal.sendComment')}
                       hapticStyle={ImpactFeedbackStyle.Medium}>
                       {isSubmitting || isUploading ? (
                         <ActivityIndicator size="small" color="white" />
