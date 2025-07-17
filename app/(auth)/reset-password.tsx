@@ -12,6 +12,7 @@ import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
 import { useAuth } from '@/lib/contexts/AuthProvider';
 import { impactAsync, ImpactFeedbackStyle } from '@/lib/utils/haptics';
+import { EnhancedKeyboardWrapper } from '@/components/keyboard/EnhancedKeyboardWrapper';
 
 const ResetPasswordSchema = z.object({
   password: z.string().min(8, 'auth.register.passwordTooShort'),
@@ -56,47 +57,49 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <ThemedView className="flex-1 justify-center p-6">
-      <ThemedText variant="heading" className="text-center mb-8">{t('auth.resetPassword.title')}</ThemedText>
-      
-      <Controller
-        control={control}
-        name="password"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <EnhancedTextInput
-            placeholder={t('auth.register.passwordPlaceholder')}
-            leftIcon="lock-closed"
-            secureTextEntry
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            error={errors.password ? t(errors.password.message as string) : undefined}
-          />
-        )}
-      />
+    <EnhancedKeyboardWrapper>
+      <ThemedView className="flex-1 justify-center p-6">
+        <ThemedText variant="heading" className="text-center mb-8">{t('auth.resetPassword.title')}</ThemedText>
+        
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <EnhancedTextInput
+              placeholder={t('auth.register.passwordPlaceholder')}
+              leftIcon="lock-closed"
+              secureTextEntry
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              error={errors.password ? t(errors.password.message as string) : undefined}
+            />
+          )}
+        />
 
-      <Controller
-        control={control}
-        name="confirmPassword"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <EnhancedTextInput
-            placeholder={t('auth.register.confirmPasswordPlaceholder')}
-            leftIcon="lock-closed"
-            secureTextEntry
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            error={errors.confirmPassword ? t(errors.confirmPassword.message as string) : undefined}
-          />
-        )}
-      />
+        <Controller
+          control={control}
+          name="confirmPassword"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <EnhancedTextInput
+              placeholder={t('auth.register.confirmPasswordPlaceholder')}
+              leftIcon="lock-closed"
+              secureTextEntry
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              error={errors.confirmPassword ? t(errors.confirmPassword.message as string) : undefined}
+            />
+          )}
+        />
 
-      <AnimatedButton
-        title={t('auth.resetPassword.button')}
-        onPress={handleSubmit(onSubmit)}
-        loading={isSubmitting}
-        icon="checkmark" // Replace the invalid 'save' icon with 'checkmark'
-      />
-    </ThemedView>
+        <AnimatedButton
+          title={t('auth.resetPassword.button')}
+          onPress={handleSubmit(onSubmit)}
+          loading={isSubmitting}
+          icon="checkmark" // Replace the invalid 'save' icon with 'checkmark'
+        />
+      </ThemedView>
+    </EnhancedKeyboardWrapper>
   );
 }

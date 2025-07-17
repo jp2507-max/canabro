@@ -1,6 +1,23 @@
+
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import 'dayjs/locale/de';
+import 'dayjs/locale/en';
+// import { useLanguage } from '../contexts/LanguageProvider';
+// Locale-aware date formatting utility
+// Usage: const formatted = formatLocaleDate(date)
+// Locale-aware date formatting utility
+// Usage: const formatted = formatLocaleDate(date, { language })
+export function formatLocaleDate(
+  date: Parameters<typeof dayjs>[0],
+  opts?: { format?: string; language?: 'en' | 'de' }
+): string {
+  // Always require language to be passed explicitly, or fallback to 'en'
+  const lang: 'en' | 'de' = opts?.language || 'en';
+  const formatStr = opts?.format || (lang === 'de' ? 'DD.MM.YYYY' : 'MM/DD/YYYY');
+  return dayjs(date).locale(lang).format(formatStr);
+}
 
 // Extend dayjs with plugins we need
 dayjs.extend(localizedFormat);

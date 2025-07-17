@@ -114,9 +114,11 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         return post.profiles.username;
       }
       if (post.profiles?.id) {
-        return t('postItem.user.fallback', { id: post.profiles.id.slice(0, 8) });
+        // Ensure id is a string before slicing
+        const idStr = String(post.profiles.id);
+        return t('postItem.userFallback', { id: idStr.slice(0, 8) });
       }
-      return t('postItem.user.unknown');
+      return t('postItem.unknownUser');
     }, [post.profiles?.username, post.profiles?.id, t]);
 
     const timeAgo = useMemo(() => dayjs(post.created_at).fromNow(), [post.created_at]);

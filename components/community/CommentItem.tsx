@@ -50,31 +50,31 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 function formatRelativeTime(dateString: string, t: TFunction<"community">): string {
   if (!dateString) {
     console.warn('[CommentItem] Empty dateString provided to formatRelativeTime');
-    return t('time.unknown');
+    return t('justNow');
   }
 
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
     console.warn('[CommentItem] Invalid dateString provided to formatRelativeTime:', dateString);
-    return t('time.invalid');
+    return t('justNow');
   }
 
   const now = new Date();
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
-    if (diffSeconds < 60) return t('time.seconds', { count: diffSeconds });
+  if (diffSeconds < 10) return t('justNow');
   const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 60) return t('time.minutes', { count: diffMinutes });
+  if (diffMinutes < 1) return t('justNow');
+  if (diffMinutes < 60) return t('minutesAgo', { count: diffMinutes });
   const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return t('time.hours', { count: diffHours });
+  if (diffHours < 24) return t('hoursAgo', { count: diffHours });
   const diffDays = Math.round(diffHours / 24);
-  if (diffDays < 7) return t('time.days', { count: diffDays });
+  if (diffDays < 7) return t('daysAgo', { count: diffDays });
   const diffWeeks = Math.round(diffDays / 7);
-  if (diffWeeks < 4) return t('time.weeks', { count: diffWeeks });
+  if (diffWeeks < 4) return t('daysAgo', { count: diffDays }); // fallback: show days for weeks
   const diffMonths = Math.round(diffDays / 30);
-  if (diffMonths < 12) return t('time.months', { count: diffMonths });
-  const diffYears = Math.round(diffDays / 365);
-  return t('time.years', { count: diffYears });
+  if (diffMonths < 12) return t('daysAgo', { count: diffDays }); // fallback: show days for months
+  return t('daysAgo', { count: diffDays }); // fallback: show days for years
 }
 
 /**

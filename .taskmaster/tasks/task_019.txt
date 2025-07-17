@@ -1,6 +1,6 @@
 # Task ID: 19
 # Title: Implement Internationalization (i18n)
-# Status: in-progress
+# Status: done
 # Dependencies: 8
 # Priority: medium
 # Description: Setup comprehensive localization system with German translation and locale-aware formatting - 98% complete with language switching UI implemented
@@ -65,7 +65,7 @@ Enhance the existing scripts/validate-translations.ts script with better extract
 ### Details:
 
 
-## 10. Configure ESLint to prevent hard-coded strings [pending]
+## 10. Configure ESLint to prevent hard-coded strings [completed]
 ### Dependencies: None
 ### Description: Add the `i18next/no-literal-string` ESLint rule to the `.eslintrc` configuration to statically block any new hard-coded strings from being added to the codebase. Ensure test files are ignored.
 ### Details:

@@ -59,9 +59,8 @@
       "evening": "Guten Abend"
     },
     "plantCountMessages": {
-      "zero": "Bereit, deine Anbaureise zu starten?",
       "one": "Du kümmerst dich um 1 schöne Pflanze",
-      "many": "Du pflegst {{count}} tolle Pflanzen"
+  "other": "Du pflegst {{count}} tolle Pflanzen"
     },
     "stats": {
       "active": "Aktiv",
@@ -545,6 +544,8 @@
     "success": "Erfolg",
     "taskAddedToPlants": "Aufgabe zu {{count}} Pflanze hinzugefügt",
     "taskAddedToPlants_other": "Aufgabe zu {{count}} Pflanzen hinzugefügt!",
+
+  "taskAddedToPlants_one": "Aufgabe zu {{count}} Pflanze hinzugefügt!",
     "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt!",
     "error": "Fehler",
     "failedToCreateTasks": "Aufgaben konnten nicht erstellt werden",

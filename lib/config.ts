@@ -19,7 +19,13 @@ export const authConfig = {
   mockUserId: 'mock-user-id', // Placeholder ID for dev bypass
   mockUserEmail: 'dev@example.com', // Placeholder email for dev bypass
   mockTokenExpiryDays: 7, // Placeholder expiry for dev bypass
-  passwordResetRedirectTo: 'exp://127.0.0.1:8081/--/reset-password', // Deep link to password reset screen
+  // Dynamically read password reset redirect URL from Expo Constants extra, with fallback for dev
+  passwordResetRedirectTo:
+    (Constants.expoConfig?.extra?.EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL ||
+      (Constants.manifest && (Constants.manifest as any).extra?.EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL) ||
+      'exp://127.0.0.1:8081/--/reset-password'), // Fallback for local dev
+  // To support multiple environments, set EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL in your .env or CI/CD
+  // and ensure it is included in app.config.js extra section.
 };
 
 // Validate essential configuration
