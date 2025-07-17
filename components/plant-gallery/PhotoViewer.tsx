@@ -15,6 +15,7 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
+  runOnUI,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
@@ -197,14 +198,16 @@ export const PhotoViewer = memo(function PhotoViewer({
   // Swipe gesture values
   const swipeTranslateX = useSharedValue(0);
 
-  // Reset transform values
+  // Reset transform values (must use runOnUI to modify shared values)
   const resetTransform = useCallback(() => {
-    // 'worklet' directive removed: this is a regular JS callback, not a worklet
-    scale.value = withSpring(1);
-    translateX.value = withSpring(0);
-    translateY.value = withSpring(0);
-    focalX.value = 0;
-    focalY.value = 0;
+    runOnUI(() => {
+      'worklet';
+      scale.value = withSpring(1);
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+      focalX.value = 0;
+      focalY.value = 0;
+    })();
   }, []);
 
   // Toggle controls visibility
