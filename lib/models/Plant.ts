@@ -13,6 +13,9 @@ import {
 
 import { DiaryEntry } from './DiaryEntry';
 import { Strain } from './Strain'; // Import Strain model
+import { PlantPhoto } from './PlantPhoto';
+import { PlantMetrics } from './PlantMetrics';
+import { CareReminder } from './CareReminder';
 
 export class Plant extends Model {
   static table = 'plants';
@@ -83,9 +86,9 @@ export class Plant extends Model {
 
   // Children collections
   @children('diary_entries') diaryEntries!: Query<DiaryEntry>;
-  @children('plant_photos') plantPhotos!: Query<Model>;
-  @children('plant_metrics') plantMetrics!: Query<Model>;
-  @children('care_reminders') careReminders!: Query<Model>;
+  @children('plant_photos') plantPhotos!: Query<PlantPhoto>;
+  @children('plant_metrics') plantMetrics!: Query<PlantMetrics>;
+  @children('care_reminders') careReminders!: Query<CareReminder>;
 
   // Custom queries
   @lazy activeEntries = this.diaryEntries.extend(Q.where('is_deleted', false));

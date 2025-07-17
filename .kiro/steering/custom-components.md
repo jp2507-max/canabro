@@ -117,4 +117,4 @@ const { animatedStyle, handlers } = useButtonAnimation({
 
 ---
 
-*Quick reference for efficient development. See `lib/utils/index.md` for complete utility listings.*
+*Quick reference for efficient development. See `lib/utils/index.md` for complete utility listings.*<!------------------------------------------------------------------------------
