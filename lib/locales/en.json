@@ -40,8 +40,18 @@
   },
   "plantCard": {
     "health": "Health: {{value}}%",
-    "watering": "Watering in {{count}}d",
-    "nutrients": "Nutrients in {{count}}d"
+  "watering_one": "Watering in 1 day",
+  "watering_other": "Watering in {{count}} days",
+    "watering": {
+  "one": "Watering in 1 day",
+  "other": "Watering in {{count}} days"
+    },
+  "nutrients_one": "Nutrients in 1 day",
+  "nutrients_other": "Nutrients in {{count}} days",
+    "nutrients": {
+  "one": "Nutrients in 1 day",
+  "other": "Nutrients in {{count}} days"
+    }
   },
   "navigation": {
     "tabs": {
@@ -67,8 +77,9 @@
     },
     "plantCountMessages": {
       "zero": "Ready to start your grow journey?",
-      "one": "Caring for 1 beautiful plant ",
-      "many": "Growing {{count}} amazing plants "
+      "one": "Caring for 1 beautiful plant",
+      "other": "Growing {{count}} amazing plants",
+      "many": "Growing {{count}} amazing plants"
     },
     "stats": {
       "active": "Active",

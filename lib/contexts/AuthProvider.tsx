@@ -174,7 +174,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
-      if (data.user) await ensureUserProfile(data.user.id, email);
       if (data.user) {
         await ensureUserProfile(data.user.id, email);
       }
