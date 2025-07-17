@@ -1,15 +1,14 @@
-'use client';
 
 import React, { memo, useCallback, useState, useRef } from 'react';
 import {
   Modal,
-  Image,
   Pressable,
   Dimensions,
   Alert,
   StatusBar,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { 
   PanGestureHandler, 
   PinchGestureHandler,
@@ -397,12 +396,13 @@ export const PhotoViewer = memo(function PhotoViewer({
                     <Animated.View className="flex-1 items-center justify-center">
                       <Animated.View style={imageStyle}>
                         <Image
-                          source={{ uri: currentPhoto.imageUrl }}
+                          source={currentPhoto.imageUrl}
                           style={{
                             width: screenWidth,
                             height: screenHeight,
                           }}
-                          resizeMode="contain"
+                          contentFit="contain"
+                          transition={300}
                         />
                       </Animated.View>
                     </Animated.View>

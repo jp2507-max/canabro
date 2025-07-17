@@ -20,7 +20,6 @@ import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import { usePlantMetrics } from '@/lib/hooks/plants/usePlantMetrics';
-import { PlantMetrics as PlantMetricsModel } from '@/lib/models/PlantMetrics';
 import { PlantMetrics as PlantMetricsType } from '@/lib/types/plant';
 import { triggerLightHaptic } from '@/lib/utils/haptics';
 
@@ -147,17 +146,17 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
     }
 
     // Filter and sort data - use created_at (snake_case)
-    const filteredData = metricsData
-      .filter(metric => metric[selectedMetric] != null)
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    const filteredData = metricsData 
+      .filter(metric => metric[selectedMetric] != null) 
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); 
 
     if (filteredData.length === 0) {
       return null;
     }
 
     // Prepare chart data
-    const labels = filteredData.map(metric => 
-      dayjs(metric.created_at).format(selectedTimeRange === '7d' ? 'MM/DD' : 'MM/DD')
+    const labels = filteredData.map(metric =>  
+      dayjs(metric.created_at).format(selectedTimeRange === '7d' ? 'MM/DD' : 'MM/DD') 
     );
 
     const values = filteredData.map(metric => {
@@ -218,7 +217,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       const metric = metricsData[data.index];
       if (metric) {
         const value = metric[selectedMetric] as number;
-        const date = dayjs(metric.created_at).format('MMM DD, YYYY');
+        const date = dayjs(metric.created_at).format('MMM DD, YYYY'); 
         
         Alert.alert(
           t('metricsChart.dataPoint.title'),

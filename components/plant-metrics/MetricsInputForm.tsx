@@ -184,13 +184,19 @@ export const MetricsInputForm: React.FC<MetricsInputFormProps> = ({
   const buttonScale = useSharedValue(1);
 
   // Animated styles
-  const progressBarStyle = useAnimatedStyle(() => ({
-    width: `${((currentStep + 1) / FORM_STEPS.length) * 100}%`,
-  }));
+  const progressBarStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      width: `${((currentStep + 1) / FORM_STEPS.length) * 100}%`,
+    };
+  });
 
-  const buttonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: buttonScale.value }],
-  }));
+  const buttonStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: buttonScale.value }],
+    };
+  });
 
   // Input refs for keyboard navigation
   const inputRefs = useRef<Record<string, React.RefObject<TextInput | null>>>({});
@@ -727,9 +733,12 @@ const UnitToggle: React.FC<UnitToggleProps> = ({ value, onChange, options }) => 
   const selectedIndex = options.findIndex(option => option.value === value);
   const translateX = useSharedValue(selectedIndex * 50);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ translateX: translateX.value }],
+    };
+  });
 
   const handlePress = (optionValue: string, index: number) => {
     onChange(optionValue);

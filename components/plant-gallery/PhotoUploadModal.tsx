@@ -3,13 +3,14 @@
 import React, { memo, useCallback, useState } from 'react';
 import {
   Modal,
-  Image,
   Alert,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+
+import { Image as ExpoImage } from 'expo-image';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -364,10 +365,10 @@ export const PhotoUploadModal = memo(function PhotoUploadModal({
 
                 {selectedImage ? (
                   <ThemedView className="relative items-center">
-                    <Image
+                    <ExpoImage
                       source={{ uri: selectedImage.uri }}
                       className="h-64 w-full rounded-2xl"
-                      resizeMode="cover"
+                      contentFit="cover"
                     />
                     <AnimatedButton
                       onPress={handleRemoveImage}

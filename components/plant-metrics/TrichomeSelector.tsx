@@ -124,12 +124,15 @@ interface TrichomeOptionProps {
   onSelect: () => void;
 }
 
+import { useColorScheme } from 'nativewind';
+
 const TrichomeOption: React.FC<TrichomeOptionProps> = ({
   option,
   isSelected,
   onSelect,
 }) => {
   const { t } = useTranslation();
+  const { colorScheme } = useColorScheme();
   const scale = useSharedValue(1);
   const borderWidth = useSharedValue(isSelected ? 2 : 1);
   const backgroundColor = useSharedValue(isSelected ? 1 : 0);
@@ -139,32 +142,42 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
     backgroundColor.value = withSpring(isSelected ? 1 : 0);
   }, [isSelected, borderWidth, backgroundColor]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    borderWidth: borderWidth.value,
-    borderColor: isSelected 
-      ? 'rgb(34 197 94)' // green-500
-      : 'rgb(229 231 235)', // gray-200
-    backgroundColor: interpolateColor(
-      backgroundColor.value,
-      [0, 1],
-      [
-        'rgb(255 255 255)', // white
-        'rgb(240 253 244)', // green-50
-      ]
-    ),
-  }));
+  // Cleanup: cancel scale animation on unmount to prevent memory leaks
+  React.useEffect(() => {
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { cancelAnimation } = require('react-native-reanimated');
+      cancelAnimation(scale);
+    };
+  }, [scale]);
 
-  const _darkAnimatedStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      backgroundColor.value,
-      [0, 1],
-      [
-        'rgb(23 23 23)', // neutral-900
-        'rgb(20 83 45)', // green-900
-      ]
-    ),
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    // Use semantic tokens and NativeWind colorScheme for theming
+    const isDark = colorScheme === 'dark';
+    return {
+      transform: [{ scale: scale.value }],
+      borderWidth: borderWidth.value,
+      borderColor: isSelected
+        ? 'rgb(34 197 94)' // green-500
+        : isDark
+          ? 'rgb(38 38 38)' // neutral-800
+          : 'rgb(229 231 235)', // gray-200
+      backgroundColor: interpolateColor(
+        backgroundColor.value,
+        [0, 1],
+        isDark
+          ? [
+              'rgb(23 23 23)', // neutral-900
+              'rgb(20 83 45)', // green-900
+            ]
+          : [
+              'rgb(255 255 255)', // white
+              'rgb(240 253 244)', // green-50
+            ]
+      ),
+    };
+  });
 
   const handlePressIn = () => {
     scale.value = withSpring(0.98);
@@ -192,7 +205,7 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
       >
         <ThemedView className="flex-row items-center space-x-3">
           {/* Color Indicator */}
-          <ThemedView 
+          <ThemedView
             className="w-8 h-8 rounded-full items-center justify-center"
             style={{ backgroundColor: option.color }}
           >

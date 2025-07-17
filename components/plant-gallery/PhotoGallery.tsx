@@ -1,7 +1,8 @@
-'use client';
+
 
 import React, { memo, useCallback } from 'react';
-import { FlatList, Image, Pressable, Dimensions } from 'react-native';
+import { FlatList, Pressable, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
@@ -76,9 +77,10 @@ const PhotoItem = memo(function PhotoItem({ photo, index, onPress, itemSize }: P
       style={{ width: itemSize, height: itemSize }}
     >
       <Image
-        source={{ uri: photo.thumbnailUrl || photo.imageUrl }}
+        source={photo.thumbnailUrl || photo.imageUrl}
         className="h-full w-full"
-        resizeMode="cover"
+        contentFit="cover"
+        transition={300}
       />
       <GrowthStageBadge stage={photo.growthStage} />
     </Pressable>

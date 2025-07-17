@@ -14,6 +14,11 @@ export default [
   
   // React configuration
   pluginReact.configs.flat.recommended,
+
+  // i18next recommended rules
+  {
+    extends: ["plugin:i18next/recommended"],
+  },
   
   // Files and language options
   {

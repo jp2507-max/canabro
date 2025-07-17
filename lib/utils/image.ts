@@ -43,7 +43,7 @@ export const IMAGE_TRANSITION_DURATION = 200; // milliseconds
  * generateCDNImageURL('https://cdn.myimages.com/strain/abc123.jpg', 'thumbnail');
  * // -> 'https://cdn.myimages.com/strain/abc123.jpg?w=150&format=webp'
  */
-export function generateCDNImageURL(baseUrl?: string, size: ImageSize = 'thumbnail') {
+export function generateCDNImageURL(baseUrl?: string, size: ImageSize = 'thumbnail'): string {
   if (!baseUrl || typeof baseUrl !== 'string') return '';
 
   // Prevent double-encoding when the URL already contains query params
