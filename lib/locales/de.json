@@ -886,9 +886,8 @@
     "plantImagePreview": "Pflanzenbild-Vorschau",
     "pickImageFromGallery": "Bild aus Galerie auswählen",
     "pickImage": "Bild auswählen",
-    "takeNewPicture": "Neues Foto aufnehmen",
-    "takePicture": "Foto aufnehmen"
-  ,
+  "takeNewPicture": "Neues Foto aufnehmen",
+  "takePicture": "Foto aufnehmen",
     "undoToast": {
       "undo": "Rückgängig"
     },

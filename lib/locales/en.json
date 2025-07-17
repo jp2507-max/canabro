@@ -40,14 +40,10 @@
   },
   "plantCard": {
     "health": "Health: {{value}}%",
-  "watering_one": "Watering in 1 day",
-  "watering_other": "Watering in {{count}} days",
     "watering": {
   "one": "Watering in 1 day",
   "other": "Watering in {{count}} days"
     },
-  "nutrients_one": "Nutrients in 1 day",
-  "nutrients_other": "Nutrients in {{count}} days",
     "nutrients": {
   "one": "Nutrients in 1 day",
   "other": "Nutrients in {{count}} days"
@@ -502,8 +498,7 @@
     "pickImageFromGallery": "Pick image from gallery",
     "pickImage": "Pick Image",
     "takeNewPicture": "Take new picture",
-    "takePicture": "Take Picture"
-  ,
+  "takePicture": "Take Picture",
     "undoToast": {
       "undo": "Undo"
     },
