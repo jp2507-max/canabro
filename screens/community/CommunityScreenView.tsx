@@ -11,6 +11,7 @@ import Animated, {
   withDelay,
   cancelAnimation,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 // 🎯 Types
 import { PostData, ContentType } from '../../lib/types/community';
@@ -89,6 +90,7 @@ function CommunityScreenView({
   user,
   isOffline,
 }: CommunityScreenViewProps) {
+  const { t } = useTranslation('community');
   const [activePostFilter, setActivePostFilter] = useState<ContentType | 'all'>('all');
   const [selectedPostType, setSelectedPostType] = useState<'question' | 'plant_share' | null>(null);
 
@@ -204,12 +206,12 @@ function CommunityScreenView({
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(600).duration(500)}>
           <Text className="mb-3 text-center text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-            {isOffline ? 'Community is Offline' : 'No Posts Yet'}
+            {isOffline ? t('emptyState.offlineTitle') : t('emptyState.noPostsTitle')}
           </Text>
           <Text className="mb-8 text-center text-lg leading-6 text-neutral-600 dark:text-neutral-400">
             {isOffline
-              ? 'Connect to the internet to view posts and interact with the community.'
-              : 'Be the first to share your plants or ask a question!'}
+              ? t('emptyState.offlineDescription')
+              : t('emptyState.noPostsDescription')}
           </Text>
         </Animated.View>
       </Animated.View>

@@ -31,10 +31,15 @@
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "tryAgain": "Try Again"
   },
+  "plantCard": {
+    "health": "Health: {{value}}%",
+    "watering": "Watering in {{count}}d",
+    "nutrients": "Nutrients in {{count}}d"
+  },
   "navigation": {
     "tabs": {
       "home": "Home",
-      "strains": "Strains", 
+      "strains": "Strains",
       "calendar": "Calendar",
       "diagnosis": "Diagnosis",
       "community": "Community"
@@ -44,6 +49,24 @@
       "addPlantTask": "Add Plant Task",
       "editPlant": "Edit Plant",
       "newEntry": "New Entry"
+    }
+  },
+  "home": {
+    "title": "My Garden",
+    "greetings": {
+      "morning": "Good Morning",
+      "afternoon": "Good Afternoon",
+      "evening": "Good Evening"
+    },
+    "plantCountMessages": {
+      "zero": "Ready to start your grow journey?",
+      "one": "Caring for 1 beautiful plant ",
+      "many": "Growing {{count}} amazing plants "
+    },
+    "stats": {
+      "active": "Active",
+      "thisWeek": "This Week",
+      "fed": "Fed"
     }
   },
   "addPlantForm": {
@@ -171,168 +194,321 @@
     "currently": "currently",
     "types": {
       "watering": "Watering",
-      "feeding": "Feeding", 
+      "feeding": "Feeding",
+      "pruning": "Pruning",
+      "harvesting": "Harvesting"
+    },
+    "addTask": "Add Task",
+    "addTaskToPlant": "Add Task to Plant",
+    "addTaskToPlantSubtitle": "Create a task for a specific plant",
+    "addTaskToAll": "Add Task to All Plants",
+    "addTaskToAllSubtitle": "Create a task that applies to all your plants",
+    "taskTitle": "Task Title",
+    "taskTitlePlaceholder": "Enter task title",
+    "description": "Description (Optional)",
+    "descriptionPlaceholder": "Add task details...",
+    "priority": "Priority",
+    "category": "Category",
+    "selectPlantPlaceholder": "Choose a plant for this task",
+    "saveTask": "Save Task",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "categories": {
+      "watering": "Watering",
+      "feeding": "Feeding",
+      "pruning": "Pruning",
+      "inspection": "Inspection",
+      "other": "Other"
+    },
+    "validation": {
+      "titleRequired": "Task title is required",
+      "plantRequired": "Please select a plant"
+    },
+    "alerts": {
+      "successTitle": "Task Created",
+      "successMessage": "Your task has been successfully created.",
+      "errorTitle": "Error",
+      "errorMessage": "Failed to create task. Please try again.",
+      "noPlants": "No plants found. Please add a plant first."
+    }
+  },
+  "plantTasks": {
+    "title": "Add Plant Task",
+    "selectPlant": "Select Plant",
+    "selectPlantPlaceholder": "Choose a plant for this task",
+    "taskTitle": "Task Title",
+    "taskTitlePlaceholder": "Enter task title",
+    "description": "Description (Optional)",
+    "descriptionPlaceholder": "Add task details...",
+    "priority": "Priority",
+    "category": "Category",
+    "dueDate": "Due Date",
+    "saveTask": "Save Task",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "loadingPlants": "Loading plants...",
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "categories": {
+      "watering": "Watering",
+      "feeding": "Feeding",
+      "pruning": "Pruning",
+      "inspection": "Inspection",
+      "other": "Other"
+    },
+    "validation": {
+      "titleRequired": "Task title is required",
+      "plantRequired": "Please select a plant"
+    },
+    "alerts": {
+      "successTitle": "Task Created",
+      "successMessage": "Your task has been successfully created.",
+      "errorTitle": "Error",
+      "errorMessage": "Failed to create task. Please try again.",
+      "noPlants": "No plants found. Please add a plant first.",
+      "failedToLoadPlants": "Failed to load plants. Please try again.",
+      "validationError": "Validation Error",
+      "selectPlantAndTitle": "Please select a plant and enter a title.",
+      "authenticationError": "Authentication Error",
+      "pleaseLogInToCreateTasks": "Please log in to create tasks.",
+      "databaseError": "Database Error",
+      "databaseNotAvailable": "Database is not available. Please try again later.",
+      "plantTaskCreatedSuccessfully": "Plant task has been created successfully."
+    },
+    "headers": {
+      "selectPlant": "Select Plant",
+      "taskTitle": "Task Title",
+      "description": "Description",
+      "priority": "Priority",
+      "category": "Category"
+    },
+    "placeholders": {
+      "enterTaskTitle": "Enter task title",
+      "addTaskDetails": "Add task details..."
+    },
+    "priorityLevels": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "categoryTypes": {
+      "watering": "Watering",
+      "feeding": "Feeding",
+      "pruning": "Pruning",
+      "inspection": "Inspection",
+      "other": "Other"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "saveTask": "Save Task",
+      "saving": "Saving..."
+    }
+  },
+  "tasksFixed": {
+    "title": "Add Task to Plant",
+    "selectPlant": "Select Plant",
+    "selectTaskType": "Select Task Type",
+    "dueDate": "Due Date",
+    "notesOptional": "Notes (Optional)",
+    "addNotesPlaceholder": "Add any notes for this task...",
+    "addTask": "Add Task",
+    "error": "Error",
+    "failedToLoadPlants": "Failed to load plants.",
+    "selectPlantAndTaskType": "Please select a plant and a task type.",
+    "success": "Success",
+    "taskAddedSuccessfully": "Task added successfully.",
+    "failedToCreateTasks": "Failed to create task.",
+    "ok": "OK",
+    "selectDueDateAccessibility": "Select due date, currently {{currentDate}}",
+    "taskNotesAccessibility": "Task notes input",
+    "taskNotesHint": "Enter any additional details about the task here",
+    "types": {
+      "watering": "Watering",
+      "feeding": "Feeding",
       "pruning": "Pruning",
       "harvesting": "Harvesting"
     }
   },
-  "forms": {
-    "placeholders": {
-      "selectStrain": "Select a strain to test",
-      "addNotes": "Add any notes for this task..."
+  "journal_calendar": {
+    "week_info": "Week {{week}} • Day {{day}}",
+    "invalid_date_range": "Invalid Date Range",
+    "date_error": "Date Error"
+  },
+  "calendar": {
+    "date_selector": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "tomorrow": "Tomorrow",
+      "invalid_date": "Invalid"
     },
-    "validation": {
-      "required": "This field is required",
-      "invalid": "Invalid input"
+    "add_task": {
+      "title": "Task Title",
+      "title_placeholder": "Enter task title",
+      "description": "Description (Optional)",
+      "description_placeholder": "Add task details...",
+      "priority": "Priority",
+      "category": "Category",
+      "cancel": "Cancel",
+      "save_task": "Save Task",
+      "priority_levels": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "categories": {
+        "watering": "Watering",
+        "feeding": "Feeding",
+        "pruning": "Pruning",
+        "inspection": "Inspection",
+        "other": "Other"
+      }
+    },
+    "task_actions": {
+      "add_task_to_plant": "Add Task to Plant",
+      "add_task_to_plant_subtitle": "Create a task for a specific plant",
+      "add_task_to_all": "Add Task to All Plants",
+      "add_task_to_all_subtitle": "Create a task that applies to all your plants"
+    },
+    "task_item": {
+      "unknown_plant": "Unknown Plant",
+      "accessibility_label": "Task: {{title}} for {{plant}}",
+      "view_details_hint": "Tap to view task details",
+      "complete_button_label": "Mark task as completed",
+      "complete_button_hint": "Tap to complete this task"
+    },
+    "screen": {
+      "no_tasks_scheduled": "No tasks scheduled",
+      "tap_to_add_task": "Tap the + button to add your first task for this day",
+      "loading_tasks": "Loading tasks...",
+      "add_task_button": "Add Task"
     }
   },
-  "community": {
-    "createPost": "Create Post",
-    "askQuestion": "Ask Question",
-    "selectPostType": "Please select a post type before submitting.",
-    "postCreated": "Post created successfully!",
-    "deleting": "Deleting...",
-    "delete": "Delete"
-  },
-  "alerts": {
-    "userNotAuthenticated": "User not authenticated or database not available.",
-    "plantAddedSuccess": "Plant added successfully!",
-    "plantAddError": "Could not add plant. Please try again.",
-    "resetFailed": "Failed to reset the database. Please try again.",
-    "noUserSession": "No user session found",
-    "cleanupFailed": "Cleanup failed: {{message}}",
-    "resetNotNeeded": "Database reset not needed or couldn't be completed."
-  },
-  "accessibility": {
-    "logout": "Logout (temporary testing button)",
-    "closeModal": "Close modal", 
-    "retryLoading": "Retry loading image",
-    "closeDebugPanel": "Close debug panel",
-    "resetDatabase": "Reset local database",
-    "memoryMonitor": "Memory monitor",
-    "clearErrorReports": "Clear error reports",
-    "openDebugPanel": "Open debug panel",
-    "toggleDarkMode": "Toggle dark mode",
-    "retryOperation": "Retry operation",
-    "retryNavigation": "Retry navigation",
-    "openSettingsMenu": "Open settings menu",
-    "switchCamera": "Switch to {{type}} camera",
-    "addNewPlant": "Add new plant",
-    "goBack": "Go back"
-  },
-  "diagnosis": {
-    "takePhoto": "Take a Photo",
-    "goBack": "Go Back",
-    "plantDoctor": "Plant Doctor",
-    "analyzePlant": "Analyze Plant",
-    "takePhotoDescription": "Take a photo of your plant and get",
-    "aiDiagnosis": "AI-powered diagnosis",
-    "inSeconds": "in seconds",
-    "cameraAccessibilityHint": "Opens camera to capture plant image for diagnosis"
+  "profile": {
+    "title": "Profile",
+    "loading": "Loading your profile...",
+    "sections": {
+      "statistics": "Statistics",
+      "information": "Information",
+      "synchronization": "Data Synchronization"
+    },
+    "statistics": {
+      "plants": "Plants",
+      "posts": "Posts"
+    },
+    "information": {
+      "username": "Username",
+      "userId": "User ID",
+      "experience": "Experience",
+      "growMethod": "Grow Method"
+    }
   },
   "debug": {
-    "resetDatabase": "Reset Database",
-    "forceGarbageCollection": "Force Garbage Collection",
-    "clear": "Clear",
-    "memoryUsage": "Memory Usage",
-    "issuesDetected": "Issues Detected",
-    "debugPanel": "Debug Panel",
-    "resetDatabaseConfirmation": "This will delete your local database to fix schema issues. This action cannot be undone. Are you sure?",
-    "developmentMode": "Development Mode",
-    "auth": "Auth",
-    "autoBypass": "Auto Bypass",
-    "manual": "Manual",
-    "mockUser": "Mock User",
-    "none": "None",
-    "userId": "User ID",
-    "notLoggedIn": "Not logged in",
-    "useDevAuth": "Use Dev Auth",
-    "developerOptions": "Developer Options",
-    "database": "Database",
-    "resetDatabaseSchema": "Reset Database (Fix Schema)",
-    "close": "Close"
+    "title": "Debug Panel",
+    "subtitle": "Debug Panel for investigating app crashes",
+    "sections": {
+      "resourceMonitoring": "📊 Resource Monitoring",
+      "memoryUsage": "🧠 Memory Usage",
+      "crashReports": "💥 Crash Reports",
+      "potentialIssues": "⚠️ Potential Issues"
+    },
+    "resources": {
+      "intervals": "Intervals",
+      "timeouts": "Timeouts",
+      "subscriptions": "Subscriptions",
+      "listeners": "Listeners",
+      "animations": "Animations",
+      "totalResources": "Total Resources"
+    },
+    "memory": {
+      "warnings": "Memory Warnings",
+      "forceGC": "Force Garbage Collection"
+    },
+    "crashes": {
+      "clearReports": "Clear Reports",
+      "noCrashes": "No crash reports (good!)",
+      "recentCrashes": "Recent Crashes"
+    },
+    "actions": {
+      "emergencyCleanup": "Emergency Cleanup (Orphaned Posts)",
+      "forceCommunitySync": "Force Sync Community Data",
+      "cleaningUp": "Cleaning up orphaned records...",
+      "forceSyncing": "Force syncing community data..."
+    },
+    "warnings": {
+      "highIntervals": "• High interval count - possible memory leak",
+      "manySubscriptions": "• Many active subscriptions - check cleanup",
+      "memoryWarnings": "• Memory warnings detected - optimize usage",
+      "multipleCrashes": "• Multiple crashes - investigate error patterns",
+      "highResources": "• High resource count - review cleanup logic",
+      "noIssues": "✅ No obvious issues detected"
+    },
+    "alerts": {
+      "error": "Error",
+      "noUserSession": "No user session found",
+      "success": "Success",
+      "warning": "Warning",
+      "details": "Details",
+      "ok": "OK",
+      "communityDataSync": "Community Data Sync",
+      "cleanupDetails": "Cleanup Details",
+      "showErrors": "Show Errors",
+      "cleanupErrors": "Cleanup Errors",
+      "cleanupFailed": "Cleanup failed: {{error}}",
+      "cleanedRecords": "Cleaned up {{count}} orphaned local records.{{errors}}",
+      "withErrors": " Errors: {{count}}"
+    },
+    "status": {
+      "gcNotAvailable": "⚠️ Garbage collection not available",
+      "forcedGC": "🗑️ Forced garbage collection",
+      "errorForcingGC": "Error forcing GC: {{error}}"
+    }
   },
-  "strains": {
-    "type": {
-      "sativa": "Sativa",
-      "indica": "Indica",
-      "hybrid": "Hybrid"
+  "ui": {
+    "undoToast": {
+      "undo": "Undo"
     },
-    "effects": {
-      "relaxed": "Relaxed",
-      "happy": "Happy",
-      "euphoric": "Euphoric",
-      "uplifted": "Uplifted",
-      "creative": "Creative",
-      "energetic": "Energetic",
-      "focused": "Focused",
-      "hungry": "Hungry",
-      "talkative": "Talkative",
-      "tingly": "Tingly",
-      "sleepy": "Sleepy",
-      "giggly": "Giggly",
-      "aroused": "Aroused"
+    "floatingActionButton": {
+      "add": "Add"
     },
-    "flavors": {
-      "earthy": "Earthy",
-      "sweet": "Sweet",
-      "citrus": "Citrus",
-      "fruity": "Fruity",
-      "pine": "Pine",
-      "woody": "Woody",
-      "spicy": "Spicy",
-      "herbal": "Herbal",
-      "pungent": "Pungent",
-      "diesel": "Diesel",
-      "skunk": "Skunk",
-      "cheese": "Cheese",
-      "floral": "Floral",
-      "tropical": "Tropical",
-      "berry": "Berry",
-      "grape": "Grape",
-      "lemon": "Lemon",
-      "lime": "Lime",
-      "orange": "Orange",
-      "mango": "Mango",
-      "blueberry": "Blueberry",
-      "vanilla": "Vanilla",
-      "mint": "Mint",
-      "coffee": "Coffee",
-      "chocolate": "Chocolate",
-      "chemical": "Chemical",
-      "pepper": "Pepper",
-      "flowery": "Flowery",
-      "lavender": "Lavender"
+    "errorBoundary": {
+      "title": "Something went wrong",
+      "subtitle": "An unexpected error occurred in the application",
+      "description": "We apologize for the inconvenience. The error has been logged and our team will investigate.",
+      "showDetails": "Show Details",
+      "hideDetails": "Hide Details",
+      "retry": "Try Again",
+      "errorDetails": "Error Details",
+      "componentStack": "Component Stack",
+      "navigationIssue": "Navigation Issue",
+      "navigationUnavailable": "Navigation context temporarily unavailable.",
+      "autoRetryFailed": "Auto-retry failed. Please try refreshing.",
+      "retryNavigation": "Retry navigation",
+      "attemptingReconnect": "Attempting to reconnect... ({{current}}/{{max}})"
     },
-    "difficulty": {
-      "easy": "Easy",
-      "beginner": "Beginner",
-      "moderate": "Moderate",
-      "intermediate": "Intermediate",
-      "hard": "Hard",
-      "advanced": "Advanced",
-      "expert": "Expert"
-    },
-    "unknownStrain": "Unknown Strain",
-    "noDescription": "No description available.",
-    "removeFromFavorites": "Remove from favorites",
-    "addToFavorites": "Add to favorites",
-    "filterByCategory": "Filter by {{category}}",
-    "noStrainsFound": "No strains found.",
-    "noStrainsFoundMatching": "No strains found matching \"{{query}}\"",
-    "tryAgain": "Try Again",
-    "failedToLoad": "Failed to load strains",
-    "loading": "Loading cannabis strains...",
-    "strainUuidTest": "Strain UUID Test",
-    "noPlantsFound": "No plants found",
-    "applyFilters": "Apply Filters",
-    "active": "Active",
-    "tryDifferentSpelling": "Try a different spelling or fewer characters.",
-    "searchStrain": "Search Strain",
-    "typeToSearch": "Type to search..."
-  },
-  "devMode": {
-    "indicator": "DEV MODE",
-    "dev": "DEV"
+    "syncStatus": {
+      "syncing": "Syncing...",
+      "syncStatus": "Sync Status",
+      "synchronizing": "Synchronizing with server...",
+      "errorPrefix": "Error: ",
+      "unknownError": "Unknown error during sync",
+      "successRate": "Success rate:",
+      "avgDuration": "Avg duration:",
+      "slowestOp": "Slowest op:",
+      "tapToSync": "Tap to sync now",
+      "neverSynced": "Never synced",
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    }
   }
 }
+

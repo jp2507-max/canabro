@@ -19,6 +19,7 @@ import {
   triggerLightHapticSync,
   triggerMediumHapticSync,
 } from '@/lib/utils/haptics';
+import { useTranslation } from 'react-i18next';
 
 interface SyncStatusProps {
   compact?: boolean;
@@ -56,6 +57,7 @@ const getStatusColors = (syncError: Error | null, isSyncing: boolean, healthStat
  * Features NativeWind v4 theming, Reanimated v3 animations, and haptic feedback
  */
 function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
+  const { t } = useTranslation();
   const { triggerSync, isSyncing, syncError } = useSyncContext();
   const { health, refresh } = useSyncHealth();
 
@@ -134,19 +136,19 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
 
   // Get a readable time since last sync
   const getLastSyncText = () => {
-    if (health.lastSuccessfulSync === 0) return 'Never synced';
+    if (health.lastSuccessfulSync === 0) return t('ui.syncStatus.neverSynced');
 
     const elapsedSec = health.elapsedSinceLastSync;
-    if (elapsedSec < 60) return 'Just now';
+    if (elapsedSec < 60) return t('ui.syncStatus.justNow');
 
     const elapsedMin = Math.floor(elapsedSec / 60);
-    if (elapsedMin < 60) return `${elapsedMin}m ago`;
+    if (elapsedMin < 60) return t('ui.syncStatus.minutesAgo', { count: elapsedMin });
 
     const elapsedHours = Math.floor(elapsedMin / 60);
-    if (elapsedHours < 24) return `${elapsedHours}h ago`;
+    if (elapsedHours < 24) return t('ui.syncStatus.hoursAgo', { count: elapsedHours });
 
     const elapsedDays = Math.floor(elapsedHours / 24);
-    return `${elapsedDays}d ago`;
+    return t('ui.syncStatus.daysAgo', { count: elapsedDays });
   };
 
   // Animated styles
@@ -202,7 +204,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
           )}
 
           <ThemedText className="text-xs">
-            {isSyncing ? 'Syncing...' : getLastSyncText()}
+            {isSyncing ? t('ui.syncStatus.syncing') : getLastSyncText()}
           </ThemedText>
         </Pressable>
       </Animated.View>
@@ -238,7 +240,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
               accessibilityElementsHidden
             />
             <ThemedText className="text-base font-semibold">
-              {isSyncing ? 'Syncing...' : 'Sync Status'}
+              {isSyncing ? t('ui.syncStatus.syncing') : t('ui.syncStatus.syncStatus')}
             </ThemedText>
           </View>
           <ThemedText className="text-xs opacity-70">{getLastSyncText()}</ThemedText>
@@ -246,13 +248,13 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
 
         {/* Status text */}
         <ThemedText className="mb-2">
-          {isSyncing ? 'Synchronizing with server...' : health.statusText}
+          {isSyncing ? t('ui.syncStatus.synchronizing') : health.statusText}
         </ThemedText>
 
         {/* Error message */}
         {syncError && (
           <ThemedText className="text-status-danger mb-2">
-            Error: {syncError.message || 'Unknown error during sync'}
+            {t('ui.syncStatus.errorPrefix')}{syncError.message || t('ui.syncStatus.unknownError')}
           </ThemedText>
         )}
 
@@ -261,7 +263,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
           <View className="mt-2 border-t border-neutral-200 pt-2 dark:border-neutral-700">
             {/* Success rate */}
             <View className="mb-1 flex-row justify-between">
-              <ThemedText className="text-xs opacity-70">Success rate:</ThemedText>
+              <ThemedText className="text-xs opacity-70">{t('ui.syncStatus.successRate')}</ThemedText>
               <ThemedText
                 className={`font-mono text-xs ${
                   health.successRate < 0.7 ? 'text-status-warning' : 'text-status-success'
@@ -272,7 +274,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
 
             {/* Average duration */}
             <View className="mb-1 flex-row justify-between">
-              <ThemedText className="text-xs opacity-70">Avg duration:</ThemedText>
+              <ThemedText className="text-xs opacity-70">{t('ui.syncStatus.avgDuration')}</ThemedText>
               <ThemedText className="font-mono text-xs">
                 {Math.round(health.averageSyncDuration)}ms
               </ThemedText>
@@ -281,7 +283,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
             {/* Slowest operation */}
             {health.slowestOperation && (
               <View className="mb-1 flex-row justify-between">
-                <ThemedText className="text-xs opacity-70">Slowest op:</ThemedText>
+                <ThemedText className="text-xs opacity-70">{t('ui.syncStatus.slowestOp')}</ThemedText>
                 <ThemedText className="font-mono text-xs">{health.slowestOperation}</ThemedText>
               </View>
             )}
@@ -291,7 +293,7 @@ function SyncStatus({ compact = false, onPress }: SyncStatusProps) {
         {/* Recommendation text */}
         {health.shouldRecommendSync && !isSyncing && (
           <ThemedText className="mt-2 text-center text-xs text-blue-500 dark:text-blue-400">
-            Tap to sync now
+            {t('ui.syncStatus.tapToSync')}
           </ThemedText>
         )}
       </Pressable>

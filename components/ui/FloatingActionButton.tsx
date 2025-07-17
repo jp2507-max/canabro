@@ -8,6 +8,7 @@ import Animated, {
   withSequence,
   runOnJS,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import { OptimizedIcon, type IconName } from './OptimizedIcon';
 import { triggerMediumHapticSync } from '../../lib/utils/haptics';
@@ -28,11 +29,12 @@ export function FloatingActionButton({
   onPress,
   onLongPress,
   iconName = 'add',
-  accessibilityLabel = 'Add',
+  accessibilityLabel,
   testID,
   size = 56,
   className = 'absolute bottom-6 right-6',
 }: FloatingActionButtonProps) {
+  const { t } = useTranslation();
   // Reanimated v3 shared values for sophisticated animations
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
@@ -166,7 +168,7 @@ export function FloatingActionButton({
             elevation: 8,
           },
         ]}
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={accessibilityLabel || t('ui.floatingActionButton.add')}
         accessibilityRole="button"
         testID={testID}>
         <Animated.View style={animatedIconStyle}>

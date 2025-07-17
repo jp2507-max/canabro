@@ -1,6 +1,6 @@
 # Task ID: 5
 # Title: Implement German Localization and i18n System
-# Status: pending
+# Status: done
 # Dependencies: 1, 3
 # Priority: medium
 # Description: Translate the entire app UI to German including all static and dynamic content, implement a robust i18n solution, and ensure API data in the strains screen is translated before display.

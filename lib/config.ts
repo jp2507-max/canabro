@@ -19,6 +19,7 @@ export const authConfig = {
   mockUserId: 'mock-user-id', // Placeholder ID for dev bypass
   mockUserEmail: 'dev@example.com', // Placeholder email for dev bypass
   mockTokenExpiryDays: 7, // Placeholder expiry for dev bypass
+  passwordResetRedirectTo: 'exp://127.0.0.1:8081/--/reset-password', // Deep link to password reset screen
 };
 
 // Validate essential configuration

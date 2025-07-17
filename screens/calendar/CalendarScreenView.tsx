@@ -8,6 +8,7 @@ import TaskItem from '../../components/calendar/TaskItem';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
+import { useTranslation } from 'react-i18next';
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
 import { logger } from '@/lib/config/production';
@@ -43,6 +44,7 @@ function CalendarScreenView({
   onAddTaskAll,
   onNavigateToPlant,
 }: CalendarScreenViewProps) {
+  const { t } = useTranslation();
   const { database } = useWatermelon();
 
   // FAB direct add-task logic (skip modal)
@@ -86,10 +88,10 @@ function CalendarScreenView({
     () => (
       <ThemedView className="flex-1 items-center justify-center px-8 py-16">
         <ThemedText className="text-center text-lg font-medium text-neutral-600 dark:text-neutral-400">
-          No tasks scheduled
+          {t('calendar.screen.no_tasks_scheduled', 'No tasks scheduled')}
         </ThemedText>
         <ThemedText className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-500">
-          Tap the + button to add your first task for this day
+          {t('calendar.screen.tap_to_add_task', 'Tap the + button to add your first task for this day')}
         </ThemedText>
       </ThemedView>
     ),
@@ -104,7 +106,9 @@ function CalendarScreenView({
           color="#10b981" // primary-500
           className="mb-4"
         />
-        <ThemedText className="text-neutral-600 dark:text-neutral-400">Loading tasks...</ThemedText>
+        <ThemedText className="text-neutral-600 dark:text-neutral-400">
+            {t('calendar.screen.loading_tasks', 'Loading tasks...')}
+          </ThemedText>
       </ThemedView>
     ),
     []
@@ -158,7 +162,7 @@ function CalendarScreenView({
         <FloatingActionButton
           onPress={handleFabPress}
           onLongPress={onOpenTaskActions}
-          accessibilityLabel="Add Task"
+          accessibilityLabel={t('calendar.screen.add_task_button', 'Add Task')}
           testID="calendar-fab"
           size={56}
         />

@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import UserAvatar from './UserAvatar';
-import PostTypeHeader from './PostTypeHeader';
+import { useTranslation } from 'react-i18next';
 import PostActionRow from './PostActionRow';
 import DeletePostModal from './DeletePostModal';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
@@ -70,6 +70,7 @@ const PostItem: React.FC<PostItemProps> = React.memo(
     liking = false,
     deleting = false 
   }) => {
+    const { t } = useTranslation('community');
     // State for delete confirmation modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     // ­ƒÄ¼ Enhanced Reanimated v3 + React Compiler Compatible Animation System
@@ -108,10 +109,15 @@ const PostItem: React.FC<PostItemProps> = React.memo(
     }, []);
 
     // ­ƒÄ» Optimized computed values for performance
-    const displayName = useMemo(
-      () => post.profiles?.username || `User ${post.profiles?.id?.slice(0, 8) || 'Unknown'}`,
-      [post.profiles?.username, post.profiles?.id]
-    );
+    const displayName = useMemo(() => {
+      if (post.profiles?.username) {
+        return post.profiles.username;
+      }
+      if (post.profiles?.id) {
+        return t('postItem.user.fallback', { id: post.profiles.id.slice(0, 8) });
+      }
+      return t('postItem.user.unknown');
+    }, [post.profiles?.username, post.profiles?.id, t]);
 
     const timeAgo = useMemo(() => dayjs(post.created_at).fromNow(), [post.created_at]);
 
@@ -222,14 +228,14 @@ const PostItem: React.FC<PostItemProps> = React.memo(
         ]}
         className="mb-6 overflow-hidden rounded-3xl border border-neutral-100 bg-white dark:border-zinc-800 dark:bg-zinc-900"
         accessibilityRole="text"
-        accessibilityLabel={`Post by ${displayName}`}>
+        accessibilityLabel={t('postItem.postBy', { name: displayName })}>
         {/* ­ƒæñ Enhanced User Header with sophisticated gesture handling */}
         <GestureDetector gesture={userPressGesture}>
           <Pressable
             className="flex-row items-center p-5 pb-4 active:opacity-90"
             accessibilityRole="button"
-            accessibilityLabel={`View ${displayName}'s profile`}
-            accessibilityHint="Double-tap to view user profile">
+            accessibilityLabel={t('postItem.viewProfile', { name: displayName })}
+            accessibilityHint={t('postItem.viewUserProfileHint')}>
             <UserAvatar uri={avatarUri} size={48} />
             <View className="ml-4 flex-1">
               <Text className="mb-1 text-xl font-bold leading-tight text-zinc-900 dark:text-zinc-100">
@@ -262,14 +268,14 @@ const PostItem: React.FC<PostItemProps> = React.memo(
             <Pressable
               className="mx-5 mb-5 overflow-hidden rounded-2xl bg-zinc-100 active:opacity-95 dark:bg-zinc-800"
               accessibilityRole="imagebutton"
-              accessibilityLabel="View post image"
-              accessibilityHint="Double-tap to view image in full screen">
+              accessibilityLabel={t('postItem.viewImage')}
+              accessibilityHint={t('postItem.viewImageHint')}>
               <View className="aspect-[4/3]">
                 {hasCorruptedImage ? (
                   <View className="flex-1 items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                     <OptimizedIcon name="image-outline" size={56} color="#71717a" />
                     <Text className="mt-3 text-base font-medium text-zinc-500 dark:text-zinc-400">
-                      Image unavailable
+                      {t('postItem.imageUnavailable')}
                     </Text>
                   </View>
                 ) : (

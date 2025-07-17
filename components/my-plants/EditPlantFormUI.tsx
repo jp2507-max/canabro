@@ -15,6 +15,7 @@ interface AnimatedImageButtonProps {
   icon: 'camera-outline' | 'images-outline';
   label: string;
   disabled?: boolean;
+  accessibilityHint: string;
 }
 
 export const AnimatedImageButton: React.FC<AnimatedImageButtonProps> = ({
@@ -22,6 +23,7 @@ export const AnimatedImageButton: React.FC<AnimatedImageButtonProps> = ({
   icon,
   label,
   disabled = false,
+  accessibilityHint,
 }) => {
   const { animatedStyle, handlers } = useButtonAnimation({
     onPress: disabled ? undefined : onPress,
@@ -35,7 +37,7 @@ export const AnimatedImageButton: React.FC<AnimatedImageButtonProps> = ({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint={disabled ? undefined : `Tap to ${label.toLowerCase()}`}
+      accessibilityHint={disabled ? undefined : accessibilityHint}
       accessibilityState={{ disabled }}>
       <Animated.View
         style={animatedStyle}
@@ -49,9 +51,11 @@ export const AnimatedImageButton: React.FC<AnimatedImageButtonProps> = ({
 
 interface AnimatedRemoveButtonProps {
   onPress: () => void;
+  accessibilityLabel: string;
+  accessibilityHint: string;
 }
 
-export const AnimatedRemoveButton: React.FC<AnimatedRemoveButtonProps> = ({ onPress }) => {
+export const AnimatedRemoveButton: React.FC<AnimatedRemoveButtonProps> = ({ onPress, accessibilityLabel, accessibilityHint }) => {
   const { animatedStyle, handlers } = useButtonAnimation({
     onPress,
     enableHaptics: true,
@@ -63,8 +67,8 @@ export const AnimatedRemoveButton: React.FC<AnimatedRemoveButtonProps> = ({ onPr
       {...handlers}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel="Remove photo"
-      accessibilityHint="Tap to remove this photo from the plant">
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}>
       <Animated.View
         style={animatedStyle}
         className="absolute right-1 top-1 rounded-full bg-white/70 p-0.5">
@@ -77,9 +81,11 @@ export const AnimatedRemoveButton: React.FC<AnimatedRemoveButtonProps> = ({ onPr
 interface AnimatedDateButtonProps {
   onPress: () => void;
   value: Date;
+  accessibilityLabel: string;
+  accessibilityHint: string;
 }
 
-export const AnimatedDateButton: React.FC<AnimatedDateButtonProps> = ({ onPress, value }) => {
+export const AnimatedDateButton: React.FC<AnimatedDateButtonProps> = ({ onPress, value, accessibilityLabel, accessibilityHint }) => {
   const { animatedStyle, handlers } = useButtonAnimation({
     onPress,
     enableHaptics: true,
@@ -92,8 +98,8 @@ export const AnimatedDateButton: React.FC<AnimatedDateButtonProps> = ({ onPress,
     <Pressable
       {...handlers}
       accessibilityRole="button"
-      accessibilityLabel={`Date: ${formattedDate}`}
-      accessibilityHint="Tap to change the date">
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}>
       <Animated.View
         style={animatedStyle}
         className="mb-1 flex-row items-center justify-between rounded-lg border border-neutral-300 px-4 py-3 dark:border-neutral-600">
@@ -112,12 +118,16 @@ interface AnimatedSubmitButtonProps {
   onPress: () => void;
   isSubmitting: boolean;
   label: string;
+  accessibilityHint: string;
+  accessibilityInProgressLabel: string;
 }
 
 export const AnimatedSubmitButton: React.FC<AnimatedSubmitButtonProps> = ({
   onPress,
   isSubmitting,
   label,
+  accessibilityHint,
+  accessibilityInProgressLabel,
 }) => {
   const { animatedStyle, handlers } = useButtonAnimation({
     onPress: isSubmitting ? undefined : onPress,
@@ -130,8 +140,8 @@ export const AnimatedSubmitButton: React.FC<AnimatedSubmitButtonProps> = ({
       {...handlers}
       disabled={isSubmitting}
       accessibilityRole="button"
-      accessibilityLabel={isSubmitting ? `${label} in progress` : label}
-      accessibilityHint={isSubmitting ? undefined : `Tap to ${label.toLowerCase()}`}
+      accessibilityLabel={isSubmitting ? accessibilityInProgressLabel : label}
+      accessibilityHint={isSubmitting ? undefined : accessibilityHint}
       accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}>
       <Animated.View
         style={animatedStyle}

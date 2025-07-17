@@ -10,6 +10,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, Pressable, LayoutChangeEvent } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -28,9 +29,9 @@ interface CommunitySegmentedControlProps {
 }
 
 const SEGMENTS = [
-  { key: 'all' as const, label: 'All Posts', icon: 'layers-outline' },
-  { key: 'questions' as const, label: 'Questions', icon: 'help-circle' },
-  { key: 'plant_shares' as const, label: 'Plant Shares', icon: 'leaf-outline' },
+  { key: 'all' as const, icon: 'layers-outline' },
+  { key: 'questions' as const, icon: 'help-circle' },
+  { key: 'plant_shares' as const, icon: 'leaf-outline' },
 ] as const;
 
 const SPRING_CONFIG = COMMUNITY_ANIMATION_CONFIG.segment;
@@ -40,6 +41,7 @@ export default function CommunitySegmentedControl({
   onSegmentChange,
   className = '',
 }: CommunitySegmentedControlProps) {
+  const { t } = useTranslation('community');
   const slidePosition = useSharedValue(0);
   const containerWidth = useSharedValue(0);
   const segmentWidth = useSharedValue(0);
@@ -87,6 +89,7 @@ export default function CommunitySegmentedControl({
         {/* Segment Buttons */}
         <View className="flex-row">
           {SEGMENTS.map((segment) => {
+            const translatedLabel = t(`communitySegmentedControl.segment.${segment.key}`, segment.key);
             const isActive = activeSegment === segment.key;
             
             return (
@@ -95,7 +98,7 @@ export default function CommunitySegmentedControl({
                 onPress={() => handleSegmentPress(segment.key)}
                 className="flex-1 flex-row items-center justify-center py-3 px-2"
                 accessibilityRole="button"
-                accessibilityLabel={`Filter by ${segment.label}`}
+                accessibilityLabel={t('communitySegmentedControl.accessibility.filterBy', { segment: translatedLabel })}
                 accessibilityState={{ selected: isActive }}
               >
                 <OptimizedIcon
@@ -123,7 +126,7 @@ export default function CommunitySegmentedControl({
                   }`}
                   numberOfLines={1}
                 >
-                  {segment.label}
+                  {translatedLabel}
                 </Text>
               </Pressable>
             );

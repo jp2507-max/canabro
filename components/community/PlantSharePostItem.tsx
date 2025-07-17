@@ -11,6 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -58,8 +59,8 @@ interface PlantSharePostItemProps {
 const ANIMATION_CONFIG = COMMUNITY_ANIMATION_CONFIG;
 const SCALE_VALUES = COMMUNITY_SCALE_VALUES;
 
-const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
-  ({ 
+const PlantSharePostItemComponent: React.FC<PlantSharePostItemProps> = ({
+ 
     plantShare,
     currentUserId,
     onLike,
@@ -71,6 +72,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
     liking = false,
     deleting = false,
   }) => {
+    const { t } = useTranslation('community');
     // State for delete confirmation modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -111,7 +113,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
 
     // Optimized computed values for performance
     const displayName = useMemo(
-      () => plantShare.username || 'Anonymous User',
+      () => plantShare.username || t('plantSharePostItem.anonymousUser'),
       [plantShare.username]
     );
 
@@ -232,13 +234,13 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
         ]}
         className="mb-6 overflow-hidden rounded-3xl border border-green-100 bg-white dark:border-green-900/30 dark:bg-neutral-900"
         accessibilityRole="text"
-        accessibilityLabel={`Plant share: ${plantShare.plant_name} by ${displayName}`}
+        accessibilityLabel={t('plantSharePostItem.accessibility.plantShareBy', { plantName: plantShare.plant_name, userName: displayName })}
       >
         <GestureDetector gesture={onPress ? cardPressGesture : Gesture.Tap()}>
           <Pressable
             className="active:opacity-90"
             accessibilityRole="button"
-            accessibilityLabel={`View plant share: ${plantShare.plant_name}`}
+            accessibilityLabel={t('plantSharePostItem.accessibility.viewPlantShare', { plantName: plantShare.plant_name })}
           >
             {/* Header */}
             <View className="flex-row items-center justify-between p-5 pb-4">
@@ -250,13 +252,13 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
                     className="text-green-600 dark:text-green-400 mr-1"
                   />
                   <Text className="text-xs font-medium text-green-600 dark:text-green-400">
-                    Plant Share
+                    {t('plantSharePostItem.chipLabel')}
                   </Text>
                 </View>
 
                 <View className={`px-2 py-1 rounded-full ${growthStageColor}`}>
                   <Text className="text-xs font-medium capitalize">
-                    {plantShare.growth_stage}
+                    {t(`plantSharePostItem.growthStage.${plantShare.growth_stage}`)}
                   </Text>
                 </View>
               </View>
@@ -277,7 +279,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
               <Pressable
                 className="flex-row items-center px-5 pb-4 active:opacity-90"
                 accessibilityRole="button"
-                accessibilityLabel={`View ${displayName}'s profile`}
+                accessibilityLabel={t('postItem.viewProfile', {name: displayName})}
                 accessibilityHint="Double-tap to view user profile"
               >
                 <UserAvatar
@@ -318,7 +320,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
             {plantShare.care_tips && (
               <View className="bg-green-50 dark:bg-green-900/10 p-4 rounded-2xl mx-5 mb-5">
                 <Text className="text-sm font-semibold text-green-700 dark:text-green-300 mb-2">
-                  💡 Care Tips
+                  {t('plantSharePostItem.careTipsLabel')}
                 </Text>
                 <Text className="text-base text-green-600 dark:text-green-400 leading-6">
                   {plantShare.care_tips}
@@ -378,7 +380,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
                       <Pressable
                         className="mr-3 overflow-hidden rounded-2xl bg-neutral-100 active:opacity-95 dark:bg-neutral-800"
                         accessibilityRole="imagebutton"
-                        accessibilityLabel="View plant image"
+                        accessibilityLabel={t('plantSharePostItem.accessibility.viewPlantImage')}
                         accessibilityHint="Double-tap to view image in full screen"
                       >
                         <View style={{ width: 128, height: 128 }}>
@@ -411,7 +413,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
                   disabled={liking}
                   className="flex-row items-center mr-6 active:opacity-70"
                   accessibilityRole="button"
-                  accessibilityLabel={isLiked ? 'Unlike plant share' : 'Like plant share'}
+                  accessibilityLabel={isLiked ? t('postActionRow.unlikePost') : t('postActionRow.likePost')}
                 >
                   <OptimizedIcon
                     name={isLiked ? 'heart' : 'heart-outline'}
@@ -427,7 +429,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
                   onPress={handleComment}
                   className="flex-row items-center mr-6 active:opacity-70"
                   accessibilityRole="button"
-                  accessibilityLabel="View comments"
+                  accessibilityLabel={t('postActionRow.viewComments', {count: plantShare.comments_count})}
                 >
                   <OptimizedIcon
                     name="chatbubble-outline"
@@ -457,7 +459,7 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
                   disabled={deleting}
                   className="p-2 active:opacity-70"
                   accessibilityRole="button"
-                  accessibilityLabel="Delete plant share"
+                  accessibilityLabel={t('plantSharePostItem.accessibility.deletePlantShare')}
                 >
                   <OptimizedIcon
                     name="trash-outline"
@@ -480,7 +482,10 @@ const PlantSharePostItem: React.FC<PlantSharePostItemProps> = React.memo(
         />
       </Animated.View>
     );
-  }
-);
+  };
+
+
+
+const PlantSharePostItem = React.memo(PlantSharePostItemComponent);
 
 export default PlantSharePostItem;

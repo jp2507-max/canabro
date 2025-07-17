@@ -1,5 +1,6 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
 import { ActivityIndicator, Image, View, Alert, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -28,6 +29,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
   isEditing = false,
   onImageChange,
 }) => {
+  const { t } = useTranslation('plantImageSection');
   const [imageUri, setImageUri] = useState<string | null>(initialImageUri);
   const [processing, setProcessing] = useState(false);
 
@@ -62,7 +64,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
       onImageChange?.(manipResult.uri);
     } catch (error) {
       logger.error('Error processing image:', error);
-      Alert.alert('Error', 'Failed to process image');
+      Alert.alert(t('error'), t('failedToProcessImage'));
     } finally {
       setProcessing(false);
     }
@@ -81,8 +83,8 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
     } catch (error) {
       logger.error('[PlantImageSection] Error picking image:', error);
       Alert.alert(
-        'Gallery Error',
-        'Failed to access photo gallery. Please try again or restart the app if the problem persists.'
+        t('galleryError'),
+        t('failedToAccessGallery')
       );
     }
   }
@@ -95,7 +97,7 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
       }
     } catch (error) {
       logger.error('Error taking picture:', error);
-      Alert.alert('Error', 'Failed to take picture');
+      Alert.alert(t('error'), t('failedToTakePicture'));
     }
   }
 
@@ -133,14 +135,14 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
       {processing ? (
         <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-black/50">
           <ActivityIndicator size="large" color="#3b82f6" />
-          <ThemedText className="mt-2 text-white">Processing...</ThemedText>
+          <ThemedText className="mt-2 text-white">{t('processing')}</ThemedText>
         </View>
       ) : imageUri ? (
         <Image
           source={{ uri: imageUri }}
           style={{ width: 180, height: 180, borderRadius: 12 }}
           resizeMode="cover"
-          accessibilityLabel="Plant image preview"
+          accessibilityLabel={t('plantImagePreview')}
         />
       ) : (
         <OptimizedIcon
@@ -156,8 +158,8 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
               style={pickImageStyle}
               className="rounded-lg bg-primary-500 px-4 py-2"
               accessibilityRole="button"
-              accessibilityLabel="Pick image from gallery">
-              <ThemedText className="font-medium text-white">Pick Image</ThemedText>
+              accessibilityLabel={t('pickImageFromGallery')}>
+              <ThemedText className="font-medium text-white">{t('pickImage')}</ThemedText>
             </Animated.View>
           </GestureDetector>
           <GestureDetector gesture={takePictureGesture}>
@@ -165,8 +167,8 @@ const PlantImageSection: React.FC<PlantImageSectionProps> = ({
               style={takePictureStyle}
               className="rounded-lg bg-primary-500 px-4 py-2"
               accessibilityRole="button"
-              accessibilityLabel="Take a new picture">
-              <ThemedText className="font-medium text-white">Take Picture</ThemedText>
+              accessibilityLabel={t('takeNewPicture')}>
+              <ThemedText className="font-medium text-white">{t('takePicture')}</ThemedText>
             </Animated.View>
           </GestureDetector>
         </View>

@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { useTranslation } from 'react-i18next';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import {
@@ -135,6 +136,7 @@ function TaskActions({
   navigateToAddTaskAll,
 }: TaskActionsProps) {
   const { height } = useWindowDimensions();
+  const { t } = useTranslation();
 
   // Animation values
   const backdropOpacity = useSharedValue(0);
@@ -255,7 +257,7 @@ function TaskActions({
           {/* Header */}
           <ThemedView className="mb-6 flex-row items-center justify-between px-6">
             <ThemedText className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-              Add Task
+              {t('navigation.headers.addTask', 'Add Task')}
             </ThemedText>
             <GestureDetector gesture={closeTapGesture}>
               <AnimatedPressable className="h-10 w-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
@@ -268,16 +270,16 @@ function TaskActions({
           <ThemedView className="px-6 pb-8">
             <ActionButton
               icon="leaf"
-              title="Add Task to Plant"
-              subtitle="Create a task for a specific plant"
+              title={t('calendar.task_actions.add_task_to_plant', 'Add Task to Plant')}
+              subtitle={t('calendar.task_actions.add_task_to_plant_subtitle', 'Create a task for a specific plant')}
               onPress={handlePlantTaskPress}
               color="#10b981"
               delay={100}
             />
             <ActionButton
               icon="layers-outline"
-              title="Add Task to All Plants"
-              subtitle="Create a task that applies to all your plants"
+              title={t('calendar.task_actions.add_task_to_all', 'Add Task to All Plants')}
+              subtitle={t('calendar.task_actions.add_task_to_all_subtitle', 'Create a task that applies to all your plants')}
               onPress={handleAllTasksPress}
               color="#10b981"
               delay={200}

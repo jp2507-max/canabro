@@ -187,8 +187,8 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: Pla
         <Animated.View
           style={[companionStyle, { marginBottom: 32 }]}
           accessibilityRole="button"
-          accessibilityLabel="Plant Doctor companion"
-          accessibilityHint="Tap for a friendly interaction">
+          accessibilityLabel={t('companion.accessLabel', 'Plant Doctor companion')}
+          accessibilityHint={t('companion.accessHint', 'Tap for a friendly interaction')}>
           <View className="items-center justify-center rounded-full bg-primary-100 p-8 shadow-lg shadow-primary-500/20 dark:bg-primary-900/30">
             <Image
               source={require('../../assets/icon.png')}
@@ -211,7 +211,7 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: Pla
       {/* Title */}
       <Animated.View style={titleStyle}>
         <ThemedText className="mb-3 text-center text-3xl font-extrabold text-primary-600 dark:text-primary-400">
-          Plant Doctor
+          {t('title', 'Plant Doctor')}
         </ThemedText>
       </Animated.View>
 
@@ -250,16 +250,16 @@ const PlantDoctorHero = React.memo(function PlantDoctorHero({ onTakePhoto }: Pla
       {/* Features list */}
       <View className="mt-8 space-y-4">
         {[
-          { icon: 'leaf', text: 'Detect diseases & pests' },
-          { icon: 'search', text: 'Nutrient deficiency analysis' },
-          { icon: 'star', text: 'Personalized recommendations' },
+          { icon: 'leaf', key: 'features.detectDiseases', defaultText: 'Detect diseases & pests' },
+          { icon: 'search', key: 'features.nutrientDeficiency', defaultText: 'Nutrient deficiency analysis' },
+          { icon: 'star', key: 'features.personalizedRecommendations', defaultText: 'Personalized recommendations' },
         ].map((feature, index) => (
           <View key={index} className="flex-row items-center space-x-3">
             <View className="rounded-full bg-primary-100 p-2 dark:bg-primary-900/30">
               <OptimizedIcon name={feature.icon as any} size={16} color="#10b981" />
             </View>
             <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
-              {feature.text}
+              {t(feature.key, feature.defaultText)}
             </ThemedText>
           </View>
         ))}
