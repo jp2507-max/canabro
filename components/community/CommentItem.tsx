@@ -46,35 +46,37 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
  * Format a date string into a relative time string (e.g. "2m ago")
+ * Uses the 'common' namespace for time-related translations.
  */
-function formatRelativeTime(dateString: string, t: TFunction<"community">): string {
+function formatRelativeTime(dateString: string, t: TFunction): string {
   if (!dateString) {
     console.warn('[CommentItem] Empty dateString provided to formatRelativeTime');
-    return t('justNow');
+    return t('common:justNow');
   }
 
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
     console.warn('[CommentItem] Invalid dateString provided to formatRelativeTime:', dateString);
-    return t('justNow');
+    return t('common:justNow');
   }
 
   const now = new Date();
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
-  if (diffSeconds < 10) return t('justNow');
+  if (diffSeconds < 10) return t('common:justNow');
   const diffMinutes = Math.round(diffSeconds / 60);
-  if (diffMinutes < 1) return t('justNow');
-  if (diffMinutes < 60) return t('minutesAgo', { count: diffMinutes });
+  if (diffMinutes < 1) return t('common:justNow');
+  if (diffMinutes < 60) return t('common:minutesAgo', { count: diffMinutes });
   const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return t('hoursAgo', { count: diffHours });
+  if (diffHours < 24) return t('common:hoursAgo', { count: diffHours });
   const diffDays = Math.round(diffHours / 24);
-  if (diffDays < 7) return t('daysAgo', { count: diffDays });
+  if (diffDays < 7) return t('common:daysAgo', { count: diffDays });
   const diffWeeks = Math.round(diffDays / 7);
-  if (diffWeeks < 4) return t('daysAgo', { count: diffDays }); // fallback: show days for weeks
+  if (diffWeeks < 4) return t('common:weeksAgo', { count: diffWeeks });
   const diffMonths = Math.round(diffDays / 30);
-  if (diffMonths < 12) return t('daysAgo', { count: diffDays }); // fallback: show days for months
-  return t('daysAgo', { count: diffDays }); // fallback: show days for years
+  if (diffMonths < 12) return t('common:monthsAgo', { count: diffMonths });
+  const diffYears = Math.round(diffDays / 365);
+  return t('common:yearsAgo', { count: diffYears });
 }
 
 /**
@@ -86,7 +88,7 @@ export default React.memo(function CommentItem({
   currentUserId,
   onReply,
 }: CommentItemProps) {
-  const { t } = useTranslation('community');
+  const { t } = useTranslation(['community', 'common']);
   // 🎬 Enhanced animation system using custom hooks
   const cardAnimation = useCardAnimation({
     enableShadowAnimation: true,

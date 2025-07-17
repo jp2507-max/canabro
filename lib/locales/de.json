@@ -1,6 +1,13 @@
 {
   "common": {
     "welcome": "Willkommen",
+    "justNow": "Gerade eben",
+    "minutesAgo": "vor {{count}}m",
+    "hoursAgo": "vor {{count}}h",
+    "daysAgo": "vor {{count}}d",
+    "weeksAgo": "vor {{count}}w",
+    "monthsAgo": "vor {{count}}mo",
+    "yearsAgo": "vor {{count}}j",
     "language": "Sprache",
     "switch_to_german": "Wechseln zu Deutsch",
     "switch_to_english": "Wechseln zu Englisch",

@@ -9,14 +9,14 @@ import en from '../locales/en.json';
 import de from '../locales/de.json';
 
 // Keep a single namespace to simplify keys like 'common.welcome' and 'strains.viewDetails'
-// Provide both default "translation" namespace and individual named namespaces (common, navigation, etc.)
+// Provide only named namespaces (common, navigation, etc.), no 'translation' namespace
 const resources = {
-  en: { translation: en, ...en },
-  de: { translation: de, ...de },
+  en: { ...en },
+  de: { ...de },
 } as const;
 
-// Collect all namespace keys including the default "translation"
-const availableNamespaces = ['translation', ...Object.keys(en)];
+// Collect all namespace keys from the English resource (assuming all languages have the same keys)
+const availableNamespaces = Object.keys(en);
 
 // Get device language synchronously for immediate initialization
 const getDeviceLanguage = (): string => {

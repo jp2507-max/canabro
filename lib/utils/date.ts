@@ -15,7 +15,8 @@ export function formatLocaleDate(
 ): string {
   // Always require language to be passed explicitly, or fallback to 'en'
   const lang: 'en' | 'de' = opts?.language || 'en';
-  const formatStr = opts?.format || (lang === 'de' ? 'DD.MM.YYYY' : 'MM/DD/YYYY');
+  // Use European format for both 'en' and 'de'
+  const formatStr = opts?.format || 'DD.MM.YYYY';
   return dayjs(date).locale(lang).format(formatStr);
 }
 
