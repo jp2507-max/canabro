@@ -506,6 +506,102 @@ const migrations = schemaMigrations({
         // The cleanup will be handled by the data integrity service when it detects the version bump
       ],
     },
+    // Migration to version 30: Add new plant management tables and fields
+    {
+      toVersion: 30,
+      steps: [
+        // Add new fields to plants table
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'node_count', type: 'number', isOptional: true },
+            { name: 'stem_diameter', type: 'number', isOptional: true },
+            { name: 'ph_level', type: 'number', isOptional: true },
+            { name: 'ec_ppm', type: 'number', isOptional: true },
+            { name: 'temperature', type: 'number', isOptional: true },
+            { name: 'humidity', type: 'number', isOptional: true },
+            { name: 'vpd', type: 'number', isOptional: true },
+            { name: 'trichome_status', type: 'string', isOptional: true },
+            { name: 'pistil_brown_percentage', type: 'number', isOptional: true },
+            { name: 'bud_density', type: 'number', isOptional: true },
+            { name: 'wet_weight', type: 'number', isOptional: true },
+            { name: 'dry_weight', type: 'number', isOptional: true },
+            { name: 'trim_weight', type: 'number', isOptional: true },
+            { name: 'harvest_date', type: 'number', isOptional: true },
+          ],
+        }),
+        // Create plant_photos table
+        createTable({
+          name: 'plant_photos',
+          columns: [
+            { name: 'plant_id', type: 'string', isIndexed: true },
+            { name: 'image_url', type: 'string' },
+            { name: 'thumbnail_url', type: 'string', isOptional: true },
+            { name: 'caption', type: 'string', isOptional: true },
+            { name: 'growth_stage', type: 'string' },
+            { name: 'file_size', type: 'number', isOptional: true },
+            { name: 'width', type: 'number', isOptional: true },
+            { name: 'height', type: 'number', isOptional: true },
+            { name: 'taken_at', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
+        // Create plant_metrics table
+        createTable({
+          name: 'plant_metrics',
+          columns: [
+            { name: 'plant_id', type: 'string', isIndexed: true },
+            // Basic Health Metrics
+            { name: 'health_percentage', type: 'number', isOptional: true },
+            { name: 'next_watering_days', type: 'number', isOptional: true },
+            { name: 'next_nutrient_days', type: 'number', isOptional: true },
+            // Growth Measurements
+            { name: 'height', type: 'number', isOptional: true },
+            { name: 'height_unit', type: 'string', isOptional: true },
+            { name: 'node_count', type: 'number', isOptional: true },
+            { name: 'stem_diameter', type: 'number', isOptional: true },
+            // Environmental Metrics
+            { name: 'ph_level', type: 'number', isOptional: true },
+            { name: 'ec_ppm', type: 'number', isOptional: true },
+            { name: 'temperature', type: 'number', isOptional: true },
+            { name: 'temperature_unit', type: 'string', isOptional: true },
+            { name: 'humidity', type: 'number', isOptional: true },
+            { name: 'vpd', type: 'number', isOptional: true },
+            // Flowering Metrics
+            { name: 'trichome_status', type: 'string', isOptional: true },
+            { name: 'pistil_brown_percentage', type: 'number', isOptional: true },
+            { name: 'bud_density', type: 'number', isOptional: true },
+            { name: 'notes', type: 'string', isOptional: true },
+            { name: 'recorded_at', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
+        // Create care_reminders table
+        createTable({
+          name: 'care_reminders',
+          columns: [
+            { name: 'plant_id', type: 'string', isIndexed: true },
+            { name: 'type', type: 'string' },
+            { name: 'title', type: 'string' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'scheduled_for', type: 'number' },
+            { name: 'is_completed', type: 'boolean' },
+            { name: 'repeat_interval', type: 'number', isOptional: true },
+            { name: 'completed_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

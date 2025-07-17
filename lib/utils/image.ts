@@ -5,7 +5,7 @@
 // building CDN-optimised URLs and configuring `expo-image` with
 // performance-focused defaults.
 
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
+ 
 
 export type ImageSize = 'thumbnail' | 'small' | 'medium';
 

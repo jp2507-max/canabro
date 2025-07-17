@@ -3,6 +3,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import pluginReact from "eslint-plugin-react";
 import pluginReactNative from "eslint-plugin-react-native";
+import i18n from "eslint-plugin-i18next";
 
 export default [
   // Base JavaScript configuration
@@ -47,6 +48,7 @@ export default [
     },
     plugins: {
       "react-native": pluginReactNative,
+      i18n,
     },
     rules: {
       // React Native specific rules - optimized for NativeWind v4 + Reanimated v3
@@ -66,6 +68,9 @@ export default [
       "react/no-unescaped-entities": "off", // Disabled for React Native project
       "react/jsx-no-literals": "off", // Allow string literals in JSX (needed for React Native Text)
       "react/no-children-prop": "error", // Prevent children prop misuse that can cause text issues
+      
+      // i18next rules
+      "i18n/no-literal-string": ["warn", { "markupOnly": true, "ignoreAttribute": ["testID", "accessibilityLabel", "aria-label"] }],
       
       // TypeScript rules optimized for React Native + Expo
       "@typescript-eslint/no-unused-vars": ["warn", { 

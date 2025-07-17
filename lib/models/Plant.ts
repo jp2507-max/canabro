@@ -19,6 +19,9 @@ export class Plant extends Model {
   static associations: Associations = {
     // grow_journals: { type: 'belongs_to' as const, key: 'journal_id' }, // TEST: Comment out
     diary_entries: { type: 'has_many' as const, foreignKey: 'plant_id' }, // Keep children
+    plant_photos: { type: 'has_many' as const, foreignKey: 'plant_id' },
+    plant_metrics: { type: 'has_many' as const, foreignKey: 'plant_id' },
+    care_reminders: { type: 'has_many' as const, foreignKey: 'plant_id' },
     // profiles: { type: 'belongs_to' as const, key: 'user_id' }, // TEST: Comment out
     strains: { type: 'belongs_to' as const, key: 'strain_id' }, // Fixed: Changed from 'strain' to 'strains'
   };
@@ -52,6 +55,22 @@ export class Plant extends Model {
   @field('next_watering_days') nextWateringDays?: number;
   @field('next_nutrient_days') nextNutrientDays?: number;
 
+  // ADDITIONAL METRICS FIELDS
+  @field('node_count') nodeCount?: number;
+  @field('stem_diameter') stemDiameter?: number;
+  @field('ph_level') phLevel?: number;
+  @field('ec_ppm') ecPpm?: number;
+  @field('temperature') temperature?: number;
+  @field('humidity') humidity?: number;
+  @field('vpd') vpd?: number;
+  @text('trichome_status') trichomeStatus?: string;
+  @field('pistil_brown_percentage') pistilBrownPercentage?: number;
+  @field('bud_density') budDensity?: number;
+  @field('wet_weight') wetWeight?: number;
+  @field('dry_weight') dryWeight?: number;
+  @field('trim_weight') trimWeight?: number;
+  @date('harvest_date') harvestDate?: Date;
+
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;
@@ -64,6 +83,9 @@ export class Plant extends Model {
 
   // Children collections
   @children('diary_entries') diaryEntries!: Query<DiaryEntry>;
+  @children('plant_photos') plantPhotos!: Query<Model>;
+  @children('plant_metrics') plantMetrics!: Query<Model>;
+  @children('care_reminders') careReminders!: Query<Model>;
 
   // Custom queries
   @lazy activeEntries = this.diaryEntries.extend(Q.where('is_deleted', false));
@@ -194,11 +216,11 @@ export class Plant extends Model {
     // Raw access
     console.log(`\nRaw property access:`);
     try {
-      // @ts-ignore - Access raw properties for debugging
+      // @ts-ignore - Access raw properties for debugging purposes
       console.log(`- _raw.strain: ${this._raw?.strain}`);
-      // @ts-ignore
+      // @ts-ignore - Access raw properties for debugging purposes
       console.log(`- _raw.strain_id: ${this._raw?.strain_id}`);
-      // @ts-ignore
+      // @ts-ignore - Access raw properties for debugging purposes
       console.log(`- _raw.strainId: ${this._raw?.strainId}`);
     } catch (e) {
       console.log('Error accessing _raw properties:', e);

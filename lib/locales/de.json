@@ -139,6 +139,107 @@
   }
   
   },
+  "metricsForm": {
+    "healthStep": {
+      "title": "Gesundheitsmetriken",
+      "description": "Verfolgen Sie die allgemeine Gesundheit und den Pflegeplan Ihrer Pflanze"
+    },
+    "growthStep": {
+      "title": "Wachstumsmessungen",
+      "description": "Erfassen Sie physische Wachstumsmessungen"
+    },
+    "environmentStep": {
+      "title": "Umweltbedingungen",
+      "description": "Überwachen Sie die Parameter der Wachstumsumgebung"
+    },
+    "floweringStep": {
+      "title": "Blütemetriken",
+      "description": "Verfolgen Sie Indikatoren der Blütephase"
+    },
+    "fields": {
+      "healthPercentage": "Gesundheitsprozentsatz",
+      "nextWateringDays": "Nächste Bewässerung (Tage)",
+      "nextNutrientDays": "Nächste Nährstoffe (Tage)",
+      "height": "Pflanzenhöhe",
+      "nodeCount": "Knotenanzahl",
+      "stemDiameter": "Stammdurchmesser (mm)",
+      "phLevel": "pH-Wert",
+      "ecPpm": "EC/PPM",
+      "temperature": "Temperatur",
+      "humidity": "Luftfeuchtigkeit (%)",
+      "vpd": "VPD",
+      "trichomeStatus": "Trichom-Status",
+      "pistilBrownPercentage": "Braune Stempel (%)",
+      "budDensity": "Blütendichte (1-10)",
+      "budDensityDescription": "Bewerten Sie die Dichte Ihrer Blüten von 1 (locker) bis 10 (sehr dicht)",
+      "notes": "Zusätzliche Notizen",
+      "notesPlaceholder": "Fügen Sie Beobachtungen oder Notizen zum aktuellen Zustand Ihrer Pflanze hinzu..."
+    },
+    "validation": {
+      "healthPercentageMin": "Gesundheitsprozentsatz muss mindestens 0 sein",
+      "healthPercentageMax": "Gesundheitsprozentsatz kann nicht über 100 liegen",
+      "nextWateringDaysInt": "Nächste Bewässerungstage müssen eine ganze Zahl sein",
+      "nextWateringDaysMin": "Nächste Bewässerungstage können nicht negativ sein",
+      "nextNutrientDaysInt": "Nächste Nährstofftage müssen eine ganze Zahl sein",
+      "nextNutrientDaysMin": "Nächste Nährstofftage können nicht negativ sein",
+      "heightMin": "Höhe muss eine positive Zahl sein",
+      "nodeCountInt": "Knotenanzahl muss eine ganze Zahl sein",
+      "nodeCountMin": "Knotenanzahl kann nicht negativ sein",
+      "stemDiameterMin": "Stammdurchmesser muss eine positive Zahl sein",
+      "phLevelMin": "pH-Wert muss mindestens 0 sein",
+      "phLevelMax": "pH-Wert kann nicht über 14 liegen",
+      "ecPpmMin": "EC/PPM muss eine positive Zahl sein",
+      "humidityMin": "Luftfeuchtigkeit muss mindestens 0% sein",
+      "humidityMax": "Luftfeuchtigkeit kann nicht über 100% liegen",
+      "pistilBrownPercentageMin": "Braune Stempel-Prozentsatz muss mindestens 0 sein",
+      "pistilBrownPercentageMax": "Braune Stempel-Prozentsatz kann nicht über 100 liegen",
+      "budDensityInt": "Blütendichte muss eine ganze Zahl sein",
+      "budDensityMin": "Blütendichte muss mindestens 1 sein",
+      "budDensityMax": "Blütendichte kann nicht über 10 liegen"
+    },
+    "buttons": {
+      "previous": "Zurück",
+      "next": "Weiter",
+      "save": "Metriken speichern",
+      "submitting": "Wird gespeichert...",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "submitTitle": "Speichern fehlgeschlagen",
+      "submitMessage": "Metriken konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    },
+    "vpdOptimal": "Optimaler VPD-Bereich für gesundes Wachstum",
+    "vpdSuboptimal": "VPD liegt außerhalb des optimalen Bereichs (0,8-1,5 kPa)"
+  },
+  "trichomeSelector": {
+    "clear": {
+      "label": "Klar",
+      "description": "Trichome sind transparent und glasig"
+    },
+    "cloudy": {
+      "label": "Trüb",
+      "description": "Trichome sind milchig weiß und undurchsichtig"
+    },
+    "amber": {
+      "label": "Bernstein",
+      "description": "Trichome haben sich golden/bernsteinfarben verfärbt"
+    },
+    "mixed": {
+      "label": "Gemischt",
+      "description": "Mischung aus klaren, trüben und bernsteinfarbenen Trichomen"
+    }
+  },
+  "vpdCalculator": {
+    "enterTempHumidity": "Geben Sie Temperatur und Luftfeuchtigkeit ein, um VPD zu berechnen",
+    "optimal": "Optimal",
+    "tooLow": "Zu niedrig",
+    "tooHigh": "Zu hoch",
+    "calculation": "Berechnung basierend auf",
+    "temperature": "Temperatur",
+    "humidity": "Luftfeuchtigkeit",
+    "optimalRange": "Optimaler VPD-Bereich",
+    "rangeDescription": "0,8-1,2 kPa für vegetativ, 1,0-1,5 kPa für Blüte"
+  },
   "plants": {
     "health": "Gesundheit",
     "watering": "Bewässerung",
@@ -335,5 +436,60 @@
   "devMode": {
     "indicator": "ENTWICKLERMODUS",
     "dev": "ENT"
+  },
+  "photoGallery": {
+    "addPhoto": "Foto hinzufügen",
+    "noPhotos": "Noch keine Fotos. Fügen Sie Ihr erstes Pflanzenfoto hinzu, um das Wachstum zu verfolgen!"
+  },
+  "photoViewer": {
+    "close": "Schließen",
+    "delete": "Löschen",
+    "deleteConfirmTitle": "Foto löschen",
+    "deleteConfirmMessage": "Sind Sie sicher, dass Sie dieses Foto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "fileSize": "Dateigröße"
+  },
+  "photoUpload": {
+    "title": "Foto hinzufügen",
+    "selectImage": "Bild auswählen",
+    "noImageSelected": "Kein Bild ausgewählt",
+    "takePhoto": "Foto aufnehmen",
+    "selectFromGallery": "Aus Galerie auswählen",
+    "caption": "Beschriftung (Optional)",
+    "captionPlaceholder": "Fügen Sie eine Beschriftung für dieses Foto hinzu...",
+    "growthStage": "Wachstumsstadium",
+    "error": {
+      "title": "Upload-Fehler",
+      "noImageSelected": "Bitte wählen Sie zuerst ein Bild aus.",
+      "cameraFailed": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+      "galleryFailed": "Bild konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
+      "uploadFailed": "Foto-Upload fehlgeschlagen: {{message}}"
+    }
+  },
+  "metricsChart": {
+    "title": "Pflanzenmetriken-Diagramm",
+    "loading": "Diagrammdaten werden geladen...",
+    "error": "Diagrammdaten konnten nicht geladen werden",
+    "retry": "Wiederholen",
+    "noData": "Keine Daten verfügbar",
+    "noDataDescription": "Beginnen Sie mit der Verfolgung von Metriken, um den Fortschritt Ihrer Pflanze über die Zeit zu sehen",
+    "optimalRange": "Optimaler Bereich",
+    "timeRanges": {
+      "7d": "7 Tage",
+      "30d": "30 Tage",
+      "90d": "90 Tage",
+      "all": "Alle Zeit"
+    },
+    "metrics": {
+      "healthPercentage": "Gesundheit",
+      "height": "Höhe",
+      "phLevel": "pH-Wert",
+      "temperature": "Temperatur",
+      "humidity": "Luftfeuchtigkeit",
+      "vpd": "VPD"
+    },
+    "dataPoint": {
+      "title": "Datenpunkt",
+      "message": "{{metric}}: {{value}}{{unit}} am {{date}}"
+    }
   }
 }

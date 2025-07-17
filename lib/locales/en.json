@@ -138,6 +138,107 @@
       "closet": "Closet"
     }
   },
+  "metricsForm": {
+    "healthStep": {
+      "title": "Health Metrics",
+      "description": "Track your plant's overall health and care schedule"
+    },
+    "growthStep": {
+      "title": "Growth Measurements",
+      "description": "Record physical growth measurements"
+    },
+    "environmentStep": {
+      "title": "Environmental Conditions",
+      "description": "Monitor growing environment parameters"
+    },
+    "floweringStep": {
+      "title": "Flowering Metrics",
+      "description": "Track flowering stage indicators"
+    },
+    "fields": {
+      "healthPercentage": "Health Percentage",
+      "nextWateringDays": "Next Watering (days)",
+      "nextNutrientDays": "Next Nutrients (days)",
+      "height": "Plant Height",
+      "nodeCount": "Node Count",
+      "stemDiameter": "Stem Diameter (mm)",
+      "phLevel": "pH Level",
+      "ecPpm": "EC/PPM",
+      "temperature": "Temperature",
+      "humidity": "Humidity (%)",
+      "vpd": "VPD",
+      "trichomeStatus": "Trichome Status",
+      "pistilBrownPercentage": "Brown Pistils (%)",
+      "budDensity": "Bud Density (1-10)",
+      "budDensityDescription": "Rate the density of your buds from 1 (loose) to 10 (very dense)",
+      "notes": "Additional Notes",
+      "notesPlaceholder": "Add any observations or notes about your plant's current state..."
+    },
+    "validation": {
+      "healthPercentageMin": "Health percentage must be at least 0",
+      "healthPercentageMax": "Health percentage cannot exceed 100",
+      "nextWateringDaysInt": "Next watering days must be a whole number",
+      "nextWateringDaysMin": "Next watering days cannot be negative",
+      "nextNutrientDaysInt": "Next nutrient days must be a whole number",
+      "nextNutrientDaysMin": "Next nutrient days cannot be negative",
+      "heightMin": "Height must be a positive number",
+      "nodeCountInt": "Node count must be a whole number",
+      "nodeCountMin": "Node count cannot be negative",
+      "stemDiameterMin": "Stem diameter must be a positive number",
+      "phLevelMin": "pH level must be at least 0",
+      "phLevelMax": "pH level cannot exceed 14",
+      "ecPpmMin": "EC/PPM must be a positive number",
+      "humidityMin": "Humidity must be at least 0%",
+      "humidityMax": "Humidity cannot exceed 100%",
+      "pistilBrownPercentageMin": "Brown pistil percentage must be at least 0",
+      "pistilBrownPercentageMax": "Brown pistil percentage cannot exceed 100",
+      "budDensityInt": "Bud density must be a whole number",
+      "budDensityMin": "Bud density must be at least 1",
+      "budDensityMax": "Bud density cannot exceed 10"
+    },
+    "buttons": {
+      "previous": "Previous",
+      "next": "Next",
+      "save": "Save Metrics",
+      "submitting": "Saving...",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "submitTitle": "Save Failed",
+      "submitMessage": "Failed to save metrics. Please try again."
+    },
+    "vpdOptimal": "Optimal VPD range for healthy growth",
+    "vpdSuboptimal": "VPD is outside optimal range (0.8-1.5 kPa)"
+  },
+  "trichomeSelector": {
+    "clear": {
+      "label": "Clear",
+      "description": "Trichomes are transparent and glassy"
+    },
+    "cloudy": {
+      "label": "Cloudy",
+      "description": "Trichomes are milky white and opaque"
+    },
+    "amber": {
+      "label": "Amber",
+      "description": "Trichomes have turned golden/amber color"
+    },
+    "mixed": {
+      "label": "Mixed",
+      "description": "Mix of clear, cloudy, and amber trichomes"
+    }
+  },
+  "vpdCalculator": {
+    "enterTempHumidity": "Enter temperature and humidity to calculate VPD",
+    "optimal": "Optimal",
+    "tooLow": "Too Low",
+    "tooHigh": "Too High",
+    "calculation": "Calculation based on",
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "optimalRange": "Optimal VPD Range",
+    "rangeDescription": "0.8-1.2 kPa for vegetative, 1.0-1.5 kPa for flowering"
+  },
   "plants": {
     "health": "Health",
     "watering": "Watering",
@@ -334,5 +435,61 @@
   "devMode": {
     "indicator": "DEV MODE",
     "dev": "DEV"
+  },
+  "photoGallery": {
+    "addPhoto": "Add Photo",
+    "noPhotos": "No photos yet. Add your first plant photo to start tracking growth!"
+  },
+  "photoViewer": {
+    "close": "Close",
+    "delete": "Delete",
+    "deleteConfirmTitle": "Delete Photo",
+    "deleteConfirmMessage": "Are you sure you want to delete this photo? This action cannot be undone.",
+    "fileSize": "File size"
+  },
+  "photoUpload": {
+    "title": "Add Photo",
+    "selectImage": "Select Image",
+    "noImageSelected": "No image selected",
+    "takePhoto": "Take Photo",
+    "selectFromGallery": "Select from Gallery",
+    "caption": "Caption (Optional)",
+    "captionPlaceholder": "Add a caption for this photo...",
+    "growthStage": "Growth Stage",
+    "error": {
+      "title": "Upload Error",
+      "noImageSelected": "Please select an image first.",
+      "cameraFailed": "Failed to take photo. Please try again.",
+      "galleryFailed": "Failed to select image. Please try again.",
+      "uploadFailed": "Failed to upload photo: {{message}}"
+    }
+  },
+  "metricsChart": {
+    "title": "Plant Metrics Chart",
+    "loading": "Loading chart data...",
+    "error": "Failed to load chart data",
+    "retry": "Retry",
+    "noData": "No data available",
+    "noDataDescription": "Start tracking metrics to see your plant's progress over time",
+    "optimalRange": "Optimal Range",
+    "timeRanges": {
+      "7d": "7 Days",
+      "30d": "30 Days",
+      "90d": "90 Days",
+      "all": "All Time"
+    },
+    "metrics": {
+      "healthPercentage": "Health",
+      "height": "Height",
+      "phLevel": "pH Level",
+      "temperature": "Temperature",
+      "humidity": "Humidity",
+      "vpd": "VPD",
+      "nodeCount": "Node Count"
+    },
+    "dataPoint": {
+      "title": "Data Point",
+      "message": "{{metric}}: {{value}}{{unit}} on {{date}}"
+    }
   }
 }

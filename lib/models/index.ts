@@ -16,6 +16,11 @@ export { Plant } from './Plant';
 export { PlantTask } from './PlantTask';
 export { Profile } from './Profile';
 
+// New plant management models
+export { PlantPhoto } from './PlantPhoto';
+export { PlantMetrics } from './PlantMetrics';
+export { CareReminder } from './CareReminder';
+
 // Strain-related models
 export { Strain } from './Strain';
 export { FavoriteStrain } from './FavoriteStrain';
