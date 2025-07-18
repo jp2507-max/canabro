@@ -1,83 +1,82 @@
-# Project Structure
+# Canabro Project Structure
 
-## Root Directories
-- **app/**: Expo Router file-based navigation structure
-  - **(app)/**: Authenticated app routes
-  - **(auth)/**: Authentication-related routes
-  - **index.tsx**: Entry point with auth redirection
-  - **_layout.tsx**: Root layout with providers
-- **assets/**: Images, icons, and other static assets
-- **components/**: Reusable UI components
-- **docs/**: Project documentation and reports
-- **lib/**: Core application logic and utilities
-- **screens/**: Screen components for specific features
-- **supabase/**: Supabase configuration, migrations, and functions
-- **tasks/**: Task definitions and documentation
+## Directory Organization
 
-## Key Directories in Detail
+### Root Directories
+- `/app`: Expo Router app directory with route files
+- `/assets`: Static assets including images and icons
+- `/components`: Reusable UI components
+- `/docs`: Documentation and reports
+- `/lib`: Core application logic and utilities
+- `/screens`: Screen components
+- `/supabase`: Supabase configuration and migrations
+- `/tasks`: Task management files
 
-### Components
-- **buttons/**: Button components
-- **calendar/**: Calendar-related components
-- **community/**: Community feature components
-- **diagnosis/**: Plant diagnosis components
-- **diary/**: Plant diary components
-- **keyboard/**: Keyboard handling components
-- **my-plants/**: Plant management components
-- **plant-detail/**: Plant detail view components
-- **profile/**: User profile components
-- **strains/**: Strain-related components
-- **tasks/**: Task management components
-- **ui/**: Core UI components
+### App Directory
+- `/app/(app)`: Main application routes
+- `/app/(auth)`: Authentication routes
+- `/app/_layout.tsx`: Root layout component
+- `/app/index.tsx`: Entry point
 
-### Lib
-- **animations/**: Animation utilities
-- **config/**: App configuration
-- **constants/**: Application constants
-- **contexts/**: React context providers
-  - **AuthProvider.tsx**: Authentication context
-  - **DatabaseProvider.tsx**: Database access
-  - **LanguageProvider.tsx**: Localization
-  - **NotificationContext.tsx**: Push notifications
-  - **QueryProvider.tsx**: React Query setup
-- **data/**: Data models and fixtures
-- **database/**: Database schemas and operations
-- **hooks/**: Custom React hooks
-- **locales/**: Translation files
-- **models/**: Data models and types
-- **services/**: API services
-- **storage/**: Local storage utilities
-- **tasks/**: Background task definitions
-- **types/**: TypeScript type definitions
-- **utils/**: Utility functions
+### Components Directory
+- `/components/ui`: Reusable UI components (buttons, inputs, etc.)
+- `/components/my-plants`: Plant-specific components
+- `/components/calendar`: Calendar-related components
+- `/components/community`: Community feature components
+- `/components/diagnosis`: Plant diagnosis components
+- `/components/diary`: Plant diary components
+- `/components/keyboard`: Keyboard handling components
+- `/components/plant-detail`: Plant detail view components
+- `/components/profile`: User profile components
+- `/components/strains`: Strain-related components
+- `/components/tasks`: Task management components
+
+### Library Directory
+- `/lib/animations`: Animation utilities
+- `/lib/config`: Configuration files
+- `/lib/constants`: Application constants
+- `/lib/contexts`: React context providers
+- `/lib/data`: Data management
+- `/lib/database`: Database models and queries
+- `/lib/hooks`: Custom React hooks
+- `/lib/locales`: Internationalization files
+- `/lib/models`: WatermelonDB models
+- `/lib/services`: Service layer for API interactions
+- `/lib/storage`: Storage utilities
+- `/lib/tasks`: Task management logic
+- `/lib/types`: TypeScript type definitions
+- `/lib/utils`: Utility functions
 
 ## Code Organization Patterns
 
-1. **File-based Routing**: Uses Expo Router's file-based routing system
-   - Routes in `app/` directory structure
-   - Named route groups with parentheses: `(app)`, `(auth)`
+### Component Structure
+- Use functional components with hooks
+- Implement React.memo for performance optimization
+- Follow component composition pattern
+- Use TypeScript interfaces for props
 
-2. **Component Structure**:
-   - Functional components with TypeScript
-   - NativeWind for styling using className prop
-   - Component files export a default component
+### File Naming Conventions
+- React components: PascalCase (e.g., `PlantCard.tsx`)
+- Utilities and hooks: camelCase (e.g., `useAuth.ts`)
+- Constants: UPPER_SNAKE_CASE for values, PascalCase for files
 
-3. **State Management**:
-   - React Query for server state
-   - React Context for global app state
-   - Local component state with useState/useReducer
+### Import Conventions
+- Use absolute imports with path aliases where possible
+- Group imports by: React/libraries, components, utilities/hooks
 
-4. **Database Access**:
-   - Supabase for cloud storage and authentication (accessed via MCP server)
-   - WatermelonDB for local persistence and offline support
-   - Sync mechanism between local and remote databases
+### State Management
+- Use React Query for server state
+- Use React Context for global app state
+- Use local state for component-specific state
+- Use WatermelonDB for offline-first data
 
-5. **Styling Approach**:
-   - NativeWind (Tailwind CSS) for styling
-   - Dark/light mode support via CSS variables
-   - Theme colors defined in tailwind.config.js
+### Styling Approach
+- Use NativeWind (Tailwind CSS) for styling
+- Follow mobile-first responsive design
+- Use theme-aware components with dark/light mode support
+- Implement ThemedView and ThemedText components
 
-6. **Error Handling**:
-   - Error boundaries for UI error containment
-   - Try/catch patterns for async operations
-   - Dedicated error components and handlers
+### Form Handling
+- Use React Hook Form for form state management
+- Implement Zod schemas for validation
+- Create reusable form components

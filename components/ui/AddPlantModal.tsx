@@ -1,8 +1,7 @@
 import { BlurView as ExpoBlurView } from 'expo-blur';
-import * as Haptics from '@/lib/utils/haptics';
+import { triggerLightHaptic } from '@/lib/utils/haptics';
 import React, { useEffect } from 'react';
 import { Modal, Platform, useWindowDimensions } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -19,15 +18,16 @@ import { OptimizedIcon } from './OptimizedIcon';
 import ThemedText from './ThemedText';
 import ThemedView from './ThemedView';
 import { AddPlantForm } from '../AddPlantForm';
+import { useI18n } from '@/lib/hooks/useI18n';
 
 interface AddPlantModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
-
+// ...existing code...
 export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProps) {
-  const { t } = useTranslation('addPlantModal');
+  const { t } = useI18n();
   const { height: screenHeight } = useWindowDimensions();
 
   // Reanimated v3 shared values for sophisticated modal animations
@@ -52,7 +52,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
   // Trigger haptic feedback
   const triggerHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerLightHaptic();
   };
 
   // Enhanced modal entrance animation
@@ -76,7 +76,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
     // Sophisticated exit sequence with proper completion callback
     modalTranslateY.value = withSpring(screenHeight * 0.6, SPRING_CONFIG, (finished) => {
       'worklet';
-      if (finished) {
+      if (finished === true) {
         runOnJS(onClose)();
       }
     });
@@ -222,10 +222,10 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
               <ThemedView className="flex-row items-center justify-between p-6 pb-4">
                 <ThemedView className="flex-1">
                   <ThemedText className="text-2xl font-extrabold text-neutral-900 dark:text-white">
-                    {t('addNewPlant')}
+                    {t('common.addNewPlant')}
                   </ThemedText>
                   <ThemedText className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                    {t('startGrowingJourney')}
+                    {t('common.startGrowingJourney')}
                   </ThemedText>
                 </ThemedView>
 

@@ -151,7 +151,7 @@ export default function AddTaskToAllPlantsScreen() {
             />
           </TouchableOpacity>
           <ThemedText className="flex-1 text-xl font-bold">
-            Add Task to All Plants
+            {t('common.addTaskToAllPlants')}
           </ThemedText>
         </View>
 
@@ -159,7 +159,7 @@ export default function AddTaskToAllPlantsScreen() {
           {/* Task Type Selection */}
           <View className="mb-6">
             <ThemedText className="mb-3 text-lg font-semibold">
-              Task Type
+              {t('common.taskType')}
             </ThemedText>
             <View className="space-y-2">
               {TASK_TYPES.map((taskType) => (
@@ -205,7 +205,7 @@ export default function AddTaskToAllPlantsScreen() {
           {/* Due Date Selection */}
           <View className="mb-6">
             <ThemedText className="mb-3 text-lg font-semibold">
-              Due Date
+              {t('common.dueDate')}
             </ThemedText>
             <TouchableOpacity
               className={`rounded-xl border-2 p-4 ${
@@ -237,7 +237,7 @@ export default function AddTaskToAllPlantsScreen() {
           {/* Notes */}
           <View className="mb-6">
             <ThemedText className="mb-3 text-lg font-semibold">
-              Notes (Optional)
+              {t('common.notesOptional')}
             </ThemedText>
             <TextInput
               className={`rounded-xl border-2 p-4 text-base ${
@@ -273,7 +273,7 @@ export default function AddTaskToAllPlantsScreen() {
               <ActivityIndicator size="small" color="white" />
             ) : (
               <ThemedText className="text-center text-lg font-semibold text-white">
-                Add Task to All Plants
+                {t('common.addTaskToAllPlants')}
               </ThemedText>
             )}
           </TouchableOpacity>

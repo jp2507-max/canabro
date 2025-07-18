@@ -104,7 +104,7 @@ const EmojiIcon = memo(function EmojiIcon({
 });
 
 // Cleaned up icon mapping - removed duplicates and organized by category
-const IconSVG = {
+export const IconSVG = {
   // Basic actions - using symbols that can be colored
   add: '＋',
   'add-outline': '⊕',

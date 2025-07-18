@@ -18,6 +18,10 @@ import { Plant } from '../models/Plant';
 import { PlantTask } from '../models/PlantTask';
 import { Profile } from '../models/Profile';
 import { Strain } from '../models/Strain';
+// New plant management models
+import { PlantPhoto } from '../models/PlantPhoto';
+import { PlantMetrics } from '../models/PlantMetrics';
+import { CareReminder } from '../models/CareReminder';
 // Note: CommunityQuestion and CommunityPlantShare models removed in schema v27
 // Note: Notification model commented out as it doesn't exist yet
 import migrations from '../models/migrations';
@@ -76,6 +80,10 @@ const modelClasses = [
   // CommunityQuestion, // Removed in schema v27
   // CommunityPlantShare, // Removed in schema v27
   FavoriteStrain,
+  // New plant management models
+  PlantPhoto,
+  PlantMetrics,
+  CareReminder,
 ];
 
 // Create appropriate adapter based on configuration

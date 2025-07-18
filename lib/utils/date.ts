@@ -2,11 +2,17 @@
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import 'dayjs/locale/de';
 import 'dayjs/locale/en';
-// import { useLanguage } from '../contexts/LanguageProvider';
-// Locale-aware date formatting utility
-// Usage: const formatted = formatLocaleDate(date)
+
+// Extend dayjs with plugins we need
+dayjs.extend(localizedFormat);
+dayjs.extend(customParseFormat);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 // Locale-aware date formatting utility
 // Usage: const formatted = formatLocaleDate(date, { language })
 export function formatLocaleDate(
@@ -19,10 +25,6 @@ export function formatLocaleDate(
   const formatStr = opts?.format || 'DD.MM.YYYY';
   return dayjs(date).locale(lang).format(formatStr);
 }
-
-// Extend dayjs with plugins we need
-dayjs.extend(localizedFormat);
-dayjs.extend(customParseFormat);
 
 // Helper to map date-fns style tokens to dayjs format tokens when simple mapping exists
 const mapFormatToken = (token: string): string => {
@@ -67,4 +69,51 @@ export function isYesterday(date: Parameters<typeof dayjs>[0]): boolean {
 
 export function isTomorrow(date: Parameters<typeof dayjs>[0]): boolean {
   return dayjs(date).isSame(dayjs().add(1, 'day'), 'day');
+}
+
+/**
+ * Validates if a date is in the future, accounting for timezone differences
+ * and providing a safety buffer to prevent false positives
+ * 
+ * @param date - The date to validate
+ * @param bufferMinutes - Buffer in minutes to account for timezone/processing delays (default: 1)
+ * @returns true if the date is safely in the future
+ */
+export function isFutureDate(date: Parameters<typeof dayjs>[0], bufferMinutes: number = 1): boolean {
+  const now = dayjs();
+  const targetDate = dayjs(date);
+  
+  // Add buffer to current time to account for timezone differences and processing delays
+  const nowWithBuffer = now.add(bufferMinutes, 'minute');
+  
+  return targetDate.isAfter(nowWithBuffer);
+}
+
+/**
+ * Creates a timezone-aware date comparison for notifications
+ * Ensures the scheduled date is at least 1 minute in the future
+ * 
+ * @param scheduledDate - The date to schedule for
+ * @param minMinutesInFuture - Minimum minutes in the future (default: 1)
+ * @returns true if the date is valid for scheduling
+ */
+export function isValidScheduleDate(
+  scheduledDate: Parameters<typeof dayjs>[0], 
+  minMinutesInFuture: number = 1
+): boolean {
+  return isFutureDate(scheduledDate, minMinutesInFuture);
+}
+
+/**
+ * Safely adds days to a date and returns a new Date object
+ * 
+ * @param date - The base date
+ * @param days - Number of days to add
+ * @returns New Date object with days added
+ */
+export function addDaysToDate(date: Parameters<typeof dayjs>[0], days: number): Date {
+  if (!Number.isFinite(days)) {
+    throw new Error('addDaysToDate: days parameter must be a finite number');
+  }
+  return dayjs(date).add(days, 'day').toDate();
 } 

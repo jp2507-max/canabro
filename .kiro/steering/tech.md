@@ -1,4 +1,4 @@
-# Canabro Technical Stack & Development Guidelines
+# Canabro Technical Stack
 
 ## Core Technologies
 - **Framework**: React Native 0.79 with Expo SDK 53
@@ -8,85 +8,29 @@
   - Server state: TanStack Query v5 (`@tanstack/react-query`)
   - Global client state: React Context + useReducer
   - Local database: WatermelonDB
-- **Database**: 
-  - Supabase (backend, accessed via MCP server)
-  - WatermelonDB (local database)
-- **Styling**: NativeWind v4 with semantic color tokens
-- **Form Handling**: React Hook Form with Zod validation
+- **Backend**: Supabase (auth, database, real-time, storage)
+- **Styling**: NativeWind v4 (Tailwind CSS for React Native)
+- **Forms**: React Hook Form with Zod validation
 
 ## Key Libraries
-- **UI Components**: Custom components with NativeWind styling
 - **Authentication**: Supabase Auth
 - **Storage**: Expo SecureStore, AsyncStorage, MMKV
-- **Localization**: i18next, react-i18next, expo-localization
-- **Notifications**: expo-notifications
-- **Image Handling**: expo-image, expo-image-picker, expo-image-manipulator
-- **Machine Learning**: TensorFlow.js (for plant diagnosis)
-- **Animations**: react-native-reanimated v3
+- **UI Components**: Custom themed components with NativeWind
+- **Animations**: React Native Reanimated v3
+- **Gestures**: React Native Gesture Handler
+- **Internationalization**: i18next, react-i18next
+- **Image Handling**: Expo Image, Camera, ImagePicker
+- **Date Handling**: dayjs
+- **Error Monitoring**: Sentry
 
-## Project Structure
-- Expo managed workflow with development client
-- Hermes JavaScript engine
-- New Architecture enabled
-
-## Development Best Practices
-
-### TypeScript Guidelines
-- Use strict TypeScript mode
-- Prefer interfaces over enums
-- Structure files with: main export, subcomponents, helpers, types
-- Run `npx tsc --noEmit` for type checks
-
-### Styling Guidelines
-- Use NativeWind v4 exclusively for styling
-- Use semantic color tokens from `global.css`, never hardcoded colors
-- Use safe area utilities (`pt-safe`, `h-screen-safe`) for all layouts
-- Use `ThemedView`/`ThemedText` for custom UI components
-- Support both light and dark mode with `dark:` prefixes
-
-### Animation Guidelines
-- Always add `'worklet'` in `useAnimatedStyle` and gesture handlers
-- Never access `.value` outside worklets
-- Cancel animations on unmount
-- Use custom hooks from `lib/animations/` for reusable patterns
-
-### Data Management
-- Use proper query keys and cache strategies with TanStack Query
-- Use WatermelonDB for local relationships
-- Implement optimistic updates and error boundaries
-
-### Navigation
-- Use dynamic routes and params
-- Handle navigation state and deep links properly
-- Follow the structure in the `app/` directory
-
-## Custom Utilities
-- **Haptics**: Use `@/lib/utils/haptics` only
-- **Image Handling**: Use `@/lib/utils/image-picker.ts` and `@/lib/utils/upload-image.ts`
-- **Keyboard**: Use `EnhancedKeyboardWrapper` for screens with input
-- **Text Input**: Use `@/components/ui/EnhancedTextInput` for text inputs
-- **Offline Sync**: Custom synchronization between local and remote databases
-- **Plant Diagnosis**: Custom ML-based plant health analysis tools
-- **Theme System**: Custom theming with dynamic color palette switching
-- **Form Validation**: Custom form validation patterns with Zod
-- **Error Handling**: Custom error boundary and error reporting system
-
-## Accessibility
-- All components must have a11y props
-- Support semantic roles
-- Ensure screen reader compatibility
-- Reference `scripts/ui-refinement-plan.md` for patterns
-
-## Build & Deployment
-- Use EAS Build (`eas.json`) for production
-- OTA updates via EAS Update
-- Manage build secrets via EAS CLI
-
-## Testing & Debugging
-- Use custom logger instead of `console.log` for production
-- Babel strips console statements in production
-- Hermes is enabled for iOS
-- Use Sentry for error logging
+## Development Tools
+- **Linting**: ESLint
+- **Formatting**: Prettier
+- **Testing**: 
+  - Jest + React Native Testing Library for unit/integration tests
+  - Detox/Appium/Playwright for UI/E2E tests
+- **Build System**: Expo EAS Build with OTA updates
+- **CI/CD**: GitHub Actions with automated builds/tests
 
 ## Common Commands
 
@@ -95,61 +39,51 @@
 # Start development server
 npx expo start
 
-# Run on specific platforms
-npx expo run:ios
-npx expo run:android
-npx expo start --web
-
-# Start with profiling
-npx expo start --ios --profile
-```
-
-### Build & Export
-```bash
-# Prebuild native code
-npm run prebuild
-
-# Export for iOS
-npm run ios:export
-
-# Analyze bundle size
-npm run ios:analyze
-npm run ios:bundle-size
-```
-
-### Code Quality
-```bash
-# Linting
+# Linting and formatting
 npm run lint
-npm run lint:check
 npm run lint:fix
-
-# Formatting
 npm run format
 npm run format:check
-
-# Validate translations
-npm run validate:translations
 ```
 
-### MCP Server
-```bash
-# Supabase operations are handled through the MCP server
-# No direct Supabase CLI commands are needed
+### Supabase
+We use the Supabase MCP tools for all Supabase operations including migrations, queries, and database management.
 ```
 
-### Authentication Utilities
-```bash
-# Clear authentication data
-npm run clear-auth
+## Performance Considerations
+- Use React.memo for component memoization
+- Implement virtualized lists with FlashList
+- Optimize image loading and processing
+- Use worklets for animations with proper cleanup on unmount
+- Implement proper keyboard handling with EnhancedKeyboardWrapper
+- Use safe area utilities (`pt-safe`, `h-screen-safe`) for all layouts
+- Optimize for Mobile Web Vitals
 
-# Debug authentication
-npm run debug-auth
-```
+## Project-Specific Patterns
 
-## Key Rules
-1. Never duplicate logic—check for existing utilities/components first
+### Styling
+- Only use NativeWind v4 for styling
+- Use semantic color tokens from `global.css`, never hardcoded colors
+- Use `dark:` prefixes for dark mode theming
+- Use `ThemedView` and `ThemedText` components for all custom UI
+
+### Animations
+- Always add `'worklet'` in `useAnimatedStyle` and gesture handlers
+- Never access `.value` outside worklets
+- Cancel animations on component unmount
+- Use custom hooks from `lib/animations/` for reusable patterns
+
+### Key Utilities
+- Haptics: `@/lib/utils/haptics`
+- Image handling: `@/lib/utils/image-picker.ts` and `@/lib/utils/upload-image.ts`
+- Keyboard: `@/components/keyboard/EnhancedKeyboardWrapper`
+- Text inputs: `@/components/ui/EnhancedTextInput`
+
+## Development Rules
+1. Never duplicate logic—always check for existing utilities/components first
 2. Never hardcode colors or styles—use semantic tokens and NativeWind only
-3. Always add `'worklet'` in Reanimated worklets
-4. Write optimized, DRY code following strict TypeScript
-5. Always provide file names and break code into reusable modules/components
+3. Always add `'worklet'` in Reanimated worklets and never access `.value` outside worklets
+4. All code must be fully optimized, DRY, and follow strict TypeScript
+5. Use interfaces for type definitions, never enums
+6. Structure files with main export, subcomponents, helpers, and types
+7. Ensure all components have accessibility props and support screen readers

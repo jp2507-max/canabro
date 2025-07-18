@@ -41,7 +41,7 @@ interface IconProps {
   name: AppIconName;
   size?: number;
   color?: string;
-  style?: any;
+  style?: object;
   accessibilityLabel?: string;
   testID?: string;
 }

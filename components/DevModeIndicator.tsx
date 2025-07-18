@@ -147,11 +147,9 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
         <Text style={styles.detail}>{tDebug('userId')}: {user?.id || tDebug('notLoggedIn')}</Text>
         
         {/* Add i18n debugging */}
-        <Text style={styles.detail}>Language: {currentLanguage} ({isReady ? 'ready' : 'loading'})</Text>
-        <Text style={styles.detail}>Home tab: {tNav('tabs.home')}</Text>
-        <Text style={styles.detail}>Welcome: {tCommon('welcome')}</Text>
-
-        {!authConfig.forceDevBypass && (
+              <Text style={styles.detail}>{t('common.languageStatus', { language: currentLanguage, status: isReady ? 'ready' : 'loading' })}</Text>
+              <Text style={styles.detail}>{t('common.homeTab', { value: tNav('tabs.home') })}</Text>
+              <Text style={styles.detail}>{t('common.welcomeTranslation', { value: tCommon('welcome') })}</Text>        {!authConfig.forceDevBypass && (
           <GestureDetector gesture={authButtonGesture}>
             <Animated.View style={[styles.button, authButtonAnimatedStyle]}>
               <Text style={styles.buttonText}>{tDebug('useDevAuth')}</Text>
@@ -183,12 +181,12 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
             </View>
 
             <View style={styles.buttonSection}>
-              <Text style={styles.sectionTitle}>Language Settings</Text>
+              <Text style={styles.sectionTitle}>{t('common.languageSettings')}</Text>
               <View style={{ alignItems: 'center', paddingVertical: 10 }}>
                 <LanguageToggle showLabel />
               </View>
               <Pressable style={styles.actionButton} onPress={handleClearLanguageStorage}>
-                <Text style={styles.actionButtonText}>Clear Language Storage</Text>
+                <Text style={styles.actionButtonText}>{t('common.clearLanguageStorage')}</Text>
               </Pressable>
             </View>
 

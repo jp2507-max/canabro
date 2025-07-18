@@ -75,24 +75,28 @@ export default function PotencySlider({
       triggerSelectionHaptic();
     }
   }, [enableHaptics]);
-  // Context for gesture handling
-  const minThumbContext = useSharedValue({ startX: 0 });
-  const maxThumbContext = useSharedValue({ startX: 0 });
+
+  // Shared values for initial thumb positions (worklet-safe)
+  const minThumbStartX = useSharedValue(0);
+  const maxThumbStartX = useSharedValue(0);
 
   // Min thumb gesture
   const minThumbGesture = Gesture.Pan()
     .onStart(() => {
-      minThumbContext.value.startX = minThumbX.value;
+      'worklet';
+      minThumbStartX.value = minThumbX.value;
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
+      'worklet';
       const newX = Math.max(
         0,
-        Math.min(minThumbContext.value.startX + event.translationX, maxThumbX.value - THUMB_SIZE)
+        Math.min(minThumbStartX.value + event.translationX, maxThumbX.value - THUMB_SIZE)
       );
       minThumbX.value = newX;
     })
     .onEnd(() => {
+      'worklet';
       const newValue = positionToValue(minThumbX.value);
       minThumbX.value = withSpring(valueToPosition(newValue));
       runOnJS(onValueChange)(newValue, maxValue);
@@ -102,17 +106,20 @@ export default function PotencySlider({
   // Max thumb gesture
   const maxThumbGesture = Gesture.Pan()
     .onStart(() => {
-      maxThumbContext.value.startX = maxThumbX.value;
+      'worklet';
+      maxThumbStartX.value = maxThumbX.value;
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
+      'worklet';
       const newX = Math.max(
         minThumbX.value + THUMB_SIZE,
-        Math.min(maxThumbContext.value.startX + event.translationX, SLIDER_WIDTH)
+        Math.min(maxThumbStartX.value + event.translationX, SLIDER_WIDTH)
       );
       maxThumbX.value = newX;
     })
     .onEnd(() => {
+      'worklet';
       const newValue = positionToValue(maxThumbX.value);
       maxThumbX.value = withSpring(valueToPosition(newValue));
       runOnJS(onValueChange)(minValue, newValue);

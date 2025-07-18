@@ -431,7 +431,7 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
             className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20"
             entering={FadeInDown.duration(300).springify()}>
             <ThemedText className="text-sm font-medium text-red-700 dark:text-red-300">
-              Error: {error.message}
+              {t('common.errorMessage', { message: error.message })}
             </ThemedText>
           </Animated.View>
         )}

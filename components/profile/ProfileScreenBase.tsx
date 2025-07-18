@@ -12,7 +12,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
-import { useTranslation } from 'react-i18next';
+// import { useTranslation } from 'react-i18next'; // Removed to prevent t redeclaration and complete useI18n transition
 
 import ProfileDetail from './ProfileDetail';
 import StatItem from './StatItem';
@@ -24,6 +24,7 @@ import LanguageToggle from '../ui/LanguageToggle';
 
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { useI18n } from '@/lib/hooks/useI18n';
 
 /**
  * Props for the main profile screen content.
@@ -47,7 +48,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
   isRefreshing = false,
   onRefresh,
 }) {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const { triggerSync } = useSyncContext();
 
   const syncButtonScale = useSharedValue(1);
@@ -124,7 +125,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100"
               accessibilityRole="header">
-              {t('profile.title')}
+              {t('common.profile')}
             </ThemedText>
             <Animated.View 
               entering={FadeIn.delay(200).duration(500)} 
@@ -144,7 +145,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              {t('profile.sections.statistics')}
+              {t('common.statistics')}
             </ThemedText>
             <ThemedView className="flex-row space-x-4">
               <StatItem
@@ -178,7 +179,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              {t('profile.sections.information')}
+              {t('common.information')}
             </ThemedText>
             <ProfileDetail 
               label={t('profile.information.username')} 
@@ -214,7 +215,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              {t('profile.sections.synchronization')}
+              {t('common.dataSynchronization')}
             </ThemedText>
             <GestureDetector gesture={syncGesture}>
               <Animated.View style={syncAnimatedStyle}>

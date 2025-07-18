@@ -36,15 +36,9 @@
     "confirm": "Bestätigen",
     "somethingWentWrong": "Etwas ist schiefgelaufen",
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-    "tryAgain": "Erneut versuchen"
-  },
-  "plantCard": {
-  "health": "Gesundheit: {{value}}%",
-  "watering_one": "Wässern in 1 Tag",
-  "watering_other": "Wässern in {{count}} Tagen",
-  "nutrients_one": "Nährstoffe in 1 Tag",
-  "nutrients_other": "Nährstoffe in {{count}} Tagen"
-  },
+  "tryAgain": "Erneut versuchen",
+    "days": "Tage"
+    },
   "navigation": {
     "tabs": {
       "home": "Startseite",
@@ -169,6 +163,146 @@
       "basement": "Keller",
       "garage": "Garage",
       "closet": "Schrank"
+  }
+  
+  },
+  "metricsForm": {
+    "healthStep": {
+      "title": "Gesundheitsmetriken",
+      "description": "Verfolgen Sie die allgemeine Gesundheit und den Pflegeplan Ihrer Pflanze"
+    },
+    "growthStep": {
+      "title": "Wachstumsmessungen",
+      "description": "Erfassen Sie physische Wachstumsmessungen"
+    },
+    "environmentStep": {
+      "title": "Umweltbedingungen",
+      "description": "Überwachen Sie die Parameter der Wachstumsumgebung"
+    },
+    "floweringStep": {
+      "title": "Blütemetriken",
+      "description": "Verfolgen Sie Indikatoren der Blütephase"
+    },
+    "fields": {
+      "healthPercentage": "Gesundheitsprozentsatz",
+      "nextWateringDays": "Nächste Bewässerung (Tage)",
+      "nextNutrientDays": "Nächste Nährstoffe (Tage)",
+      "height": "Pflanzenhöhe",
+      "nodeCount": "Knotenanzahl",
+      "stemDiameter": "Stammdurchmesser (mm)",
+      "phLevel": "pH-Wert",
+      "ecPpm": "EC/PPM",
+      "temperature": "Temperatur",
+      "humidity": "Luftfeuchtigkeit (%)",
+      "vpd": "VPD",
+      "trichomeStatus": "Trichom-Status",
+      "pistilBrownPercentage": "Braune Stempel (%)",
+      "budDensity": "Blütendichte (1-10)",
+      "budDensityDescription": "Bewerten Sie die Dichte Ihrer Blüten von 1 (locker) bis 10 (sehr dicht)",
+      "notes": "Zusätzliche Notizen",
+      "notesPlaceholder": "Fügen Sie Beobachtungen oder Notizen zum aktuellen Zustand Ihrer Pflanze hinzu..."
+    },
+    "validation": {
+      "healthPercentageMin": "Gesundheitsprozentsatz muss mindestens 0 sein",
+      "healthPercentageMax": "Gesundheitsprozentsatz kann nicht über 100 liegen",
+      "nextWateringDaysInt": "Nächste Bewässerungstage müssen eine ganze Zahl sein",
+      "nextWateringDaysMin": "Nächste Bewässerungstage können nicht negativ sein",
+      "nextNutrientDaysInt": "Nächste Nährstofftage müssen eine ganze Zahl sein",
+      "nextNutrientDaysMin": "Nächste Nährstofftage können nicht negativ sein",
+      "heightMin": "Höhe muss eine positive Zahl sein",
+      "nodeCountInt": "Knotenanzahl muss eine ganze Zahl sein",
+      "nodeCountMin": "Knotenanzahl kann nicht negativ sein",
+      "stemDiameterMin": "Stammdurchmesser muss eine positive Zahl sein",
+      "phLevelMin": "pH-Wert muss mindestens 0 sein",
+      "phLevelMax": "pH-Wert kann nicht über 14 liegen",
+      "ecPpmMin": "EC/PPM muss eine positive Zahl sein",
+      "humidityMin": "Luftfeuchtigkeit muss mindestens 0% sein",
+      "humidityMax": "Luftfeuchtigkeit kann nicht über 100% liegen",
+      "pistilBrownPercentageMin": "Braune Stempel-Prozentsatz muss mindestens 0 sein",
+      "pistilBrownPercentageMax": "Braune Stempel-Prozentsatz kann nicht über 100 liegen",
+      "budDensityInt": "Blütendichte muss eine ganze Zahl sein",
+      "budDensityMin": "Blütendichte muss mindestens 1 sein",
+      "budDensityMax": "Blütendichte kann nicht über 10 liegen"
+    },
+    "buttons": {
+      "previous": "Zurück",
+      "next": "Weiter",
+      "save": "Metriken speichern",
+      "submitting": "Wird gespeichert...",
+      "cancel": "Abbrechen"
+    },
+    "errors": {
+      "submitTitle": "Speichern fehlgeschlagen",
+      "submitMessage": "Metriken konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    },
+    "vpdOptimal": "Optimaler VPD-Bereich für gesundes Wachstum",
+    "vpdSuboptimal": "VPD liegt außerhalb des optimalen Bereichs (0,8-1,5 kPa)"
+  },
+  "trichomeSelector": {
+    "clear": {
+      "label": "Klar",
+      "description": "Trichome sind transparent und glasig"
+    },
+    "cloudy": {
+      "label": "Trüb",
+      "description": "Trichome sind milchig weiß und undurchsichtig"
+    },
+    "amber": {
+      "label": "Bernstein",
+      "description": "Trichome haben sich golden/bernsteinfarben verfärbt"
+    },
+    "mixed": {
+      "label": "Gemischt",
+      "description": "Mischung aus klaren, trüben und bernsteinfarbenen Trichomen"
+    }
+  },
+  "vpdCalculator": {
+    "enterTempHumidity": "Geben Sie Temperatur und Luftfeuchtigkeit ein, um VPD zu berechnen",
+    "optimal": "Optimal",
+    "tooLow": "Zu niedrig",
+    "tooHigh": "Zu hoch",
+    "calculation": "Berechnung basierend auf",
+    "temperature": "Temperatur",
+    "humidity": "Luftfeuchtigkeit",
+    "optimalRange": "Optimaler VPD-Bereich",
+    "rangeDescription": "0,8-1,2 kPa für vegetativ, 1,0-1,5 kPa für Blüte"
+  },
+  "plants": {
+    "health": "Gesundheit",
+    "watering": "Bewässerung",
+    "nutrients": "Nährstoffe",
+    "nextWateringDays": "{{count}}t",
+    "nextNutrientDays": "{{count}}t",
+    "growJournal": "Anbautagebuch",
+    "metrics": "Metriken",
+    "comingSoon": "Demnächst verfügbar",
+    "deletePlant": "Pflanze löschen"
+  },
+  "tasks": {
+    "taskType": "Aufgabentyp",
+    "selectPlant": "Pflanze auswählen",
+    "selectTaskType": "Bitte wählen Sie einen Aufgabentyp",
+    "noPlants": "Keine Pflanzen",
+    "noPlantsMessage": "Keine Pflanzen gefunden, um Aufgaben hinzuzufügen",
+    "success": "Erfolg",
+    "taskAddedToPlants": "Aufgabe zu {{count}} Pflanze hinzugefügt!",
+    "taskAddedToPlants_other": "Aufgabe zu {{count}} Pflanzen hinzugefügt!",
+    "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt!",
+    "error": "Fehler",
+    "failedToCreateTasks": "Aufgaben konnten nicht erstellt werden",
+    "failedToLoadPlants": "Pflanzen konnten nicht geladen werden",
+    "selectPlantAndTaskType": "Bitte wählen Sie eine Pflanze und einen Aufgabentyp",
+    "markCompleted": "Aufgabe als erledigt markieren",
+    "ok": "OK",
+    "addTaskToAllPlants": "Aufgabe zu allen Pflanzen hinzufügen",
+    "dueDate": "Fälligkeitsdatum",
+    "selectDueDate": "Fälligkeitsdatum auswählen",
+    "currently": "aktuell",
+    "types": {
+      "watering": "Bewässerung",
+      "feeding": "Düngung",
+      "pruning": "Beschneidung",
+      "harvesting": "Ernte"
     }
   },
   "forms": {
@@ -490,441 +624,318 @@
     }
   },
   "devMode": {
-    "indicator": "DEV-MODUS",
-    "dev": "DEV"
+    "indicator": "ENTWICKLERMODUS",
+    "dev": "ENT"
   },
-  "editPlantForm": {
-    "title": "Pflanze bearbeiten",
-    "labels": {
-      "plantName": "Pflanzenname*",
-      "strain": "Sorte*",
-      "cannabisType": "Cannabis-Typ",
-      "growthStage": "Wachstumsphase*",
-      "plantedDate": "Pflanzdatum*",
-      "location": "Standort*",
-      "growMedium": "Wachsmedium",
-      "lightCondition": "Lichtverhältnisse",
-      "notes": "Notizen"
+  "photoGallery": {
+    "addPhoto": "Foto hinzufügen",
+    "noPhotos": "Noch keine Fotos. Fügen Sie Ihr erstes Pflanzenfoto hinzu, um das Wachstum zu verfolgen!"
+  },
+  "photoViewer": {
+    "close": "Schließen",
+    "delete": "Löschen",
+    "deleteConfirmTitle": "Foto löschen",
+    "deleteConfirmMessage": "Sind Sie sicher, dass Sie dieses Foto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "fileSize": "Dateigröße"
+  },
+  "photoUpload": {
+    "title": "Foto hinzufügen",
+    "selectImage": "Bild auswählen",
+    "noImageSelected": "Kein Bild ausgewählt",
+    "takePhoto": "Foto aufnehmen",
+    "selectFromGallery": "Aus Galerie auswählen",
+    "caption": "Beschriftung (Optional)",
+    "captionPlaceholder": "Fügen Sie eine Beschriftung für dieses Foto hinzu...",
+    "growthStage": "Wachstumsstadium",
+    "error": {
+      "title": "Upload-Fehler",
+      "noImageSelected": "Bitte wählen Sie zuerst ein Bild aus.",
+      "cameraFailed": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+      "galleryFailed": "Bild konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
+      "uploadFailed": "Foto-Upload fehlgeschlagen: {{message}}"
+    }
+  },
+  "metricsChart": {
+    "title": "Pflanzenmetriken-Diagramm",
+    "loading": "Diagrammdaten werden geladen...",
+    "error": "Diagrammdaten konnten nicht geladen werden",
+    "retry": "Wiederholen",
+    "noData": "Keine Daten verfügbar",
+    "noDataDescription": "Beginnen Sie mit der Verfolgung von Metriken, um den Fortschritt Ihrer Pflanze über die Zeit zu sehen",
+    "optimalRange": "Optimaler Bereich",
+    "timeRanges": {
+      "7d": "7 Tage",
+      "30d": "30 Tage",
+      "90d": "90 Tage",
+      "all": "Alle Zeit"
+    },
+    "metrics": {
+      "healthPercentage": "Gesundheit",
+      "height": "Höhe",
+      "phLevel": "pH-Wert",
+      "temperature": "Temperatur",
+      "humidity": "Luftfeuchtigkeit",
+      "vpd": "VPD"
+    },
+    "dataPoint": {
+      "title": "Datenpunkt",
+      "message": "{{metric}}: {{value}}{{unit}} am {{date}}"
+    }
+  },
+  "harvestForm": {
+    "title": "Ernte erfassen",
+    "subtitle": "Erntedaten für {{plantName}} erfassen",
+    "fields": {
+      "harvestDate": "Erntedatum",
+      "weightUnit": "Gewichtseinheit",
+      "wetWeight": "Feuchtgewicht",
+      "dryWeight": "Trockengewicht (Optional)",
+      "trimWeight": "Verschnittgewicht (Optional)",
+      "dryingMethod": "Trocknungsmethode (Optional)",
+      "curingNotes": "Aushärtungsnotizen (Optional)",
+      "harvestPhotos": "Erntefotos (Optional)"
     },
     "placeholders": {
-      "plantName": "Pflanzennamen eingeben",
-      "strain": "Suche nach einer Sorte...",
-      "notes": "Zusätzliche Notizen zu deiner Pflanze...",
-      "location": "Einen Standort eingeben"
+      "wetWeight": "Feuchtgewicht eingeben",
+      "dryWeight": "Trockengewicht eingeben",
+      "trimWeight": "Verschnittgewicht eingeben",
+      "dryingMethod": "z.B. Hängetrocknung, Gittertrocknung, Gefriertrocknung",
+      "curingNotes": "Notizen zum Aushärtungsprozess, Zeitplan usw. hinzufügen"
+    },
+    "units": {
+      "grams": "Gramm",
+      "ounces": "Unzen"
+    },
+    "validation": {
+      "harvestDateRequired": "Erntedatum ist erforderlich",
+      "wetWeightMin": "Feuchtgewicht muss mindestens 0,1 sein",
+      "wetWeightMax": "Feuchtgewicht kann nicht über 10.000 liegen",
+      "dryWeightMin": "Trockengewicht muss mindestens 0,1 sein",
+      "dryWeightMax": "Trockengewicht kann nicht über 10.000 liegen",
+      "trimWeightMin": "Verschnittgewicht kann nicht negativ sein",
+      "trimWeightMax": "Verschnittgewicht kann nicht über 5.000 liegen",
+      "weightUnitRequired": "Gewichtseinheit ist erforderlich",
+      "curingNotesMax": "Aushärtungsnotizen können nicht über 500 Zeichen liegen"
+    },
+    "yieldMetrics": {
+      "title": "Ertragsmetriken",
+      "totalGrowDays": "Gesamte Anbautage: {{days}}",
+      "yieldPerDay": "Ertrag pro Tag: {{yield}}g",
+      "dryingEfficiency": "Trocknungseffizienz: {{efficiency}}%"
     },
     "buttons": {
-      "updatePlant": "Pflanze aktualisieren",
-      "saving": "Speichern...",
       "takePhoto": "Foto aufnehmen",
-      "selectFromGallery": "Aus Galerie auswählen",
-      "removePhoto": "Foto entfernen"
+      "selectPhoto": "Foto auswählen",
+      "recordHarvest": "Ernte erfassen"
     },
-    "alerts": {
-      "successTitle": "Pflanze aktualisiert",
-      "successMessage": "Deine Pflanze wurde erfolgreich aktualisiert.",
-      "errorTitle": "Fehler",
-      "errorMessage": "Pflanze konnte nicht aktualisiert werden. Bitte versuche es erneut.",
-      "selectImageTitle": "Bild auswählen",
-      "selectImageMessage": "Wähle eine Option",
-      "imageError": "Bild konnte nicht ausgewählt werden.",
-      "photoRequiredTitle": "Foto erforderlich",
-      "photoRequiredMessage": "Bitte wähle ein Foto aus oder nimm eines auf."
-    },
-    "validation": {
-      "nameRequired": "Pflanzenname ist erforderlich",
-      "nameTooShort": "Der Pflanzenname muss mindestens 3 Zeichen lang sein",
-      "strainRequired": "Sorte ist erforderlich",
-      "plantedDateRequired": "Pflanzdatum ist erforderlich",
-      "growthStageRequired": "Wachstumsstadium ist erforderlich",
-      "locationRequired": "Standort ist erforderlich"
-    },
-    "accessibility": {
-      "removePhotoHint": "Tippen, um dieses Foto von der Pflanze zu entfernen",
-      "dateLabel": "Datum: {{date}}",
-      "dateHint": "Tippen, um das Datum zu ändern",
-      "submitHint": "Tippen, um zu {{label}}",
-      "submitInProgress": "{{label}} wird bearbeitet"
+    "errors": {
+      "photoUploadFailed": "Foto-Upload fehlgeschlagen",
+      "photoCaptureError": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+      "photoSelectionError": "Foto konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
+      "submissionFailed": "Ernte konnte nicht erfasst werden. Bitte versuchen Sie es erneut."
     }
   },
-  "tasks": {
-  "taskType": "Aufgabentyp",
-  "selectPlant": "Pflanze auswählen",
-  "selectTaskType": "Bitte einen Aufgabentyp auswählen",
-  "noPlants": "Keine Pflanzen",
-  "noPlantsMessage": "Keine Pflanzen gefunden, um Aufgaben hinzuzufügen",
-  "success": "Erfolg",
-  "taskAddedToPlants_one": "Aufgabe zu {{count}} Pflanze hinzugefügt!",
-  "taskAddedToPlants_other": "Aufgabe zu {{count}} Pflanzen hinzugefügt!",
-  "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt!",
+  "yieldCalculator": {
+    "title": "Ertragsrechner",
+    "subtitle": "Analyse für {{plantName}}",
+    "metrics": {
+      "growDays": "Anbautage",
+      "growDaysSubtitle": "Gesamttage von Samen bis Ernte",
+      "totalYield": "Gesamtertrag",
+      "totalYieldSubtitle": "Trockengewicht + Verschnittgewicht",
+      "yieldPerDay": "Ertrag pro Tag",
+      "yieldPerDaySubtitle": "Durchschnittlicher Tagesertrag",
+      "dryingEfficiency": "Trocknungseffizienz",
+      "dryingEfficiencySubtitle": "Trockengewicht / Feuchtgewicht Verhältnis",
+      "trimPercentage": "Verschnitt-Prozentsatz",
+      "trimPercentageSubtitle": "Prozentsatz des Gesamtertrags aus Verschnitt"
+    },
+    "advancedMetrics": {
+      "title": "Erweiterte Metriken",
+      "gramsPerWatt": "Gramm pro Watt",
+      "gramsPerWattSubtitle": "Effizienz basierend auf Lichtleistung",
+      "yieldPerSqFt": "Ertrag pro Quadratfuß",
+      "yieldPerSqFtSubtitle": "Ertragsdichte pro Quadratfuß"
+    },
+    "insights": {
+      "title": "Leistungseinblicke",
+      "excellentDrying": "Ausgezeichnete Trocknungseffizienz (>20%)",
+      "highYieldPerDay": "Hohe Tagesertragsleistung",
+      "fastGrow": "Schneller Wachstumszyklus (<70 Tage)",
+      "highTrimRatio": "Hoher Verschnittverhältnis - erwägen Sie Trainingstechniken"
+    }
+  },
+  "harvestHistory": {
+    "title": "Erntehistorie",
+    "subtitle": "{{count}} Ernte erfasst",
+    "subtitle_other": "{{count}} Ernten erfasst",
+    "totalYield": "Gesamtertrag",
+    "yieldPerDay": "Ertrag/Tag",
+    "growDays": "Anbautage",
+    "dryingEfficiency": "Trocknungseffizienz",
+    "summary": {
+      "title": "Zusammenfassungsstatistiken",
+      "averageYield": "Durchschnittsertrag",
+      "bestYield": "Bester Ertrag",
+      "averageGrowDays": "Durchschn. Anbautage",
+      "totalHarvests": "Gesamte Ernten"
+    },
+    "timeline": {
+      "title": "Ernte-Zeitlinie"
+    },
+    "export": {
+      "csv": "CSV exportieren",
+      "json": "JSON exportieren",
+      "csvTitle": "Erntedaten (CSV)",
+      "jsonTitle": "Erntedaten (JSON)",
+      "error": "Export-Fehler",
+      "csvError": "CSV-Daten konnten nicht exportiert werden",
+      "jsonError": "JSON-Daten konnten nicht exportiert werden"
+    },
+    "empty": {
+      "title": "Noch keine Ernten",
+      "subtitle": "Erfassen Sie Ihre erste Ernte, um die Ertragsleistung zu verfolgen"
+    }
+  },
+  "plantComparison": {
+    "title": "Pflanzenvergleich",
+    "subtitle": "{{count}} Pflanzenernte vergleichen",
+    "subtitle_other": "{{count}} Pflanzenernten vergleichen",
+    "harvestedOn": "Geerntet am {{date}}",
+    "totalYield": "Gesamtertrag",
+    "yieldPerDay": "Ertrag/Tag",
+    "growDays": "Anbautage",
+    "dryingEfficiency": "Trocknungseffizienz",
+    "sortBy": "Sortieren nach:",
+    "sort": {
+      "totalYield": "Gesamtertrag",
+      "yieldPerDay": "Ertrag/Tag",
+      "growDays": "Anbautage",
+      "dryingEfficiency": "Trocknungseffizienz"
+    },
+    "selected": "{{count}} Pflanze ausgewählt",
+    "selected_other": "{{count}} Pflanzen ausgewählt",
+    "empty": {
+      "title": "Keine Pflanzen zum Vergleichen",
+      "subtitle": "Erfassen Sie Ernten von mehreren Pflanzen, um ihre Leistung zu vergleichen"
+    }
+  },
+  "plantSearch": {
+    "title": "Pflanzen suchen",
+    "searchPlaceholder": "Pflanzen suchen...",
+    "filterPlants": "Pflanzen filtern",
+    "clearAll": "Alle löschen",
+    "plantsFound": "{{count}} Pflanze gefunden",
+    "plantsFound_other": "{{count}} Pflanzen gefunden",
+    "clearFilters": "Filter löschen",
+    "noResults": {
+      "noMatchSearch": "Keine Pflanzen entsprechen Ihrer Suche",
+      "noMatchFilters": "Keine Pflanzen entsprechen Ihren Filtern",
+      "noPlants": "Keine Pflanzen gefunden",
+      "tryDifferent": "Versuchen Sie andere Suchbegriffe oder passen Sie Ihre Filter an",
+      "adjustFilters": "Versuchen Sie, Ihre Filter anzupassen oder zu löschen",
+      "addFirst": "Fügen Sie Ihre erste Pflanze hinzu, um zu beginnen"
+    },
+    "filters": {
+      "quickFilters": "Schnellfilter",
+      "needsAttention": "Benötigt Aufmerksamkeit",
+      "needsAttentionDesc": "Pflanzen, die sofortige Pflege benötigen",
+      "floweringPlants": "Blühende Pflanzen",
+      "floweringPlantsDesc": "Pflanzen in der Blütephase",
+      "healthyPlants": "Gesunde Pflanzen",
+      "healthyPlantsDesc": "Pflanzen mit Gesundheit > 80%",
+      "growthStages": "Wachstumsstadien",
+      "strainTypes": "Sortentypen",
+      "healthRange": "Gesundheitsbereich",
+      "specialFilters": "Spezialfilter",
+      "sortBy": "Sortieren nach"
+    }
+  },
+  "careReminders": {
+    "active": "Aktive Erinnerungen",
+    "completed": "Erledigte Erinnerungen",
+    "urgent": "Dringend",
+    "high": "Hohe Priorität",
+    "medium": "Mittlere Priorität",
+    "low": "Niedrige Priorität",
+    "markDone": "Erledigt",
+    "snooze": "Schlummern",
+    "reschedule": "Verschieben",
+    "overdue": "{{count}} Tage überfällig",
+    "dueToday": "Heute fällig",
+    "dueTomorrow": "Morgen fällig",
+    "dueInDays": "Fällig in {{count}} Tagen",
+    "noActiveReminders": "Alles erledigt!",
+    "noActiveRemindersDescription": "Sie haben keine aktiven Pflegeerinnerungen. Ihre Pflanzen sind gut versorgt.",
+    "noCompletedReminders": "Keine erledigten Erinnerungen",
+    "noCompletedRemindersDescription": "Erledigte Erinnerungen werden hier angezeigt.",
+    "defaultNotificationBody": "Zeit, sich um Ihre Pflanze zu kümmern!",
     "error": "Fehler",
-    "failedToCreateTasks": "Aufgaben konnten nicht erstellt werden",
-    "failedToLoadPlants": "Pflanzen konnten nicht geladen werden",
-    "selectPlantAndTaskType": "Bitte eine Pflanze und einen Aufgabentyp auswählen",
-    "markCompleted": "Aufgabe als erledigt markieren",
-    "ok": "OK",
-    "addTaskToAllPlants": "Aufgabe zu allen Pflanzen hinzufügen",
-    "dueDate": "Fälligkeitsdatum",
-    "selectDueDate": "Fälligkeitsdatum auswählen",
-    "currently": "aktuell",
+    "errorMarkingDone": "Erinnerung konnte nicht als erledigt markiert werden. Bitte versuchen Sie es erneut.",
+    "errorSnoozing": "Erinnerung konnte nicht verschoben werden. Bitte versuchen Sie es erneut.",
+    "errorBatchMarkingDone": "Erinnerungen konnten nicht als erledigt markiert werden. Bitte versuchen Sie es erneut.",
+    "errorBatchSnoozing": "Erinnerungen konnten nicht verschoben werden. Bitte versuchen Sie es erneut."
+  },
+  "plantAttention": {
+    "needsAttention": "Benötigt Aufmerksamkeit",
+    "overdueTask": "{{count}} überfällige Aufgabe",
+    "overdueTask_plural": "{{count}} überfällige Aufgaben",
+    "dueToday": "{{count}} Aufgabe heute fällig",
+    "dueToday_plural": "{{count}} Aufgaben heute fällig",
+    "lowHealth": "Gesundheit ist niedrig ({{percentage}}%)",
+    "overdueWatering": "Bewässerung ist überfällig",
+    "overdueNutrients": "Nährstoffe sind überfällig",
+    "priorityUrgent": "Dringend",
+    "priorityHigh": "Hohe Priorität",
+    "priorityMedium": "Mittlere Priorität",
+    "priorityLow": "Niedrige Priorität"
+  },
+  "notificationScheduler": {
+    "createReminder": "Erinnerung erstellen",
+    "reminderType": "Erinnerungstyp",
+    "title": "Titel",
+    "titlePlaceholder": "Erinnerungstitel eingeben",
+    "description": "Beschreibung (Optional)",
+    "descriptionPlaceholder": "Zusätzliche Details zu dieser Erinnerung hinzufügen",
+    "scheduledFor": "Geplant für",
+    "repeatInterval": "Wiederholen alle (Tage)",
+    "repeatIntervalPlaceholder": "Leer lassen für einmalige Erinnerung",
+    "creating": "Erstelle...",
     "types": {
       "watering": "Gießen",
-      "feeding": "Düngen",
-      "pruning": "Beschneiden",
-      "harvesting": "Ernten"
+      "nutrients": "Nährstoffe",
+      "inspection": "Kontrolle",
+      "custom": "Benutzerdefiniert"
     },
-    "addTask": "Aufgabe hinzufügen",
-    "addTaskToPlant": "Aufgabe zu Pflanze hinzufügen",
-    "addTaskToPlantSubtitle": "Erstelle eine Aufgabe für eine bestimmte Pflanze",
-    "addTaskToAll": "Aufgabe zu allen Pflanzen hinzufügen",
-    "addTaskToAllSubtitle": "Erstelle eine Aufgabe, die für alle deine Pflanzen gilt",
-    "taskTitle": "Aufgabentitel",
-    "taskTitlePlaceholder": "Aufgabentitel eingeben",
-    "description": "Beschreibung (Optional)",
-    "descriptionPlaceholder": "Aufgabendetails hinzufügen...",
-    "priority": "Priorität",
-    "category": "Kategorie",
-    "selectPlantPlaceholder": "Wähle eine Pflanze für diese Aufgabe",
-    "saveTask": "Aufgabe speichern",
-    "saving": "Wird gespeichert...",
-    "cancel": "Abbrechen",
-    "priorities": {
-      "low": "Niedrig",
-      "medium": "Mittel",
-      "high": "Hoch"
+    "defaultDescriptions": {
+      "watering": "Zeit, Ihre Pflanze zu gießen",
+      "nutrients": "Zeit, Ihre Pflanze zu düngen",
+      "inspection": "Zeit, Ihre Pflanze zu kontrollieren",
+      "custom": "Benutzerdefinierte Erinnerung für Ihre Pflanze"
     },
-    "categories": {
-      "watering": "Gießen",
-      "feeding": "Düngen",
-      "pruning": "Beschneiden",
-      "inspection": "Inspektion",
-      "other": "Andere"
-    },
-    "validation": {
-      "titleRequired": "Aufgabentitel ist erforderlich",
-      "plantRequired": "Bitte eine Pflanze auswählen"
-    },
-    "alerts": {
-      "successTitle": "Aufgabe erstellt",
-      "successMessage": "Deine Aufgabe wurde erfolgreich erstellt.",
-      "errorTitle": "Fehler",
-      "errorMessage": "Aufgabe konnte nicht erstellt werden. Bitte versuche es erneut.",
-      "noPlants": "Keine Pflanzen gefunden. Bitte füge zuerst eine Pflanze hinzu."
-    }
-  },
-  "plantTasks": {
-    "title": "Pflanzenaufgabe hinzufügen",
-    "selectPlant": "Pflanze auswählen",
-    "selectPlantPlaceholder": "Wähle eine Pflanze für diese Aufgabe",
-    "taskTitle": "Aufgabentitel",
-    "taskTitlePlaceholder": "Aufgabentitel eingeben",
-    "description": "Beschreibung (Optional)",
-    "descriptionPlaceholder": "Aufgabendetails hinzufügen...",
-    "priority": "Priorität",
-    "category": "Kategorie",
-    "dueDate": "Fälligkeitsdatum",
-    "saveTask": "Aufgabe speichern",
-    "saving": "Wird gespeichert...",
-    "cancel": "Abbrechen",
-    "loadingPlants": "Pflanzen werden geladen...",
-    "priorities": {
-      "low": "Niedrig",
-      "medium": "Mittel",
-      "high": "Hoch"
-    },
-    "categories": {
-      "watering": "Gießen",
-      "feeding": "Düngen",
-      "pruning": "Beschneiden",
-      "inspection": "Inspektion",
-      "other": "Andere"
-    },
-    "validation": {
-      "titleRequired": "Aufgabentitel ist erforderlich",
-      "plantRequired": "Bitte eine Pflanze auswählen"
-    },
-    "alerts": {
-      "successTitle": "Aufgabe erstellt",
-      "successMessage": "Deine Aufgabe wurde erfolgreich erstellt.",
-      "errorTitle": "Fehler",
-      "errorMessage": "Aufgabe konnte nicht erstellt werden. Bitte versuche es erneut.",
-      "noPlants": "Keine Pflanzen gefunden. Bitte füge zuerst eine Pflanze hinzu.",
-      "failedToLoadPlants": "Pflanzen konnten nicht geladen werden. Bitte versuche es erneut.",
-      "validationError": "Validierungsfehler",
-      "selectPlantAndTitle": "Bitte eine Pflanze auswählen und einen Titel eingeben.",
-      "authenticationError": "Authentifizierungsfehler",
-      "pleaseLogInToCreateTasks": "Bitte melde dich an, um Aufgaben zu erstellen.",
-      "databaseError": "Datenbankfehler",
-      "databaseNotAvailable": "Datenbank ist nicht verfügbar. Bitte versuche es später erneut.",
-      "plantTaskCreatedSuccessfully": "Pflanzenaufgabe wurde erfolgreich erstellt."
-    },
-    "headers": {
-      "selectPlant": "Pflanze auswählen",
-      "taskTitle": "Aufgabentitel",
-      "description": "Beschreibung",
-      "priority": "Priorität",
-      "category": "Kategorie"
-    },
-    "placeholders": {
-      "enterTaskTitle": "Aufgabentitel eingeben",
-      "addTaskDetails": "Aufgabendetails hinzufügen..."
-    },
-    "priorityLevels": {
-      "low": "Niedrig",
-      "medium": "Mittel",
-      "high": "Hoch"
-    },
-    "categoryTypes": {
-      "watering": "Gießen",
-      "feeding": "Düngen",
-      "pruning": "Beschneiden",
-      "inspection": "Inspektion",
-      "other": "Andere"
-    },
-    "buttons": {
-      "cancel": "Abbrechen",
-      "saveTask": "Aufgabe speichern",
-      "saving": "Wird gespeichert..."
-    }
-  },
-  "tasksFixed": {
-    "title": "Aufgabe zu Pflanze hinzufügen",
-    "selectPlant": "Pflanze auswählen",
-    "selectTaskType": "Aufgabentyp auswählen",
-    "dueDate": "Fälligkeitsdatum",
-    "notesOptional": "Notizen (Optional)",
-    "addNotesPlaceholder": "Füge Notizen für diese Aufgabe hinzu...",
-    "addTask": "Aufgabe hinzufügen",
+    "permissionRequired": "Benachrichtigungsberechtigung erforderlich",
+    "permissionRequiredDescription": "Um Pflegeerinnerungen zu erhalten, aktivieren Sie bitte Benachrichtigungen in Ihren Geräteeinstellungen.",
+    "permissionsDisabled": "Benachrichtigungen deaktiviert",
+    "permissionsDisabledDescription": "Aktivieren Sie Benachrichtigungen in Ihren Geräteeinstellungen, um Pflegeerinnerungen für Ihre Pflanzen zu erhalten.",
+    "openSettings": "Einstellungen öffnen",
     "error": "Fehler",
-    "failedToLoadPlants": "Pflanzen konnten nicht geladen werden.",
-    "selectPlantAndTaskType": "Bitte eine Pflanze und einen Aufgabentyp auswählen.",
-    "success": "Erfolg",
-    "taskAddedSuccessfully": "Aufgabe erfolgreich hinzugefügt.",
-    "failedToCreateTasks": "Aufgabe konnte nicht erstellt werden.",
-    "ok": "OK",
-    "selectDueDateAccessibility": "Fälligkeitsdatum auswählen, aktuell {{currentDate}}",
-    "taskNotesAccessibility": "Aufgabennotizen Eingabe",
-    "taskNotesHint": "Gib hier zusätzliche Details zur Aufgabe ein",
-    "types": {
-      "watering": "Gießen",
-      "feeding": "Düngen",
-      "pruning": "Beschneiden",
-      "harvesting": "Ernten"
-    }
-  },
-  "plants": {
-    "health": "Gesundheit",
-    "watering": "Bewässerung",
-    "nutrients": "Nährstoffe",
-    "nextWateringDays": "{{count}}t",
-    "nextNutrientDays": "{{count}}t",
-    "growJournal": "Anbautagebuch",
-    "metrics": "Metriken",
-    "comingSoon": "Kommt bald",
-    "deletePlant": "Pflanze löschen"
-  },
-  "journal_calendar": {
-    "week_info": "Woche {{week}} • Tag {{day}}",
-    "invalid_date_range": "Ungültiger Datumsbereich",
-    "date_error": "Datumsfehler"
-  },
-  "calendar": {
-    "date_selector": {
-      "today": "Heute",
-      "yesterday": "Gestern",
-      "tomorrow": "Morgen",
-      "invalid_date": "Ungültig"
+    "errorCreatingReminder": "Erinnerung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "repeatOptions": "Wiederholungsoptionen",
+    "quickRepeatOptions": "Schnelle Wiederholungsoptionen",
+    "customRepeatInterval": "Benutzerdefiniertes Wiederholungsintervall (Tage)",
+    "customRepeatIntervalPlaceholder": "Benutzerdefiniertes Intervall in Tagen eingeben",
+    "addToDeviceCalendar": "Zum Gerätekalender hinzufügen",
+    "calendarEventDescription": "Kalenderereignis für diese Erinnerung erstellen",
+    "calendarAccessDenied": "Kalenderzugriff verweigert - in Einstellungen aktivieren",
+    "calendarPermissionRequired": "Kalenderberechtigung erforderlich",
+    "repeatIntervals": {
+      "daily": "Täglich",
+      "every3Days": "Alle 3 Tage",
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle zwei Wochen",
+      "monthly": "Monatlich"
     },
-    "add_task": {
-      "title": "Aufgabentitel",
-      "title_placeholder": "Aufgabentitel eingeben",
-      "description": "Beschreibung (Optional)",
-      "description_placeholder": "Aufgabendetails hinzufügen...",
-      "priority": "Priorität",
-      "category": "Kategorie",
-      "cancel": "Abbrechen",
-      "save_task": "Aufgabe speichern",
-      "priority_levels": {
-        "low": "Niedrig",
-        "medium": "Mittel",
-        "high": "Hoch"
-      },
-      "categories": {
-        "watering": "Gießen",
-        "feeding": "Düngen",
-        "pruning": "Beschneiden",
-        "inspection": "Inspektion",
-        "other": "Andere"
-      }
-    },
-    "task_actions": {
-      "add_task_to_plant": "Aufgabe zur Pflanze hinzufügen",
-      "add_task_to_plant_subtitle": "Erstelle eine Aufgabe für eine bestimmte Pflanze",
-      "add_task_to_all": "Aufgabe für alle Pflanzen hinzufügen",
-      "add_task_to_all_subtitle": "Erstelle eine Aufgabe, die für alle deine Pflanzen gilt"
-    },
-    "task_item": {
-      "unknown_plant": "Unbekannte Pflanze",
-      "accessibility_label": "Aufgabe: {{title}} für {{plant}}",
-      "view_details_hint": "Tippe, um Aufgabendetails anzuzeigen",
-      "complete_button_label": "Aufgabe als erledigt markieren",
-      "complete_button_hint": "Tippe, um diese Aufgabe abzuschließen"
-    },
-    "screen": {
-      "no_tasks_scheduled": "Keine Aufgaben geplant",
-      "tap_to_add_task": "Tippe auf die + Schaltfläche, um deine erste Aufgabe für diesen Tag hinzuzufügen",
-      "loading_tasks": "Aufgaben werden geladen...",
-      "add_task_button": "Aufgabe hinzufügen"
-    }
-  },
-  "profile": {
-    "title": "Profil",
-    "loading": "Ihr Profil wird geladen...",
-    "sections": {
-      "statistics": "Statistiken",
-      "information": "Informationen",
-      "synchronization": "Datensynchronisation"
-    },
-    "statistics": {
-      "plants": "Pflanzen",
-      "posts": "Beiträge"
-    },
-    "information": {
-      "username": "Benutzername",
-      "userId": "Benutzer-ID",
-      "experience": "Erfahrung",
-      "growMethod": "Anbaumethode"
-    }
-  },
-  "debug": {
-    "title": "Debug-Panel",
-    "subtitle": "Debug-Panel zur Untersuchung von App-Abstürzen",
-    "sections": {
-      "resourceMonitoring": "📊 Ressourcenüberwachung",
-      "memoryUsage": "🧠 Speichernutzung",
-      "crashReports": "💥 Absturzberichte",
-      "potentialIssues": "⚠️ Potenzielle Probleme"
-    },
-    "resources": {
-      "intervals": "Intervalle",
-      "timeouts": "Timeouts",
-      "subscriptions": "Abonnements",
-      "listeners": "Listener",
-      "animations": "Animationen",
-      "totalResources": "Ressourcen gesamt"
-    },
-    "memory": {
-      "warnings": "Speicherwarnungen",
-      "forceGC": "Speicherbereinigung erzwingen"
-    },
-    "crashes": {
-      "clearReports": "Berichte löschen",
-      "noCrashes": "Keine Absturzberichte (gut!)",
-      "recentCrashes": "Aktuelle Abstürze"
-    },
-    "actions": {
-      "emergencyCleanup": "Notfall-Bereinigung (Verwaiste Beiträge)",
-      "forceCommunitySync": "Community-Daten erzwingen",
-      "cleaningUp": "Verwaiste Datensätze werden bereinigt...",
-      "forceSyncing": "Community-Daten werden erzwungen..."
-    },
-    "warnings": {
-      "highIntervals": "• Hohe Intervallanzahl - möglicher Speicherleck",
-      "manySubscriptions": "• Viele aktive Abonnements - Bereinigung prüfen",
-      "memoryWarnings": "• Speicherwarnungen erkannt - Nutzung optimieren",
-      "multipleCrashes": "• Mehrere Abstürze - Fehlermuster untersuchen",
-      "highResources": "• Hohe Ressourcenanzahl - Bereinigungslogik überprüfen",
-      "noIssues": "✅ Keine offensichtlichen Probleme erkannt"
-    },
-    "alerts": {
-      "error": "Fehler",
-      "noUserSession": "Keine Benutzersitzung gefunden",
-      "success": "Erfolgreich",
-      "warning": "Warnung",
-      "details": "Details",
-      "ok": "OK",
-      "communityDataSync": "Community-Datensynchronisation",
-      "cleanupDetails": "Bereinigungsdetails",
-      "showErrors": "Fehler anzeigen",
-      "cleanupErrors": "Bereinigungsfehler",
-      "cleanupFailed": "Bereinigung fehlgeschlagen: {{error}}",
-      "cleanedRecords": "{{count}} verwaiste lokale Datensätze bereinigt.{{errors}}",
-      "withErrors": " Fehler: {{count}}"
-    },
-    "status": {
-      "gcNotAvailable": "⚠️ Speicherbereinigung nicht verfügbar",
-      "forcedGC": "🗑️ Speicherbereinigung erzwungen",
-      "errorForcingGC": "Fehler beim Erzwingen der Speicherbereinigung: {{error}}"
-    },
-    "legacy": {
-      "resetDatabase": "Datenbank zurücksetzen",
-      "forceGarbageCollection": "Garbage Collection erzwingen",
-      "clear": "Löschen",
-      "resetDatabaseConfirmation": "Dies wird Ihre lokale Datenbank löschen, um Schema-Probleme zu beheben. Diese Aktion kann nicht rückgängig gemacht werden. Sind Sie sicher?",
-      "developmentMode": "Entwicklermodus",
-      "auth": "Authentifizierung",
-      "autoBypass": "Auto-Umgehung",
-      "manual": "Manuell",
-      "mockUser": "Mock-Benutzer",
-      "none": "Keine",
-      "notLoggedIn": "Nicht angemeldet",
-      "useDevAuth": "Dev-Auth verwenden",
-      "developerOptions": "Entwickleroptionen",
-      "database": "Datenbank",
-      "resetDatabaseSchema": "Datenbank zurücksetzen (Schema reparieren)",
-      "close": "Schließen"
-    }
-  },
-  "ui": {
-  },
-  "plantImageSection": {
-    "error": "Fehler",
-    "failedToProcessImage": "Bild konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.",
-    "galleryError": "Galerie-Fehler",
-    "failedToAccessGallery": "Zugriff auf Galerie fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "failedToTakePicture": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
-    "processing": "Bild wird verarbeitet...",
-    "plantImagePreview": "Pflanzenbild-Vorschau",
-    "pickImageFromGallery": "Bild aus Galerie auswählen",
-    "pickImage": "Bild auswählen",
-  "takeNewPicture": "Neues Foto aufnehmen",
-  "takePicture": "Foto aufnehmen",
-    "undoToast": {
-      "undo": "Rückgängig"
-    },
-    "floatingActionButton": {
-      "add": "Hinzufügen"
-    },
-    "errorBoundary": {
-      "title": "Etwas ist schiefgelaufen",
-      "subtitle": "Ein unerwarteter Fehler ist in der Anwendung aufgetreten",
-      "description": "Wir entschuldigen uns für die Unannehmlichkeiten. Der Fehler wurde protokolliert und unser Team wird ihn untersuchen.",
-      "showDetails": "Details anzeigen",
-      "hideDetails": "Details ausblenden",
-      "retry": "Erneut versuchen",
-      "errorDetails": "Fehlerdetails",
-      "componentStack": "Komponenten-Stack",
-      "navigationIssue": "Navigationsproblem",
-      "navigationUnavailable": "Navigationskontext vorübergehend nicht verfügbar.",
-      "autoRetryFailed": "Automatischer Wiederholungsversuch fehlgeschlagen. Bitte versuchen Sie, die Seite zu aktualisieren.",
-      "retryNavigation": "Navigation wiederholen",
-      "attemptingReconnect": "Verbindungsversuch... ({{current}}/{{max}})"
-    },
-    "syncStatus": {
-      "syncing": "Synchronisiert...",
-      "syncStatus": "Sync-Status",
-      "synchronizing": "Synchronisierung mit Server...",
-      "errorPrefix": "Fehler: ",
-      "unknownError": "Unbekannter Fehler während der Synchronisation",
-      "successRate": "Erfolgsrate:",
-      "avgDuration": "Durchschn. Dauer:",
-      "slowestOp": "Langsamste Op.:",
-      "tapToSync": "Zum Synchronisieren tippen",
-      "neverSynced": "Nie synchronisiert",
-      "justNow": "Gerade eben",
-      "minutesAgo": "vor {{count}}m",
-      "hoursAgo": "vor {{count}}h",
-      "daysAgo": "vor {{count}}d"
-    }
+    "calendarWarning": "Erinnerung erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
   }
 }
 

@@ -1,16 +1,26 @@
-# Canabro - Cannabis Plant Management App
+# Canabro - Plant Management Application
 
-Canabro is a mobile application designed for cannabis plant management and tracking. The app helps users manage their cannabis plants through various growth stages, offering features such as:
+## Product Overview
+Canabro is a mobile application for cannabis plant management, tracking, and community engagement. The app allows users to track their plants' growth, health, and care schedules.
 
-- Plant tracking and management
-- Strain information and filtering
-- Growth stage monitoring
-- Task scheduling (watering, feeding, harvesting)
-- Plant diary and notes
+## Core Features
+- Plant management with CRUD operations
+- Photo capture and gallery for plant tracking
+- Growth stage tracking and plant health monitoring
+- Strain database integration and autocomplete
+- User authentication and profiles
 - Community features
+- Internationalization support (English and German)
+- Calendar and task scheduling
 - Plant diagnosis tools
-- Calendar integration for plant care activities
 
-The app supports different cannabis strain types (Indica, Sativa, Hybrid, Ruderalis) with specialized UI elements and color schemes for each type. It includes authentication, user profiles, and secure data storage with Supabase as the backend.
+## Target Platforms
+- iOS (minimum iOS 16.0)
+- Android (minimum SDK 23)
 
-The application is designed with both light and dark mode support, and includes localization capabilities for multiple languages.
+## User Experience Goals
+- Intuitive plant tracking interface
+- Seamless photo capture and management
+- Comprehensive strain information
+- Localized experience with language support
+- Responsive design with dark/light mode support

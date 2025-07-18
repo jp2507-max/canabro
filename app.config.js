@@ -88,6 +88,8 @@ export default {
           'This app needs access to your photo library to select existing photos of your plants for tracking and identification purposes.',
         NSPhotoLibraryAddUsageDescription:
           'This app needs permission to save photos of your plants to your photo library.',
+        NSCalendarsUsageDescription:
+          'This app needs calendar access to create reminders for plant care tasks.',
         UIBackgroundModes: ['fetch', 'processing'],
       },
       associatedDomains: ['applinks:YOUR_APP_LINK_DOMAIN'],
@@ -102,6 +104,8 @@ export default {
         'android.permission.CAMERA',
         'android.permission.READ_MEDIA_IMAGES', // Android 13+
         'android.permission.READ_EXTERNAL_STORAGE', // Android 12 and below
+        'android.permission.READ_CALENDAR',
+        'android.permission.WRITE_CALENDAR',
       ],
     },
     extra: {

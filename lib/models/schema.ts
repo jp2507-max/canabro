@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 29, // Bumped to 29 to trigger cleanup of orphaned local posts data
+  version: 30, // Bumped to 30 to add new plant management tables and fields
   tables: [
     tableSchema({
       name: 'profiles',
@@ -57,6 +57,21 @@ export default appSchema({
         { name: 'health_percentage', type: 'number', isOptional: true }, // NEW
         { name: 'next_watering_days', type: 'number', isOptional: true }, // NEW
         { name: 'next_nutrient_days', type: 'number', isOptional: true }, // NEW
+        // ADDITIONAL METRICS FIELDS
+        { name: 'node_count', type: 'number', isOptional: true },
+        { name: 'stem_diameter', type: 'number', isOptional: true },
+        { name: 'ph_level', type: 'number', isOptional: true },
+        { name: 'ec_ppm', type: 'number', isOptional: true },
+        { name: 'temperature', type: 'number', isOptional: true },
+        { name: 'humidity', type: 'number', isOptional: true },
+        { name: 'vpd', type: 'number', isOptional: true },
+        { name: 'trichome_status', type: 'string', isOptional: true },
+        { name: 'pistil_brown_percentage', type: 'number', isOptional: true },
+        { name: 'bud_density', type: 'number', isOptional: true },
+        { name: 'wet_weight', type: 'number', isOptional: true },
+        { name: 'dry_weight', type: 'number', isOptional: true },
+        { name: 'trim_weight', type: 'number', isOptional: true },
+        { name: 'harvest_date', type: 'number', isOptional: true },
         { name: 'is_deleted', type: 'boolean', isOptional: true },
         { name: 'last_synced_at', type: 'number', isOptional: true },
         { name: 'created_at', type: 'number' },
@@ -228,6 +243,74 @@ export default appSchema({
         { name: 'strain_object_id', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    // New plant management tables
+    tableSchema({
+      name: 'plant_photos',
+      columns: [
+        { name: 'plant_id', type: 'string', isIndexed: true },
+        { name: 'image_url', type: 'string' },
+        { name: 'thumbnail_url', type: 'string', isOptional: true },
+        { name: 'caption', type: 'string', isOptional: true },
+        { name: 'growth_stage', type: 'string' },
+        { name: 'file_size', type: 'number', isOptional: true },
+        { name: 'width', type: 'number', isOptional: true },
+        { name: 'height', type: 'number', isOptional: true },
+        { name: 'taken_at', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'last_synced_at', type: 'number', isOptional: true },
+        { name: 'is_deleted', type: 'boolean', isOptional: true },
+      ],
+    }),
+    tableSchema({
+      name: 'plant_metrics',
+      columns: [
+        { name: 'plant_id', type: 'string', isIndexed: true },
+        // Basic Health Metrics
+        { name: 'health_percentage', type: 'number', isOptional: true },
+        { name: 'next_watering_days', type: 'number', isOptional: true },
+        { name: 'next_nutrient_days', type: 'number', isOptional: true },
+        // Growth Measurements
+        { name: 'height', type: 'number', isOptional: true },
+        { name: 'height_unit', type: 'string', isOptional: true },
+        { name: 'node_count', type: 'number', isOptional: true },
+        { name: 'stem_diameter', type: 'number', isOptional: true },
+        // Environmental Metrics
+        { name: 'ph_level', type: 'number', isOptional: true },
+        { name: 'ec_ppm', type: 'number', isOptional: true },
+        { name: 'temperature', type: 'number', isOptional: true },
+        { name: 'temperature_unit', type: 'string', isOptional: true },
+        { name: 'humidity', type: 'number', isOptional: true },
+        { name: 'vpd', type: 'number', isOptional: true },
+        // Flowering Metrics
+        { name: 'trichome_status', type: 'string', isOptional: true },
+        { name: 'pistil_brown_percentage', type: 'number', isOptional: true },
+        { name: 'bud_density', type: 'number', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'recorded_at', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'last_synced_at', type: 'number', isOptional: true },
+        { name: 'is_deleted', type: 'boolean', isOptional: true },
+      ],
+    }),
+    tableSchema({
+      name: 'care_reminders',
+      columns: [
+        { name: 'plant_id', type: 'string', isIndexed: true },
+        { name: 'type', type: 'string' },
+        { name: 'title', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'scheduled_for', type: 'number' },
+        { name: 'is_completed', type: 'boolean' },
+        { name: 'repeat_interval', type: 'number', isOptional: true },
+        { name: 'completed_at', type: 'number', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'last_synced_at', type: 'number', isOptional: true },
+        { name: 'is_deleted', type: 'boolean', isOptional: true },
       ],
     }),
   ],
