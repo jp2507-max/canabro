@@ -207,7 +207,7 @@ export const PhotoViewer = memo(function PhotoViewer({
       translateY.value = withSpring(0);
       focalX.value = 0;
       focalY.value = 0;
-    })();
+    });
   }, []);
 
   // Toggle controls visibility

@@ -19,7 +19,9 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import type { PanGestureHandlerEventPayload } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
+import { useTranslation } from 'react-i18next';
 import { triggerLightHaptic, triggerMediumHaptic } from '@/lib/utils/haptics';
 import { GrowthStage, CannabisType } from '@/lib/types/plant';
 import ThemedView from '@/components/ui/ThemedView';
@@ -85,27 +87,19 @@ const SORT_OPTIONS = [
 
 const QUICK_FILTER_PRESETS: Array<{
   key: string;
-  label: string;
   icon: IconName;
-  description: string;
 }> = [
   {
-    key: 'needs_attention',
-    label: 'Needs Attention',
+    key: 'needsAttention',
     icon: 'warning',
-    description: 'Plants requiring immediate care',
   },
   {
-    key: 'flowering',
-    label: 'Flowering Plants',
+    key: 'floweringPlants',
     icon: 'flower',
-    description: 'Plants in flowering stage',
   },
   {
-    key: 'healthy',
-    label: 'Healthy Plants',
+    key: 'healthyPlants',
     icon: 'heart',
-    description: 'Plants with health > 80%',
   },
 ];
 
@@ -116,6 +110,7 @@ export const PlantFilters = React.memo(({
   onFiltersChange,
   onClearAll,
 }: PlantFiltersProps) => {
+  const { t } = useTranslation('plantSearch');
   const { height: screenHeight } = useWindowDimensions();
   
   // Local state for range sliders
@@ -273,20 +268,20 @@ export const PlantFilters = React.memo(({
     triggerMediumHaptic();
     
     switch (presetKey) {
-      case 'needs_attention':
+      case 'needsAttention':
         onFiltersChange({
           ...filters,
           needsAttention: true,
           healthRange: [0, 50],
         });
         break;
-      case 'flowering':
+      case 'floweringPlants':
         onFiltersChange({
           ...filters,
           growthStages: [GrowthStage.FLOWERING],
         });
         break;
-      case 'healthy':
+      case 'healthyPlants':
         onFiltersChange({
           ...filters,
           healthRange: [80, 100],
@@ -341,13 +336,13 @@ export const PlantFilters = React.memo(({
 
           {/* Header */}
           <ThemedView className="flex-row items-center justify-between px-6 pb-4">
-            <ThemedText className="text-xl font-bold">Filter Plants</ThemedText>
+            <ThemedText className="text-xl font-bold">{t('filterPlants')}</ThemedText>
             <Pressable
               onPress={handleClearAll}
               className="rounded-lg bg-neutral-100 px-3 py-1.5 dark:bg-neutral-800"
             >
               <ThemedText className="text-sm font-medium text-primary-600 dark:text-primary-400">
-                Clear All
+                {t('clearAll')}
               </ThemedText>
             </Pressable>
           </ThemedView>
@@ -359,20 +354,22 @@ export const PlantFilters = React.memo(({
           >
             {/* Quick Filter Presets */}
             <ThemedView className="mb-6">
-              <ThemedText className="mb-3 text-base font-semibold">Quick Filters</ThemedText>
+              <ThemedText className="mb-3 text-base font-semibold">{t('filters.quickFilters')}</ThemedText>
               <ThemedView className="flex-row flex-wrap gap-2">
                 {QUICK_FILTER_PRESETS.map((preset) => (
                   <Pressable
                     key={preset.key}
                     onPress={() => handleQuickFilterPress(preset.key)}
                     className="flex-row items-center rounded-full border border-neutral-300 bg-neutral-50 px-4 py-2 dark:border-neutral-600 dark:bg-neutral-800"
+                    accessibilityLabel={`${t(`filters.${preset.key}`)} filter button`}
+                    accessibilityRole="button"
                   >
                     <OptimizedIcon
                       name={preset.icon}
                       size={16}
                       className="mr-2 text-neutral-600 dark:text-neutral-400"
                     />
-                    <ThemedText className="text-sm font-medium">{preset.label}</ThemedText>
+                    <ThemedText className="text-sm font-medium">{t(`filters.${preset.key}`)}</ThemedText>
                   </Pressable>
                 ))}
               </ThemedView>
@@ -380,7 +377,7 @@ export const PlantFilters = React.memo(({
 
             {/* Growth Stages */}
             <ThemedView className="mb-6">
-              <ThemedText className="mb-3 text-base font-semibold">Growth Stages</ThemedText>
+              <ThemedText className="mb-3 text-base font-semibold">{t('filters.growthStages')}</ThemedText>
               <ThemedView className="flex-row flex-wrap gap-2">
                 {GROWTH_STAGE_OPTIONS.map((option) => (
                   <TagPill
@@ -395,7 +392,7 @@ export const PlantFilters = React.memo(({
 
             {/* Strain Types */}
             <ThemedView className="mb-6">
-              <ThemedText className="mb-3 text-base font-semibold">Strain Types</ThemedText>
+              <ThemedText className="mb-3 text-base font-semibold">{t('filters.strainTypes')}</ThemedText>
               <ThemedView className="flex-row flex-wrap gap-2">
                 {STRAIN_TYPE_OPTIONS.map((option) => (
                   <TagPill
@@ -410,7 +407,7 @@ export const PlantFilters = React.memo(({
 
             {/* Health Range */}
             <ThemedView className="mb-6">
-              <ThemedText className="mb-3 text-base font-semibold">Health Range</ThemedText>
+              <ThemedText className="mb-3 text-base font-semibold">{t('filters.healthRange')}</ThemedText>
               <HealthRangeSlider
                 value={healthRange}
                 onChange={handleHealthRangeChange}
@@ -419,7 +416,7 @@ export const PlantFilters = React.memo(({
 
             {/* Special Filters */}
             <ThemedView className="mb-6">
-              <ThemedText className="mb-3 text-base font-semibold">Special Filters</ThemedText>
+              <ThemedText className="mb-3 text-base font-semibold">{t('filters.specialFilters')}</ThemedText>
               <Pressable
                 onPress={handleNeedsAttentionToggle}
                 className="flex-row items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800"
@@ -431,9 +428,9 @@ export const PlantFilters = React.memo(({
                     className="mr-3 text-orange-500"
                   />
                   <ThemedView>
-                    <ThemedText className="font-medium">Needs Attention</ThemedText>
+                    <ThemedText className="font-medium">{t('filters.needsAttention')}</ThemedText>
                     <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
-                      Plants requiring immediate care
+                      {t('filters.needsAttentionDesc')}
                     </ThemedText>
                   </ThemedView>
                 </ThemedView>
@@ -457,7 +454,7 @@ export const PlantFilters = React.memo(({
 
             {/* Sort Options */}
             <ThemedView className="mb-8">
-              <ThemedText className="mb-3 text-base font-semibold">Sort By</ThemedText>
+              <ThemedText className="mb-3 text-base font-semibold">{t('filters.sortBy')}</ThemedText>
               <ThemedView className="space-y-2">
                 {SORT_OPTIONS.map((option) => (
                   <Pressable
@@ -526,12 +523,22 @@ const HealthRangeSlider = React.memo(({ value, onChange }: HealthRangeSliderProp
     triggerLightHaptic();
   }, []);
 
+  // Use context to store initial thumb positions for smooth movement
+  // Type for gesture context
+  // Closure variables for initial thumb positions
+  let minThumbStartX = 0;
+  let maxThumbStartX = 0;
+
   const minThumbGesture = Gesture.Pan()
+    .onStart(() => {
+      'worklet';
+      minThumbStartX = minThumbX.value;
+    })
     .onUpdate((event) => {
       'worklet';
       const newX = Math.max(
         0,
-        Math.min(event.translationX + minThumbX.value, maxThumbX.value - THUMB_SIZE)
+        Math.min(minThumbStartX + event.translationX, maxThumbX.value - THUMB_SIZE)
       );
       minThumbX.value = newX;
       const newValue = positionToValue(newX);
@@ -543,11 +550,15 @@ const HealthRangeSlider = React.memo(({ value, onChange }: HealthRangeSliderProp
     });
 
   const maxThumbGesture = Gesture.Pan()
+    .onStart(() => {
+      'worklet';
+      maxThumbStartX = maxThumbX.value;
+    })
     .onUpdate((event) => {
       'worklet';
       const newX = Math.max(
         minThumbX.value + THUMB_SIZE,
-        Math.min(event.translationX + maxThumbX.value, SLIDER_WIDTH)
+        Math.min(maxThumbStartX + event.translationX, SLIDER_WIDTH)
       );
       maxThumbX.value = newX;
       const newValue = positionToValue(newX);

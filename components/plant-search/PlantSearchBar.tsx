@@ -19,6 +19,7 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { triggerLightHaptic } from '@/lib/utils/haptics';
 import { EnhancedTextInput } from '@/components/ui/EnhancedTextInput';
@@ -36,12 +37,16 @@ interface PlantSearchBarProps {
 export const PlantSearchBar = React.memo(({
   onSearchChange,
   onFilterPress,
-  placeholder = 'Search plants...',
+  placeholder,
   showFilterBadge = false,
   initialValue = '',
 }: PlantSearchBarProps) => {
+  const { t } = useTranslation('plantSearch');
   const [searchQuery, setSearchQuery] = useState(initialValue);
   const debouncedQuery = useDebounce(searchQuery, 300);
+  
+  // Use provided placeholder or default to translation
+  const searchPlaceholder = placeholder || t('searchPlaceholder');
 
   // Animation values
   const clearButtonScale = useSharedValue(0);
@@ -55,7 +60,6 @@ export const PlantSearchBar = React.memo(({
 
   // Update filter badge animation when prop changes
   React.useEffect(() => {
-    'worklet';
     filterBadgeScale.value = withSpring(showFilterBadge ? 1 : 0, {
       damping: 15,
       stiffness: 200,
@@ -64,7 +68,6 @@ export const PlantSearchBar = React.memo(({
 
   // Update clear button visibility
   React.useEffect(() => {
-    'worklet';
     clearButtonScale.value = withSpring(searchQuery.length > 0 ? 1 : 0, {
       damping: 15,
       stiffness: 200,
@@ -76,7 +79,6 @@ export const PlantSearchBar = React.memo(({
   }, []);
 
   const handleClearPress = useCallback(() => {
-    'worklet';
     setSearchQuery('');
     triggerLightHaptic();
     
@@ -92,12 +94,10 @@ export const PlantSearchBar = React.memo(({
   }, [onFilterPress]);
 
   const handleFocus = useCallback(() => {
-    'worklet';
     searchBarScale.value = withSpring(1.02, { damping: 15 });
   }, []);
 
   const handleBlur = useCallback(() => {
-    'worklet';
     searchBarScale.value = withSpring(1, { damping: 15 });
   }, []);
 
@@ -139,7 +139,7 @@ export const PlantSearchBar = React.memo(({
         {/* Search Input Container */}
         <ThemedView className="flex-1">
           <EnhancedTextInput
-            placeholder={placeholder}
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChangeText={handleSearchChange}
             onFocus={handleFocus}
@@ -155,10 +155,12 @@ export const PlantSearchBar = React.memo(({
         </ThemedView>
 
         {/* Filter Button */}
-        <Pressable
-          onPress={handleFilterPress}
-          className="relative h-12 w-12 items-center justify-center rounded-lg border-2 border-neutral-300 bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800"
-        >
+          <Pressable
+            onPress={handleFilterPress}
+            className="relative h-12 w-12 items-center justify-center rounded-lg border-2 border-neutral-300 bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800"
+            accessibilityLabel="Filter plants"
+            accessibilityRole="button"
+          >
           <OptimizedIcon
             name="settings"
             size={20}

@@ -75,20 +75,20 @@ export default function PotencySlider({
       triggerSelectionHaptic();
     }
   }, [enableHaptics]);
-  // Context for gesture handling
-  const minThumbContext = useSharedValue({ startX: 0 });
-  const maxThumbContext = useSharedValue({ startX: 0 });
+  // Closure variables for initial thumb positions
+  let minThumbStartX = 0;
+  let maxThumbStartX = 0;
 
   // Min thumb gesture
   const minThumbGesture = Gesture.Pan()
     .onStart(() => {
-      minThumbContext.value.startX = minThumbX.value;
+      minThumbStartX = minThumbX.value;
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
       const newX = Math.max(
         0,
-        Math.min(minThumbContext.value.startX + event.translationX, maxThumbX.value - THUMB_SIZE)
+        Math.min(minThumbStartX + event.translationX, maxThumbX.value - THUMB_SIZE)
       );
       minThumbX.value = newX;
     })
@@ -102,13 +102,13 @@ export default function PotencySlider({
   // Max thumb gesture
   const maxThumbGesture = Gesture.Pan()
     .onStart(() => {
-      maxThumbContext.value.startX = maxThumbX.value;
+      maxThumbStartX = maxThumbX.value;
       runOnJS(triggerHaptic)();
     })
     .onUpdate((event) => {
       const newX = Math.max(
         minThumbX.value + THUMB_SIZE,
-        Math.min(maxThumbContext.value.startX + event.translationX, SLIDER_WIDTH)
+        Math.min(maxThumbStartX + event.translationX, SLIDER_WIDTH)
       );
       maxThumbX.value = newX;
     })

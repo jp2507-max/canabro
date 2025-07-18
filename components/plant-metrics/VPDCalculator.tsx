@@ -52,7 +52,7 @@ export const VPDCalculator: React.FC<VPDCalculatorProps> = ({
         color: 'text-green-600 dark:text-green-400',
         bgColor: 'bg-green-50 dark:bg-green-900/20',
         borderColor: 'border-green-200 dark:border-green-800',
-        icon: 'check-circle',
+        icon: 'checkmark-circle',
         message: t('vpdCalculator.optimal'),
       };
     } else if (vpdValue < 0.8) {
@@ -61,7 +61,7 @@ export const VPDCalculator: React.FC<VPDCalculatorProps> = ({
         color: 'text-blue-600 dark:text-blue-400',
         bgColor: 'bg-blue-50 dark:bg-blue-900/20',
         borderColor: 'border-blue-200 dark:border-blue-800',
-        icon: 'arrow-down',
+        icon: 'chevron-down',
         message: t('vpdCalculator.tooLow'),
       };
     } else {
@@ -70,7 +70,7 @@ export const VPDCalculator: React.FC<VPDCalculatorProps> = ({
         color: 'text-orange-600 dark:text-orange-400',
         bgColor: 'bg-orange-50 dark:bg-orange-900/20',
         borderColor: 'border-orange-200 dark:border-orange-800',
-        icon: 'arrow-up',
+        icon: 'chevron-up',
         message: t('vpdCalculator.tooHigh'),
       };
     }
@@ -100,7 +100,7 @@ export const VPDCalculator: React.FC<VPDCalculatorProps> = ({
       <ThemedView className="flex-row items-center justify-between">
         <ThemedView className="flex-row items-center space-x-2">
           <OptimizedIcon
-            name={isValidIconName(status.icon) ? status.icon : 'default'}
+            name={isValidIconName(status.icon) ? status.icon : 'help-circle'}
             size={18}
             className={status.color}
           />

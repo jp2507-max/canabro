@@ -113,6 +113,7 @@ const HarvestItem: React.FC<HarvestItemProps> = ({
                 name={getRankIcon(index)} 
                 size={20} 
                 className={getRankColor(index)} 
+                aria-label={`Rank ${index + 1} icon`} 
               />
               <View>
                 <ThemedText className="font-semibold text-neutral-900 dark:text-neutral-100">
@@ -129,8 +130,8 @@ const HarvestItem: React.FC<HarvestItemProps> = ({
             </ThemedText>
           </View>
 
-          <View className="grid grid-cols-2 gap-4">
-            <View>
+          <View className="flex-row flex-wrap">
+            <View className="w-1/2 pb-4 pr-2">
               <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
                 {t('harvestHistory.totalYield')}
               </ThemedText>
@@ -138,8 +139,7 @@ const HarvestItem: React.FC<HarvestItemProps> = ({
                 {formatWeight(comparison.totalYield, 'grams')}
               </ThemedText>
             </View>
-            
-            <View>
+            <View className="w-1/2 pb-4 pl-2">
               <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
                 {t('harvestHistory.yieldPerDay')}
               </ThemedText>
@@ -147,8 +147,7 @@ const HarvestItem: React.FC<HarvestItemProps> = ({
                 {formatWeight(comparison.yieldPerDay, 'grams')}/day
               </ThemedText>
             </View>
-            
-            <View>
+            <View className="w-1/2 pt-2 pr-2">
               <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
                 {t('harvestHistory.growDays')}
               </ThemedText>
@@ -156,8 +155,7 @@ const HarvestItem: React.FC<HarvestItemProps> = ({
                 {comparison.growDays} {t('common.days')}
               </ThemedText>
             </View>
-            
-            <View>
+            <View className="w-1/2 pt-2 pl-2">
               <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
                 {t('harvestHistory.dryingEfficiency')}
               </ThemedText>
@@ -335,49 +333,45 @@ export const HarvestHistory: React.FC<HarvestHistoryProps> = ({
 
       {/* Summary Statistics */}
       {averageMetrics && showComparison && (
-        <ThemedView className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
-          <ThemedText variant="heading" className="text-base font-semibold mb-3">
-            {t('harvestHistory.summary.title')}
-          </ThemedText>
-          
-          <View className="grid grid-cols-2 gap-4">
-            <View>
-              <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
-                {t('harvestHistory.summary.averageYield')}
+            <ThemedView className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
+              <ThemedText variant="heading" className="text-base font-semibold mb-3">
+                {t('harvestHistory.summary.title')}
               </ThemedText>
-              <ThemedText className="text-lg font-bold text-primary-700 dark:text-primary-300">
-                {formatWeight(averageMetrics.averageTotalYield, 'grams')}
-              </ThemedText>
-            </View>
-            
-            <View>
-              <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
-                {t('harvestHistory.summary.bestYield')}
-              </ThemedText>
-              <ThemedText className="text-lg font-bold text-primary-700 dark:text-primary-300">
-                {formatWeight(averageMetrics.bestYield, 'grams')}
-              </ThemedText>
-            </View>
-            
-            <View>
-              <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
-                {t('harvestHistory.summary.averageGrowDays')}
-              </ThemedText>
-              <ThemedText className="text-base font-semibold text-primary-700 dark:text-primary-300">
-                {averageMetrics.averageGrowDays} {t('common.days')}
-              </ThemedText>
-            </View>
-            
-            <View>
-              <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
-                {t('harvestHistory.summary.totalHarvests')}
-              </ThemedText>
-              <ThemedText className="text-base font-semibold text-primary-700 dark:text-primary-300">
-                {averageMetrics.totalHarvests}
-              </ThemedText>
-            </View>
-          </View>
-        </ThemedView>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                <View style={{ width: '50%', paddingBottom: 16, paddingRight: 8 }}>
+                  <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
+                    {t('harvestHistory.summary.averageYield')}
+                  </ThemedText>
+                  <ThemedText className="text-lg font-bold text-primary-700 dark:text-primary-300">
+                    {formatWeight(averageMetrics.averageTotalYield, 'grams')}
+                  </ThemedText>
+                </View>
+                <View style={{ width: '50%', paddingBottom: 16, paddingLeft: 8 }}>
+                  <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
+                    {t('harvestHistory.summary.bestYield')}
+                  </ThemedText>
+                  <ThemedText className="text-lg font-bold text-primary-700 dark:text-primary-300">
+                    {formatWeight(averageMetrics.bestYield, 'grams')}
+                  </ThemedText>
+                </View>
+                <View style={{ width: '50%', paddingTop: 8, paddingRight: 8 }}>
+                  <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
+                    {t('harvestHistory.summary.averageGrowDays')}
+                  </ThemedText>
+                  <ThemedText className="text-base font-semibold text-primary-700 dark:text-primary-300">
+                    {averageMetrics.averageGrowDays} {t('common.days')}
+                  </ThemedText>
+                </View>
+                <View style={{ width: '50%', paddingTop: 8, paddingLeft: 8 }}>
+                  <ThemedText className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-wide">
+                    {t('harvestHistory.summary.totalHarvests')}
+                  </ThemedText>
+                  <ThemedText className="text-base font-semibold text-primary-700 dark:text-primary-300">
+                    {averageMetrics.totalHarvests}
+                  </ThemedText>
+                </View>
+              </View>
+            </ThemedView>
       )}
 
       {/* Export Actions */}

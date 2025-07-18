@@ -630,5 +630,36 @@
       "title": "Keine Pflanzen zum Vergleichen",
       "subtitle": "Erfassen Sie Ernten von mehreren Pflanzen, um ihre Leistung zu vergleichen"
     }
+  },
+  "plantSearch": {
+    "title": "Pflanzen suchen",
+    "searchPlaceholder": "Pflanzen suchen...",
+    "filterPlants": "Pflanzen filtern",
+    "clearAll": "Alle löschen",
+    "plantsFound": "{{count}} Pflanze gefunden",
+    "plantsFound_other": "{{count}} Pflanzen gefunden",
+    "clearFilters": "Filter löschen",
+    "noResults": {
+      "noMatchSearch": "Keine Pflanzen entsprechen Ihrer Suche",
+      "noMatchFilters": "Keine Pflanzen entsprechen Ihren Filtern",
+      "noPlants": "Keine Pflanzen gefunden",
+      "tryDifferent": "Versuchen Sie andere Suchbegriffe oder passen Sie Ihre Filter an",
+      "adjustFilters": "Versuchen Sie, Ihre Filter anzupassen oder zu löschen",
+      "addFirst": "Fügen Sie Ihre erste Pflanze hinzu, um zu beginnen"
+    },
+    "filters": {
+      "quickFilters": "Schnellfilter",
+      "needsAttention": "Benötigt Aufmerksamkeit",
+      "needsAttentionDesc": "Pflanzen, die sofortige Pflege benötigen",
+      "floweringPlants": "Blühende Pflanzen",
+      "floweringPlantsDesc": "Pflanzen in der Blütephase",
+      "healthyPlants": "Gesunde Pflanzen",
+      "healthyPlantsDesc": "Pflanzen mit Gesundheit > 80%",
+      "growthStages": "Wachstumsstadien",
+      "strainTypes": "Sortentypen",
+      "healthRange": "Gesundheitsbereich",
+      "specialFilters": "Spezialfilter",
+      "sortBy": "Sortieren nach"
+    }
   }
 }

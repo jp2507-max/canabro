@@ -630,5 +630,36 @@
       "title": "No Plants to Compare",
       "subtitle": "Record harvests from multiple plants to compare their performance"
     }
+  },
+  "plantSearch": {
+    "title": "Search Plants",
+    "searchPlaceholder": "Search plants...",
+    "filterPlants": "Filter Plants",
+    "clearAll": "Clear All",
+    "plantsFound": "{{count}} plant found",
+    "plantsFound_other": "{{count}} plants found",
+    "clearFilters": "Clear Filters",
+    "noResults": {
+      "noMatchSearch": "No plants match your search",
+      "noMatchFilters": "No plants match your filters",
+      "noPlants": "No plants found",
+      "tryDifferent": "Try different keywords or adjust your filters",
+      "adjustFilters": "Try adjusting or clearing your filters",
+      "addFirst": "Add your first plant to get started"
+    },
+    "filters": {
+      "quickFilters": "Quick Filters",
+      "needsAttention": "Needs Attention",
+      "needsAttentionDesc": "Plants requiring immediate care",
+      "floweringPlants": "Flowering Plants",
+      "floweringPlantsDesc": "Plants in flowering stage",
+      "healthyPlants": "Healthy Plants",
+      "healthyPlantsDesc": "Plants with health > 80%",
+      "growthStages": "Growth Stages",
+      "strainTypes": "Strain Types",
+      "healthRange": "Health Range",
+      "specialFilters": "Special Filters",
+      "sortBy": "Sort By"
+    }
   }
 }

@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -69,7 +70,7 @@ const ComparisonCard: React.FC<ComparisonCardProps> = ({
       'worklet';
       scale.value = withSpring(1, SPRING_CONFIG);
       if (onPress) {
-        onPress();
+        runOnJS(onPress)();
       }
     });
 
@@ -86,32 +87,25 @@ const ComparisonCard: React.FC<ComparisonCardProps> = ({
     <GestureDetector gesture={gesture}>
       <Animated.View style={animatedStyle}>
         <ThemedView 
-          className={`
-            rounded-lg border p-4 mb-3 relative
-            ${isSelected 
-              ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700' 
-              : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
-            }
-          `}
+          className={`rounded-lg border p-4 mb-3 relative ${isSelected 
+            ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700' 
+            : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
+          }`}
         >
           {/* Rank Badge */}
-          <View className={`absolute -top-2 -right-2 w-8 h-8 rounded-full ${rankBadge.bg} items-center justify-center border border-neutral-200 dark:border-neutral-700`}>
-              <View
-                accessible={true}
-                accessibilityLabel={`Rank badge: ${rank === 1 ? 'Gold' : rank === 2 ? 'Silver' : rank === 3 ? 'Bronze' : `Rank ${rank}`}`}
-                className={`absolute -top-2 -right-2 w-8 h-8 rounded-full ${rankBadge.bg} items-center justify-center border border-neutral-200 dark:border-neutral-700`}
-              >
-                <OptimizedIcon name={rankBadge.icon} size={16} className={rankBadge.color} />
-              </View>
+          <View
+            className={`absolute -top-2 -right-2 w-8 h-8 rounded-full ${rankBadge.bg} items-center justify-center border border-neutral-200 dark:border-neutral-700`}
+          >
+            <OptimizedIcon name={rankBadge.icon} size={16} className={rankBadge.color} />
           </View>
 
           {/* Selection Indicator */}
           {isSelected && (
-              <View
-                accessible={true}
-                accessibilityLabel={isSelected ? 'Selected plant indicator' : 'Unselected plant indicator'}
-                className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-primary-500 items-center justify-center"
-              >
+            <View
+              accessible={true}
+              accessibilityLabel={isSelected ? 'Selected plant indicator' : 'Unselected plant indicator'}
+              className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-primary-500 items-center justify-center"
+            >
               <OptimizedIcon name="checkmark" size={12} className="text-white" />
             </View>
           )}
@@ -209,7 +203,7 @@ const SortButton: React.FC<SortButtonProps> = ({ label, isActive, onPress }) => 
     .onFinalize(() => {
       'worklet';
       scale.value = withSpring(1, SPRING_CONFIG);
-      onPress();
+      runOnJS(onPress)();
     });
 
   return (
