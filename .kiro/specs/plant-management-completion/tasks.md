@@ -160,7 +160,8 @@
   - Create smooth animations for state changes using Reanimated v3
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [x] 5.2 Create PlantFilters component
+- [ ] 5.2 Create PlantFilters component
+
 
 
 
@@ -182,7 +183,14 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
 - [ ] 6. Implement care reminders and notification system
-- [ ] 6.1 Create CareReminders component
+- [x] 6.1 Create CareReminders component
+
+
+
+
+
+
+
   - Build reminder cards with plant photos and action buttons
   - Implement quick actions (Mark Done, Snooze, Reschedule)
   - Add batch operations for multiple plants

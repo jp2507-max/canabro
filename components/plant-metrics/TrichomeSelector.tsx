@@ -83,10 +83,12 @@ export const TrichomeSelector: React.FC<TrichomeSelectorProps> = ({
   error,
 }) => {
   const { t: _t } = useTranslation();
+  const { colorScheme: schemeRaw } = useColorScheme();
+  // Ensure colorScheme is always 'light' or 'dark'
+  const colorScheme: 'light' | 'dark' = schemeRaw === 'dark' ? 'dark' : 'light';
 
   const handleSelect = (selectedValue: TrichomeStatus) => {
     if (selectedValue === value) return;
-    
     onChange(selectedValue);
     triggerSelectionHaptic();
   };
@@ -98,7 +100,6 @@ export const TrichomeSelector: React.FC<TrichomeSelectorProps> = ({
           {label}
         </ThemedText>
       )}
-
       <ThemedView className="space-y-2">
         {TRICHOME_OPTIONS.map((option) => (
           <TrichomeOption
@@ -106,10 +107,10 @@ export const TrichomeSelector: React.FC<TrichomeSelectorProps> = ({
             option={option}
             isSelected={value === option.value}
             onSelect={() => handleSelect(option.value)}
+            colorScheme={colorScheme}
           />
         ))}
       </ThemedView>
-
       {error && (
         <ThemedText className="text-sm text-red-500 dark:text-red-400">
           {error}
@@ -123,17 +124,17 @@ interface TrichomeOptionProps {
   option: TrichomeOption;
   isSelected: boolean;
   onSelect: () => void;
+  colorScheme: 'light' | 'dark';
 }
 
 import { useColorScheme } from 'nativewind';
-
-const TrichomeOption: React.FC<TrichomeOptionProps> = ({
+const TrichomeOption = React.memo(function TrichomeOption({
   option,
   isSelected,
   onSelect,
-}) => {
+  colorScheme,
+}: TrichomeOptionProps) {
   const { t } = useTranslation();
-  const { colorScheme } = useColorScheme();
   const scale = useSharedValue(1);
   const borderWidth = useSharedValue(isSelected ? 2 : 1);
   const backgroundColor = useSharedValue(isSelected ? 1 : 0);
@@ -143,7 +144,6 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
     backgroundColor.value = withSpring(isSelected ? 1 : 0);
   }, [isSelected, borderWidth, backgroundColor]);
 
-  // Cleanup: cancel scale animation on unmount to prevent memory leaks
   React.useEffect(() => {
     return () => {
       cancelAnimation(scale);
@@ -152,27 +152,26 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
 
   const animatedStyle = useAnimatedStyle(() => {
     'worklet';
-    // Use semantic tokens and NativeWind colorScheme for theming
     const isDark = colorScheme === 'dark';
     return {
       transform: [{ scale: scale.value }],
       borderWidth: borderWidth.value,
       borderColor: isSelected
-        ? 'rgb(34 197 94)' // green-500
+        ? 'rgb(34 197 94)'
         : isDark
-          ? 'rgb(38 38 38)' // neutral-800
-          : 'rgb(229 231 235)', // gray-200
+          ? 'rgb(38 38 38)'
+          : 'rgb(229 231 235)',
       backgroundColor: interpolateColor(
         backgroundColor.value,
         [0, 1],
         isDark
           ? [
-              'rgb(23 23 23)', // neutral-900
-              'rgb(20 83 45)', // green-900
+              'rgb(23 23 23)',
+              'rgb(20 83 45)',
             ]
           : [
-              'rgb(255 255 255)', // white
-              'rgb(240 253 244)', // green-50
+              'rgb(255 255 255)',
+              'rgb(240 253 244)',
             ]
       ),
     };
@@ -182,20 +181,15 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
     scale.value = withSpring(0.98);
     triggerLightHaptic();
   };
-
   const handlePressOut = () => {
     scale.value = withSpring(1);
   };
-
   const handlePress = () => {
     onSelect();
   };
 
   return (
-    <Animated.View
-      style={[animatedStyle]}
-      className="rounded-lg overflow-hidden"
-    >
+    <Animated.View style={animatedStyle} className="rounded-lg overflow-hidden">
       <Pressable
         className="p-4"
         onPressIn={handlePressIn}
@@ -203,7 +197,6 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
         onPress={handlePress}
       >
         <ThemedView className="flex-row items-center space-x-3">
-          {/* Color Indicator */}
           <ThemedView
             className="w-8 h-8 rounded-full items-center justify-center"
             style={{ backgroundColor: option.color }}
@@ -214,8 +207,6 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
               style={{ color: option.darkColor }}
             />
           </ThemedView>
-
-          {/* Content */}
           <ThemedView className="flex-1">
             <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
               {t(option.label)}
@@ -224,8 +215,6 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
               {t(option.description)}
             </ThemedText>
           </ThemedView>
-
-          {/* Selection Indicator */}
           {isSelected && (
             <ThemedView className="w-6 h-6 bg-green-500 rounded-full items-center justify-center">
               <OptimizedIcon
@@ -239,4 +228,4 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
       </Pressable>
     </Animated.View>
   );
-};
+});

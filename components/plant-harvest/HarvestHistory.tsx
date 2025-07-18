@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -73,7 +74,7 @@ const HarvestItem: React.FC<HarvestItemProps> = ({
       'worklet';
       scale.value = withSpring(1, SPRING_CONFIG);
       if (onPress) {
-        onPress();
+        runOnJS(onPress)();
       }
     });
 
@@ -196,7 +197,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ onPress, icon, label, disab
     .onFinalize(() => {
       'worklet';
       scale.value = withSpring(1, SPRING_CONFIG);
-      onPress();
+  runOnJS(onPress)();
     });
 
   return (

@@ -661,5 +661,61 @@
       "specialFilters": "Special Filters",
       "sortBy": "Sort By"
     }
+  },
+  "careReminders": {
+    "active": "Active Reminders",
+    "completed": "Completed Reminders",
+    "urgent": "Urgent",
+    "high": "High Priority",
+    "medium": "Medium Priority",
+    "low": "Low Priority",
+    "markDone": "Mark Done",
+    "snooze": "Snooze",
+    "reschedule": "Reschedule",
+    "overdue": "{{count}} days overdue",
+    "dueToday": "Due today",
+    "dueTomorrow": "Due tomorrow",
+    "dueInDays": "Due in {{count}} days",
+    "noActiveReminders": "All caught up!",
+    "noActiveRemindersDescription": "You have no active care reminders. Your plants are well taken care of.",
+    "noCompletedReminders": "No completed reminders",
+    "noCompletedRemindersDescription": "Completed reminders will appear here.",
+    "defaultNotificationBody": "Time to take care of your plant!",
+    "error": "Error",
+    "errorMarkingDone": "Failed to mark reminder as done. Please try again.",
+    "errorSnoozing": "Failed to snooze reminder. Please try again.",
+    "errorBatchMarkingDone": "Failed to mark reminders as done. Please try again.",
+    "errorBatchSnoozing": "Failed to snooze reminders. Please try again."
+  },
+  "notificationScheduler": {
+    "createReminder": "Create Reminder",
+    "reminderType": "Reminder Type",
+    "title": "Title",
+    "titlePlaceholder": "Enter reminder title",
+    "description": "Description (Optional)",
+    "descriptionPlaceholder": "Add additional details about this reminder",
+    "scheduledFor": "Scheduled For",
+    "repeatInterval": "Repeat Every (Days)",
+    "repeatIntervalPlaceholder": "Leave empty for one-time reminder",
+    "creating": "Creating...",
+    "types": {
+      "watering": "Watering",
+      "nutrients": "Nutrients",
+      "inspection": "Inspection",
+      "custom": "Custom"
+    },
+    "defaultDescriptions": {
+      "watering": "Time to water your plant",
+      "nutrients": "Time to feed your plant",
+      "inspection": "Time to check on your plant",
+      "custom": "Custom reminder for your plant"
+    },
+    "permissionRequired": "Notification Permission Required",
+    "permissionRequiredDescription": "To receive care reminders, please enable notifications in your device settings.",
+    "permissionsDisabled": "Notifications Disabled",
+    "permissionsDisabledDescription": "Enable notifications in your device settings to receive care reminders for your plants.",
+    "openSettings": "Open Settings",
+    "error": "Error",
+    "errorCreatingReminder": "Failed to create reminder. Please try again."
   }
 }

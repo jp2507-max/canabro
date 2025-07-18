@@ -523,22 +523,21 @@ const HealthRangeSlider = React.memo(({ value, onChange }: HealthRangeSliderProp
     triggerLightHaptic();
   }, []);
 
-  // Use context to store initial thumb positions for smooth movement
-  // Type for gesture context
-  // Closure variables for initial thumb positions
-  let minThumbStartX = 0;
-  let maxThumbStartX = 0;
+
+  // Use shared values for initial thumb positions for smooth movement
+  const minThumbStartX = useSharedValue(0);
+  const maxThumbStartX = useSharedValue(0);
 
   const minThumbGesture = Gesture.Pan()
     .onStart(() => {
       'worklet';
-      minThumbStartX = minThumbX.value;
+      minThumbStartX.value = minThumbX.value;
     })
     .onUpdate((event) => {
       'worklet';
       const newX = Math.max(
         0,
-        Math.min(minThumbStartX + event.translationX, maxThumbX.value - THUMB_SIZE)
+        Math.min(minThumbStartX.value + event.translationX, maxThumbX.value - THUMB_SIZE)
       );
       minThumbX.value = newX;
       const newValue = positionToValue(newX);
@@ -552,13 +551,13 @@ const HealthRangeSlider = React.memo(({ value, onChange }: HealthRangeSliderProp
   const maxThumbGesture = Gesture.Pan()
     .onStart(() => {
       'worklet';
-      maxThumbStartX = maxThumbX.value;
+      maxThumbStartX.value = maxThumbX.value;
     })
     .onUpdate((event) => {
       'worklet';
       const newX = Math.max(
         minThumbX.value + THUMB_SIZE,
-        Math.min(maxThumbStartX + event.translationX, SLIDER_WIDTH)
+        Math.min(maxThumbStartX.value + event.translationX, SLIDER_WIDTH)
       );
       maxThumbX.value = newX;
       const newValue = positionToValue(newX);

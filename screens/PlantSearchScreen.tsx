@@ -8,6 +8,7 @@
  * - Optimized for performance with large collections
  */
 import React, { useState, useCallback, useRef } from 'react';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 import { View } from 'react-native';
 import { useDatabase } from '@nozbe/watermelondb/hooks';
 import { useTranslation } from 'react-i18next';
@@ -68,48 +69,46 @@ export function PlantSearchScreen() {
   }, []);
 
   return (
-    <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
-      {/* Search Bar */}
-      <PlantSearchBar
-        onSearchChange={handleSearchChange}
-        onFilterPress={handleFilterPress}
-        showFilterBadge={hasActiveFilters}
-        initialValue={searchQuery}
-        placeholder={t('searchPlaceholder')}
-      />
-      
-      {/* Results Count */}
-      <ThemedView className="flex-row items-center justify-between px-4 pb-2">
-        <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
-          {t('plantsFound', { count: resultCount })}
-        </ThemedText>
-        
-        {hasActiveFilters && (
-          <ThemedText 
-            className="text-sm font-medium text-primary-600 dark:text-primary-400"
-            onPress={handleClearAllFilters}
-          >
-            {t('clearFilters')}
+    <EnhancedKeyboardWrapper>
+      <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+        {/* Search Bar */}
+        <PlantSearchBar
+          onSearchChange={handleSearchChange}
+          onFilterPress={handleFilterPress}
+          showFilterBadge={hasActiveFilters}
+          initialValue={searchQuery}
+          placeholder={t('searchPlaceholder')}
+        />
+        {/* Results Count */}
+        <ThemedView className="flex-row items-center justify-between px-4 pb-2">
+          <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
+            {t('plantsFound', { count: resultCount })}
           </ThemedText>
-        )}
+          {hasActiveFilters && (
+            <ThemedText 
+              className="text-sm font-medium text-primary-600 dark:text-primary-400"
+              onPress={handleClearAllFilters}
+            >
+              {t('clearFilters')}
+            </ThemedText>
+          )}
+        </ThemedView>
+        {/* Search Results */}
+        <SearchResults
+          database={database}
+          searchQuery={searchQuery}
+          filters={filters}
+          onCountChange={handleCountChange}
+        />
+        {/* Filters Modal */}
+        <PlantFilters
+          visible={showFilters}
+          onClose={handleFiltersClose}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          onClearAll={handleClearAllFilters}
+        />
       </ThemedView>
-      
-      {/* Search Results */}
-      <SearchResults
-        database={database}
-        searchQuery={searchQuery}
-        filters={filters}
-        onCountChange={handleCountChange}
-      />
-      
-      {/* Filters Modal */}
-      <PlantFilters
-        visible={showFilters}
-        onClose={handleFiltersClose}
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onClearAll={handleClearAllFilters}
-      />
-    </ThemedView>
+    </EnhancedKeyboardWrapper>
   );
 }

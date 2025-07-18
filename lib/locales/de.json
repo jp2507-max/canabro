@@ -661,5 +661,61 @@
       "specialFilters": "Spezialfilter",
       "sortBy": "Sortieren nach"
     }
+  },
+  "careReminders": {
+    "active": "Aktive Erinnerungen",
+    "completed": "Erledigte Erinnerungen",
+    "urgent": "Dringend",
+    "high": "Hohe Priorität",
+    "medium": "Mittlere Priorität",
+    "low": "Niedrige Priorität",
+    "markDone": "Erledigt",
+    "snooze": "Schlummern",
+    "reschedule": "Verschieben",
+    "overdue": "{{count}} Tage überfällig",
+    "dueToday": "Heute fällig",
+    "dueTomorrow": "Morgen fällig",
+    "dueInDays": "Fällig in {{count}} Tagen",
+    "noActiveReminders": "Alles erledigt!",
+    "noActiveRemindersDescription": "Sie haben keine aktiven Pflegeerinnerungen. Ihre Pflanzen sind gut versorgt.",
+    "noCompletedReminders": "Keine erledigten Erinnerungen",
+    "noCompletedRemindersDescription": "Erledigte Erinnerungen werden hier angezeigt.",
+    "defaultNotificationBody": "Zeit, sich um Ihre Pflanze zu kümmern!",
+    "error": "Fehler",
+    "errorMarkingDone": "Erinnerung konnte nicht als erledigt markiert werden. Bitte versuchen Sie es erneut.",
+    "errorSnoozing": "Erinnerung konnte nicht verschoben werden. Bitte versuchen Sie es erneut.",
+    "errorBatchMarkingDone": "Erinnerungen konnten nicht als erledigt markiert werden. Bitte versuchen Sie es erneut.",
+    "errorBatchSnoozing": "Erinnerungen konnten nicht verschoben werden. Bitte versuchen Sie es erneut."
+  },
+  "notificationScheduler": {
+    "createReminder": "Erinnerung erstellen",
+    "reminderType": "Erinnerungstyp",
+    "title": "Titel",
+    "titlePlaceholder": "Erinnerungstitel eingeben",
+    "description": "Beschreibung (Optional)",
+    "descriptionPlaceholder": "Zusätzliche Details zu dieser Erinnerung hinzufügen",
+    "scheduledFor": "Geplant für",
+    "repeatInterval": "Wiederholen alle (Tage)",
+    "repeatIntervalPlaceholder": "Leer lassen für einmalige Erinnerung",
+    "creating": "Erstelle...",
+    "types": {
+      "watering": "Gießen",
+      "nutrients": "Nährstoffe",
+      "inspection": "Kontrolle",
+      "custom": "Benutzerdefiniert"
+    },
+    "defaultDescriptions": {
+      "watering": "Zeit, Ihre Pflanze zu gießen",
+      "nutrients": "Zeit, Ihre Pflanze zu düngen",
+      "inspection": "Zeit, Ihre Pflanze zu kontrollieren",
+      "custom": "Benutzerdefinierte Erinnerung für Ihre Pflanze"
+    },
+    "permissionRequired": "Benachrichtigungsberechtigung erforderlich",
+    "permissionRequiredDescription": "Um Pflegeerinnerungen zu erhalten, aktivieren Sie bitte Benachrichtigungen in Ihren Geräteeinstellungen.",
+    "permissionsDisabled": "Benachrichtigungen deaktiviert",
+    "permissionsDisabledDescription": "Aktivieren Sie Benachrichtigungen in Ihren Geräteeinstellungen, um Pflegeerinnerungen für Ihre Pflanzen zu erhalten.",
+    "openSettings": "Einstellungen öffnen",
+    "error": "Fehler",
+    "errorCreatingReminder": "Erinnerung konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
   }
 }
