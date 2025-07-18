@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { OptimizedIcon } from './OptimizedIcon';
 import SyncStatus from './SyncStatus';
+import { useTranslation } from 'react-i18next';
 import ThemedText from './ThemedText';
 import ThemedView from './ThemedView';
 import UserAvatar from '../community/UserAvatar';
@@ -52,33 +53,33 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
     if (hour < 12) {
       return {
         icon: 'sunny-outline' as const,
-        greeting: 'Good Morning',
+        greeting: t('home.greetings.morning'),
         colorClass: 'text-amber-500',
       };
     } else if (hour < 18) {
       return {
         icon: 'sunny-outline' as const,
-        greeting: 'Good Afternoon',
+        greeting: t('home.greetings.afternoon'),
         colorClass: 'text-orange-500',
       };
     } else {
       return {
         icon: 'moon-outline' as const,
-        greeting: 'Good Evening',
+        greeting: t('home.greetings.evening'),
         colorClass: 'text-violet-500',
       };
     }
-  }, []);
+  }, [t]);
 
   const plantCountMessage = useMemo(() => {
     if (plantCount === 0) {
-      return 'Ready to start your grow journey?';
+      return t('home.plantCountMessages.zero');
     } else if (plantCount === 1) {
-      return 'Caring for 1 beautiful plant 🌱';
+      return t('home.plantCountMessages.one');
     } else {
-      return `Growing ${plantCount} amazing plants 🌿`;
+      return t('home.plantCountMessages.many', { count: plantCount });
     }
-  }, [plantCount]);
+  }, [plantCount, t]);
 
   return (
     <ThemedView className="mx-4 mb-4 mt-6 rounded-2xl border border-component-300 bg-component-50 p-6 shadow-lg dark:border-component-400 dark:bg-component-100">

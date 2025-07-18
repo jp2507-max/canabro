@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ interface PlantTaskFormData {
 }
 
 export default function AddPlantTaskScreen() {
+  const { t } = useTranslation('plantTasks');
   const router = useSafeRouter();
   const { selectedDate } = useLocalSearchParams<{ selectedDate?: string }>();
   const { session } = useAuth();
@@ -66,7 +68,7 @@ export default function AddPlantTaskScreen() {
       setPlants(plantData);
     } catch (error) {
       console.error('Error fetching plants:', error);
-      Alert.alert('Error', 'Failed to load your plants');
+      Alert.alert(t('error'), t('failedToLoadPlants'));
       // Fallback to mock data for development
       setPlants([
         { id: '1', name: 'Northern Lights #1', strain: 'Northern Lights' },
@@ -80,17 +82,17 @@ export default function AddPlantTaskScreen() {
 
   const handleSave = async () => {
     if (!formData.plantId || !formData.title.trim()) {
-      Alert.alert('Validation Error', 'Please select a plant and enter a task title');
+      Alert.alert(t('validationError'), t('selectPlantAndTitle'));
       return;
     }
 
     if (!session?.user?.id) {
-      Alert.alert('Authentication Error', 'Please log in to create tasks');
+      Alert.alert(t('authenticationError'), t('pleaseLogInToCreateTasks'));
       return;
     }
 
     if (!database) {
-      Alert.alert('Database Error', 'Database not available');
+      Alert.alert(t('databaseError'), t('databaseNotAvailable'));
       return;
     }
 
@@ -121,12 +123,17 @@ export default function AddPlantTaskScreen() {
       // TODO: Also save to Supabase for synchronization
       // This can be implemented later for cloud sync
 
-      Alert.alert('Success', 'Plant task created successfully!', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert(t('success'), t('plantTaskCreatedSuccessfully'), [
+        {
+          text: t('ok'),
+          onPress: () => {
+            router.back();
+          },
+        },
       ]);
     } catch (error) {
       console.error('Error creating plant task:', error);
-      Alert.alert('Error', 'Failed to create plant task. Please try again.', [{ text: 'OK' }]);
+      Alert.alert(t('error'), t('failedToCreateTask'));
     } finally {
       setSavingTask(false);
     }
@@ -139,7 +146,7 @@ export default function AddPlantTaskScreen() {
   if (loadingPlants) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
-        <Text className="text-gray-500 dark:text-gray-400">Loading your plants...</Text>
+        <Text className="text-gray-500 dark:text-gray-400">{t('loadingPlants')}</Text>
       </SafeAreaView>
     );
   }
@@ -152,12 +159,12 @@ export default function AddPlantTaskScreen() {
             {/* Plant Selection */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Select Plant
+                {t('selectPlant')}
               </Text>
               {plants.length === 0 ? (
                 <View className="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
                   <Text className="text-center text-gray-600 dark:text-gray-400">
-                    No plants found. Add a plant first to create plant-specific tasks.
+                    {t('noPlantsFound')}
                   </Text>
                 </View>
               ) : (
@@ -198,11 +205,11 @@ export default function AddPlantTaskScreen() {
             {/* Task Title */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Task Title
+                {t('taskTitle')}
               </Text>
               <TextInput
                 className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                placeholder="Enter task title"
+                placeholder={t('enterTaskTitle')}
                 placeholderTextColor="#9CA3AF"
                 value={formData.title}
                 onChangeText={(title) => setFormData((prev) => ({ ...prev, title }))}
@@ -212,11 +219,11 @@ export default function AddPlantTaskScreen() {
             {/* Description */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Description (Optional)
+                {t('descriptionOptional')}
               </Text>
               <TextInput
                 className="h-24 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                placeholder="Add task details..."
+                placeholder={t('addTaskDetails')}
                 placeholderTextColor="#9CA3AF"
                 multiline
                 textAlignVertical="top"
@@ -228,7 +235,7 @@ export default function AddPlantTaskScreen() {
             {/* Priority Selection */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Priority
+                {t('priority')}
               </Text>
               <View className="flex-row space-x-3">
                 {(['low', 'medium', 'high'] as const).map((priority) => (
@@ -246,7 +253,7 @@ export default function AddPlantTaskScreen() {
                           ? 'text-white'
                           : 'text-gray-900 dark:text-white'
                       }`}>
-                      {priority}
+                      {t(`priority.${priority}`)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -256,7 +263,7 @@ export default function AddPlantTaskScreen() {
             {/* Category Selection */}
             <View>
               <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Category
+                {t('category')}
               </Text>
               <View className="space-y-2">
                 {(['watering', 'feeding', 'pruning', 'inspection', 'other'] as const).map(
@@ -275,7 +282,7 @@ export default function AddPlantTaskScreen() {
                             ? 'text-white'
                             : 'text-gray-900 dark:text-white'
                         }`}>
-                        {category}
+                        {t(`category.${category}`)}
                       </Text>
                     </TouchableOpacity>
                   )
@@ -291,7 +298,7 @@ export default function AddPlantTaskScreen() {
             <TouchableOpacity
               className="flex-1 rounded-lg bg-gray-200 py-4 dark:bg-gray-700"
               onPress={handleCancel}>
-              <Text className="text-center font-semibold text-gray-900 dark:text-white">Cancel</Text>
+              <Text className="text-center font-semibold text-gray-900 dark:text-white">{t('cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               className={`flex-1 rounded-lg py-4 ${
@@ -302,7 +309,7 @@ export default function AddPlantTaskScreen() {
               onPress={handleSave}
               disabled={!formData.plantId || !formData.title.trim() || savingTask}>
               <Text className="text-center font-semibold text-white">
-                {savingTask ? 'Saving...' : 'Save Task'}
+                {savingTask ? t('saving') : t('saveTask')}
               </Text>
             </TouchableOpacity>
           </View>

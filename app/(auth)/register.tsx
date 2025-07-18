@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import ThemedText from '../../components/ui/ThemedText';
+import { useTranslation } from 'react-i18next';
 import ThemedView from '../../components/ui/ThemedView';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import supabase from '../../lib/supabase';
@@ -282,6 +283,7 @@ export default function RegisterScreen() {
     username?: string;
     confirmPassword?: string;
   }>({});
+  const { t } = useTranslation('auth');
   const [isLoading, setIsLoading] = useState(false);
   const [registrationState, setRegistrationState] = useState<RegistrationState | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -580,7 +582,7 @@ export default function RegisterScreen() {
               CanaBro
             </ThemedText>
             <ThemedText variant="muted" className="mt-2 text-center text-lg">
-              Join the growing community
+              {t('register.joinCommunity')}
             </ThemedText>
           </Animated.View>
 
@@ -597,7 +599,7 @@ export default function RegisterScreen() {
             <EnhancedTextInput
               ref={usernameRef}
               leftIcon="person"
-              placeholder="Username"
+              placeholder={t('register.usernamePlaceholder')}
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
@@ -615,7 +617,7 @@ export default function RegisterScreen() {
             <EnhancedTextInput
               ref={emailRef}
               leftIcon="mail"
-              placeholder="Email"
+              placeholder={t('register.emailPlaceholder')}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -632,7 +634,7 @@ export default function RegisterScreen() {
             <EnhancedTextInput
               ref={passwordRef}
               leftIcon="lock-closed"
-              placeholder="Password"
+              placeholder={t('register.passwordPlaceholder')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -650,7 +652,7 @@ export default function RegisterScreen() {
             <EnhancedTextInput
               ref={confirmPasswordRef}
               leftIcon="lock-closed"
-              placeholder="Confirm Password"
+              placeholder={t('register.confirmPasswordPlaceholder')}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
@@ -661,7 +663,7 @@ export default function RegisterScreen() {
 
             {!registrationState && (
               <AnimatedButton
-                title="Create Account"
+                title={t('register.createAccount')}
                 onPress={handleRegister}
                 loading={isLoading}
                 icon="person-add"
@@ -675,7 +677,7 @@ export default function RegisterScreen() {
             entering={FadeInDown.duration(800).delay(600)}
             className="mt-6 flex-row justify-center">
             <ThemedText variant="muted" className="text-base">
-              Already have an account?{' '}
+              {t('register.alreadyAccount')}{' '}
             </ThemedText>
             <Link href="/(auth)/login" asChild>
               <Pressable
@@ -684,7 +686,7 @@ export default function RegisterScreen() {
                 accessibilityLabel="Go to login screen"
                 accessibilityRole="link">
                 <ThemedText className="text-base font-semibold text-primary-500 dark:text-primary-400">
-                  Sign In
+                  {t('register.signIn')}
                 </ThemedText>
               </Pressable>
             </Link>

@@ -14,6 +14,7 @@ import Animated, {
 
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { useTranslation } from 'react-i18next';
 
 interface JournalCalendarProps {
   selectedDate?: Date;
@@ -129,6 +130,7 @@ export default function JournalCalendar({
   onDateSelect,
   plantAge = 32,
 }: JournalCalendarProps) {
+  const { t } = useTranslation();
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     // Start from the beginning of the week containing selectedDate
     const start = new Date(selectedDate);
@@ -186,13 +188,17 @@ export default function JournalCalendar({
           className="mb-4 flex-row items-center justify-between">
           <View className="flex-1">
             <ThemedText variant="muted" className="text-xs">
-              Week {weekNumber} • Day {plantAge}
+              {t('journal_calendar.week_info', {
+                week: weekNumber,
+                day: plantAge,
+                defaultValue: `Week ${weekNumber} • Day ${plantAge}`,
+              })}
             </ThemedText>
             <ThemedText className="text-sm font-medium">
               {(() => {
                 try {
                   if (!currentWeekStart || isNaN(currentWeekStart.getTime())) {
-                    return 'Invalid Date Range';
+                    return t('journal_calendar.invalid_date_range', 'Invalid Date Range');
                   }
                   const startStr = currentWeekStart.toLocaleDateString('en', {
                     month: 'short',
@@ -207,7 +213,7 @@ export default function JournalCalendar({
                   return `${startStr} - ${endStr}`;
                 } catch (error) {
                   console.error('[JournalCalendar] Error formatting week range:', error);
-                  return 'Date Error';
+                  return t('journal_calendar.date_error', 'Date Error');
                 }
               })()}
             </ThemedText>

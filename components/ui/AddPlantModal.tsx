@@ -2,6 +2,7 @@ import { BlurView as ExpoBlurView } from 'expo-blur';
 import * as Haptics from '@/lib/utils/haptics';
 import React, { useEffect } from 'react';
 import { Modal, Platform, useWindowDimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -27,6 +28,7 @@ interface AddPlantModalProps {
 }
 // ...existing code...
 export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProps) {
+  const { t } = useTranslation('addPlantModal');
   const { height: screenHeight } = useWindowDimensions();
   const { t } = useI18n();
 
@@ -236,7 +238,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
                       name="close"
                       size={24}
                       color="#6b7280"
-                      accessibilityLabel="Close modal"
+                      accessibilityLabel={t('closeModal')}
                     />
                   </Animated.View>
                 </GestureDetector>

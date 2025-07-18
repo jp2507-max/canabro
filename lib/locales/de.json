@@ -1,6 +1,13 @@
 {
   "common": {
     "welcome": "Willkommen",
+    "justNow": "Gerade eben",
+    "minutesAgo": "vor {{count}}m",
+    "hoursAgo": "vor {{count}}h",
+    "daysAgo": "vor {{count}}d",
+    "weeksAgo": "vor {{count}}w",
+    "monthsAgo": "vor {{count}}mo",
+    "yearsAgo": "vor {{count}}j",
     "language": "Sprache",
     "switch_to_german": "Wechseln zu Deutsch",
     "switch_to_english": "Wechseln zu Englisch",
@@ -35,7 +42,7 @@
   "navigation": {
     "tabs": {
       "home": "Startseite",
-      "strains": "Sorten", 
+      "strains": "Sorten",
       "calendar": "Kalender",
       "diagnosis": "Diagnose",
       "community": "Community"
@@ -45,6 +52,25 @@
       "addPlantTask": "Pflanzenaufgabe hinzufügen",
       "editPlant": "Pflanze bearbeiten",
       "newEntry": "Neuer Eintrag"
+    }
+  },
+  "home": {
+    "title": "Mein Garten",
+    "greetings": {
+      "morning": "Guten Morgen",
+      "afternoon": "Guten Tag",
+      "evening": "Guten Abend"
+    },
+    "plantCountMessages": {
+  "zero": "Du hast noch keine Pflanzen",
+  "one": "Du kümmerst dich um 1 schöne Pflanze",
+  "many": "Du pflegst viele Pflanzen ({{count}})",
+  "other": "Du pflegst {{count}} tolle Pflanzen"
+    },
+    "stats": {
+      "active": "Aktiv",
+      "thisWeek": "Diese Woche",
+      "fed": "Gefüttert"
     }
   },
   "addPlantForm": {
@@ -289,14 +315,6 @@
       "invalid": "Ungültige Eingabe"
     }
   },
-  "community": {
-    "createPost": "Beitrag erstellen",
-    "askQuestion": "Frage stellen",
-    "selectPostType": "Bitte wählen Sie einen Beitragstyp vor dem Absenden.",
-    "postCreated": "Beitrag erfolgreich erstellt!",
-    "deleting": "Wird gelöscht...",
-    "delete": "Löschen"
-  },
   "alerts": {
     "userNotAuthenticated": "Benutzer nicht authentifiziert oder Datenbank nicht verfügbar.",
     "plantAddedSuccess": "Pflanze erfolgreich hinzugefügt!",
@@ -308,7 +326,7 @@
   },
   "accessibility": {
     "logout": "Abmelden (temporärer Test-Button)",
-    "closeModal": "Modal schließen", 
+    "closeModal": "Modal schließen",
     "retryLoading": "Bildladen wiederholen",
     "closeDebugPanel": "Debug-Panel schließen",
     "resetDatabase": "Lokale Datenbank zurücksetzen",
@@ -323,39 +341,27 @@
     "addNewPlant": "Neue Pflanze hinzufügen",
     "goBack": "Zurück gehen"
   },
-  "diagnosis": {
-    "takePhoto": "Foto aufnehmen",
-    "goBack": "Zurück gehen",
-    "plantDoctor": "Pflanzenarzt",
-    "analyzePlant": "Pflanze analysieren",
-    "takePhotoDescription": "Machen Sie ein Foto Ihrer Pflanze und erhalten Sie",
-    "aiDiagnosis": "KI-gestützte Diagnose",
-    "inSeconds": "in Sekunden",
-    "cameraAccessibilityHint": "Öffnet die Kamera, um ein Pflanzenbild für die Diagnose aufzunehmen"
-  },
-  "debug": {
-    "resetDatabase": "Datenbank zurücksetzen",
-    "forceGarbageCollection": "Garbage Collection erzwingen",
-    "clear": "Löschen",
-    "memoryUsage": "Speicherverbrauch",
-    "issuesDetected": "Probleme erkannt",
-    "debugPanel": "Debug-Panel",
-    "resetDatabaseConfirmation": "Dies wird Ihre lokale Datenbank löschen, um Schema-Probleme zu beheben. Diese Aktion kann nicht rückgängig gemacht werden. Sind Sie sicher?",
-    "developmentMode": "Entwicklermodus",
-    "auth": "Authentifizierung",
-    "autoBypass": "Auto-Umgehung",
-    "manual": "Manuell",
-    "mockUser": "Mock-Benutzer",
-    "none": "Keine",
-    "userId": "Benutzer-ID",
-    "notLoggedIn": "Nicht angemeldet",
-    "useDevAuth": "Dev-Auth verwenden",
-    "developerOptions": "Entwickleroptionen",
-    "database": "Datenbank",
-    "resetDatabaseSchema": "Datenbank zurücksetzen (Schema reparieren)",
-    "close": "Schließen"
-  },
+
   "strains": {
+    "thc": "THC",
+    "cbd": "CBD",
+    "effectsLabel": "Effekte",
+    "noEffects": "N/A",
+    "viewDetails": "Details anzeigen",
+    "accessibility": {
+      "openDetails": "Details für {{name}} öffnen",
+      "thcContent": "THC-Gehalt",
+      "thcValue": "THC {{value}} Prozent",
+      "cbdContent": "CBD-Gehalt",
+      "cbdValue": "CBD {{value}} Prozent",
+      "effectsLabel": "Effekte Beschriftung",
+      "effects": "Effekte: {{effects}}",
+      "description": "Beschreibung: {{description}}",
+      "cardLabel": "Kartenansicht für Sorte {{name}}",
+      "cardHint": "Doppeltippen, um Details und Informationen zur {{type}}-Sorte anzuzeigen",
+      "addFavorite": "Zu Favoriten hinzufügen",
+      "removeFavorite": "Aus Favoriten entfernen"
+    },
     "type": {
       "sativa": "Sativa",
       "indica": "Indica",
@@ -433,6 +439,189 @@
     "tryDifferentSpelling": "Versuchen Sie eine andere Schreibweise oder weniger Zeichen.",
     "searchStrain": "Sorte suchen",
     "typeToSearch": "Zum Suchen tippen..."
+  },
+  "diagnosis": {
+    "title": "Pflanzenarzt",
+    "takePhotoDescription": "Mache ein klares Foto deiner Pflanze und lasse die KI es analysieren.",
+    "aiDiagnosis": "KI-Diagnose",
+    "inSeconds": "in Sekunden",
+    "takePhoto": "Foto aufnehmen",
+    "cameraAccessibilityHint": "Öffnet die Kamera, um ein Pflanzenfoto zu machen",
+    "features": {
+      "detectDiseases": "Krankheiten & Schädlinge erkennen",
+      "nutrientDeficiency": "Analyse von Nährstoffmangel",
+      "personalizedRecommendations": "Personalisierte Empfehlungen"
+    }
+  },
+  "community": {
+    "segment": {
+      "all": "Alle Beiträge",
+      "questions": "Fragen",
+      "plant_shares": "Pflanzenteilungen"
+    },
+    "accessibility": {
+      "filterBy": "Filtern nach {{segment}}"
+    },
+    "emptyState": {
+      "offlineTitle": "Community ist offline",
+      "offlineDescription": "Verbinde dich mit dem Internet, um Beiträge zu sehen und mit der Community zu interagieren.",
+      "noPostsTitle": "Noch keine Beiträge",
+      "noPostsDescription": "Sei der Erste, der seine Pflanzen teilt oder eine Frage stellt!"
+    },
+    "createPostModal": {
+      "title": "Erstellen",
+      "sharePlantTitle": "Pflanze teilen",
+      "sharePlantDescription": "Teile Fotos und Updates deiner Pflanzen",
+      "askQuestionTitle": "Frage stellen",
+      "askQuestionDescription": "Hole dir Hilfe von der Community bei Anbauproblemen"
+    },
+    "deletePostModal": {
+      "title": "{{type}} löschen?",
+      "message": "Dieser {{type}} wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "deleting": "Wird gelöscht...",
+      "types": {
+        "post": "Beitrag",
+        "comment": "Kommentar",
+        "question": "Frage",
+        "plantShare": "Pflanzenteilung"
+      }
+    },
+    "postTypeHeader": {
+      "question": "Frage",
+      "plantShare": "Pflanzenteilung",
+      "post": "Beitrag",
+      "answered": "Beantwortet",
+      "unanswered": "Unbeantwortet",
+      "careTips": "Pflegetipps"
+    },
+    "postAuthorRow": {
+      "you": "Du",
+      "privacyOptions": {
+        "everyone": "Jeder",
+        "followers": "Follower",
+        "private": "Privat"
+      },
+      "accessibility": {
+        "userAvatar": "{{userName}}s Avatar",
+        "privacySetting": "Privatsphäre-Einstellung: {{privacy}}",
+        "privacyHint": "Tippen, um Privatsphäre-Einstellungen zu ändern",
+        "setPrivacy": "Privatsphäre auf {{privacy}} setzen"
+      }
+    },
+    "postItem": {
+      "unknownUser": "Unbekannter Benutzer",
+      "userFallback": "Benutzer {{id}}"
+    },
+    "commentItem": {
+      "unknownUser": "Unbekannter Benutzer",
+      "you": "Du",
+      "reply": "Antworten",
+      "deleteDialogTitle": "Kommentar löschen?",
+      "deleteDialogMessage": "Dieser Kommentar wird dauerhaft gelöscht.",
+      "deleteError": "Der Kommentar konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
+    },
+    "time": {
+      "unknown": "Unbekannte Zeit",
+      "invalid": "Ungültige Zeit",
+      "s": "s",
+      "m": "m",
+      "h": "h",
+      "d": "t",
+      "w": "w",
+      "y": "j"
+    },
+    "communitySegmentedControl": {
+      "all": "Alle",
+      "questions": "Fragen",
+      "plant_shares": "Pflanzenteilungen",
+      "accessibility": {
+        "filterLabel": "Beiträge nach Kategorie filtern"
+      }
+    },
+    "questionPostItem": {
+      "anonymousUser": "Anonymer Benutzer",
+      "solved": "Gelöst",
+      "urgent": "Dringend",
+      "answers": "{{count}} Antworten",
+      "answers_one": "{{count}} Antwort",
+      "accessibility": {
+        "questionBy": "Frage: {{title}} von {{displayName}}",
+        "viewQuestion": "Frage ansehen: {{title}}",
+        "viewProfile": "Profil von {{name}} ansehen",
+        "viewProfileHint": "Doppeltippen, um das Benutzerprofil anzuzeigen",
+        "viewImage": "Fragebild ansehen",
+        "viewImageHint": "Doppeltippen, um das Bild im Vollbildmodus anzuzeigen",
+        "viewAnswers": "Antworten ansehen",
+        "deleteQuestion": "Frage löschen"
+      }
+    },
+    "growthStage": {
+      "seedling": "Sämling",
+      "vegetative": "Wachstum",
+      "flowering": "Blüte",
+      "fruiting": "Fruchtbildung",
+      "harvest": "Ernte",
+      "dormant": "Ruhend"
+    },
+    "commentModal": {
+      "inputPlaceholder": "Kommentar hinzufügen...",
+      "attachPhotoTitle": "Foto anhängen",
+      "attachPhotoMessage": "Wähle eine Option:",
+      "takePhoto": "Foto aufnehmen...",
+      "chooseFromLibrary": "Aus Bibliothek wählen...",
+      "cancel": "Abbrechen",
+      "removeImage": "Bild entfernen",
+      "attachPhoto": "Foto anhängen",
+      "sendComment": "Kommentar senden",
+      "failedToTakePhoto": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+      "failedToPickImage": "Bild konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
+      "failedToAddComment": "Kommentar konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
+      "failedToAddCommentPostMissing": "Kommentar konnte nicht hinzugefügt werden. Der zugehörige Beitrag existiert möglicherweise nicht mehr.",
+      "commentAddedWarning": "Kommentar hinzugefügt, konnte aber nicht sofort angezeigt werden.",
+      "commentPotentialWarningTitle": "Warnung",
+      "commentPotentialWarningMessage": "Kommentar wurde möglicherweise erstellt, konnte aber nicht sofort angezeigt werden."
+    }
+  },
+  "auth": {
+    "login": {
+      "emailPlaceholder": "E-Mail",
+      "passwordPlaceholder": "Passwort",
+      "signIn": "Anmelden",
+      "developerLogin": "Entwickler-Anmeldung",
+      "noAccount": "Noch kein Konto?",
+      "signUp": "Registrieren",
+      "welcomeSubtitle": "Willkommen zurück in deinem Garten"
+    },
+    "forgotPassword": {
+      "title": "Passwort vergessen?",
+      "subtitle": "Kein Problem! Gib deine E-Mail ein und wir senden dir einen Reset-Link.",
+      "emailPlaceholder": "E-Mail eingeben",
+      "button": "Reset-Link senden",
+      "buttonLoading": "Wird gesendet...",
+      "successTitle": "Überprüfe dein Postfach!",
+      "successMessage": "Ein Passwort-Reset-Link wurde an deine E-Mail-Adresse gesendet.",
+      "errorTitle": "Senden fehlgeschlagen",
+      "errorMessage": "Passwort-Reset-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+    },
+    "resetPassword": {
+      "title": "Passwort zurücksetzen",
+      "button": "Neues Passwort speichern",
+      "successTitle": "Passwort aktualisiert!",
+      "successMessage": "Du kannst dich jetzt mit deinem neuen Passwort anmelden.",
+      "errorTitle": "Aktualisierung fehlgeschlagen"
+    },
+    "register": {
+      "usernamePlaceholder": "Benutzername",
+      "emailPlaceholder": "E-Mail",
+      "passwordPlaceholder": "Passwort",
+      "confirmPasswordPlaceholder": "Passwort bestätigen",
+      "createAccount": "Konto erstellen",
+      "joinCommunity": "Der wachsenden Community beitreten",
+      "alreadyAccount": "Bereits ein Konto?",
+      "signIn": "Anmelden"
+    }
   },
   "devMode": {
     "indicator": "ENTWICKLERMODUS",
@@ -749,3 +938,4 @@
     "calendarWarning": "Erinnerung erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
   }
 }
+

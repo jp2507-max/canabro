@@ -162,16 +162,16 @@ export default function AddTaskToPlantScreen() {
           className="mt-4 text-center text-base"
           lightClassName="text-neutral-600"
           darkClassName="text-neutral-400">
-          No plants available. Please add a plant first.
+          {t('noPlantsAvailable')}
         </ThemedText>
         <TouchableOpacity
           className="mt-4 rounded-full bg-primary-500 px-6 py-3"
           onPress={() => router.push('/plant/add')}
           accessibilityRole="button"
-          accessibilityLabel="Add new plant">
+          accessibilityLabel={t('addNewPlant')}>
           <ThemedText
             className="font-medium text-white">
-            Add Plant
+            {t('addPlant')}
           </ThemedText>
         </TouchableOpacity>
       </View>
@@ -199,7 +199,7 @@ export default function AddTaskToPlantScreen() {
             onPress={() => router.back()}
             className="mr-3 rounded-full p-2"
             accessibilityRole="button"
-            accessibilityLabel="Go back">
+            accessibilityLabel={t('goBack')}>
             <Ionicons
               name="arrow-back"
               size={24}
@@ -207,7 +207,7 @@ export default function AddTaskToPlantScreen() {
             />
           </TouchableOpacity>
           <ThemedText className="flex-1 text-xl font-bold">
-            Add Task to Plant
+            {t('addTaskToPlant')}
           </ThemedText>
         </View>
 
@@ -218,7 +218,7 @@ export default function AddTaskToPlantScreen() {
             {/* Plant Selection */}
             <View className="mb-6">
               <ThemedText className="mb-3 text-lg font-semibold">
-                Select Plant
+                {t('selectPlant')}
               </ThemedText>
               <View className="space-y-2">
                 {plants.map((plant) => (
@@ -233,7 +233,7 @@ export default function AddTaskToPlantScreen() {
                     }`}
                     onPress={() => setSelectedPlant(plant.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Select plant ${plant.name}`}
+                    accessibilityLabel={t('selectPlantAccessibility', { plantName: plant.name })}
                     accessibilityState={{ selected: selectedPlant === plant.id }}>
                     <View className="flex-row items-center">
                       <View className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
@@ -246,11 +246,12 @@ export default function AddTaskToPlantScreen() {
                       <View className="flex-1">
                         <ThemedText className="text-base font-medium">
                           {plant.name}
-                        </ThemedText>                        <ThemedText
+                        </ThemedText>
+                        <ThemedText
                           className="text-sm"
                           lightClassName="text-neutral-600"
                           darkClassName="text-neutral-400">
-                          {plant.strain || 'Unknown strain'}
+                          {plant.strain || t('unknownStrain')}
                         </ThemedText>
                       </View>
                       {selectedPlant === plant.id && (
@@ -269,7 +270,7 @@ export default function AddTaskToPlantScreen() {
             {/* Task Type Selection */}
             <View className="mb-6">
               <ThemedText className="mb-3 text-lg font-semibold">
-                Task Type
+                {t('taskType')}
               </ThemedText>
               <View className="space-y-2">
                 {TASK_TYPES.map((taskType) => (
@@ -284,7 +285,7 @@ export default function AddTaskToPlantScreen() {
                     }`}
                     onPress={() => setSelectedTaskType(taskType.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Select task type ${taskType.name}`}
+                    accessibilityLabel={t('selectTaskTypeAccessibility', { taskTypeName: taskType.name })}
                     accessibilityState={{ selected: selectedTaskType === taskType.id }}>
                     <View className="flex-row items-center">
                       <View
@@ -315,7 +316,7 @@ export default function AddTaskToPlantScreen() {
             {/* Due Date Selection */}
             <View className="mb-6">
               <ThemedText className="mb-3 text-lg font-semibold">
-                Due Date
+                {t('dueDate')}
               </ThemedText>
               <TouchableOpacity
                 className={`rounded-xl border-2 p-4 ${
@@ -325,7 +326,7 @@ export default function AddTaskToPlantScreen() {
                 }`}
                 onPress={() => setShowDatePicker(true)}
                 accessibilityRole="button"
-                accessibilityLabel={`Select due date, currently ${formatDate(dueDate)}`}>
+                accessibilityLabel={t('selectDueDateAccessibility', { currentDate: formatDate(dueDate) })}>
                 <View className="flex-row items-center">
                   <Ionicons
                     name="calendar-outline"
@@ -347,7 +348,7 @@ export default function AddTaskToPlantScreen() {
             {/* Notes */}
             <View className="mb-6">
               <ThemedText className="mb-3 text-lg font-semibold">
-                Notes (Optional)
+                {t('notesOptional')}
               </ThemedText>
               <TextInput
                 className={`rounded-xl border-2 p-4 text-base ${
@@ -355,15 +356,15 @@ export default function AddTaskToPlantScreen() {
                     ? 'border-neutral-700 bg-neutral-800 text-white'
                     : 'border-neutral-200 bg-white text-black'
                 }`}
-                placeholder="Add any notes for this task..."
+                placeholder={t('addNotesPlaceholder')}
                 placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                accessibilityLabel="Task notes"
-                accessibilityHint="Optional notes for the task"
+                accessibilityLabel={t('taskNotesAccessibility')}
+                accessibilityHint={t('taskNotesHint')}
               />
             </View>
 
@@ -377,7 +378,7 @@ export default function AddTaskToPlantScreen() {
               onPress={handleAddTask}
               disabled={!selectedPlant || !selectedTaskType || isCreating}
               accessibilityRole="button"
-              accessibilityLabel="Add task"
+              accessibilityLabel={t('addTask')}
               accessibilityState={{
                 disabled: !selectedPlant || !selectedTaskType || isCreating,
               }}>
@@ -385,7 +386,7 @@ export default function AddTaskToPlantScreen() {
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <ThemedText className="text-center text-lg font-semibold text-white">
-                  Add Task
+                  {t('addTask')}
                 </ThemedText>
               )}
             </TouchableOpacity>

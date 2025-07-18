@@ -112,6 +112,8 @@ export default {
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       RAPIDAPI_KEY: process.env.EXPO_PUBLIC_RAPIDAPI_KEY,
+      // Password reset redirect URL for Supabase auth flows. Set this in your .env or CI/CD for each environment.
+      EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL: process.env.EXPO_PUBLIC_PASSWORD_RESET_REDIRECT_URL,
       router: {
         origin: false,
       },

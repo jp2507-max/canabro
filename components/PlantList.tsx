@@ -9,6 +9,7 @@ import { View, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import { PlantCard, Plant as PlantCardData } from './my-plants/PlantCard';
 import { OptimizedIcon } from './ui/OptimizedIcon';
 import ThemedText from './ui/ThemedText';
+import { useTranslation } from 'react-i18next';
 import { Plant as WDBPlant } from '../lib/models/Plant'; // Renamed to WDBPlant to avoid conflict
 import { usePlantAttention } from '@/lib/hooks/usePlantAttention';
 
@@ -24,11 +25,11 @@ interface PlantListComponentProps {
 }
 
 // This function now only needs the plant data, no theme dependency
-const getPlantCardData = (plant: WDBPlant): PlantCardData => {
+const getPlantCardData = (plant: WDBPlant, unknownStrain: string): PlantCardData => {
   return {
     id: plant.id,
     name: plant.name,
-    strainName: plant.strain || 'Unknown Strain',
+    strainName: plant.strain || unknownStrain,
     imageUrl: plant.imageUrl || '',
     // Use real data, providing defaults if optional fields are undefined
     healthPercentage: plant.healthPercentage ?? 75, // Default to 75% if undefined
@@ -39,6 +40,7 @@ const getPlantCardData = (plant: WDBPlant): PlantCardData => {
 
 // Updated EmptyPlantList Component - Full NativeWind v4 compliance
 const EmptyPlantList = React.memo(() => {
+  const { t } = useTranslation();
   return (
     <View className="mt-10 flex-1 items-center justify-center p-6">
       <OptimizedIcon
@@ -47,10 +49,10 @@ const EmptyPlantList = React.memo(() => {
         className="text-neutral-400 dark:text-neutral-600"
       />
       <ThemedText className="mt-4 text-center text-lg font-medium text-neutral-700 dark:text-neutral-300">
-        Keine Pflanzen hier
+        {t('plantList.empty.title')}
       </ThemedText>
       <ThemedText className="mt-2 px-6 text-center text-neutral-500 dark:text-neutral-400">
-        Füge deine erste Pflanze zu diesem Standort hinzu.
+        {t('plantList.empty.description')}
       </ThemedText>
     </View>
   );
@@ -115,11 +117,11 @@ const PlantListComponent = React.memo(
 
     const renderPlantCard = React.useCallback(
       ({ item: wdbPlantItem }: { item: WDBPlant }) => {
-        const plantCardData = getPlantCardData(wdbPlantItem);
+        const plantCardData = getPlantCardData(wdbPlantItem, t('plantList.unknownStrain'));
 
         return <PlantCard plant={plantCardData} onPress={handlePress} />;
       },
-      [handlePress]
+      [handlePress, t]
     );
 
     const keyExtractor = React.useCallback((item: WDBPlant) => item.id, []);
@@ -138,7 +140,7 @@ const PlantListComponent = React.memo(
         <View className="mt-10 flex-1 items-center justify-center">
           <ActivityIndicator size="large" className="text-primary-500" />
           <ThemedText className="mt-3 text-neutral-600 dark:text-neutral-400">
-            Loading plants...
+            {t('plantList.loading')}
           </ThemedText>
         </View>
       );

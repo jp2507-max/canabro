@@ -1,6 +1,7 @@
 import * as Haptics from '@/lib/utils/haptics';
 import { Image as ExpoImage } from 'expo-image';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {

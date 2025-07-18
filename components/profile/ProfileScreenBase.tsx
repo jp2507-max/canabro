@@ -12,6 +12,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import ProfileDetail from './ProfileDetail';
 import StatItem from './StatItem';
@@ -47,6 +48,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
   isRefreshing = false,
   onRefresh,
 }) {
+  const { t } = useTranslation();
   const { triggerSync } = useSyncContext();
   const { t } = useI18n();
 
@@ -149,7 +151,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
             <ThemedView className="flex-row space-x-4">
               <StatItem
                 value={plantsCount}
-                label="Plants"
+                label={t('profile.statistics.plants')}
                 icon="leaf"
                 index={0}
                 // onPress={() => {
@@ -159,7 +161,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               />
               <StatItem
                 value={postsCount}
-                label="Posts"
+                label={t('profile.statistics.posts')}
                 icon="chatbubble-ellipses"
                 index={1}
                 // onPress={() => {
@@ -181,25 +183,25 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               {t('common.information')}
             </ThemedText>
             <ProfileDetail 
-              label="Username" 
+              label={t('profile.information.username')} 
               value={profile?.username} 
               icon="person" 
               index={0} 
             />
             <ProfileDetail 
-              label="User ID" 
+              label={t('profile.information.userId')} 
               value={profile?.userId} 
               icon="mail" 
               index={1} 
             />
             <ProfileDetail
-              label="Experience"
+              label={t('profile.information.experience')}
               value={profile?.experienceLevel}
               icon="medal"
               index={2}
             />
             <ProfileDetail
-              label="Grow Method"
+              label={t('profile.information.growMethod')}
               value={profile?.preferredGrowMethod}
               icon="flower"
               index={3}

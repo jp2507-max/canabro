@@ -1,6 +1,6 @@
 # Task ID: 10
 # Title: Design Supabase Database Schema
-# Status: pending
+# Status: done
 # Dependencies: 9
 # Priority: high
 # Description: Create comprehensive database schema for users, plants, strains, community posts, and related entities with proper relationships

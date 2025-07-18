@@ -9,10 +9,13 @@ import Animated, {
   withTiming,
   withDelay,
   runOnUI,
+  
+  
   runOnJS,
   interpolateColor as rInterpolateColor,
   WithTimingConfig,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
@@ -154,6 +157,8 @@ const LegacyCreatePostModal = React.memo(function LegacyCreatePostModal({
   onAskQuestion,
 }: CreatePostModalProps) {
   const { height: screenHeight } = useWindowDimensions();
+  // i18n translation hook
+  const { t } = useTranslation('community');
 
   // 🧹 Timer cleanup refs to prevent memory leaks
   const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
@@ -422,7 +427,7 @@ const LegacyCreatePostModal = React.memo(function LegacyCreatePostModal({
                 {/* 📝 Enhanced Content Section */}
                 <View className="pb-safe-or-6 px-6">
                   <ThemedText className="mb-6 text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                    Create
+                    {t('createPostModal.title')}
                   </ThemedText>
 
                   {/* 🌱 Enhanced Share Plant Option */}
@@ -434,10 +439,10 @@ const LegacyCreatePostModal = React.memo(function LegacyCreatePostModal({
                         </View>
                         <View className="flex-1">
                           <ThemedText className="mb-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                            Share a Plant
+                            {t('createPostModal.sharePlantTitle')}
                           </ThemedText>
                           <ThemedText className="text-base leading-5 text-neutral-600 dark:text-neutral-400">
-                            Post photos and updates about your plants
+                            {t('createPostModal.sharePlantDescription')}
                           </ThemedText>
                         </View>
                         <OptimizedIcon
@@ -458,10 +463,10 @@ const LegacyCreatePostModal = React.memo(function LegacyCreatePostModal({
                         </View>
                         <View className="flex-1">
                           <ThemedText className="mb-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                            Ask a Question
+                            {t('createPostModal.askQuestionTitle')}
                           </ThemedText>
                           <ThemedText className="text-base leading-5 text-neutral-600 dark:text-neutral-400">
-                            Get help from the community on growing issues
+                            {t('createPostModal.askQuestionDescription')}
                           </ThemedText>
                         </View>
                         <OptimizedIcon
