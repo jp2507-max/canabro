@@ -518,6 +518,7 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
         {/* Date Picker Modal */}
         {showDatePicker && (
           <DateTimePicker
+            testID="dateTimePicker"
             value={watchedScheduledFor}
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
@@ -529,6 +530,7 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
         {/* Time Picker Modal */}
         {showTimePicker && (
           <DateTimePicker
+            testID="dateTimePicker"
             value={watchedScheduledFor}
             mode="time"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}

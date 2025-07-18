@@ -57,10 +57,17 @@ jest.spyOn(Alert, 'alert');
 
 const mockPlant = {
   id: 'plant-1',
+  journalId: 'journal-1',
   name: 'Test Plant',
   strain: 'Test Strain',
+  strainName: 'Test Strain', // For display logic
+  plantedDate: '2025-01-01',
+  growthStage: 'vegetative',
+  userId: 'user-1',
+  createdAt: new Date(),
+  updatedAt: new Date(),
   imageUrl: 'https://example.com/image.jpg',
-} as Plant;
+} as unknown as Plant;
 
 describe('NotificationScheduler', () => {
   beforeEach(() => {
@@ -168,8 +175,10 @@ describe('NotificationScheduler', () => {
       fireEvent.press(getByText('notificationScheduler.types.watering'));
       fireEvent.press(getByText('notificationScheduler.scheduledFor'));
       // Simulate date/time picker selection
-      // (Assume picker opens and sets date)
-      // fireEvent(getByTestId('dateTimePicker'), 'onChange', { nativeEvent: { timestamp: Date.now() } });
+      fireEvent(getByTestId('dateTimePicker'), 'onChange', {
+        nativeEvent: { timestamp: Date.now() },
+        type: 'set',
+      });
 
       fireEvent.press(getByText('common.save'));
 
@@ -228,11 +237,13 @@ describe('NotificationScheduler', () => {
       );
 
       const calendarToggle = getByTestId('calendar-toggle');
+    // Assert initial state before any interaction
+    expect(calendarToggle.props.accessibilityState.checked).toBe(false);
       fireEvent.press(calendarToggle);
       // Should reflect toggle state (checked/unchecked)
-      expect(calendarToggle.props.accessibilityState.checked).toBe(true);
+    expect(calendarToggle.props.accessibilityState.checked).toBe(true);
       fireEvent.press(calendarToggle);
-      expect(calendarToggle.props.accessibilityState.checked).toBe(false);
+    expect(calendarToggle.props.accessibilityState.checked).toBe(false);
     });
 
     it('handles date/time picker interaction', () => {

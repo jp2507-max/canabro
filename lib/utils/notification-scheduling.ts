@@ -40,7 +40,7 @@ export function validateNotificationSchedule(
         success: false,
         error: {
           code: 'INVALID_DATE',
-          message: `Invalid date provided: ${scheduledDate.toISOString()}`
+          message: `Invalid date provided: ${scheduledDate.toString()}`
         }
       };
     }

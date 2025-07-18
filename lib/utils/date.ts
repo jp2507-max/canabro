@@ -112,5 +112,8 @@ export function isValidScheduleDate(
  * @returns New Date object with days added
  */
 export function addDaysToDate(date: Parameters<typeof dayjs>[0], days: number): Date {
+  if (!Number.isFinite(days)) {
+    throw new Error('addDaysToDate: days parameter must be a finite number');
+  }
   return dayjs(date).add(days, 'day').toDate();
 } 
