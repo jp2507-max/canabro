@@ -182,7 +182,9 @@ const ComparisonCard: React.FC<ComparisonCardProps> = ({
       </Animated.View>
     </GestureDetector>
   );
-};interface SortButtonProps {
+};
+
+interface SortButtonProps {
   label: string;
   isActive: boolean;
   onPress: () => void;

@@ -16,7 +16,6 @@ import { OptimizedIcon } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import { NotificationBadge, AttentionIndicator } from '../ui/NotificationBadge';
 import { useSinglePlantAttention } from '@/lib/hooks/usePlantAttention';
-import { useTranslation } from 'react-i18next';
 
 const placeholderImageSource = require('../../assets/placeholder.png');
 

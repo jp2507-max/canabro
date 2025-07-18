@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { OptimizedIcon } from './OptimizedIcon';
 import SyncStatus from './SyncStatus';
-import { useTranslation } from 'react-i18next';
 import ThemedText from './ThemedText';
 import ThemedView from './ThemedView';
 import UserAvatar from '../community/UserAvatar';

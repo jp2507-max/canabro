@@ -1,8 +1,7 @@
 import { BlurView as ExpoBlurView } from 'expo-blur';
-import * as Haptics from '@/lib/utils/haptics';
+import { triggerLightHaptic } from '@/lib/utils/haptics';
 import React, { useEffect } from 'react';
 import { Modal, Platform, useWindowDimensions } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -28,9 +27,8 @@ interface AddPlantModalProps {
 }
 // ...existing code...
 export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProps) {
-  const { t } = useTranslation('addPlantModal');
-  const { height: screenHeight } = useWindowDimensions();
   const { t } = useI18n();
+  const { height: screenHeight } = useWindowDimensions();
 
   // Reanimated v3 shared values for sophisticated modal animations
   const modalTranslateY = useSharedValue(screenHeight);
@@ -54,7 +52,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
   // Trigger haptic feedback
   const triggerHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerLightHaptic();
   };
 
   // Enhanced modal entrance animation

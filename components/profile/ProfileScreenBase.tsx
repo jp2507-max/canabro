@@ -12,7 +12,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
-import { useTranslation } from 'react-i18next';
+// import { useTranslation } from 'react-i18next'; // Removed to prevent t redeclaration and complete useI18n transition
 
 import ProfileDetail from './ProfileDetail';
 import StatItem from './StatItem';
@@ -48,9 +48,8 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
   isRefreshing = false,
   onRefresh,
 }) {
-  const { t } = useTranslation();
-  const { triggerSync } = useSyncContext();
   const { t } = useI18n();
+  const { triggerSync } = useSyncContext();
 
   const syncButtonScale = useSharedValue(1);
 

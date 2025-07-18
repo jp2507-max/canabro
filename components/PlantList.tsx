@@ -61,7 +61,7 @@ const EmptyPlantList = React.memo(() => {
 EmptyPlantList.displayName = 'EmptyPlantList';
 
 // Base component that receives plants as an array - Optimized with React.memo
-const PlantListComponent = React.memo(
+const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
   ({
     plants,
     isLoading,
@@ -71,6 +71,7 @@ const PlantListComponent = React.memo(
     onRefresh,
   }: PlantListComponentProps) => {
     const router = useSafeRouter();
+    const { t } = useTranslation();
     
     // Get attention status for all plants
     const plantIds = useMemo(() => plants.map(plant => plant.id), [plants]);

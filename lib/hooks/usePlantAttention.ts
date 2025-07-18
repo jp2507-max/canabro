@@ -275,13 +275,13 @@ export const usePlantAttention = (plantIds?: string[]) => {
   };
 
   return {
-  attentionMap,
-  loading,
-  error,
-  totalPlantsNeedingAttention,
-  urgentPlantsCount,
-  highPriorityPlantsCount,
-  getPlantAttentionStatus,
+    attentionMap,
+    loading,
+    error,
+    totalPlantsNeedingAttention,
+    urgentPlantsCount,
+    highPriorityPlantsCount,
+    getPlantAttentionStatus,
   };
 };
 
