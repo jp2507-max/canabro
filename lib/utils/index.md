@@ -30,7 +30,8 @@ A comprehensive reference of all custom utilities, hooks, and components in the 
 
 ### String & Date Processing
 - **`string-utils.ts`** - String manipulation, formatting, and validation utilities. Use for text processing.
-- **`date.ts`** - Date formatting, parsing, and manipulation utilities. Use for all date operations.
+- **`date.ts`** - Date formatting, parsing, and manipulation utilities with timezone support. Use for all date operations.
+- **`notification-scheduling.ts`** - Timezone-aware notification scheduling validation and error handling. Use for scheduling notifications with proper timezone handling.
 
 ### Navigation & Routing
 - **`taskNavigation.ts`** - Task-specific navigation utilities. Use for task flow navigation.

@@ -5,6 +5,11 @@ import { Q } from '@nozbe/watermelondb';
 import * as Notifications from 'expo-notifications';
 import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import { format } from '@/lib/utils/date';
+import { 
+  validateNotificationSchedule, 
+  formatScheduleError, 
+  debugScheduleResult 
+} from '@/lib/utils/notification-scheduling';
 import Animated from 'react-native-reanimated';
 
 import ThemedView from '../ui/ThemedView';
@@ -506,7 +511,7 @@ const CareReminders: React.FC<CareRemindersProps> = ({
     triggerLightHapticSync();
   }, [showBatchActions]);
 
-  // Helper function to schedule notifications
+  // Helper function to schedule notifications with timezone-aware validation
   const scheduleNotification = async (reminder: CareReminder, daysFromNow: number = 0) => {
     try {
       const plant = plantMap.get(reminder.plantId);
@@ -515,22 +520,31 @@ const CareReminders: React.FC<CareRemindersProps> = ({
         return;
       }
 
-      const scheduledDate = new Date(reminder.scheduledFor);
-      if (daysFromNow > 0) {
-        scheduledDate.setDate(scheduledDate.getDate() + daysFromNow);
-      }
+      // Validate the scheduled date using timezone-aware utility
+      const scheduleResult = validateNotificationSchedule(
+        new Date(reminder.scheduledFor),
+        daysFromNow,
+        1 // Minimum 1 minute in the future
+      );
 
-      // Validate the scheduled date
-      if (scheduledDate <= new Date()) {
-        console.warn(`Attempted to schedule notification for past date: ${scheduledDate}`);
+      // Debug logging in development
+      debugScheduleResult(scheduleResult, `Schedule notification for ${reminder.id}`);
+
+      if (!scheduleResult.success) {
+        const errorMessage = formatScheduleError(
+          scheduleResult.error,
+          t('careReminders.scheduleErrorFallback', 'Unable to schedule notification')
+        );
+        
         Alert.alert(
           t('careReminders.invalidDateTitle', 'Invalid Reminder Date'),
-          t('careReminders.invalidDateMessage', 'The scheduled date for this reminder is in the past. Please select a future date.'),
+          errorMessage,
           [{ text: t('common.ok', 'OK') }]
         );
         return;
       }
 
+      // Schedule the notification with the validated date
       await Notifications.scheduleNotificationAsync({
         identifier: reminder.id,
         content: {
@@ -544,7 +558,7 @@ const CareReminders: React.FC<CareRemindersProps> = ({
         },
         trigger: {
           type: SchedulableTriggerInputTypes.DATE,
-          date: scheduledDate,
+          date: scheduleResult.scheduledDate!,
         },
       });
     } catch (error) {

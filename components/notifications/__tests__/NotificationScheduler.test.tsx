@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import NotificationScheduler from '../NotificationScheduler';
-import { Plant } from '@/lib/models/Plant';
+import { Plant } from '../../../lib/models/Plant';
 
 // Mock dependencies
 jest.mock('react-i18next', () => ({
