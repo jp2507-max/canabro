@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+import { initializeNotifications } from '../config/notifications';
 import {
   registerForPushNotificationsAsync,
   registerNotificationChannels,
@@ -74,10 +75,17 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     // Request permission and get token. Wrap in IIFE so we can await and guard
     // the async state updates.
     (async () => {
-      const granted = await requestPermissions();
-      if (isMounted && granted) {
-        // requestPermissions internally sets state, but we keep the guard here
-        // as an extra safety net in case its implementation ever changes.
+      try {
+        // Initialize notification configuration globally
+        await initializeNotifications();
+        
+        const granted = await requestPermissions();
+        if (isMounted && granted) {
+          // requestPermissions internally sets state, but we keep the guard here
+          // as an extra safety net in case its implementation ever changes.
+        }
+      } catch (error) {
+        console.error('Error initializing notifications:', error);
       }
     })();
 

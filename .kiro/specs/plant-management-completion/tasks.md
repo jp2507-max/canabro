@@ -191,13 +191,26 @@
 
 
 
+
+
   - Build reminder cards with plant photos and action buttons
   - Implement quick actions (Mark Done, Snooze, Reschedule)
   - Add batch operations for multiple plants
   - Create reminder scheduling interface
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 6.2 Create NotificationScheduler component
+
+- [x] 6.2 Create NotificationScheduler component
+
+
+
+
+
+
+
+
+
+
   - Implement local notifications using expo-notifications
   - Add notification permission handling and setup
   - Create reminder scheduling logic with repeat intervals

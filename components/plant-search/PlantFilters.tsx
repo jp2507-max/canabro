@@ -611,7 +611,7 @@ const HealthRangeSlider = React.memo(({ value, onChange }: HealthRangeSliderProp
               activeTrackStyle,
               {
                 height: TRACK_HEIGHT,
-                backgroundColor: '#3b82f6',
+                backgroundColor: 'rgb(var(--color-info-500))',
                 borderRadius: TRACK_HEIGHT / 2,
               },
             ]}
@@ -627,7 +627,7 @@ const HealthRangeSlider = React.memo(({ value, onChange }: HealthRangeSliderProp
                 width: THUMB_SIZE,
                 height: THUMB_SIZE,
                 borderRadius: THUMB_SIZE / 2,
-                backgroundColor: '#3b82f6',
+                backgroundColor: 'rgb(var(--color-info-500))',
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.25,
@@ -647,7 +647,7 @@ const HealthRangeSlider = React.memo(({ value, onChange }: HealthRangeSliderProp
                 width: THUMB_SIZE,
                 height: THUMB_SIZE,
                 borderRadius: THUMB_SIZE / 2,
-                backgroundColor: '#3b82f6',
+                backgroundColor: 'rgb(var(--color-info-500))',
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.25,

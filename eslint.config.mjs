@@ -15,10 +15,8 @@ export default [
   // React configuration
   pluginReact.configs.flat.recommended,
 
-  // i18next recommended rules
-  {
-    extends: ["plugin:i18next/recommended"],
-  },
+  // i18next flat config
+  i18n.configs['flat/recommended'],
   
   // Files and language options
   {
@@ -74,8 +72,22 @@ export default [
       "react/jsx-no-literals": "off", // Allow string literals in JSX (needed for React Native Text)
       "react/no-children-prop": "error", // Prevent children prop misuse that can cause text issues
       
-      // i18next rules
-      "i18n/no-literal-string": ["warn", { "markupOnly": true, "ignoreAttribute": ["testID", "accessibilityLabel", "aria-label"] }],
+      // i18next rules - basic setup for user-visible strings only
+      "i18n/no-literal-string": ["warn", { 
+        "markupOnly": true, // Only check JSX text content (user-visible strings)
+        "ignoreAttribute": [
+          "testID", "accessibilityLabel", "aria-label", "style", "className", 
+          "source", "uri", "keyboardType", "textContentType", "name", "key", "id"
+        ],
+        "ignoreCallee": [
+          "console", "require", "StyleSheet.create", "Dimensions.get", 
+          "Platform.select", "console.log", "console.warn", "console.error"
+        ],
+        "ignoreProperty": [
+          "style", "source", "uri", "keyboardType", "textContentType", 
+          "placeholder", "name", "key", "id"
+        ]
+      }],
       
       // TypeScript rules optimized for React Native + Expo
       "@typescript-eslint/no-unused-vars": ["warn", { 

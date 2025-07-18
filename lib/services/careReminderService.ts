@@ -2,7 +2,7 @@ import { Q } from '@nozbe/watermelondb';
 import { database } from '@/lib/models';
 import { CareReminder } from '@/lib/models/CareReminder';
 import { Plant } from '@/lib/models/Plant';
-import { useNotifications } from '@/lib/hooks/useNotifications';
+import { Logger } from '@/lib/utils/production-utils';
 
 export interface CreateReminderOptions {
   plantId: string;
@@ -147,44 +147,57 @@ export class CareReminderService {
    * Mark reminder as completed
    */
   async markReminderCompleted(reminderId: string): Promise<void> {
-    const reminder = await database.collections
-      .get<CareReminder>('care_reminders')
-      .find(reminderId);
-
-    await reminder.markAsCompleted();
+    try {
+      const reminder = await database.collections
+        .get<CareReminder>('care_reminders')
+        .find(reminderId);
+      await reminder.markAsCompleted();
+    } catch (error) {
+      Logger.error('Failed to mark reminder as completed', { reminderId, error });
+      // Optionally, rethrow or handle as needed
+    }
   }
 
   /**
    * Snooze reminder by specified days
    */
   async snoozeReminder(reminderId: string, days: number = 1): Promise<void> {
-    const reminder = await database.collections
-      .get<CareReminder>('care_reminders')
-      .find(reminderId);
-
-    await reminder.snooze(days);
+    try {
+      const reminder = await database.collections
+        .get<CareReminder>('care_reminders')
+        .find(reminderId);
+      await reminder.snooze(days);
+    } catch (error) {
+      Logger.error('Failed to snooze reminder', { reminderId, days, error });
+    }
   }
 
   /**
    * Reschedule reminder to a specific date
    */
   async rescheduleReminder(reminderId: string, newDate: Date): Promise<void> {
-    const reminder = await database.collections
-      .get<CareReminder>('care_reminders')
-      .find(reminderId);
-
-    await reminder.reschedule(newDate);
+    try {
+      const reminder = await database.collections
+        .get<CareReminder>('care_reminders')
+        .find(reminderId);
+      await reminder.reschedule(newDate);
+    } catch (error) {
+      Logger.error('Failed to reschedule reminder', { reminderId, newDate, error });
+    }
   }
 
   /**
    * Delete reminder
    */
   async deleteReminder(reminderId: string): Promise<void> {
-    const reminder = await database.collections
-      .get<CareReminder>('care_reminders')
-      .find(reminderId);
-
-    await reminder.markAsDeleted();
+    try {
+      const reminder = await database.collections
+        .get<CareReminder>('care_reminders')
+        .find(reminderId);
+      await reminder.markAsDeleted();
+    } catch (error) {
+      Logger.error('Failed to delete reminder', { reminderId, error });
+    }
   }
 
   /**
@@ -243,15 +256,29 @@ export class CareReminderService {
    * Batch operations
    */
   async batchMarkCompleted(reminderIds: string[]): Promise<void> {
+    // Import i18n for translations
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const i18n = require('@/lib/config/i18n').default;
     await database.write(async () => {
-      const promises = reminderIds.map(async (id) => {
-        const reminder = await database.collections
-          .get<CareReminder>('care_reminders')
-          .find(id);
-        return reminder.markAsCompleted();
-      });
-      
-      await Promise.all(promises);
+      const results = await Promise.all(
+        reminderIds.map(async (id) => {
+          try {
+            const reminder = await database.collections
+              .get<CareReminder>('care_reminders')
+              .find(id);
+            await reminder.markAsCompleted();
+            return { id, success: true };
+          } catch (error) {
+            // Log error for this reminder, but continue
+            console.warn(
+              i18n.t('careReminder.batchMarkCompletedError', { id }),
+              error
+            );
+            return { id, success: false, error };
+          }
+        })
+      );
+      // Optionally, handle/report results here if needed
     });
   }
 

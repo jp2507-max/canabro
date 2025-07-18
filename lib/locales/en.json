@@ -685,7 +685,14 @@
     "errorMarkingDone": "Failed to mark reminder as done. Please try again.",
     "errorSnoozing": "Failed to snooze reminder. Please try again.",
     "errorBatchMarkingDone": "Failed to mark reminders as done. Please try again.",
-    "errorBatchSnoozing": "Failed to snooze reminders. Please try again."
+    "errorBatchSnoozing": "Failed to snooze reminders. Please try again.",
+    "errorLoadingReminders": "Failed to load reminders. Please check your connection and try again.",
+    "errorLoadingPlants": "Failed to load plant data. Please check your connection and try again.",
+    "errorLoadingData": "Failed to load data. Please check your connection and try again.",
+    "errorDatabaseConnection": "Database connection failed. Please restart the app and try again.",
+    "errorTitle": "Care Reminders Error",
+    "errorDescription": "We're having trouble loading your care reminders. This could be due to a database connection issue or corrupted data.",
+    "retryButton": "Retry"
   },
   "notificationScheduler": {
     "createReminder": "Create Reminder",
@@ -716,6 +723,22 @@
     "permissionsDisabledDescription": "Enable notifications in your device settings to receive care reminders for your plants.",
     "openSettings": "Open Settings",
     "error": "Error",
-    "errorCreatingReminder": "Failed to create reminder. Please try again."
+    "errorCreatingReminder": "Failed to create reminder. Please try again.",
+    "repeatOptions": "Repeat Options",
+    "quickRepeatOptions": "Quick Repeat Options",
+    "customRepeatInterval": "Custom Repeat Interval (Days)",
+    "customRepeatIntervalPlaceholder": "Enter custom interval in days",
+    "addToDeviceCalendar": "Add to Device Calendar",
+    "calendarEventDescription": "Create a calendar event for this reminder",
+    "calendarAccessDenied": "Calendar access denied - enable in settings",
+    "calendarPermissionRequired": "Calendar permission required",
+    "repeatIntervals": {
+      "daily": "Daily",
+      "every3Days": "Every 3 days",
+      "weekly": "Weekly",
+      "biweekly": "Bi-weekly",
+      "monthly": "Monthly"
+    },
+    "calendarWarning": "Reminder created successfully, but failed to add to calendar. You can add it manually if needed."
   }
 }

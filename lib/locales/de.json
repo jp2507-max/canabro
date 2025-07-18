@@ -29,7 +29,7 @@
     "confirm": "Bestätigen",
     "somethingWentWrong": "Etwas ist schiefgelaufen",
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-    "tryAgain": "Erneut versuchen",
+  "tryAgain": "Erneut versuchen",
     "days": "Tage"
     },
   "navigation": {
@@ -716,6 +716,22 @@
     "permissionsDisabledDescription": "Aktivieren Sie Benachrichtigungen in Ihren Geräteeinstellungen, um Pflegeerinnerungen für Ihre Pflanzen zu erhalten.",
     "openSettings": "Einstellungen öffnen",
     "error": "Fehler",
-    "errorCreatingReminder": "Erinnerung konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
+    "errorCreatingReminder": "Erinnerung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "repeatOptions": "Wiederholungsoptionen",
+    "quickRepeatOptions": "Schnelle Wiederholungsoptionen",
+    "customRepeatInterval": "Benutzerdefiniertes Wiederholungsintervall (Tage)",
+    "customRepeatIntervalPlaceholder": "Benutzerdefiniertes Intervall in Tagen eingeben",
+    "addToDeviceCalendar": "Zum Gerätekalender hinzufügen",
+    "calendarEventDescription": "Kalenderereignis für diese Erinnerung erstellen",
+    "calendarAccessDenied": "Kalenderzugriff verweigert - in Einstellungen aktivieren",
+    "calendarPermissionRequired": "Kalenderberechtigung erforderlich",
+    "repeatIntervals": {
+      "daily": "Täglich",
+      "every3Days": "Alle 3 Tage",
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle zwei Wochen",
+      "monthly": "Monatlich"
+    },
+    "calendarWarning": "Erinnerung erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
   }
 }

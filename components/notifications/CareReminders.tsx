@@ -17,17 +17,7 @@ import { CareReminder } from '@/lib/models/CareReminder';
 import { Plant } from '@/lib/models/Plant';
 import { database } from '@/lib/models';
 import { careReminderService } from '@/lib/services/careReminderService';
-
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+import CareRemindersErrorBoundary from './CareRemindersErrorBoundary';
 
 interface CareReminderCardProps {
   reminder: CareReminder;
@@ -277,6 +267,7 @@ const CareReminders: React.FC<CareRemindersProps> = ({
   const [reminders, setReminders] = useState<CareReminder[]>([]);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryKey, setRetryKey] = useState(0); // For forcing component remount on retry
 
   // Load reminders and plants
   useEffect(() => {
@@ -287,7 +278,7 @@ const CareReminders: React.FC<CareRemindersProps> = ({
       try {
         setLoading(true);
         
-        // Query reminders
+        // Query reminders with error handling
         const reminderQuery = database.collections
           .get<CareReminder>('care_reminders')
           .query(
@@ -297,16 +288,47 @@ const CareReminders: React.FC<CareRemindersProps> = ({
             Q.sortBy('scheduled_for', Q.asc)
           );
 
-        // Query plants
+        // Query plants with error handling
         const plantsQuery = database.collections
           .get<Plant>('plants')
           .query(Q.where('is_deleted', false));
 
-        // Set up observables
-        reminderSubscription = reminderQuery.observe().subscribe(setReminders);
-        plantsSubscription = plantsQuery.observe().subscribe(setPlants);
+        // Set up observables with error handling
+        try {
+          reminderSubscription = reminderQuery.observe().subscribe({
+            next: setReminders,
+            error: (error) => {
+              console.error('Error in reminder subscription:', error);
+              Alert.alert(
+                t('careReminders.error'),
+                t('careReminders.errorLoadingReminders')
+              );
+            }
+          });
+
+          plantsSubscription = plantsQuery.observe().subscribe({
+            next: setPlants,
+            error: (error) => {
+              console.error('Error in plants subscription:', error);
+              Alert.alert(
+                t('careReminders.error'),
+                t('careReminders.errorLoadingPlants')
+              );
+            }
+          });
+        } catch (subscriptionError) {
+          console.error('Error setting up database subscriptions:', subscriptionError);
+          Alert.alert(
+            t('careReminders.error'),
+            t('careReminders.errorDatabaseConnection')
+          );
+        }
       } catch (error) {
         console.error('Error loading care reminders:', error);
+        Alert.alert(
+          t('careReminders.error'),
+          t('careReminders.errorLoadingData')
+        );
       } finally {
         setLoading(false);
       }
@@ -315,10 +337,22 @@ const CareReminders: React.FC<CareRemindersProps> = ({
     loadData();
 
     return () => {
-      reminderSubscription?.unsubscribe();
-      plantsSubscription?.unsubscribe();
+      try {
+        reminderSubscription?.unsubscribe();
+        plantsSubscription?.unsubscribe();
+      } catch (cleanupError) {
+        console.error('Error during cleanup:', cleanupError);
+      }
     };
-  }, [plantId, showCompleted]);
+  }, [plantId, showCompleted, t, retryKey]);
+
+  const handleRetry = useCallback(() => {
+    setRetryKey((prev) => prev + 1);
+    setReminders([]);
+    setPlants([]);
+    setSelectedReminders(new Set());
+    setShowBatchActions(false);
+  }, []);
 
   // Create plant lookup map
   const plantMap = useMemo(() => {
@@ -355,7 +389,12 @@ const CareReminders: React.FC<CareRemindersProps> = ({
       triggerMediumHapticSync();
       
       // Cancel any scheduled notification
-      await Notifications.cancelScheduledNotificationAsync(reminder.id);
+      try {
+        await Notifications.cancelScheduledNotificationAsync(reminder.id);
+      } catch (notificationError) {
+        console.error('Error cancelling notification:', notificationError);
+        // Don't show alert for notification errors as they're not critical
+      }
     } catch (error) {
       console.error('Error marking reminder as done:', error);
       Alert.alert(
@@ -371,7 +410,12 @@ const CareReminders: React.FC<CareRemindersProps> = ({
       triggerLightHapticSync();
       
       // Reschedule notification
-      await scheduleNotification(reminder, days);
+      try {
+        await scheduleNotification(reminder, days);
+      } catch (notificationError) {
+        console.error('Error rescheduling notification:', notificationError);
+        // Don't show alert for notification errors as they're not critical
+      }
     } catch (error) {
       console.error('Error snoozing reminder:', error);
       Alert.alert(
@@ -406,9 +450,14 @@ const CareReminders: React.FC<CareRemindersProps> = ({
       await careReminderService.batchMarkCompleted(selectedReminderIds);
       
       // Cancel notifications for all selected reminders
-      await Promise.all(
-        selectedReminderIds.map((id) => Notifications.cancelScheduledNotificationAsync(id))
-      );
+      try {
+        await Promise.all(
+          selectedReminderIds.map((id) => Notifications.cancelScheduledNotificationAsync(id))
+        );
+      } catch (notificationError) {
+        console.error('Error cancelling batch notifications:', notificationError);
+        // Don't show alert for notification errors as they're not critical
+      }
       
       setSelectedReminders(new Set());
       setShowBatchActions(false);
@@ -429,10 +478,15 @@ const CareReminders: React.FC<CareRemindersProps> = ({
       await careReminderService.batchSnooze(selectedReminderIds, days);
       
       // Reschedule notifications for all selected reminders
-      const selectedReminderObjects = reminders.filter((r) => selectedReminders.has(r.id));
-      await Promise.all(
-        selectedReminderObjects.map((reminder) => scheduleNotification(reminder, days))
-      );
+      try {
+        const selectedReminderObjects = reminders.filter((r) => selectedReminders.has(r.id));
+        await Promise.all(
+          selectedReminderObjects.map((reminder) => scheduleNotification(reminder, days))
+        );
+      } catch (notificationError) {
+        console.error('Error rescheduling batch notifications:', notificationError);
+        // Don't show alert for notification errors as they're not critical
+      }
       
       setSelectedReminders(new Set());
       setShowBatchActions(false);
@@ -456,11 +510,20 @@ const CareReminders: React.FC<CareRemindersProps> = ({
   const scheduleNotification = async (reminder: CareReminder, daysFromNow: number = 0) => {
     try {
       const plant = plantMap.get(reminder.plantId);
-      if (!plant) return;
+      if (!plant) {
+        console.warn(`Plant not found for reminder ${reminder.id}`);
+        return;
+      }
 
       const scheduledDate = new Date(reminder.scheduledFor);
       if (daysFromNow > 0) {
         scheduledDate.setDate(scheduledDate.getDate() + daysFromNow);
+      }
+
+      // Validate the scheduled date
+      if (scheduledDate <= new Date()) {
+        console.warn(`Scheduled date is in the past for reminder ${reminder.id}`);
+        return;
       }
 
       await Notifications.scheduleNotificationAsync({
@@ -481,6 +544,7 @@ const CareReminders: React.FC<CareRemindersProps> = ({
       });
     } catch (error) {
       console.error('Error scheduling notification:', error);
+      // Don't throw error here as notification scheduling failures shouldn't break the app
     }
   };
 
@@ -504,30 +568,33 @@ const CareReminders: React.FC<CareRemindersProps> = ({
 
   if (reminders.length === 0) {
     return (
-      <ThemedView className="flex-1 items-center justify-center p-6">
-        <OptimizedIcon
-          name="checkmark-circle"
-          size={64}
-          className="mb-4 text-primary-500"
-        />
-        <ThemedText variant="heading" className="mb-2 text-center text-xl">
-          {showCompleted
-            ? t('careReminders.noCompletedReminders')
-            : t('careReminders.noActiveReminders')
-          }
-        </ThemedText>
-        <ThemedText variant="muted" className="text-center">
-          {showCompleted
-            ? t('careReminders.noCompletedRemindersDescription')
-            : t('careReminders.noActiveRemindersDescription')
-          }
-        </ThemedText>
-      </ThemedView>
+      <CareRemindersErrorBoundary onRetry={handleRetry}>
+        <ThemedView className="flex-1 items-center justify-center p-6">
+          <OptimizedIcon
+            name="checkmark-circle"
+            size={64}
+            className="mb-4 text-primary-500"
+          />
+          <ThemedText variant="heading" className="mb-2 text-center text-xl">
+            {showCompleted
+              ? t('careReminders.noCompletedReminders')
+              : t('careReminders.noActiveReminders')
+            }
+          </ThemedText>
+          <ThemedText variant="muted" className="text-center">
+            {showCompleted
+              ? t('careReminders.noCompletedRemindersDescription')
+              : t('careReminders.noActiveRemindersDescription')
+            }
+          </ThemedText>
+        </ThemedView>
+      </CareRemindersErrorBoundary>
     );
   }
 
   return (
-    <ThemedView className="flex-1">
+    <CareRemindersErrorBoundary onRetry={handleRetry}>
+      <ThemedView className="flex-1">
       {/* Header with batch actions */}
       <ThemedView className="flex-row items-center justify-between p-4">
         <ThemedText variant="heading" className="text-xl">
@@ -709,6 +776,7 @@ const CareReminders: React.FC<CareRemindersProps> = ({
         <ThemedView className="h-20" />
       </ScrollView>
     </ThemedView>
+    </CareRemindersErrorBoundary>
   );
 };
 

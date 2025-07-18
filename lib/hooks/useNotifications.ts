@@ -16,46 +16,20 @@ interface UseNotificationsReturn {
     body: string;
     data?: Record<string, any>;
     scheduledFor: Date;
+    repeatInterval?: number;
+  }) => Promise<string | null>;
+  scheduleRecurringNotification: (options: {
+    identifier: string;
+    title: string;
+    body: string;
+    data?: Record<string, any>;
+    scheduledFor: Date;
+    repeatInterval: number;
   }) => Promise<string | null>;
   cancelNotification: (identifier: string) => Promise<void>;
   cancelAllNotifications: () => Promise<void>;
   openSettings: () => Promise<void>;
 }
-
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
-// Set up notification categories for better UX
-const setupNotificationCategories = async () => {
-  try {
-    await Notifications.setNotificationCategoryAsync('plant-care', [
-      {
-        identifier: 'mark-done',
-        buttonTitle: 'Mark Done',
-        options: {
-          opensAppToForeground: false,
-        },
-      },
-      {
-        identifier: 'snooze',
-        buttonTitle: 'Snooze 1h',
-        options: {
-          opensAppToForeground: false,
-        },
-      },
-    ]);
-  } catch (error) {
-    console.warn('Failed to set up notification categories:', error);
-  }
-};
 
 export const useNotifications = (): UseNotificationsReturn => {
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>('unknown');
@@ -65,9 +39,6 @@ export const useNotifications = (): UseNotificationsReturn => {
   useEffect(() => {
     const initializeNotifications = async () => {
       try {
-        // Set up notification categories
-        await setupNotificationCategories();
-
         // Check if device supports notifications
         if (!Device.isDevice) {
           setPermissionStatus('denied');
@@ -112,6 +83,7 @@ export const useNotifications = (): UseNotificationsReturn => {
     body: string;
     data?: Record<string, any>;
     scheduledFor: Date;
+    repeatInterval?: number; // days
   }): Promise<string | null> => {
     try {
       if (permissionStatus !== 'granted') {
@@ -119,12 +91,16 @@ export const useNotifications = (): UseNotificationsReturn => {
         return null;
       }
 
+      // For recurring notifications, we'll schedule the first one and handle repeats in the app
       const notificationId = await Notifications.scheduleNotificationAsync({
         identifier: options.identifier,
         content: {
           title: options.title,
           body: options.body,
-          data: options.data || {},
+          data: {
+            ...options.data,
+            repeatInterval: options.repeatInterval,
+          },
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
           categoryIdentifier: 'plant-care',
@@ -160,21 +136,63 @@ export const useNotifications = (): UseNotificationsReturn => {
 
   const openSettings = useCallback(async (): Promise<void> => {
     try {
-      if (Platform.OS === 'ios') {
-        await Linking.openURL('app-settings:');
-      } else {
-        await Linking.openSettings();
-      }
+      await Linking.openSettings();
     } catch (error) {
       console.error('Error opening notification settings:', error);
     }
   }, []);
+
+  const scheduleRecurringNotification = useCallback(async (options: {
+    identifier: string;
+    title: string;
+    body: string;
+    data?: Record<string, any>;
+    scheduledFor: Date;
+    repeatInterval: number; // days
+  }): Promise<string | null> => {
+    try {
+      if (permissionStatus !== 'granted') {
+        console.warn('Notification permissions not granted');
+        return null;
+      }
+
+      // Calculate next occurrence
+      const nextDate = new Date(options.scheduledFor);
+      nextDate.setDate(nextDate.getDate() + options.repeatInterval);
+
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        identifier: `${options.identifier}_next`,
+        content: {
+          title: options.title,
+          body: options.body,
+          data: {
+            ...options.data,
+            repeatInterval: options.repeatInterval,
+            isRecurring: true,
+          },
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          categoryIdentifier: 'plant-care',
+        },
+        trigger: {
+          type: SchedulableTriggerInputTypes.DATE,
+          date: nextDate,
+        },
+      });
+
+      return notificationId;
+    } catch (error) {
+      console.error('Error scheduling recurring notification:', error);
+      return null;
+    }
+  }, [permissionStatus]);
 
   return {
     permissionStatus,
     isLoading,
     requestPermissions,
     scheduleNotification,
+    scheduleRecurringNotification,
     cancelNotification,
     cancelAllNotifications,
     openSettings,

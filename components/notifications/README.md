@@ -41,15 +41,18 @@ import { CareReminders } from '@/components/notifications';
 
 ### NotificationScheduler
 
-Component for creating new care reminders with notification scheduling.
+Enhanced component for creating new care reminders with comprehensive scheduling options.
 
 **Features:**
 - Reminder type selection (watering, nutrients, inspection, custom)
-- Title and description input
-- Date/time scheduling
-- Repeat interval configuration
-- Notification permission handling
-- Plant context display
+- Title and description input with validation
+- **Enhanced date/time scheduling** with separate date and time pickers
+- **Flexible repeat intervals** with quick presets (Daily, Every 3 days, Weekly, etc.)
+- **Device calendar integration** with automatic event creation
+- **Notification permission handling** with settings redirect
+- **Calendar permission handling** with graceful fallbacks
+- Plant context display with photos
+- Accessibility support
 
 **Props:**
 ```typescript
@@ -168,8 +171,21 @@ To integrate into your app:
 ## Dependencies
 
 - `expo-notifications` - Local notifications
+- `expo-calendar` - Device calendar integration
+- `@react-native-community/datetimepicker` - Date/time selection
 - `expo-device` - Device capability detection
 - `@nozbe/watermelondb` - Database operations
 - `react-hook-form` - Form handling
 - `zod` - Form validation
 - Custom UI components and animations
+
+## New Services Added
+
+### notificationListenerService
+- Handles notification responses and user interactions
+- Manages recurring notification scheduling
+- Processes notification action buttons (mark done, snooze)
+
+### useNotificationListener Hook
+- Initializes notification listeners at app level
+- Should be called once in root component
