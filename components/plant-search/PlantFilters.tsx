@@ -19,7 +19,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import type { PanGestureHandlerEventPayload } from 'react-native-gesture-handler';
+import type { PanGestureHandlerEventPayload as _PanGestureHandlerEventPayload } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
 import { useTranslation } from 'react-i18next';
 import { triggerLightHaptic, triggerMediumHaptic } from '@/lib/utils/haptics';

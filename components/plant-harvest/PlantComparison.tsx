@@ -123,59 +123,64 @@ const ComparisonCard: React.FC<ComparisonCardProps> = ({
             </ThemedText>
           </View>
 
-          {/* Metrics Grid */}
-          <View className="grid grid-cols-2 gap-3">
-            <View className="bg-white dark:bg-neutral-900 rounded-lg p-3">
-              <View className="flex-row items-center space-x-2 mb-1">
-                <OptimizedIcon name="scale-balance" size={16} className="text-primary-600 dark:text-primary-400" />
-                <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
-                  {t('plantComparison.totalYield')}
+          {/* Metrics Flexbox Layout */}
+          <View className="flex-row flex-wrap">
+            <View className="w-1/2 p-1">
+              <ThemedView className="bg-white dark:bg-neutral-900 rounded-lg p-3">
+                <View className="flex-row items-center space-x-2 mb-1">
+                  <OptimizedIcon name="scale-balance" size={16} className="text-primary-600 dark:text-primary-400" />
+                  <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+                    {t('plantComparison.totalYield')}
+                  </ThemedText>
+                </View>
+                <ThemedText className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+                  {formatWeight(comparison.totalYield, 'grams')}
                 </ThemedText>
-              </View>
-              <ThemedText className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                {formatWeight(comparison.totalYield, 'grams')}
-              </ThemedText>
+              </ThemedView>
             </View>
-
-            <View className="bg-white dark:bg-neutral-900 rounded-lg p-3">
-              <View className="flex-row items-center space-x-2 mb-1">
-                <OptimizedIcon name="arrow-expand-vertical" size={16} className="text-primary-600 dark:text-primary-400" />
-                <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
-                  {t('plantComparison.yieldPerDay')}
+            <View className="w-1/2 p-1">
+              <ThemedView className="bg-white dark:bg-neutral-900 rounded-lg p-3">
+                <View className="flex-row items-center space-x-2 mb-1">
+                  <OptimizedIcon name="arrow-expand-vertical" size={16} className="text-primary-600 dark:text-primary-400" />
+                  <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+                    {t('plantComparison.yieldPerDay')}
+                  </ThemedText>
+                </View>
+                <ThemedText className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
+                  {formatWeight(comparison.yieldPerDay, 'grams')}/day
                 </ThemedText>
-              </View>
-              <ThemedText className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                {formatWeight(comparison.yieldPerDay, 'grams')}/day
-              </ThemedText>
+              </ThemedView>
             </View>
-
-            <View className="bg-white dark:bg-neutral-900 rounded-lg p-3">
-              <View className="flex-row items-center space-x-2 mb-1">
-                <OptimizedIcon name="calendar-outline" size={16} className="text-primary-600 dark:text-primary-400" />
-                <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
-                  {t('plantComparison.growDays')}
+            <View className="w-1/2 p-1">
+              <ThemedView className="bg-white dark:bg-neutral-900 rounded-lg p-3">
+                <View className="flex-row items-center space-x-2 mb-1">
+                  <OptimizedIcon name="calendar-outline" size={16} className="text-primary-600 dark:text-primary-400" />
+                  <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+                    {t('plantComparison.growDays')}
+                  </ThemedText>
+                </View>
+                <ThemedText className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
+                  {comparison.growDays} {t('common.days')}
                 </ThemedText>
-              </View>
-              <ThemedText className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
-                {comparison.growDays} {t('common.days')}
-              </ThemedText>
+              </ThemedView>
             </View>
-
-          <ThemedView className="bg-white dark:bg-neutral-900 rounded-lg p-3">
-            <View className="flex-row items-center space-x-2 mb-1">
-              <OptimizedIcon name="water-outline" size={16} className="text-primary-600 dark:text-primary-400" />
-              <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
-                {t('plantComparison.dryingEfficiency')}
-              </ThemedText>
+            <View className="w-1/2 p-1">
+              <ThemedView className="bg-white dark:bg-neutral-900 rounded-lg p-3">
+                <View className="flex-row items-center space-x-2 mb-1">
+                  <OptimizedIcon name="water-outline" size={16} className="text-primary-600 dark:text-primary-400" />
+                  <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+                    {t('plantComparison.dryingEfficiency')}
+                  </ThemedText>
+                </View>
+                <ThemedText className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
+                  {comparison.dryingEfficiency}%
+                </ThemedText>
+              </ThemedView>
             </View>
-            <ThemedText className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
-              {comparison.dryingEfficiency}%
-            </ThemedText>
-          </ThemedView>
-        </View>
-      </ThemedView>
-    </Animated.View>
-  </GestureDetector>
+          </View>
+        </ThemedView>
+      </Animated.View>
+    </GestureDetector>
   );
 };interface SortButtonProps {
   label: string;

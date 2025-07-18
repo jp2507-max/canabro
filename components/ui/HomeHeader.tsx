@@ -1,7 +1,8 @@
 import React, { memo, useMemo } from 'react';
-import { View, Pressable, Alert } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeInDown, FadeInLeft } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '../../lib/contexts/AuthProvider';
 import { OptimizedIcon } from './OptimizedIcon';
@@ -17,7 +18,12 @@ interface HomeHeaderProps {
 
 export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
   const { user, getProfile } = useAuth();
-  const [userProfile, setUserProfile] = React.useState<any>(null);
+  const { t } = useTranslation('homeHeader');
+  const [userProfile, setUserProfile] = React.useState<{
+    avatar_url?: string;
+    username?: string;
+    full_name?: string;
+  } | null>(null);
 
   // Fetch user profile for avatar
   React.useEffect(() => {
@@ -95,7 +101,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
 
           {/* Main title */}
           <ThemedText className="mb-1 text-3xl font-bold text-neutral-900 dark:text-white">
-            My Garden
+            {t('myGarden')}
           </ThemedText>
 
           {/* Plant count with personalized message */}
@@ -138,7 +144,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 className="text-violet-500 dark:text-violet-400"
               />
               <ThemedText className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                Active
+                {t('active')}
               </ThemedText>
               <ThemedText className="text-sm font-bold text-neutral-900 dark:text-white">
                 {plantCount}
@@ -152,7 +158,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 className="text-blue-500 dark:text-blue-400"
               />
               <ThemedText className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                This Week
+                {t('thisWeek')}
               </ThemedText>
               <ThemedText className="text-sm font-bold text-neutral-900 dark:text-white">
                 {Math.ceil(plantCount * 2.5)}
@@ -166,7 +172,7 @@ export const HomeHeader = memo(({ plantCount }: HomeHeaderProps) => {
                 className="text-emerald-500 dark:text-emerald-400"
               />
               <ThemedText className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                Fed
+                {t('fed')}
               </ThemedText>
               <ThemedText className="text-sm font-bold text-neutral-900 dark:text-white">
                 {Math.ceil(plantCount * 0.8)}

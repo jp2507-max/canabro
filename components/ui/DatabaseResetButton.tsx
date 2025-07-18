@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import { useTranslation } from 'react-i18next';
 import {
   triggerHeavyHaptic,
   triggerHeavyHapticSync,
@@ -39,6 +40,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(View);
  * Use this only during development when you need to recover from database migration issues.
  */
 const DatabaseResetButton = () => {
+  const { t } = useTranslation('debug');
   const [isResetting, setIsResetting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -136,7 +138,7 @@ const DatabaseResetButton = () => {
 
   // Haptic feedback functions for runOnJS
   const mediumHaptic = () => triggerMediumHapticSync();
-  const heavyHaptic = () => triggerHeavyHapticSync();
+  const _heavyHaptic = () => triggerHeavyHapticSync();
   const lightHaptic = () => triggerLightHapticSync();
 
   // Gesture handlers
@@ -197,7 +199,7 @@ const DatabaseResetButton = () => {
             ) : (
               <>
                 <OptimizedIcon name="camera-flip-outline" size={18} className="mr-2 text-white" />
-                <Text className="text-base font-bold text-white">Reset Database</Text>
+                <Text className="text-base font-bold text-white">{t('resetDatabase')}</Text>
               </>
             )}
           </View>
@@ -224,14 +226,13 @@ const DatabaseResetButton = () => {
                 />
               </View>
               <Text className="text-center text-xl font-bold text-neutral-900 dark:text-white">
-                Reset Database?
+                {t('resetDatabaseConfirmation')}
               </Text>
             </View>
 
             {/* Warning Message */}
             <Text className="mb-6 text-center leading-6 text-neutral-600 dark:text-neutral-400">
-              This will permanently delete all local data and create a fresh database. This action
-              cannot be undone.
+              {t('resetDatabaseDescription')}
             </Text>
 
             {/* Action Buttons */}
@@ -240,7 +241,7 @@ const DatabaseResetButton = () => {
               <GestureDetector gesture={confirmGesture}>
                 <View className="rounded-xl bg-red-600 px-4 py-3 dark:bg-red-500">
                   <Text className="text-center text-base font-semibold text-white">
-                    Yes, Reset Database
+                    {t('yesResetDatabase')}
                   </Text>
                 </View>
               </GestureDetector>
@@ -249,7 +250,7 @@ const DatabaseResetButton = () => {
               <GestureDetector gesture={cancelGesture}>
                 <View className="rounded-xl bg-neutral-100 px-4 py-3 dark:bg-neutral-700">
                   <Text className="text-center text-base font-medium text-neutral-700 dark:text-neutral-300">
-                    Cancel
+                    {t('cancel', { ns: 'common' })}
                   </Text>
                 </View>
               </GestureDetector>

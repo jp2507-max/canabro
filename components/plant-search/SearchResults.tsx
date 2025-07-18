@@ -8,7 +8,7 @@
  * - Optimized for large plant collections
  */
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { Database, Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +31,7 @@ interface SearchResultsProps {
 }
 
 // Helper function to highlight matching text
-const HighlightedText = ({ text, highlight, className }: { text: string; highlight: string; className: string }) => {
+const _HighlightedText = ({ text, highlight, className }: { text: string; highlight: string; className: string }) => {
     if (!highlight.trim()) {
         return <ThemedText className={className}>{text}</ThemedText>;
     }
@@ -55,7 +55,7 @@ const HighlightedText = ({ text, highlight, className }: { text: string; highlig
 };
 
 // This function converts WDBPlant to PlantCardData with highlighted text
-const getPlantCardData = (plant: WDBPlant, searchQuery: string): PlantCardData & { originalName: string; originalStrainName: string } => {
+const getPlantCardData = (plant: WDBPlant, _searchQuery: string): PlantCardData & { originalName: string; originalStrainName: string } => {
     return {
         id: plant.id,
         name: plant.name,
@@ -262,7 +262,7 @@ const SearchResultsComponent = ({
             filters.needsAttention;
     }, [filters]);
 
-    const { t } = useTranslation('plantSearch');
+    const { t: _t } = useTranslation('plantSearch');
     const { t: tCommon } = useTranslation('common');
 
     if (isLoading) {

@@ -54,7 +54,7 @@ export function NativeIconSymbol({
     try {
       return (
         <SymbolView
-          name={symbolName as any} // Type assertion to handle dynamic symbol names
+          name={symbolName as Parameters<typeof SymbolView>[0]['name']} // Type assertion to handle dynamic symbol names
           size={size}
           type="hierarchical"
           weight={weight}
@@ -73,7 +73,7 @@ export function NativeIconSymbol({
           }
         />
       );
-    } catch (error) {
+    } catch (_error) {
       // If SF Symbol fails, fall back to OptimizedIcon
       console.warn(`SF Symbol "${symbolName}" not found, falling back to OptimizedIcon`);
       return (

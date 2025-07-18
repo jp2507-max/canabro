@@ -105,7 +105,7 @@ export const VPDCalculator: React.FC<VPDCalculatorProps> = ({
             className={status.color}
           />
           <ThemedText className={`font-medium ${status.color}`}>
-            VPD: {vpd} kPa
+            {t('common.vpdUnit', { value: vpd })}
           </ThemedText>
         </ThemedView>
         
@@ -131,7 +131,7 @@ export const VPDCalculator: React.FC<VPDCalculatorProps> = ({
 
           <ThemedView className="mt-3 p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
             <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400">
-              {t('vpdCalculator.optimalRange')}: 0.8 - 1.5 kPa
+              {t('vpdCalculator.optimalRange', { range: t('common.vpdOptimalRange'), min: '0.8', max: '1.5' })}
             </ThemedText>
             <ThemedText className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
               {t('vpdCalculator.rangeDescription')}

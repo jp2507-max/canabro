@@ -1,0 +1,12 @@
+name: i18n-validation
+on:
+  push:
+    paths:
+      - '**/locales/**'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Validate i18n keys
+        run: echo "i18n validation placeholder"

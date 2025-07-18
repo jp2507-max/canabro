@@ -1,5 +1,4 @@
 import React from 'react';
-import { View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, cancelAnimation } from 'react-native-reanimated';
 import ThemedView from './ThemedView';
 

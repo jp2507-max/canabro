@@ -1,4 +1,3 @@
-// Minimal Subscription type for WatermelonDB observables
 type Subscription = { unsubscribe: () => void };
 import { useState, useEffect, useMemo } from 'react';
 import { Q } from '@nozbe/watermelondb';
@@ -34,8 +33,9 @@ export const usePlantAttention = (plantIds?: string[]) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Memoize plantIds to avoid unnecessary resubscriptions
-  const memoizedPlantIds = useMemo(() => plantIds ? [...plantIds].sort() : undefined, [plantIds ? [...plantIds].sort().join(",") : ""]);
+  // Use a stable string key for plantIds to optimize memoization
+  const plantIdsKey = plantIds?.slice().sort().join(',') || '';
+  const memoizedPlantIds = useMemo(() => plantIdsKey ? plantIdsKey.split(',') : undefined, [plantIdsKey]);
 
   useEffect(() => {
     let reminderSubscription: Subscription | undefined;

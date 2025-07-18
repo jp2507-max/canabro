@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import React from 'react';
 import { Pressable, ActivityIndicator } from 'react-native';
 import Animated from 'react-native-reanimated';

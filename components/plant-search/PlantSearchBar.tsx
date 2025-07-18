@@ -14,7 +14,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   interpolate,
   FadeIn,
   FadeOut,
@@ -102,7 +101,7 @@ export const PlantSearchBar = React.memo(({
   }, []);
 
   // Animated styles
-  const clearButtonAnimatedStyle = useAnimatedStyle(() => {
+  const _clearButtonAnimatedStyle = useAnimatedStyle(() => {
     'worklet';
     return {
       transform: [

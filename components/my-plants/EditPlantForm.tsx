@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 'use client';
 
 // ✅ React Native & Expo imports - following 2025 best practices
@@ -20,6 +19,9 @@ import {
 import Animated from 'react-native-reanimated';
 import { z } from 'zod';
 
+// ✅ Type imports
+import { RawStrainApiResponse } from '@/lib/types/weed-db';
+
 // ✅ Reanimated v3 minimal import - using custom animation hooks for better performance
 
 import { StrainAutocomplete } from '../StrainAutocomplete';
@@ -39,6 +41,7 @@ import { useButtonAnimation } from '@/lib/animations';
 import { searchStrainsByName } from '@/lib/data/strains';
 import { useDatabase } from '@/lib/hooks/useDatabase';
 import { useEnhancedKeyboard } from '@/lib/hooks/keyboard/useEnhancedKeyboard';
+import { useI18n } from '@/lib/hooks/useI18n';
 import { Plant } from '@/lib/models/Plant';
 import { findOrCreateLocalStrain } from '@/lib/services/sync/strain-sync.service';
 import { WeedDbService } from '@/lib/services/weed-db.service';
@@ -52,7 +55,6 @@ import {
   CannabisType,
 } from '@/lib/types/plant';
 import { StrainSpecies } from '@/lib/types/strain';
-import { RawStrainApiResponse } from '@/lib/types/weed-db';
 
 // ✅ Animation Strategy (Following 2025 React Native Reanimated Guide):
 // - Using custom animation hooks for reusable patterns (form inputs, buttons)
@@ -196,6 +198,7 @@ interface EditPlantFormProps {
  */
 export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormProps) {
   const { database } = useDatabase();
+  const { t } = useI18n();
 
   const {
     control,
@@ -334,14 +337,14 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                 : strainFromApi.flavors
                   ? [strainFromApi.flavors]
                   : [],
-              terpenes: (strainFromApi as any).terpenes,
+              terpenes: (strainFromApi as RawStrainApiResponse).terpenes,
               image_url: strainFromApi.imageUrl ?? strainFromApi.image,
               imageUrl: strainFromApi.imageUrl,
               image: strainFromApi.image,
               link: strainFromApi.url ?? strainFromApi.link,
               parents: strainFromApi.parents,
               breeder: strainFromApi.breeder,
-              origin: (strainFromApi as any).origin,
+              origin: (strainFromApi as RawStrainApiResponse).origin,
             };
 
             setSelectedStrain(strainForState);
@@ -366,7 +369,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             const localStrain = localMatches[0];
             // Construct an object that matches RawStrainApiResponse
             const strainForState: RawStrainApiResponse = {
-              id: (localStrain as any).external_db_id ?? 0, // Use a numeric ID if available, else placeholder
+              id: (localStrain as RawStrainApiResponse).external_db_id ?? 0, // Use a numeric ID if available, else placeholder
               api_id: localStrain.id, // Use local string UUID as api_id
               name: localStrain.name,
               type: mapLocalTypeToApiType(localStrain.type as string),
@@ -376,18 +379,18 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
               effects: localStrain.effects || [],
               flavors: localStrain.flavors || [],
               // Add other fields from RawStrainApiResponse with default values if not in localStrain
-              lineage: (localStrain as any).lineage ?? undefined,
-              terpenes: (localStrain as any).terpenes ?? undefined,
-              images: (localStrain as any).images ?? undefined,
-              seed_company: (localStrain as any).seed_company ?? undefined,
-              genetics: (localStrain as any).genetics ?? undefined,
-              flowering_time_min: (localStrain as any).flowering_time_min ?? undefined,
-              flowering_time_max: (localStrain as any).flowering_time_max ?? undefined,
-              yield_min: (localStrain as any).yield_min ?? undefined,
-              yield_max: (localStrain as any).yield_max ?? undefined,
-              difficulty: (localStrain as any).difficulty ?? undefined,
-              rating: (localStrain as any).rating ?? 0,
-              reviews_count: (localStrain as any).reviews_count ?? 0,
+              lineage: (localStrain as RawStrainApiResponse).lineage ?? undefined,
+              terpenes: (localStrain as RawStrainApiResponse).terpenes ?? undefined,
+              images: (localStrain as RawStrainApiResponse).images ?? undefined,
+              seed_company: (localStrain as RawStrainApiResponse).seed_company ?? undefined,
+              genetics: (localStrain as RawStrainApiResponse).genetics ?? undefined,
+              flowering_time_min: (localStrain as RawStrainApiResponse).flowering_time_min ?? undefined,
+              flowering_time_max: (localStrain as RawStrainApiResponse).flowering_time_max ?? undefined,
+              yield_min: (localStrain as RawStrainApiResponse).yield_min ?? undefined,
+              yield_max: (localStrain as RawStrainApiResponse).yield_max ?? undefined,
+              difficulty: (localStrain as RawStrainApiResponse).difficulty ?? undefined,
+              rating: (localStrain as RawStrainApiResponse).rating ?? 0,
+              reviews_count: (localStrain as RawStrainApiResponse).reviews_count ?? 0,
             };
             setSelectedStrain(strainForState);
             console.log(
@@ -437,7 +440,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                   bestMatchFromApiSearch.parents && bestMatchFromApiSearch.parents.length > 0
                     ? bestMatchFromApiSearch.parents
                     : undefined,
-                terpenes: (bestMatchFromApiSearch as any).terpenes ?? undefined, // Strain doesn't explicitly have terpenes
+                terpenes: (bestMatchFromApiSearch as RawStrainApiResponse).terpenes ?? undefined,
                 images: bestMatchFromApiSearch.image
                   ? [bestMatchFromApiSearch.image]
                   : bestMatchFromApiSearch.imageUrl
@@ -451,21 +454,21 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                 // Remove flowering_time_min and flowering_time_max as Strain doesn't directly provide them for parsing here
                 yield_min:
                   (bestMatchFromApiSearch.yieldIndoor ||
-                    (bestMatchFromApiSearch as any).yield_min) ??
+                    (bestMatchFromApiSearch as RawStrainApiResponse).yield_min) ??
                   undefined,
                 yield_max:
                   (bestMatchFromApiSearch.yieldOutdoor ||
-                    (bestMatchFromApiSearch as any).yield_max) ??
+                    (bestMatchFromApiSearch as RawStrainApiResponse).yield_max) ??
                   undefined,
                 difficulty: bestMatchFromApiSearch.growDifficulty ?? undefined,
                 rating: bestMatchFromApiSearch.rating ?? 0,
-                reviews_count: (bestMatchFromApiSearch as any).reviews_count ?? 0, // Strain doesn't explicitly have reviews_count
+                reviews_count: (bestMatchFromApiSearch as RawStrainApiResponse).reviews_count ?? 0,
                 link: bestMatchFromApiSearch.url ?? bestMatchFromApiSearch.link ?? undefined,
                 parents: bestMatchFromApiSearch.parents ?? undefined,
                 breeder: bestMatchFromApiSearch.breeder ?? undefined,
-                origin: (bestMatchFromApiSearch as any).origin ?? undefined,
+                origin: (bestMatchFromApiSearch as RawStrainApiResponse).origin ?? undefined,
                 floweringType: bestMatchFromApiSearch.floweringType ?? undefined,
-                fromSeedToHarvest: (bestMatchFromApiSearch as any).fromSeedToHarvest ?? undefined, // Strain doesn't explicitly have this
+                fromSeedToHarvest: (bestMatchFromApiSearch as RawStrainApiResponse).fromSeedToHarvest ?? undefined,
                 growDifficulty: bestMatchFromApiSearch.growDifficulty ?? undefined,
                 yieldIndoor:
                   bestMatchFromApiSearch.yieldIndoor ??
@@ -897,7 +900,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     );
   };
 
-  const renderEnumPicker = (fieldName: keyof PlantFormData, enumObject: any, title: string) => {
+  const renderEnumPicker = (fieldName: keyof PlantFormData, enumObject: Record<string, string>, title: string) => {
     const formatLabel = (str: string) =>
       str.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 
@@ -907,7 +910,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         ...Object.values(enumObject).map((option: unknown) => ({
           text: formatLabel(String(option)),
           onPress: () =>
-            setValue(fieldName, option as any, { shouldValidate: true, shouldDirty: true }),
+            setValue(fieldName, option as PlantFormData[keyof PlantFormData], { shouldValidate: true, shouldDirty: true }),
         })),
         { text: 'Cancel', style: 'cancel' as const },
       ]);
@@ -1012,12 +1015,12 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
     <ThemedView className="flex-1">
       <EnhancedKeyboardWrapper className="flex-1 p-5">
         <ThemedText variant="heading" className="mb-5 text-center">
-          Edit Plant Details
+          {t('common.editPlantDetails')}
         </ThemedText>
 
         {/* Image Picker */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Plant Image
+          {t('common.plantImage')}
         </ThemedText>
         <ThemedView className="mb-4 items-center">
           {imagePreviewUri ? (
@@ -1079,13 +1082,13 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
         {/* Plant Name */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Plant Name*
+          {t('common.plantName')}
         </ThemedText>
         {renderTextInput('name', 'e.g., Bruce Banner', 'default', false, 50)}
 
         {/* Strain Autocomplete */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Strain*
+          {t('common.strain')}
         </ThemedText>
         <Controller
           control={control}
@@ -1177,19 +1180,19 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
         {/* Cannabis Type */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Cannabis Type
+          {t('common.cannabisType')}
         </ThemedText>
         {renderEnumPicker('cannabis_type', CannabisType, 'Cannabis Type')}
 
         {/* Growth Stage */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Growth Stage*
+          {t('common.growthStage')}
         </ThemedText>
         {renderEnumPicker('growth_stage', PlantGrowthStage, 'Growth Stage')}
 
         {/* Planted Date */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Planted Date*
+          {t('common.plantedDate')}
         </ThemedText>
         <Controller
           control={control}
@@ -1206,7 +1209,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                     value={value || new Date()}
                     mode="date"
                     display="default"
-                    onChange={(_event: any, selectedDate?: Date) => {
+                    onChange={(_event: unknown, selectedDate?: Date) => {
                       setShowDatePicker(false);
                       if (selectedDate) {
                         onDateChange(selectedDate);
@@ -1231,25 +1234,25 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
 
         {/* Location Description */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Location*
+          {t('common.location')}
         </ThemedText>
         {renderLocationPicker()}
 
         {/* Grow Medium */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Grow Medium
+          {t('common.growMedium')}
         </ThemedText>
         {renderEnumPicker('grow_medium', GrowMedium, 'Grow Medium')}
 
         {/* Light Condition */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Light Condition
+          {t('common.lightCondition')}
         </ThemedText>
         {renderEnumPicker('light_condition', LightCondition, 'Light Condition')}
 
         {/* Notes */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
-          Notes
+          {t('common.notes')}
         </ThemedText>
         {renderTextInput('notes', 'Additional notes about your plant...', 'default', true, 500)}
 

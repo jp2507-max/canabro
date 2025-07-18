@@ -23,6 +23,7 @@ import LanguageToggle from '../ui/LanguageToggle';
 
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { useI18n } from '@/lib/hooks/useI18n';
 
 /**
  * Props for the main profile screen content.
@@ -47,6 +48,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
   onRefresh,
 }) {
   const { triggerSync } = useSyncContext();
+  const { t } = useI18n();
 
   const syncButtonScale = useSharedValue(1);
 
@@ -122,7 +124,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-100"
               accessibilityRole="header">
-              Profile
+              {t('common.profile')}
             </ThemedText>
             <Animated.View 
               entering={FadeIn.delay(200).duration(500)} 
@@ -142,7 +144,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              Statistics
+              {t('common.statistics')}
             </ThemedText>
             <ThemedView className="flex-row space-x-4">
               <StatItem
@@ -176,7 +178,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              Information
+              {t('common.information')}
             </ThemedText>
             <ProfileDetail 
               label="Username" 
@@ -212,7 +214,7 @@ const ProfileScreenBase: React.FC<ProfileScreenBaseProps> = function ProfileScre
               variant="heading"
               className="mb-4 text-xl font-bold text-neutral-800 dark:text-neutral-200"
               accessibilityRole="header">
-              Data Synchronization
+              {t('common.dataSynchronization')}
             </ThemedText>
             <GestureDetector gesture={syncGesture}>
               <Animated.View style={syncAnimatedStyle}>
