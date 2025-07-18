@@ -161,25 +161,23 @@ const ComparisonCard: React.FC<ComparisonCardProps> = ({
               </ThemedText>
             </View>
 
-            <View className="bg-white dark:bg-neutral-900 rounded-lg p-3">
-              <View className="flex-row items-center space-x-2 mb-1">
-                <OptimizedIcon name="water-outline" size={16} className="text-primary-600 dark:text-primary-400" />
-                <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
-                  {t('plantComparison.dryingEfficiency')}
-                </ThemedText>
-              </View>
-              <ThemedText className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
-                {comparison.dryingEfficiency}%
+          <ThemedView className="bg-white dark:bg-neutral-900 rounded-lg p-3">
+            <View className="flex-row items-center space-x-2 mb-1">
+              <OptimizedIcon name="water-outline" size={16} className="text-primary-600 dark:text-primary-400" />
+              <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">
+                {t('plantComparison.dryingEfficiency')}
               </ThemedText>
             </View>
-          </View>
-        </ThemedView>
-      </Animated.View>
-    </GestureDetector>
+            <ThemedText className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
+              {comparison.dryingEfficiency}%
+            </ThemedText>
+          </ThemedView>
+        </View>
+      </ThemedView>
+    </Animated.View>
+  </GestureDetector>
   );
-};
-
-interface SortButtonProps {
+};interface SortButtonProps {
   label: string;
   isActive: boolean;
   onPress: () => void;

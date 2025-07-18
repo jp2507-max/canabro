@@ -1,3 +1,16 @@
+// Helper to get text color class directly from priority
+const getPriorityTextColorClass = (priority: string) => {
+  switch (priority) {
+    case 'urgent':
+      return 'text-status-danger';
+    case 'high':
+      return 'text-status-warning';
+    case 'medium':
+      return 'text-primary-500';
+    default:
+      return 'text-neutral-500 dark:text-neutral-400';
+  }
+};
 import React from 'react';
 import Animated, { useAnimatedStyle, withSpring, withSequence } from 'react-native-reanimated';
 import { OptimizedIcon } from './OptimizedIcon';
@@ -207,7 +220,7 @@ export const AttentionIndicator: React.FC<AttentionIndicatorProps> = ({
         <OptimizedIcon
           name={getPriorityIcon(priority)}
           size={getIconSize(size)}
-          className={getPriorityColors(priority).split(' ').find(c => c.startsWith('text-')) || 'text-neutral-500'}
+          className={getPriorityTextColorClass(priority)}
         />
       </ThemedView>
     </Animated.View>

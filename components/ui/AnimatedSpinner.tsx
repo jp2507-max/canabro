@@ -26,17 +26,15 @@ export const AnimatedSpinner: React.FC<{ size?: number; className?: string }> = 
 
   return (
     <ThemedView className={className} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.View
-            style={[{
-              width: size,
-              height: size,
-              borderWidth: size / 8,
-              borderColor: 'rgba(0,0,0,0.1)',
-              // Use NativeWind semantic color token for borderTopColor
-              borderTopColor: require('nativewind').getColor('primary-500'), // NativeWind semantic color token
-              borderRadius: size / 2
-            }, animatedStyle]}
-          />
+        <Animated.View
+          className="border-t-primary-500 border-primary-100"
+          style={[{
+            width: size,
+            height: size,
+            borderWidth: size / 8,
+            borderRadius: size / 2
+          }, animatedStyle]}
+        />
     </ThemedView>
   );
 };

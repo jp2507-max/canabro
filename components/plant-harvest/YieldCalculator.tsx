@@ -213,7 +213,7 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({
           <ThemedText variant="heading" className="text-base font-semibold">
             {t('yieldCalculator.advancedMetrics.title')}
           </ThemedText>
-          <View className="grid grid-cols-1 gap-4">
+          <View>
             {displayMetrics.gramsPerWatt && (
               <MetricCard
                 icon="flash"

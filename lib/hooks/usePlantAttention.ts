@@ -1,3 +1,5 @@
+// Minimal Subscription type for WatermelonDB observables
+type Subscription = { unsubscribe: () => void };
 import { useState, useEffect, useMemo } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '@/lib/models';
@@ -17,7 +19,7 @@ export interface AttentionReason {
   type: 'overdue_reminder' | 'due_today' | 'low_health' | 'overdue_watering' | 'overdue_nutrients';
   message: string;
   severity: 'low' | 'medium' | 'high' | 'urgent';
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export interface PlantAttentionMap {
@@ -30,14 +32,19 @@ export interface PlantAttentionMap {
 export const usePlantAttention = (plantIds?: string[]) => {
   const [attentionMap, setAttentionMap] = useState<PlantAttentionMap>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Memoize plantIds to avoid unnecessary resubscriptions
+  const memoizedPlantIds = useMemo(() => plantIds ? [...plantIds].sort() : undefined, [plantIds ? [...plantIds].sort().join(",") : ""]);
 
   useEffect(() => {
-    let reminderSubscription: any;
-    let plantSubscription: any;
+    let reminderSubscription: Subscription | undefined;
+    let plantSubscription: Subscription | undefined;
 
     const loadAttentionData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
         // Query active reminders
         const reminderQuery = database.collections
@@ -45,7 +52,7 @@ export const usePlantAttention = (plantIds?: string[]) => {
           .query(
             Q.where('is_completed', false),
             Q.where('is_deleted', false),
-            ...(plantIds ? [Q.where('plant_id', Q.oneOf(plantIds))] : [])
+            ...(memoizedPlantIds ? [Q.where('plant_id', Q.oneOf(memoizedPlantIds))] : [])
           );
 
         // Query plants
@@ -53,38 +60,40 @@ export const usePlantAttention = (plantIds?: string[]) => {
           .get<Plant>('plants')
           .query(
             Q.where('is_deleted', false),
-            ...(plantIds ? [Q.where('id', Q.oneOf(plantIds))] : [])
+            ...(memoizedPlantIds ? [Q.where('id', Q.oneOf(memoizedPlantIds))] : [])
           );
 
         // Set up observables
         reminderSubscription = reminderQuery.observe().subscribe({
           next: (reminders) => updateAttentionMap(reminders),
-          error: (error) => {
-            console.error('Error in reminder subscription:', error);
+          error: (err) => {
+            console.error('Error in reminder subscription:', err);
+            setError(err instanceof Error ? err : new Error(String(err)));
             setLoading(false);
           }
         });
 
         plantSubscription = plantQuery.observe().subscribe({
           next: (plants) => updatePlantHealthStatus(plants),
-          error: (error) => {
-            console.error('Error in plant subscription:', error);
+          error: (err) => {
+            console.error('Error in plant subscription:', err);
+            setError(err instanceof Error ? err : new Error(String(err)));
             setLoading(false);
           }
         });
 
-      } catch (error) {
-        console.error('Error loading plant attention data:', error);
+      } catch (err) {
+        console.error('Error loading plant attention data:', err);
+        setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       }
     };
 
+    // --- Begin updateAttentionMap function body ---
     const updateAttentionMap = async (reminders: CareReminder[]) => {
       try {
         const newAttentionMap: PlantAttentionMap = {};
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
         // Group reminders by plant
         const remindersByPlant = reminders.reduce((acc, reminder) => {
           if (!acc[reminder.plantId]) {
@@ -101,20 +110,15 @@ export const usePlantAttention = (plantIds?: string[]) => {
           let dueTodayCount = 0;
 
           plantReminders.forEach((reminder) => {
-            const scheduledDate = new Date(reminder.scheduledFor);
-            const isOverdue = scheduledDate < today;
-            const isDueToday = scheduledDate >= today && 
-              scheduledDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
-
-            if (isOverdue) {
+            if (reminder.isOverdue) {
               overdueCount++;
               reasons.push({
                 type: 'overdue_reminder',
                 message: `${reminder.title} is overdue`,
                 severity: 'urgent',
-                data: { reminder, daysOverdue: Math.ceil((now.getTime() - scheduledDate.getTime()) / (1000 * 60 * 60 * 24)) }
+                data: { reminder, daysOverdue: Math.ceil((now.getTime() - reminder.scheduledFor.getTime()) / (1000 * 60 * 60 * 24)) }
               });
-            } else if (isDueToday) {
+            } else if (reminder.isDueToday) {
               dueTodayCount++;
               reasons.push({
                 type: 'due_today',
@@ -132,14 +136,8 @@ export const usePlantAttention = (plantIds?: string[]) => {
           } else if (dueTodayCount > 0) {
             priorityLevel = 'high';
           } else if (plantReminders.length > 0) {
-            // Check if any reminders are due soon (within 2 days)
-            const dueSoonCount = plantReminders.filter((reminder) => {
-              const scheduledDate = new Date(reminder.scheduledFor);
-              const twoDaysFromNow = new Date(today);
-              twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
-              return scheduledDate < twoDaysFromNow && scheduledDate >= today;
-            }).length;
-
+            // Check if any reminders are due soon (within 2 days) using CareReminder's isDueSoon getter
+            const dueSoonCount = plantReminders.filter((reminder) => reminder.isDueSoon).length;
             if (dueSoonCount > 0) {
               priorityLevel = 'medium';
             }
@@ -159,9 +157,11 @@ export const usePlantAttention = (plantIds?: string[]) => {
         setLoading(false);
       } catch (error) {
         console.error('Error updating attention map:', error);
+        setError(error instanceof Error ? error : new Error(String(error)));
         setLoading(false);
       }
     };
+    // --- End updateAttentionMap function body ---
 
     const updatePlantHealthStatus = async (plants: Plant[]) => {
       try {
@@ -234,6 +234,7 @@ export const usePlantAttention = (plantIds?: string[]) => {
         });
       } catch (error) {
         console.error('Error updating plant health status:', error);
+        setError(error instanceof Error ? error : new Error(String(error)));
       }
     };
 
@@ -247,7 +248,7 @@ export const usePlantAttention = (plantIds?: string[]) => {
         console.error('Error during cleanup:', cleanupError);
       }
     };
-  }, [plantIds]);
+  }, [memoizedPlantIds]);
 
   // Memoized computed values
   const totalPlantsNeedingAttention = useMemo(() => {
@@ -274,12 +275,13 @@ export const usePlantAttention = (plantIds?: string[]) => {
   };
 
   return {
-    attentionMap,
-    loading,
-    totalPlantsNeedingAttention,
-    urgentPlantsCount,
-    highPriorityPlantsCount,
-    getPlantAttentionStatus,
+  attentionMap,
+  loading,
+  error,
+  totalPlantsNeedingAttention,
+  urgentPlantsCount,
+  highPriorityPlantsCount,
+  getPlantAttentionStatus,
   };
 };
 

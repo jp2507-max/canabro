@@ -329,7 +329,7 @@ export function PlantCard({ plant, onPress }: PlantCardProps) {
                   : 'text-component-700 dark:text-component-800'
                 }
               `}>
-                {plant.nextWateringDays}d
+                {t('plantCard.nextWateringDays', { count: plant.nextWateringDays })}
               </ThemedText>
             </View>
 
@@ -352,7 +352,7 @@ export function PlantCard({ plant, onPress }: PlantCardProps) {
                   : 'text-component-700 dark:text-component-800'
                 }
               `}>
-                {plant.nextNutrientDays}d
+                {t('plantCard.nextNutrientDays', { count: plant.nextNutrientDays })}
               </ThemedText>
             </View>
           </View>

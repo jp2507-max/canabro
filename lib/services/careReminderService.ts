@@ -3,6 +3,7 @@ import { database } from '@/lib/models';
 import { CareReminder } from '@/lib/models/CareReminder';
 import { Plant } from '@/lib/models/Plant';
 import { Logger } from '@/lib/utils/production-utils';
+import i18n from '@/lib/config/i18n';
 
 export interface CreateReminderOptions {
   plantId: string;
@@ -256,9 +257,6 @@ export class CareReminderService {
    * Batch operations
    */
   async batchMarkCompleted(reminderIds: string[]): Promise<void> {
-    // Import i18n for translations
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const i18n = require('@/lib/config/i18n').default;
     await database.write(async () => {
       const results = await Promise.all(
         reminderIds.map(async (id) => {
@@ -271,7 +269,7 @@ export class CareReminderService {
           } catch (error) {
             // Log error for this reminder, but continue
             console.warn(
-              i18n.t('careReminder.batchMarkCompletedError', { id }),
+              i18n.t('careReminders.errorBatchMarkingDone'),
               error
             );
             return { id, success: false, error };
