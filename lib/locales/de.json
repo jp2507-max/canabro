@@ -687,6 +687,20 @@
     "errorBatchMarkingDone": "Erinnerungen konnten nicht als erledigt markiert werden. Bitte versuchen Sie es erneut.",
     "errorBatchSnoozing": "Erinnerungen konnten nicht verschoben werden. Bitte versuchen Sie es erneut."
   },
+  "plantAttention": {
+    "needsAttention": "Benötigt Aufmerksamkeit",
+    "overdueTask": "{{count}} überfällige Aufgabe",
+    "overdueTask_plural": "{{count}} überfällige Aufgaben",
+    "dueToday": "{{count}} Aufgabe heute fällig",
+    "dueToday_plural": "{{count}} Aufgaben heute fällig",
+    "lowHealth": "Gesundheit ist niedrig ({{percentage}}%)",
+    "overdueWatering": "Bewässerung ist überfällig",
+    "overdueNutrients": "Nährstoffe sind überfällig",
+    "priorityUrgent": "Dringend",
+    "priorityHigh": "Hohe Priorität",
+    "priorityMedium": "Mittlere Priorität",
+    "priorityLow": "Niedrige Priorität"
+  },
   "notificationScheduler": {
     "createReminder": "Erinnerung erstellen",
     "reminderType": "Erinnerungstyp",

@@ -182,7 +182,9 @@
   - Optimize performance for large plant collections
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 6. Implement care reminders and notification system
+- [x] 6. Implement care reminders and notification system
+
+
 - [x] 6.1 Create CareReminders component
 
 
@@ -217,7 +219,13 @@
   - Integrate with device calendar for reminder sync
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 6.3 Add visual indicators for plants needing attention
+- [x] 6.3 Add visual indicators for plants needing attention
+
+
+
+
+
+
   - Enhance PlantCard component with attention indicators
   - Implement priority highlighting in plant list
   - Add overdue reminder escalation logic

@@ -28,7 +28,6 @@ const CareRemindersErrorFallback: React.FC<{ onRetry?: () => void }> = ({ onRetr
     enableHaptics: true,
     hapticStyle: 'light',
     onPress: () => {
-      triggerLightHapticSync();
       onRetry?.();
     },
   });

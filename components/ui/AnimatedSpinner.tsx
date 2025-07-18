@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, cancelAnimation } from 'react-native-reanimated';
 import ThemedView from './ThemedView';
 
 /**
@@ -13,7 +13,7 @@ export const AnimatedSpinner: React.FC<{ size?: number; className?: string }> = 
   React.useEffect(() => {
     rotation.value = withRepeat(withTiming(360, { duration: 1000 }), -1);
     return () => {
-      rotation.value = 0;
+    cancelAnimation(rotation);
     };
   }, []);
 
@@ -26,7 +26,17 @@ export const AnimatedSpinner: React.FC<{ size?: number; className?: string }> = 
 
   return (
     <ThemedView className={className} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Animated.View style={[{ width: size, height: size, borderWidth: size / 8, borderColor: 'rgba(0,0,0,0.1)', borderTopColor: 'var(--color-primary-500)', borderRadius: size / 2 }, animatedStyle]} />
+          <Animated.View
+            style={[{
+              width: size,
+              height: size,
+              borderWidth: size / 8,
+              borderColor: 'rgba(0,0,0,0.1)',
+              // Use NativeWind semantic color token for borderTopColor
+              borderTopColor: require('nativewind').getColor('primary-500'), // NativeWind semantic color token
+              borderRadius: size / 2
+            }, animatedStyle]}
+          />
     </ThemedView>
   );
 };

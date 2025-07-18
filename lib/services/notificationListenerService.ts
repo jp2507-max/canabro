@@ -1,6 +1,5 @@
 import * as Notifications from 'expo-notifications';
 import { careReminderService } from './careReminderService';
-import { useNotifications } from '@/lib/hooks/useNotifications';
 
 export class NotificationListenerService {
   private static instance: NotificationListenerService;

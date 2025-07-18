@@ -672,10 +672,10 @@
     "markDone": "Mark Done",
     "snooze": "Snooze",
     "reschedule": "Reschedule",
-    "overdue": "{{count}} days overdue",
+  "overdue": "{count, plural, one {# day overdue} other {# days overdue}}",
     "dueToday": "Due today",
     "dueTomorrow": "Due tomorrow",
-    "dueInDays": "Due in {{count}} days",
+  "dueInDays": "Due in {count, plural, one {# day} other {# days}}",
     "noActiveReminders": "All caught up!",
     "noActiveRemindersDescription": "You have no active care reminders. Your plants are well taken care of.",
     "noCompletedReminders": "No completed reminders",
@@ -693,6 +693,20 @@
     "errorTitle": "Care Reminders Error",
     "errorDescription": "We're having trouble loading your care reminders. This could be due to a database connection issue or corrupted data.",
     "retryButton": "Retry"
+  },
+  "plantAttention": {
+    "needsAttention": "Needs Attention",
+    "overdueTask": "{{count}} overdue task",
+    "overdueTask_plural": "{{count}} overdue tasks",
+    "dueToday": "{{count}} task due today",
+    "dueToday_plural": "{{count}} tasks due today",
+    "lowHealth": "Health is low ({{percentage}}%)",
+    "overdueWatering": "Watering is overdue",
+    "overdueNutrients": "Nutrients are overdue",
+    "priorityUrgent": "Urgent",
+    "priorityHigh": "High Priority",
+    "priorityMedium": "Medium Priority",
+    "priorityLow": "Low Priority"
   },
   "notificationScheduler": {
     "createReminder": "Create Reminder",

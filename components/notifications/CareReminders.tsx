@@ -522,7 +522,12 @@ const CareReminders: React.FC<CareRemindersProps> = ({
 
       // Validate the scheduled date
       if (scheduledDate <= new Date()) {
-        console.warn(`Scheduled date is in the past for reminder ${reminder.id}`);
+        console.warn(`Attempted to schedule notification for past date: ${scheduledDate}`);
+        Alert.alert(
+          t('careReminders.invalidDateTitle', 'Invalid Reminder Date'),
+          t('careReminders.invalidDateMessage', 'The scheduled date for this reminder is in the past. Please select a future date.'),
+          [{ text: t('common.ok', 'OK') }]
+        );
         return;
       }
 

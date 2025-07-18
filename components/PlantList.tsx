@@ -3,13 +3,14 @@
 import { Database, Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 
 import { PlantCard, Plant as PlantCardData } from './my-plants/PlantCard';
 import { OptimizedIcon } from './ui/OptimizedIcon';
 import ThemedText from './ui/ThemedText';
 import { Plant as WDBPlant } from '../lib/models/Plant'; // Renamed to WDBPlant to avoid conflict
+import { usePlantAttention } from '@/lib/hooks/usePlantAttention';
 
 // Import the new PlantCard and its data interface
 
@@ -68,12 +69,39 @@ const PlantListComponent = React.memo(
     onRefresh,
   }: PlantListComponentProps) => {
     const router = useSafeRouter();
+    
+    // Get attention status for all plants
+    const plantIds = useMemo(() => plants.map(plant => plant.id), [plants]);
+    const { attentionMap } = usePlantAttention(plantIds);
 
     useEffect(() => {
       if (onCountChange) {
         onCountChange(plants?.length ?? 0);
       }
     }, [plants, onCountChange]);
+
+    // Sort plants by attention priority
+    const sortedPlants = useMemo(() => {
+      if (!plants || plants.length === 0) return plants;
+      
+      return [...plants].sort((a, b) => {
+        const aAttention = attentionMap[a.id];
+        const bAttention = attentionMap[b.id];
+        
+        // Priority order: urgent > high > medium > low > no attention
+        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+        
+        const aPriority = aAttention?.needsAttention ? priorityOrder[aAttention.priorityLevel] || 0 : 0;
+        const bPriority = bAttention?.needsAttention ? priorityOrder[bAttention.priorityLevel] || 0 : 0;
+        
+        // Sort by priority (highest first), then by name
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority;
+        }
+        
+        return a.name.localeCompare(b.name);
+      });
+    }, [plants, attentionMap]);
 
     const handlePress = React.useCallback(
       (plantId: string) => {
@@ -118,7 +146,7 @@ const PlantListComponent = React.memo(
 
     return (
       <FlatList
-        data={plants}
+        data={sortedPlants}
         keyExtractor={keyExtractor}
         renderItem={renderPlantCard}
         getItemLayout={getItemLayout}

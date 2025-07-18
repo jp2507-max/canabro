@@ -156,11 +156,32 @@ export const useNotifications = (): UseNotificationsReturn => {
         return null;
       }
 
-      // Calculate next occurrence
+      // Schedule the first notification at the exact scheduledFor date
+      const firstNotificationId = await Notifications.scheduleNotificationAsync({
+        identifier: `${options.identifier}_first`,
+        content: {
+          title: options.title,
+          body: options.body,
+          data: {
+            ...options.data,
+            repeatInterval: options.repeatInterval,
+            isRecurring: true,
+            occurrence: 1,
+          },
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          categoryIdentifier: 'plant-care',
+        },
+        trigger: {
+          type: SchedulableTriggerInputTypes.DATE,
+          date: options.scheduledFor,
+        },
+      });
+
+      // Optionally, schedule the next occurrence (if needed)
       const nextDate = new Date(options.scheduledFor);
       nextDate.setDate(nextDate.getDate() + options.repeatInterval);
-
-      const notificationId = await Notifications.scheduleNotificationAsync({
+      const nextNotificationId = await Notifications.scheduleNotificationAsync({
         identifier: `${options.identifier}_next`,
         content: {
           title: options.title,
@@ -169,6 +190,7 @@ export const useNotifications = (): UseNotificationsReturn => {
             ...options.data,
             repeatInterval: options.repeatInterval,
             isRecurring: true,
+            occurrence: 2,
           },
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
@@ -180,7 +202,8 @@ export const useNotifications = (): UseNotificationsReturn => {
         },
       });
 
-      return notificationId;
+      // Return both notification IDs (or just the first if only one is needed)
+      return firstNotificationId;
     } catch (error) {
       console.error('Error scheduling recurring notification:', error);
       return null;
