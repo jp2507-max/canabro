@@ -29,7 +29,8 @@
     "confirm": "Confirm",
     "somethingWentWrong": "Something went wrong",
     "unexpectedError": "An unexpected error occurred. Please try again.",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "days": "days"
   },
   "navigation": {
     "tabs": {
@@ -490,6 +491,144 @@
     "dataPoint": {
       "title": "Data Point",
       "message": "{{metric}}: {{value}}{{unit}} on {{date}}"
+    }
+  },
+  "harvestForm": {
+    "title": "Record Harvest",
+    "subtitle": "Record harvest data for {{plantName}}",
+    "fields": {
+      "harvestDate": "Harvest Date",
+      "weightUnit": "Weight Unit",
+      "wetWeight": "Wet Weight",
+      "dryWeight": "Dry Weight (Optional)",
+      "trimWeight": "Trim Weight (Optional)",
+      "dryingMethod": "Drying Method (Optional)",
+      "curingNotes": "Curing Notes (Optional)",
+      "harvestPhotos": "Harvest Photos (Optional)"
+    },
+    "placeholders": {
+      "wetWeight": "Enter wet weight",
+      "dryWeight": "Enter dry weight",
+      "trimWeight": "Enter trim weight",
+      "dryingMethod": "e.g., Hang dry, rack dry, freeze dry",
+      "curingNotes": "Add notes about curing process, timeline, etc."
+    },
+    "units": {
+      "grams": "Grams",
+      "ounces": "Ounces"
+    },
+    "validation": {
+      "harvestDateRequired": "Harvest date is required",
+      "wetWeightMin": "Wet weight must be at least 0.1",
+      "wetWeightMax": "Wet weight cannot exceed 10,000",
+      "dryWeightMin": "Dry weight must be at least 0.1",
+      "dryWeightMax": "Dry weight cannot exceed 10,000",
+      "trimWeightMin": "Trim weight cannot be negative",
+      "trimWeightMax": "Trim weight cannot exceed 5,000",
+      "weightUnitRequired": "Weight unit is required",
+      "curingNotesMax": "Curing notes cannot exceed 500 characters"
+    },
+    "yieldMetrics": {
+      "title": "Yield Metrics",
+      "totalGrowDays": "Total grow days: {{days}}",
+      "yieldPerDay": "Yield per day: {{yield}}g",
+      "dryingEfficiency": "Drying efficiency: {{efficiency}}%"
+    },
+    "buttons": {
+      "takePhoto": "Take Photo",
+      "selectPhoto": "Select Photo",
+      "recordHarvest": "Record Harvest"
+    },
+    "errors": {
+      "photoUploadFailed": "Photo Upload Failed",
+      "photoCaptureError": "Failed to capture photo. Please try again.",
+      "photoSelectionError": "Failed to select photo. Please try again.",
+      "submissionFailed": "Failed to record harvest. Please try again."
+    }
+  },
+  "yieldCalculator": {
+    "title": "Yield Calculator",
+    "subtitle": "Analysis for {{plantName}}",
+    "metrics": {
+      "growDays": "Grow Days",
+      "growDaysSubtitle": "Total days from seed to harvest",
+      "totalYield": "Total Yield",
+      "totalYieldSubtitle": "Dry weight + trim weight",
+      "yieldPerDay": "Yield Per Day",
+      "yieldPerDaySubtitle": "Average daily yield",
+      "dryingEfficiency": "Drying Efficiency",
+      "dryingEfficiencySubtitle": "Dry weight / wet weight ratio",
+      "trimPercentage": "Trim Percentage",
+      "trimPercentageSubtitle": "Percentage of total yield from trim"
+    },
+    "advancedMetrics": {
+      "title": "Advanced Metrics",
+      "gramsPerWatt": "Grams per Watt",
+      "gramsPerWattSubtitle": "Efficiency based on light power",
+      "yieldPerSqFt": "Yield per Sq Ft",
+      "yieldPerSqFtSubtitle": "Yield density per square foot"
+    },
+    "insights": {
+      "title": "Performance Insights",
+      "excellentDrying": "Excellent drying efficiency (>20%)",
+      "highYieldPerDay": "High daily yield performance",
+      "fastGrow": "Fast growing cycle (<70 days)",
+      "highTrimRatio": "High trim ratio - consider training techniques"
+    }
+  },
+  "harvestHistory": {
+    "title": "Harvest History",
+    "subtitle": "{{count}} harvest recorded",
+    "subtitle_other": "{{count}} harvests recorded",
+    "totalYield": "Total Yield",
+    "yieldPerDay": "Yield/Day",
+    "growDays": "Grow Days",
+    "dryingEfficiency": "Drying Efficiency",
+    "summary": {
+      "title": "Summary Statistics",
+      "averageYield": "Average Yield",
+      "bestYield": "Best Yield",
+      "averageGrowDays": "Avg Grow Days",
+      "totalHarvests": "Total Harvests"
+    },
+    "timeline": {
+      "title": "Harvest Timeline"
+    },
+    "export": {
+      "csv": "Export CSV",
+      "json": "Export JSON",
+      "csvTitle": "Harvest Data (CSV)",
+      "jsonTitle": "Harvest Data (JSON)",
+      "error": "Export Error",
+      "csvError": "Failed to export CSV data",
+      "jsonError": "Failed to export JSON data"
+    },
+    "empty": {
+      "title": "No Harvests Yet",
+      "subtitle": "Record your first harvest to start tracking yield performance"
+    }
+  },
+  "plantComparison": {
+    "title": "Plant Comparison",
+    "subtitle": "Compare {{count}} plant harvest",
+    "subtitle_other": "Compare {{count}} plant harvests",
+    "harvestedOn": "Harvested on {{date}}",
+    "totalYield": "Total Yield",
+    "yieldPerDay": "Yield/Day",
+    "growDays": "Grow Days",
+    "dryingEfficiency": "Drying Efficiency",
+    "sortBy": "Sort by:",
+    "sort": {
+      "totalYield": "Total Yield",
+      "yieldPerDay": "Yield/Day",
+      "growDays": "Grow Days",
+      "dryingEfficiency": "Drying Efficiency"
+    },
+    "selected": "{{count}} plant selected",
+    "selected_other": "{{count}} plants selected",
+    "empty": {
+      "title": "No Plants to Compare",
+      "subtitle": "Record harvests from multiple plants to compare their performance"
     }
   }
 }

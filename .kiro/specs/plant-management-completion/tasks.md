@@ -109,7 +109,17 @@
 
 
 
-- [ ] 4.1 Create HarvestForm component
+
+
+
+
+- [x] 4.1 Create HarvestForm component
+
+
+
+
+
+
 
 
   - Build harvest recording form using EnhancedTextInput patterns
@@ -118,7 +128,13 @@
   - Create photo capture integration for harvest documentation
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ] 4.2 Create YieldCalculator and HarvestHistory components
+- [x] 4.2 Create YieldCalculator and HarvestHistory components
+
+
+
+
+
+
   - Build yield calculation utilities (yield per day, efficiency metrics)
   - Create harvest history display with timeline integration
   - Implement plant comparison features with yield statistics

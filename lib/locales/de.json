@@ -29,7 +29,8 @@
     "confirm": "Bestätigen",
     "somethingWentWrong": "Etwas ist schiefgelaufen",
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-    "tryAgain": "Erneut versuchen"
+    "tryAgain": "Erneut versuchen",
+    "days": "Tage"
     },
   "navigation": {
     "tabs": {
@@ -490,6 +491,144 @@
     "dataPoint": {
       "title": "Datenpunkt",
       "message": "{{metric}}: {{value}}{{unit}} am {{date}}"
+    }
+  },
+  "harvestForm": {
+    "title": "Ernte erfassen",
+    "subtitle": "Erntedaten für {{plantName}} erfassen",
+    "fields": {
+      "harvestDate": "Erntedatum",
+      "weightUnit": "Gewichtseinheit",
+      "wetWeight": "Feuchtgewicht",
+      "dryWeight": "Trockengewicht (Optional)",
+      "trimWeight": "Verschnittgewicht (Optional)",
+      "dryingMethod": "Trocknungsmethode (Optional)",
+      "curingNotes": "Aushärtungsnotizen (Optional)",
+      "harvestPhotos": "Erntefotos (Optional)"
+    },
+    "placeholders": {
+      "wetWeight": "Feuchtgewicht eingeben",
+      "dryWeight": "Trockengewicht eingeben",
+      "trimWeight": "Verschnittgewicht eingeben",
+      "dryingMethod": "z.B. Hängetrocknung, Gittertrocknung, Gefriertrocknung",
+      "curingNotes": "Notizen zum Aushärtungsprozess, Zeitplan usw. hinzufügen"
+    },
+    "units": {
+      "grams": "Gramm",
+      "ounces": "Unzen"
+    },
+    "validation": {
+      "harvestDateRequired": "Erntedatum ist erforderlich",
+      "wetWeightMin": "Feuchtgewicht muss mindestens 0,1 sein",
+      "wetWeightMax": "Feuchtgewicht kann nicht über 10.000 liegen",
+      "dryWeightMin": "Trockengewicht muss mindestens 0,1 sein",
+      "dryWeightMax": "Trockengewicht kann nicht über 10.000 liegen",
+      "trimWeightMin": "Verschnittgewicht kann nicht negativ sein",
+      "trimWeightMax": "Verschnittgewicht kann nicht über 5.000 liegen",
+      "weightUnitRequired": "Gewichtseinheit ist erforderlich",
+      "curingNotesMax": "Aushärtungsnotizen können nicht über 500 Zeichen liegen"
+    },
+    "yieldMetrics": {
+      "title": "Ertragsmetriken",
+      "totalGrowDays": "Gesamte Anbautage: {{days}}",
+      "yieldPerDay": "Ertrag pro Tag: {{yield}}g",
+      "dryingEfficiency": "Trocknungseffizienz: {{efficiency}}%"
+    },
+    "buttons": {
+      "takePhoto": "Foto aufnehmen",
+      "selectPhoto": "Foto auswählen",
+      "recordHarvest": "Ernte erfassen"
+    },
+    "errors": {
+      "photoUploadFailed": "Foto-Upload fehlgeschlagen",
+      "photoCaptureError": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
+      "photoSelectionError": "Foto konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
+      "submissionFailed": "Ernte konnte nicht erfasst werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "yieldCalculator": {
+    "title": "Ertragsrechner",
+    "subtitle": "Analyse für {{plantName}}",
+    "metrics": {
+      "growDays": "Anbautage",
+      "growDaysSubtitle": "Gesamttage von Samen bis Ernte",
+      "totalYield": "Gesamtertrag",
+      "totalYieldSubtitle": "Trockengewicht + Verschnittgewicht",
+      "yieldPerDay": "Ertrag pro Tag",
+      "yieldPerDaySubtitle": "Durchschnittlicher Tagesertrag",
+      "dryingEfficiency": "Trocknungseffizienz",
+      "dryingEfficiencySubtitle": "Trockengewicht / Feuchtgewicht Verhältnis",
+      "trimPercentage": "Verschnitt-Prozentsatz",
+      "trimPercentageSubtitle": "Prozentsatz des Gesamtertrags aus Verschnitt"
+    },
+    "advancedMetrics": {
+      "title": "Erweiterte Metriken",
+      "gramsPerWatt": "Gramm pro Watt",
+      "gramsPerWattSubtitle": "Effizienz basierend auf Lichtleistung",
+      "yieldPerSqFt": "Ertrag pro Quadratfuß",
+      "yieldPerSqFtSubtitle": "Ertragsdichte pro Quadratfuß"
+    },
+    "insights": {
+      "title": "Leistungseinblicke",
+      "excellentDrying": "Ausgezeichnete Trocknungseffizienz (>20%)",
+      "highYieldPerDay": "Hohe Tagesertragsleistung",
+      "fastGrow": "Schneller Wachstumszyklus (<70 Tage)",
+      "highTrimRatio": "Hoher Verschnittverhältnis - erwägen Sie Trainingstechniken"
+    }
+  },
+  "harvestHistory": {
+    "title": "Erntehistorie",
+    "subtitle": "{{count}} Ernte erfasst",
+    "subtitle_other": "{{count}} Ernten erfasst",
+    "totalYield": "Gesamtertrag",
+    "yieldPerDay": "Ertrag/Tag",
+    "growDays": "Anbautage",
+    "dryingEfficiency": "Trocknungseffizienz",
+    "summary": {
+      "title": "Zusammenfassungsstatistiken",
+      "averageYield": "Durchschnittsertrag",
+      "bestYield": "Bester Ertrag",
+      "averageGrowDays": "Durchschn. Anbautage",
+      "totalHarvests": "Gesamte Ernten"
+    },
+    "timeline": {
+      "title": "Ernte-Zeitlinie"
+    },
+    "export": {
+      "csv": "CSV exportieren",
+      "json": "JSON exportieren",
+      "csvTitle": "Erntedaten (CSV)",
+      "jsonTitle": "Erntedaten (JSON)",
+      "error": "Export-Fehler",
+      "csvError": "CSV-Daten konnten nicht exportiert werden",
+      "jsonError": "JSON-Daten konnten nicht exportiert werden"
+    },
+    "empty": {
+      "title": "Noch keine Ernten",
+      "subtitle": "Erfassen Sie Ihre erste Ernte, um die Ertragsleistung zu verfolgen"
+    }
+  },
+  "plantComparison": {
+    "title": "Pflanzenvergleich",
+    "subtitle": "{{count}} Pflanzenernte vergleichen",
+    "subtitle_other": "{{count}} Pflanzenernten vergleichen",
+    "harvestedOn": "Geerntet am {{date}}",
+    "totalYield": "Gesamtertrag",
+    "yieldPerDay": "Ertrag/Tag",
+    "growDays": "Anbautage",
+    "dryingEfficiency": "Trocknungseffizienz",
+    "sortBy": "Sortieren nach:",
+    "sort": {
+      "totalYield": "Gesamtertrag",
+      "yieldPerDay": "Ertrag/Tag",
+      "growDays": "Anbautage",
+      "dryingEfficiency": "Trocknungseffizienz"
+    },
+    "selected": "{{count}} Pflanze ausgewählt",
+    "selected_other": "{{count}} Pflanzen ausgewählt",
+    "empty": {
+      "title": "Keine Pflanzen zum Vergleichen",
+      "subtitle": "Erfassen Sie Ernten von mehreren Pflanzen, um ihre Leistung zu vergleichen"
     }
   }
 }
