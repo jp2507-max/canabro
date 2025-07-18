@@ -251,17 +251,16 @@ export const PlantComparison: React.FC<PlantComparisonProps> = ({
     const comparisons = comparePlantYields(harvests);
     
     return comparisons.sort((a, b) => {
-      switch (currentSort) {
-        case 'yieldPerDay':
-          return b.yieldPerDay - a.yieldPerDay;
-        case 'growDays':
-          return a.growDays - b.growDays; // Ascending for grow days (faster is better)
-        case 'dryingEfficiency':
-          return b.dryingEfficiency - a.dryingEfficiency;
-        case 'totalYield':
-        default:
-          return b.totalYield - a.totalYield;
-      }
+        switch (currentSort) {
+          case 'yieldPerDay':
+            return b.yieldPerDay - a.yieldPerDay;
+          case 'growDays':
+            return a.growDays - b.growDays; // Ascending for grow days (faster is better)
+          case 'dryingEfficiency':
+            return b.dryingEfficiency - a.dryingEfficiency;
+          default:
+            return b.totalYield - a.totalYield;
+        }
     });
   }, [harvests, currentSort]);
 

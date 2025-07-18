@@ -23,6 +23,7 @@ import Animated from 'react-native-reanimated';
 
 // ✅ Type imports
 import { RawStrainApiResponse } from '@/lib/types/weed-db';
+import { Strain } from '@/lib/data/strains';
 
 // ✅ Reanimated v3 minimal import - using custom animation hooks for better performance
 
@@ -78,6 +79,54 @@ const mapLocalTypeToApiType = (type: string): 'sativa' | 'indica' | 'hybrid' => 
     return lowerType as 'sativa' | 'indica' | 'hybrid';
   }
   return 'hybrid';
+};
+
+/**
+ * Transforms a local Strain object to RawStrainApiResponse format
+ * This replaces unsafe type assertions with proper type-safe conversion
+ */
+const transformLocalStrainToApiResponse = (localStrain: Strain): RawStrainApiResponse => {
+  return {
+    id: localStrain.id, // Use the local strain's UUID as the id
+    api_id: localStrain.id, // Use local string UUID as api_id
+    name: localStrain.name,
+    type: mapLocalTypeToApiType(localStrain.type as string),
+    thc: localStrain.thcContent || null,
+    cbd: localStrain.cbdContent || null,
+    description: localStrain.description,
+    effects: localStrain.effects || [],
+    flavors: localStrain.flavors || [],
+    imageUrl: localStrain.imageUrl,
+    image: localStrain.imageUrl,
+    image_url: localStrain.imageUrl,
+    growDifficulty: localStrain.growDifficulty,
+    // Set default values for fields that don't exist in local Strain
+    genetics: undefined,
+    floweringTime: undefined,
+    fromSeedToHarvest: undefined,
+    floweringType: undefined,
+    yieldIndoor: undefined,
+    yieldOutdoor: undefined,
+    heightIndoor: undefined,
+    heightOutdoor: undefined,
+    harvestTimeOutdoor: undefined,
+    terpenes: undefined,
+    link: undefined,
+    parents: undefined,
+    breeder: undefined,
+    origin: undefined,
+    // Add other optional fields with default values
+    lineage: undefined,
+    images: undefined,
+    seed_company: undefined,
+    flowering_time_min: undefined,
+    flowering_time_max: undefined,
+    yield_min: undefined,
+    yield_max: undefined,
+    difficulty: localStrain.growDifficulty,
+    rating: 0,
+    reviews_count: 0,
+  };
 };
 
 // Define an interface for the update payload to ensure type safety
@@ -378,31 +427,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
           const localMatches = searchStrainsByName(plant.strain);
           if (localMatches.length > 0 && localMatches[0]) {
             const localStrain = localMatches[0];
-            // Construct an object that matches RawStrainApiResponse
-            const strainForState: RawStrainApiResponse = {
-              id: (localStrain as RawStrainApiResponse).external_db_id ?? 0, // Use a numeric ID if available, else placeholder
-              api_id: localStrain.id, // Use local string UUID as api_id
-              name: localStrain.name,
-              type: mapLocalTypeToApiType(localStrain.type as string),
-              thc: localStrain.thcContent || null,
-              cbd: localStrain.cbdContent || null,
-              description: localStrain.description ?? undefined,
-              effects: localStrain.effects || [],
-              flavors: localStrain.flavors || [],
-              // Add other fields from RawStrainApiResponse with default values if not in localStrain
-              lineage: (localStrain as RawStrainApiResponse).lineage ?? undefined,
-              terpenes: (localStrain as RawStrainApiResponse).terpenes ?? undefined,
-              images: (localStrain as RawStrainApiResponse).images ?? undefined,
-              seed_company: (localStrain as RawStrainApiResponse).seed_company ?? undefined,
-              genetics: (localStrain as RawStrainApiResponse).genetics ?? undefined,
-              flowering_time_min: (localStrain as RawStrainApiResponse).flowering_time_min ?? undefined,
-              flowering_time_max: (localStrain as RawStrainApiResponse).flowering_time_max ?? undefined,
-              yield_min: (localStrain as RawStrainApiResponse).yield_min ?? undefined,
-              yield_max: (localStrain as RawStrainApiResponse).yield_max ?? undefined,
-              difficulty: (localStrain as RawStrainApiResponse).difficulty ?? undefined,
-              rating: (localStrain as RawStrainApiResponse).rating ?? 0,
-              reviews_count: (localStrain as RawStrainApiResponse).reviews_count ?? 0,
-            };
+            // Use type-safe transformation instead of unsafe type assertion
+            const strainForState: RawStrainApiResponse = transformLocalStrainToApiResponse(localStrain);
             setSelectedStrain(strainForState);
             console.log(
               '[EditPlantForm] Found strain from local data (adapted to RawStrainApiResponse):',

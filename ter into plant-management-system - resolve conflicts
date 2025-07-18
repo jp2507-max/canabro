@@ -19,7 +19,21 @@ function flatten(obj, prefix = '') {
 
 function validateTranslations() {
   const defaultFile = path.join(baseDir, `${defaultLang}.json`);
-  const defaultData = JSON.parse(fs.readFileSync(defaultFile, 'utf8'));
+  let defaultData;
+  try {
+    const fileContent = fs.readFileSync(defaultFile, 'utf8');
+    defaultData = JSON.parse(fileContent);
+  } catch (error) {
+    // Use custom logger if available, otherwise fallback to console.error
+    if (typeof logger !== 'undefined') {
+      logger.error(`[ERROR] Failed to read or parse default translation file: ${defaultFile}`);
+      logger.error(`[ERROR] Details:`, error.message);
+    } else {
+      console.error(`[ERROR] Failed to read or parse default translation file: ${defaultFile}`);
+      console.error(`[ERROR] Details:`, error.message);
+    }
+    return; // Exit early to prevent further issues
+  }
   const defaultKeys = Object.keys(flatten(defaultData));
 
   let hasError = false;
@@ -31,7 +45,14 @@ function validateTranslations() {
       hasError = true;
       continue;
     }
-    const langData = JSON.parse(fs.readFileSync(langFile, 'utf8'));
+    let langData;
+    try {
+      langData = JSON.parse(fs.readFileSync(langFile, 'utf8'));
+    } catch (err) {
+      console.error(`Error parsing JSON in file ${langFile}:`, err.message);
+      hasError = true;
+      continue;
+    }
     const langKeys = Object.keys(flatten(langData));
     const missing = defaultKeys.filter((k) => !langKeys.includes(k));
     if (missing.length > 0) {
