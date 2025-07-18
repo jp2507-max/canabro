@@ -83,6 +83,15 @@ export const calculateYieldMetrics = (
   lightWattage?: number,
   growSpaceArea?: number
 ): YieldMetrics => {
+  // Input validation for negative weights
+  if (
+    harvestData.wetWeight < 0 ||
+    (typeof harvestData.dryWeight === 'number' && harvestData.dryWeight < 0) ||
+    (typeof harvestData.trimWeight === 'number' && harvestData.trimWeight < 0)
+  ) {
+    throw new Error('Weight values cannot be negative');
+  }
+
   const plantedDate = new Date(plant.plantedDate);
   const harvestDate = harvestData.harvestDate;
   const totalGrowDays = Math.floor(
@@ -204,7 +213,11 @@ export const exportHarvestDataToCSV = (comparisons: PlantComparison[]): string =
   ]);
 
   const csvContent = [headers, ...rows]
-    .map(row => row.map(cell => `"${cell}"`).join(','))
+    .map(row =>
+      row
+        .map(cell => `"${String(cell).replace(/"/g, '""')}"`)
+        .join(',')
+    )
     .join('\n');
 
   return csvContent;

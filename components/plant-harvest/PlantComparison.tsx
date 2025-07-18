@@ -96,12 +96,22 @@ const ComparisonCard: React.FC<ComparisonCardProps> = ({
         >
           {/* Rank Badge */}
           <View className={`absolute -top-2 -right-2 w-8 h-8 rounded-full ${rankBadge.bg} items-center justify-center border border-neutral-200 dark:border-neutral-700`}>
-            <OptimizedIcon name={rankBadge.icon} size={16} className={rankBadge.color} />
+              <View
+                accessible={true}
+                accessibilityLabel={`Rank badge: ${rank === 1 ? 'Gold' : rank === 2 ? 'Silver' : rank === 3 ? 'Bronze' : `Rank ${rank}`}`}
+                className={`absolute -top-2 -right-2 w-8 h-8 rounded-full ${rankBadge.bg} items-center justify-center border border-neutral-200 dark:border-neutral-700`}
+              >
+                <OptimizedIcon name={rankBadge.icon} size={16} className={rankBadge.color} />
+              </View>
           </View>
 
           {/* Selection Indicator */}
           {isSelected && (
-            <View className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-primary-500 items-center justify-center">
+              <View
+                accessible={true}
+                accessibilityLabel={isSelected ? 'Selected plant indicator' : 'Unselected plant indicator'}
+                className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-primary-500 items-center justify-center"
+              >
               <OptimizedIcon name="checkmark" size={12} className="text-white" />
             </View>
           )}

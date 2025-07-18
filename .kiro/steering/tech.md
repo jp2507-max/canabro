@@ -39,11 +39,6 @@
 # Start development server
 npx expo start
 
-# Run on specific platforms
-npm run ios
-npm run android
-npm run web
-
 # Linting and formatting
 npm run lint
 npm run lint:fix
@@ -53,19 +48,6 @@ npm run format:check
 
 ### Supabase
 We use the Supabase MCP tools for all Supabase operations including migrations, queries, and database management.
-```
-
-### Internationalization
-```bash
-# Validate translations
-npm run validate:translations
-```
-
-### Debugging
-```bash
-# Auth debugging
-npm run debug-auth
-npm run clear-auth
 ```
 
 ## Performance Considerations

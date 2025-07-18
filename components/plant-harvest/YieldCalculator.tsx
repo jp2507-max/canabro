@@ -152,39 +152,44 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({
         </ThemedText>
       </ThemedView>
 
-      {/* Basic Metrics Grid */}
-      <View className="grid grid-cols-2 gap-4">
-        <MetricCard
-          icon="calendar-outline"
-          label={t('yieldCalculator.metrics.growDays')}
-          value={displayMetrics.totalGrowDays.toString()}
-          subtitle={t('yieldCalculator.metrics.growDaysSubtitle')}
-          variant="info"
-        />
-        
-        <MetricCard
-          icon="scale-balance"
-          label={t('yieldCalculator.metrics.totalYield')}
-          value={formatWeight(displayMetrics.totalYieldDisplay, displayUnit)}
-          subtitle={t('yieldCalculator.metrics.totalYieldSubtitle')}
-          variant={getYieldVariant(displayMetrics.yieldPerDayDisplay)}
-        />
-        
-        <MetricCard
-          icon="arrow-expand-vertical"
-          label={t('yieldCalculator.metrics.yieldPerDay')}
-          value={formatWeight(displayMetrics.yieldPerDayDisplay, displayUnit)}
-          subtitle={t('yieldCalculator.metrics.yieldPerDaySubtitle')}
-          variant={getYieldVariant(displayMetrics.yieldPerDayDisplay)}
-        />
-        
-        <MetricCard
-          icon="water-outline"
-          label={t('yieldCalculator.metrics.dryingEfficiency')}
-          value={`${displayMetrics.dryingEfficiency}%`}
-          subtitle={t('yieldCalculator.metrics.dryingEfficiencySubtitle')}
-          variant={getEfficiencyVariant(displayMetrics.dryingEfficiency)}
-        />
+      {/* Basic Metrics Grid (Flexbox two-column) */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+        <View style={{ width: '50%', padding: 8 }}>
+          <MetricCard
+            icon="calendar-outline"
+            label={t('yieldCalculator.metrics.growDays')}
+            value={displayMetrics.totalGrowDays.toString()}
+            subtitle={t('yieldCalculator.metrics.growDaysSubtitle')}
+            variant="info"
+          />
+        </View>
+        <View style={{ width: '50%', padding: 8 }}>
+          <MetricCard
+            icon="scale-balance"
+            label={t('yieldCalculator.metrics.totalYield')}
+            value={formatWeight(displayMetrics.totalYieldDisplay, displayUnit)}
+            subtitle={t('yieldCalculator.metrics.totalYieldSubtitle')}
+            variant={getYieldVariant(displayMetrics.yieldPerDayDisplay)}
+          />
+        </View>
+        <View style={{ width: '50%', padding: 8 }}>
+          <MetricCard
+            icon="arrow-expand-vertical"
+            label={t('yieldCalculator.metrics.yieldPerDay')}
+            value={formatWeight(displayMetrics.yieldPerDayDisplay, displayUnit)}
+            subtitle={t('yieldCalculator.metrics.yieldPerDaySubtitle')}
+            variant={getYieldVariant(displayMetrics.yieldPerDayDisplay)}
+          />
+        </View>
+        <View style={{ width: '50%', padding: 8 }}>
+          <MetricCard
+            icon="water-outline"
+            label={t('yieldCalculator.metrics.dryingEfficiency')}
+            value={`${displayMetrics.dryingEfficiency}%`}
+            subtitle={t('yieldCalculator.metrics.dryingEfficiencySubtitle')}
+            variant={getEfficiencyVariant(displayMetrics.dryingEfficiency)}
+          />
+        </View>
       </View>
 
       {/* Trim Analysis */}
@@ -235,23 +240,31 @@ export const YieldCalculator: React.FC<YieldCalculatorProps> = ({
         </ThemedText>
         
         <View className="space-y-2">
-          {displayMetrics.dryingEfficiency >= 20 && (
-            <View className="flex-row items-center space-x-2">
-              <OptimizedIcon name="checkmark-circle" size={16} className="text-status-success" />
-              <ThemedText className="text-sm text-status-success">
-                {t('yieldCalculator.insights.excellentDrying')}
-              </ThemedText>
-            </View>
-          )}
+            {displayMetrics.dryingEfficiency >= 20 && (
+              <View className="flex-row items-center space-x-2">
+                <OptimizedIcon name="checkmark-circle" size={16} className="text-status-success" />
+                <ThemedText className="text-sm text-status-success">
+                  {t('yieldCalculator.insights.excellentDrying')}
+                </ThemedText>
+              </View>
+            )}
           
-          {displayMetrics.yieldPerDay >= 1.0 && (
-            <View className="flex-row items-center space-x-2">
-              <OptimizedIcon name="checkmark-circle" size={16} className="text-status-success" />
-              <ThemedText className="text-sm text-status-success">
-                {t('yieldCalculator.insights.highYieldPerDay')}
-              </ThemedText>
-            </View>
-          )}
+            {/* Dynamically compare yieldPerDay threshold in display unit */}
+            {(() => {
+              let threshold = 1.0;
+              if (displayUnit === 'ounces') {
+                // Convert 1.0 grams to ounces for threshold
+                threshold = convertWeight(1.0, 'grams', 'ounces');
+              }
+              return displayMetrics.yieldPerDayDisplay >= threshold;
+            })() && (
+              <View className="flex-row items-center space-x-2">
+                <OptimizedIcon name="checkmark-circle" size={16} className="text-status-success" />
+                <ThemedText className="text-sm text-status-success">
+                  {t('yieldCalculator.insights.highYieldPerDay')}
+                </ThemedText>
+              </View>
+            )}
           
           {displayMetrics.totalGrowDays < 70 && (
             <View className="flex-row items-center space-x-2">

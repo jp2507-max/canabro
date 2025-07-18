@@ -219,7 +219,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ onPress, icon, label, disab
             className={disabled 
               ? 'text-neutral-400 dark:text-neutral-600' 
               : 'text-primary-600 dark:text-primary-400'
-            } 
+            }
+            aria-label={label}
           />
           <ThemedText 
             className={`text-sm font-medium ${disabled 

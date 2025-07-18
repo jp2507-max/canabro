@@ -15,6 +15,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   interpolateColor,
+  cancelAnimation,
 } from 'react-native-reanimated';
 
 import ThemedView from '@/components/ui/ThemedView';
@@ -145,8 +146,6 @@ const TrichomeOption: React.FC<TrichomeOptionProps> = ({
   // Cleanup: cancel scale animation on unmount to prevent memory leaks
   React.useEffect(() => {
     return () => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { cancelAnimation } = require('react-native-reanimated');
       cancelAnimation(scale);
     };
   }, [scale]);
