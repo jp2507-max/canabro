@@ -234,6 +234,10 @@
 
 - [ ] 7. Integration testing and system validation
 - [ ] 7.1 Test plant CRUD operations with new features
+
+
+
+
   - Verify plant creation includes all new metric fields
   - Test plant editing updates both list and detail views
   - Validate plant deletion removes associated photos and metrics

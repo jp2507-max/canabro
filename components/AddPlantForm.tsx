@@ -1,4 +1,3 @@
-'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -87,7 +86,7 @@ function getPlantFormSchema(t: TFunction) {
     grow_medium: z.nativeEnum(GrowMedium).optional(),
     light_condition: z.nativeEnum(LightCondition).optional(),
     location_description: z.string().min(1, t('addPlantForm.validation.locationDescriptionRequired')),
-    image_url: z.string().url(t('addPlantForm.validation.invalidImageUrl')).optional().nullable(),
+    image_url: z.string().optional().nullable(),
     notes: z.string().optional(),
   });
 }
@@ -953,8 +952,9 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     mode: 'onChange',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSyncingStrain, setIsSyncingStrain] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [isSyncingStrain, setIsSyncingStrain] = useState(false);
+  const [selectedStrainData, setSelectedStrainData] = useState<RawStrainApiResponse | null>(null);
   const { user } = useAuth();
   const { database } = useDatabase();
   const colorScheme = useColorScheme();
@@ -981,17 +981,24 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     })();
   }, [currentStepIndex, progress]);
 
-  const handleStrainSelectionAndSync = async (selectedRawStrain: RawStrainApiResponse | null) => {
+  const handleStrainSelection = async (selectedRawStrain: RawStrainApiResponse | null) => {
     if (!selectedRawStrain) {
       setValue('strain', '', { shouldValidate: true });
+      setValue('strain_id', '', { shouldValidate: false });
+      setSelectedStrainData(null);
       setSyncError(null);
       return;
     }
 
+    // Store strain data without syncing - we'll sync when plant is created
     setValue('strain', selectedRawStrain.name, { shouldValidate: true });
-    setIsSyncingStrain(true);
+    setSelectedStrainData(selectedRawStrain);
     setSyncError(null);
+    
+    console.log('Strain selected (will sync on plant creation):', selectedRawStrain.name);
+  };
 
+  const syncStrainForPlantCreation = async (strainData: RawStrainApiResponse): Promise<string | null> => {
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), 15000);
     const checkAbort = () => {
@@ -1004,7 +1011,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
       checkAbort();
 
-      const preparedSupabaseData = prepareDataForSupabase(selectedRawStrain);
+      const preparedSupabaseData = prepareDataForSupabase(strainData);
       const supabaseStrainId = await ensureStrainInSupabase(preparedSupabaseData);
 
       checkAbort();
@@ -1031,20 +1038,18 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         throw new Error('Failed to get a valid strain from WatermelonDB.');
       }
 
-      // Store the strain ID in the form for later use when creating the plant
-      setValue('strain_id', watermelonStrainId, { shouldValidate: false });
-
-      console.log('Strain sync successful for:', selectedRawStrain.name);
+      console.log('Strain sync successful for plant creation:', strainData.name);
+      return watermelonStrainId;
     } catch (error) {
       const e = error as Error;
-      console.error('[AddPlantForm] Strain Sync Error:', e);
+      console.error('[AddPlantForm] Strain Sync Error during plant creation:', e);
       const classification = classifyStrainSyncError(e, t);
       if (classification.shouldShowToUser) {
-        setSyncError(classification.userMessage || 'An unexpected error occurred.');
+        throw new Error(classification.userMessage || 'An unexpected error occurred.');
       }
+      throw error;
     } finally {
       clearTimeout(timeoutId);
-      setIsSyncingStrain(false);
     }
   };
 
@@ -1114,25 +1119,50 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   }, [updateProgress]);
 
   const pickImage = useCallback(async () => {
+    console.log('[AddPlantForm] Starting image selection from gallery...');
     const result = await selectFromGallery();
-    if (!result) return;
+    console.log('[AddPlantForm] Gallery result:', result);
+    if (!result) {
+      console.log('[AddPlantForm] Gallery selection cancelled or failed');
+      return;
+    }
 
+    console.log('[AddPlantForm] Setting image_url to:', result.uri);
     setValue('image_url', result.uri, { shouldValidate: true });
   }, [setValue]);
 
   const takePhotoHandler = useCallback(async () => {
+    console.log('[AddPlantForm] Starting photo capture...');
     const result = await takePhoto();
-    if (!result) return;
+    console.log('[AddPlantForm] Camera result:', result);
+    if (!result) {
+      console.log('[AddPlantForm] Photo capture cancelled or failed');
+      return;
+    }
 
+    console.log('[AddPlantForm] Setting image_url to:', result.uri);
     setValue('image_url', result.uri, { shouldValidate: true });
   }, [setValue]);
 
   const handleImageUpload = async (userId: string): Promise<string | null> => {
     const imageUri = getValues('image_url');
-    if (!imageUri) return null;
+    console.log('[AddPlantForm] handleImageUpload - imageUri:', imageUri);
+    if (!imageUri) {
+      console.log('[AddPlantForm] No image URI found, skipping upload');
+      return null;
+    }
 
+    console.log('[AddPlantForm] Starting image upload to Supabase...');
     const result = await uploadPlantGalleryImage(userId, imageUri);
-    return result.success ? result.publicUrl || null : null;
+    console.log('[AddPlantForm] Upload result:', result);
+    
+    if (result.success) {
+      console.log('[AddPlantForm] Upload successful, public URL:', result.publicUrl);
+      return result.publicUrl || null;
+    } else {
+      console.error('[AddPlantForm] Upload failed:', result.error);
+      return null;
+    }
   };
 
   const onSubmit: SubmitHandler<PlantFormData> = async (data) => {
@@ -1143,6 +1173,17 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
     setIsSubmitting(true);
     try {
+      // Sync strain to Supabase/WatermelonDB only when creating the plant
+      let finalStrainId = data.strain_id;
+      if (selectedStrainData && !finalStrainId) {
+        console.log('Syncing strain for plant creation:', selectedStrainData.name);
+        const syncedStrainId = await syncStrainForPlantCreation(selectedStrainData);
+        if (!syncedStrainId) {
+          throw new Error('Failed to sync strain for plant creation');
+        }
+        finalStrainId = syncedStrainId;
+      }
+
       let imageUrl: string | null = null;
       if (data.image_url) {
         imageUrl = await handleImageUpload(user.id);
@@ -1151,7 +1192,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       const plantData: PlantFormProps = {
         userId: user.id,
         name: data.name,
-        strainId: data.strain_id ?? '',
+        strainId: finalStrainId || '',
         strain: data.strain,
         plantedDate: data.planted_date.toISOString(),
         growthStage: data.growth_stage,
@@ -1183,6 +1224,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         });
       });
 
+      console.log('Plant created successfully with strain:', plantData.strain);
+
       Alert.alert(t('common.success'), t('alerts.plantAddedSuccess'), [
         {
           text: t('common.ok'),
@@ -1194,7 +1237,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       ]);
     } catch (error) {
       console.error('Error adding plant:', error);
-  Alert.alert(t('common.error'), t('alerts.plantAddError'));
+      Alert.alert(t('common.error'), t('alerts.plantAddError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1216,21 +1259,21 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     const commonProps = { control, setValue, errors, getValues };
 
     // Create stable input refs with useMemo to maintain focus history
-  const stepInputRefs: PlantFormInputRef[] = useMemo(() => {
-    const currentStepId = FORM_STEPS[currentStepIndex]?.id;
-    switch (currentStepId) {
-      case 'basicInfo':
-        return [
-          React.createRef<TextInput | StrainAutocompleteRef>(),
-          React.createRef<TextInput | StrainAutocompleteRef>()
-        ]; // Plant Name + Strain
-      case 'location':
-      case 'details':
-        return [React.createRef<TextInput | StrainAutocompleteRef>()];
-      default:
-        return [];
-    }
-  }, [currentStepIndex]);
+    const stepInputRefs: PlantFormInputRef[] = useMemo(() => {
+      const currentStepId = FORM_STEPS[currentStepIndex]?.id;
+      switch (currentStepId) {
+        case 'basicInfo':
+          return [
+            React.createRef<TextInput | StrainAutocompleteRef>(),
+            React.createRef<TextInput | StrainAutocompleteRef>()
+          ]; // Plant Name + Strain
+        case 'location':
+        case 'details':
+          return [React.createRef<TextInput | StrainAutocompleteRef>()];
+        default:
+          return [];
+      }
+    }, [currentStepIndex]);
 
     // Setup field names and refs based on current step
     React.useEffect(() => {
@@ -1272,7 +1315,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         return (
           <BasicInfoStep
             {...enhancedProps}
-            handleStrainSelectionAndSync={handleStrainSelectionAndSync}
+            handleStrainSelectionAndSync={handleStrainSelection}
             isSyncingStrain={isSyncingStrain}
             syncError={syncError}
             goToNextStep={goToNextStep}

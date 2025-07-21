@@ -18,6 +18,8 @@
     "format:check": "prettier -c \"**/*.{js,jsx,ts,tsx,json}\"",
     "web": "expo start --web",
     "validate:translations": "node scripts/validate-translations.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "supabase:cli": "npx supabase",
     "supabase:login": "npx supabase login",
     "supabase:start": "npx supabase start",

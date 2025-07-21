@@ -24,13 +24,11 @@ interface PlantHeroImageProps {
 
 const DEFAULT_IMAGE_HEIGHT = 300;
 
-// Helper function for cache-busting URLs
+// Helper function for processing URLs
 const getProcessedUrl = (originalUrl: string | null | undefined): string | null => {
   if (!originalUrl) return null;
-  // Add a cache-busting parameter
-  // If a '?' already exists, append with '&', otherwise with '?'
-  const separator = originalUrl.includes('?') ? '&' : '?';
-  return `${originalUrl}${separator}t=${Date.now()}`;
+  // Return the URL as-is without cache-busting to prevent infinite renders
+  return originalUrl;
 };
 
 // Enhanced custom transition with scale and spring physics
@@ -128,9 +126,7 @@ export function PlantHeroImage({
   ? require('../../assets/placeholder.png')
       : { uri: processedUrl };
 
-  console.log('[PlantHeroImage] original imageUrl:', imageUrl);
-  console.log('[PlantHeroImage] processedUrl:', processedUrl);
-  console.log('[PlantHeroImage] imageSource:', imageSource);
+  // Debug logs removed to prevent terminal spam
 
   return (
     <GestureDetector gesture={tapGesture}>
@@ -156,7 +152,7 @@ export function PlantHeroImage({
           sharedTransitionTag={`plantImage-${plantId}`}
           sharedTransitionStyle={customTransition}
           onLoad={(_e) => {
-            console.log('[PlantHeroImage] Image loaded successfully');
+            // Image loaded successfully - console.log removed to prevent spam
           }}
           onError={(event: { nativeEvent?: { error?: string }; error?: string }) => {
             const err = event.nativeEvent?.error ?? event.error ?? 'unknown error';

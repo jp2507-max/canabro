@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 /**
  * Supported storage buckets for image uploads
  */
-export type StorageBucket = 'community-questions' | 'community-plant-shares' | 'plants' | 'diary_entries' | 'plant-images';
+export type StorageBucket = 'community-questions' | 'community-plant-shares' | 'plants' | 'diary_entries';
 
 /**
  * Error types for upload operations
@@ -152,8 +152,6 @@ function generateFilename(bucket: StorageBucket, options: UploadImageOptions): s
       return `${options.filenamePrefix || 'plant'}_${timestamp}_${randomSuffix}.jpg`;
     case 'diary_entries':
       return `diary_${options.plantId || 'entry'}_${timestamp}_${randomSuffix}.jpg`;
-    case 'plant-images':
-      return `plant-${timestamp}-${randomSuffix}.jpg`;
     default:
       return `image_${timestamp}_${randomSuffix}.jpg`;
   }
@@ -425,7 +423,7 @@ export const uploadDiaryImage = (userId: string, imageUri: string, plantId: stri
   uploadImage({ bucket: 'diary_entries', userId, imageUri, plantId });
 
 export const uploadPlantGalleryImage = (userId: string, imageUri: string) =>
-  uploadImage({ bucket: 'plant-images', userId, imageUri });
+  uploadImage({ bucket: 'plants', userId, imageUri });
 
 /**
  * Convenience functions for comment images (stored in community buckets based on context)

@@ -111,8 +111,8 @@ function HomeScreen({ database }: HomeScreenProps) {
 
       {/* Floating Action Button and Menu */}
       {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
-      {/* Note: Padding changed from p-4 to p-6 */}
-      <View className="absolute bottom-0 right-0 z-20 items-end p-6">
+      {/* Note: Padding changed from p-4 to p-6, bottom positioning matches community screen */}
+      <View className="absolute bottom-20 right-0 z-20 items-end p-6">
         {isFabMenuOpen && (
           <View className="mb-4 items-end space-y-3">
             {fabActions.map((action) => (

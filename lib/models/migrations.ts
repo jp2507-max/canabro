@@ -602,6 +602,89 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 31: Add calendar system tables and extended PlantTask fields
+    {
+      toVersion: 31,
+      steps: [
+        // Add extended fields to plant_tasks table for calendar system
+        addColumns({
+          table: 'plant_tasks',
+          columns: [
+            { name: 'template_id', type: 'string', isOptional: true },
+            { name: 'week_number', type: 'number', isOptional: true },
+            { name: 'estimated_duration', type: 'number', isOptional: true },
+            { name: 'completion_data', type: 'string', isOptional: true }, // JSON string
+            { name: 'auto_generated', type: 'boolean', isOptional: true },
+            { name: 'parent_task_id', type: 'string', isOptional: true },
+            { name: 'sequence_number', type: 'number', isOptional: true },
+            { name: 'environmental_conditions', type: 'string', isOptional: true }, // JSON string
+            { name: 'priority', type: 'string', isOptional: true },
+            { name: 'scheduled_date', type: 'number', isOptional: true },
+            { name: 'is_recurring', type: 'boolean', isOptional: true },
+            { name: 'recurrence_pattern', type: 'string', isOptional: true },
+          ],
+        }),
+        // Create schedule_templates table
+        createTable({
+          name: 'schedule_templates',
+          columns: [
+            { name: 'name', type: 'string' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'category', type: 'string' },
+            { name: 'strain_type', type: 'string', isOptional: true },
+            { name: 'duration_weeks', type: 'number' },
+            { name: 'created_by', type: 'string', isIndexed: true },
+            { name: 'is_public', type: 'boolean' },
+            { name: 'usage_count', type: 'number' },
+            { name: 'template_data', type: 'string' }, // JSON string
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
+        // Create calendar_events table
+        createTable({
+          name: 'calendar_events',
+          columns: [
+            { name: 'title', type: 'string' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'start_date', type: 'number' },
+            { name: 'end_date', type: 'number', isOptional: true },
+            { name: 'event_type', type: 'string' },
+            { name: 'plant_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'task_id', type: 'string', isOptional: true, isIndexed: true },
+            { name: 'is_all_day', type: 'boolean' },
+            { name: 'recurrence_rule', type: 'string', isOptional: true },
+            { name: 'metadata', type: 'string', isOptional: true }, // JSON string
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
+        // Create notification_schedules table
+        createTable({
+          name: 'notification_schedules',
+          columns: [
+            { name: 'plant_id', type: 'string', isIndexed: true },
+            { name: 'task_type', type: 'string' },
+            { name: 'next_notification', type: 'number' },
+            { name: 'interval_hours', type: 'number' },
+            { name: 'max_notifications', type: 'number', isOptional: true },
+            { name: 'sent_count', type: 'number' },
+            { name: 'is_active', type: 'boolean' },
+            { name: 'notification_settings', type: 'string', isOptional: true }, // JSON string
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

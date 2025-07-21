@@ -21,6 +21,11 @@ export { PlantPhoto } from './PlantPhoto';
 export { PlantMetrics } from './PlantMetrics';
 export { CareReminder } from './CareReminder';
 
+// Calendar system models
+export { ScheduleTemplate } from './ScheduleTemplate';
+export { CalendarEvent } from './CalendarEvent';
+export { NotificationSchedule } from './NotificationSchedule';
+
 // Strain-related models
 export { Strain } from './Strain';
 export { FavoriteStrain } from './FavoriteStrain';

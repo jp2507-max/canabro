@@ -145,7 +145,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
   const animatedContentStyle = useAnimatedStyle(() => {
     'worklet';
     return {
-      opacity: contentOpacity.value,
+      opacity: 1, // Temporarily disable animation
     };
   });
 
@@ -213,7 +213,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
       {/* Enhanced modal container with gestures */}
       <GestureDetector gesture={swipeGesture}>
         <Animated.View className="flex-1 justify-end" style={animatedModalStyle}>
-          <ThemedView className="mx-4 mb-8 overflow-hidden rounded-3xl bg-white/95 backdrop-blur-xl dark:bg-neutral-900/95">
+          <ThemedView className="mx-4 mb-8 rounded-3xl bg-white/95 backdrop-blur-xl dark:bg-neutral-900/95" style={{ maxHeight: '90%' }}>
             {/* Enhanced header with sophisticated styling */}
             <ThemedView className="border-b border-neutral-200/50 dark:border-neutral-700/50">
               {/* Swipe indicator */}
@@ -222,10 +222,10 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
               <ThemedView className="flex-row items-center justify-between p-6 pb-4">
                 <ThemedView className="flex-1">
                   <ThemedText className="text-2xl font-extrabold text-neutral-900 dark:text-white">
-                    {t('common.addNewPlant')}
+                    {t('addNewPlant')}
                   </ThemedText>
                   <ThemedText className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                    {t('common.startGrowingJourney')}
+                    {t('startGrowingJourney')}
                   </ThemedText>
                 </ThemedView>
 
@@ -236,19 +236,17 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
                       name="close"
                       size={24}
                       color="#6b7280"
-                      accessibilityLabel={t('closeModal')}
+                      accessibilityLabel={t('common.close')}
                     />
                   </Animated.View>
                 </GestureDetector>
               </ThemedView>
             </ThemedView>
 
-            {/* Enhanced content area with animation */}
-            <Animated.View style={animatedContentStyle}>
-              <ThemedView className="max-h-[75vh] flex-1">
-                <AddPlantForm onSuccess={handleSuccess} />
-              </ThemedView>
-            </Animated.View>
+            {/* Content area with form */}
+            <ThemedView style={{ height: screenHeight * 0.7, padding: 16 }}>
+              <AddPlantForm onSuccess={handleSuccess} />
+            </ThemedView>
           </ThemedView>
         </Animated.View>
       </GestureDetector>
