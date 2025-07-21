@@ -13,6 +13,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import DiaryEntryItem from '../../../../components/diary/DiaryEntryItem';
 import JournalCalendar from '../../../../components/diary/JournalCalendar';
@@ -149,6 +150,7 @@ function AnimatedHeaderButton({
 }
 
 export default function PlantJournalScreen() {
+  const { t } = useTranslation('journal');
   const { id: routePlantId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const {
@@ -202,7 +204,7 @@ export default function PlantJournalScreen() {
       <ThemedView variant="default" className="flex-1 items-center justify-center p-4">
         <Animated.View entering={FadeIn.duration(600)}>
           <ThemedText variant="default" className="text-status-danger text-lg">
-            Error: Invalid Plant ID.
+            {t('errors.invalidPlantId')}
           </ThemedText>
         </Animated.View>
       </ThemedView>
@@ -234,7 +236,7 @@ export default function PlantJournalScreen() {
         <Animated.View entering={FadeIn.duration(400)} className="items-center">
           <ActivityIndicator size="large" className="text-primary-500" />
           <ThemedText variant="muted" className="mt-4 text-center">
-            Loading Plant Info...
+            {t('loading.plantInfo')}
           </ThemedText>
         </Animated.View>
       </ThemedView>
@@ -255,10 +257,10 @@ export default function PlantJournalScreen() {
         <Animated.View entering={FadeIn.duration(600)} className="items-center">
           <OptimizedIcon name="help-circle" size={48} color="#ef4444" />
           <ThemedText variant="default" className="text-status-danger text-center text-lg">
-            Error loading plant data.
+            {t('errors.loadingPlantData')}
           </ThemedText>
           <ThemedText variant="muted" className="mt-2 text-center">
-            {plantError?.message || 'Could not find the specified plant.'}
+            {plantError?.message || t('errors.plantNotFound')}
           </ThemedText>
         </Animated.View>
       </ThemedView>
@@ -278,7 +280,7 @@ export default function PlantJournalScreen() {
               className="flex-row items-center">
               <OptimizedIcon name="leaf-outline" size={22} color="#10b981" />
               <ThemedText className="ml-2 text-lg font-extrabold">
-                {plant?.name || 'Plant Journal'}
+                {plant?.name || t('navigation.title')}
               </ThemedText>
             </Animated.View>
           ),
@@ -327,7 +329,7 @@ export default function PlantJournalScreen() {
               className="flex-1 items-center justify-center py-20">
               <ActivityIndicator className="text-primary-500" />
               <ThemedText variant="muted" className="mt-4">
-                Loading entries...
+                {t('loading.entries')}
               </ThemedText>
             </Animated.View>
           ) : entriesError ? (
@@ -336,7 +338,7 @@ export default function PlantJournalScreen() {
               className="flex-1 items-center justify-center py-20">
               <OptimizedIcon name="help-circle" size={40} color="#ef4444" />
               <ThemedText className="text-status-danger text-center">
-                Error loading entries.
+                {t('errors.loadingEntries')}
               </ThemedText>
             </Animated.View>
           ) : entries.length === 0 ? (
@@ -348,10 +350,10 @@ export default function PlantJournalScreen() {
                   <OptimizedIcon name="document-text-outline" size={48} color="#9ca3af" />
                 </View>
                 <ThemedText variant="heading" className="mb-2 text-center text-xl font-extrabold">
-                  No journal entries yet
+                  {t('emptyState.title')}
                 </ThemedText>
                 <ThemedText variant="muted" className="max-w-sm text-center">
-                  Start tracking your plant's journey and watch it grow!
+                  {t('emptyState.subtitle')}
                 </ThemedText>
               </View>
 
@@ -370,7 +372,7 @@ export default function PlantJournalScreen() {
                   accessibilityLabel="Add first journal entry">
                   <OptimizedIcon name="add-outline" size={20} color="white" />
                   <ThemedText className="ml-2 text-base font-bold text-white">
-                    Add First Entry
+                    {t('emptyState.addFirstEntry')}
                   </ThemedText>
                 </AnimatedPressable>
               </GestureDetector>
@@ -389,7 +391,7 @@ export default function PlantJournalScreen() {
                     <View className="flex-row items-center">
                       <View className="mr-4 h-3 w-3 rounded-full bg-primary-500 shadow-sm dark:bg-primary-600" />
                       <ThemedText variant="heading" className="text-lg font-extrabold">
-                        Day {dayIndex + 1}
+                        {t('timeline.day', { count: dayIndex + 1 })}
                       </ThemedText>
                     </View>
                     <ThemedText variant="muted" className="text-sm font-medium">
@@ -422,7 +424,7 @@ export default function PlantJournalScreen() {
                         accessibilityLabel="Add new journal entry">
                         <View className="mr-3 h-3 w-3 rounded-full border-2 border-primary-500 bg-primary-100 dark:border-primary-400 dark:bg-primary-800" />
                         <ThemedText className="text-base font-bold text-primary-600 dark:text-primary-400">
-                          + Add Entry
+                          {t('timeline.addEntry')}
                         </ThemedText>
                         <View className="ml-3 flex-row space-x-2">
                           <View className="rounded bg-neutral-200 p-1 dark:bg-neutral-700">
@@ -445,7 +447,7 @@ export default function PlantJournalScreen() {
 
         {/* Floating Action Button with sophisticated animation */}
         {entries.length > 0 && (
-          <Animated.View style={[fabAnimatedStyle]} className="absolute bottom-6 right-6">
+          <Animated.View style={[fabAnimatedStyle]} className="absolute bottom-20 right-6">
             <GestureDetector
               gesture={Gesture.Tap()
                 .onStart(() => {

@@ -72,33 +72,33 @@ function HomeScreen({ database }: HomeScreenProps) {
     size: number;
     label: string;
   }> = [
-    {
-      iconName: 'leaf-outline',
-      onPress: handleAddPlant,
-      accessibilityLabel: 'Add new plant',
-      size: 48,
-      label: 'New Plant',
-    },
-    {
-      iconName: 'pencil-outline',
-      onPress: () => handleNavigateToTask('/(app)/(tabs)/calendar/add-plant-task'),
-      accessibilityLabel: 'Add task to a plant',
-      size: 48,
-      label: 'Task for Plant',
-    },
-    {
-      iconName: 'layers-outline',
-      onPress: () => handleNavigateToTask('/(app)/(tabs)/calendar/add-task'),
-      accessibilityLabel: 'Add task to all plants',
-      size: 48,
-      label: 'Task for All',
-    },
-  ];
+      {
+        iconName: 'leaf-outline',
+        onPress: handleAddPlant,
+        accessibilityLabel: 'Add new plant',
+        size: 48,
+        label: 'New Plant',
+      },
+      {
+        iconName: 'pencil-outline',
+        onPress: () => handleNavigateToTask('/(app)/(tabs)/calendar/add-plant-task'),
+        accessibilityLabel: 'Add task to a plant',
+        size: 48,
+        label: 'Task for Plant',
+      },
+      {
+        iconName: 'layers-outline',
+        onPress: () => handleNavigateToTask('/(app)/(tabs)/calendar/add-task'),
+        accessibilityLabel: 'Add task to all plants',
+        size: 48,
+        label: 'Task for All',
+      },
+    ];
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100 dark:bg-neutral-900">
 
-      
+
       <EnhancedPlantList
         database={database}
         isLoading={isLoading}
@@ -111,8 +111,8 @@ function HomeScreen({ database }: HomeScreenProps) {
 
       {/* Floating Action Button and Menu */}
       {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
-      {/* Note: Padding changed from p-4 to p-6, bottom positioning matches community screen */}
-      <View className="absolute bottom-20 right-0 z-20 items-end p-6">
+      {/* Note: Using bottom-20 to match community screen positioning above tab bar */}
+      <View className="absolute bottom-20 right-6 z-20 items-end">
         {isFabMenuOpen && (
           <View className="mb-4 items-end space-y-3">
             {fabActions.map((action) => (

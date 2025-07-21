@@ -936,6 +936,30 @@
       "monthly": "Monatlich"
     },
     "calendarWarning": "Erinnerung erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
+  },
+  "journal": {
+    "errors": {
+      "invalidPlantId": "Fehler: Ungültige Pflanzen-ID.",
+      "loadingPlantData": "Fehler beim Laden der Pflanzendaten.",
+      "plantNotFound": "Die angegebene Pflanze konnte nicht gefunden werden.",
+      "loadingEntries": "Fehler beim Laden der Einträge."
+    },
+    "loading": {
+      "plantInfo": "Pflanzeninfo wird geladen...",
+      "entries": "Einträge werden geladen..."
+    },
+    "emptyState": {
+      "title": "Noch keine Tagebucheinträge",
+      "subtitle": "Beginnen Sie, die Reise Ihrer Pflanze zu verfolgen und sehen Sie sie wachsen!",
+      "addFirstEntry": "Ersten Eintrag hinzufügen"
+    },
+    "timeline": {
+      "day": "Tag {{count}}",
+      "addEntry": "+ Eintrag hinzufügen"
+    },
+    "navigation": {
+      "title": "Pflanzentagebuch"
+    }
   }
 }
 

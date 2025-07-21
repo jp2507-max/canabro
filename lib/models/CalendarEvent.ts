@@ -62,14 +62,21 @@ export class CalendarEvent extends Model {
 
   @writer async updateMetadata(metadata: Record<string, any>) {
     await this.update((event) => {
-      const currentMetadata = event.getMetadata();
+      const currentMetadata = this.getMetadata();
       event.metadata = JSON.stringify({ ...currentMetadata, ...metadata });
     });
   }
 
   // Helper methods for JSON fields
   getMetadata(): Record<string, any> {
-    return this.metadata ? JSON.parse(this.metadata) : {};
+    if (!this.metadata) return {};
+    
+    try {
+      return JSON.parse(this.metadata);
+    } catch (error) {
+      console.error('Failed to parse metadata:', error);
+      return {};
+    }
   }
 
   @writer async markAsDeleted() {

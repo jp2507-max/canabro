@@ -144,8 +144,10 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
   const animatedContentStyle = useAnimatedStyle(() => {
     'worklet';
+    // Animate opacity smoothly when showing/hiding the modal content
+    // Using withTiming for smooth transitions between states
     return {
-      opacity: 1, // Temporarily disable animation
+      opacity: withTiming(contentOpacity.value, { duration: 200 }),
     };
   });
 
@@ -200,7 +202,11 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
               { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
               animatedBlurStyle,
             ]}>
-            <ExpoBlurView intensity={20} style={{ flex: 1 }} tint="systemMaterialDark" />
+            <ExpoBlurView 
+              intensity={blurIntensity.value} 
+              style={{ flex: 1 }} 
+              tint="systemMaterialDark" 
+            />
           </Animated.View>
           {/* Gradient overlay for enhanced depth */}
           <Animated.View

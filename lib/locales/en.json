@@ -1076,6 +1076,30 @@
       "monthly": "Monthly"
     },
     "calendarWarning": "Reminder created successfully, but failed to add to calendar. You can add it manually if needed."
+  },
+  "journal": {
+    "errors": {
+      "invalidPlantId": "Error: Invalid Plant ID.",
+      "loadingPlantData": "Error loading plant data.",
+      "plantNotFound": "Could not find the specified plant.",
+      "loadingEntries": "Error loading entries."
+    },
+    "loading": {
+      "plantInfo": "Loading Plant Info...",
+      "entries": "Loading entries..."
+    },
+    "emptyState": {
+      "title": "No journal entries yet",
+      "subtitle": "Start tracking your plant's journey and watch it grow!",
+      "addFirstEntry": "Add First Entry"
+    },
+    "timeline": {
+      "day": "Day {{count}}",
+      "addEntry": "+ Add Entry"
+    },
+    "navigation": {
+      "title": "Plant Journal"
+    }
   }
 }
 

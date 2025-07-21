@@ -58,6 +58,17 @@ export class NotificationSchedule extends Model {
   }
 
   @writer async updateInterval(intervalHours: number) {
+    // Validate intervalHours is a positive number
+    if (typeof intervalHours !== 'number' || isNaN(intervalHours) || intervalHours <= 0) {
+      throw new Error('Interval hours must be a positive number');
+    }
+
+    // Set a reasonable upper limit (e.g., 1 year = 8760 hours)
+    const MAX_INTERVAL_HOURS = 8760;
+    if (intervalHours > MAX_INTERVAL_HOURS) {
+      throw new Error(`Interval hours cannot exceed ${MAX_INTERVAL_HOURS} (1 year)`);
+    }
+
     await this.update((schedule) => {
       schedule.intervalHours = intervalHours;
     });
@@ -65,8 +76,8 @@ export class NotificationSchedule extends Model {
 
   @writer async updateSettings(settings: Partial<NotificationSettings>) {
     await this.update((schedule) => {
-      const currentSettings = schedule.getNotificationSettings();
-      schedule.notificationSettings = JSON.stringify({
+      const currentSettings = this.getNotificationSettings();
+      this.notificationSettings = JSON.stringify({
         ...currentSettings,
         ...settings,
       });
@@ -75,7 +86,20 @@ export class NotificationSchedule extends Model {
 
   // Helper methods for JSON fields
   getNotificationSettings(): NotificationSettings | null {
-    return this.notificationSettings ? JSON.parse(this.notificationSettings) : null;
+    if (!this.notificationSettings) return null;
+    
+    try {
+      return JSON.parse(this.notificationSettings);
+    } catch (error) {
+      console.error('Failed to parse notification settings:', error);
+      // Return default settings if parsing fails
+      return {
+        enablePush: true,
+        enableEmail: false,
+        advanceNoticeMinutes: 30,
+        priority: 'normal'
+      };
+    }
   }
 
   @writer async activate() {
@@ -126,25 +150,40 @@ export class NotificationSchedule extends Model {
     return next;
   }
 
+  private parseTimeString(timeString: string): { hour: number; minute: number } | null {
+    if (typeof timeString !== 'string') return null;
+    
+    const parts = timeString.split(':');
+    if (parts.length !== 2) return null;
+    
+    const hour = parseInt(parts[0], 10);
+    const minute = parseInt(parts[1], 10);
+    
+    if (isNaN(hour) || isNaN(minute)) return null;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    
+    return { hour, minute };
+  }
+
   isInQuietHours(date: Date = new Date()): boolean {
     const settings = this.getNotificationSettings();
-    if (!settings?.quietHoursStart || !settings?.quietHoursEnd) return false;
+    const { quietHoursStart, quietHoursEnd } = settings || {};
+    
+    // Early return if either time string is missing or invalid
+    if (!quietHoursStart || !quietHoursEnd || 
+        typeof quietHoursStart !== 'string' || 
+        typeof quietHoursEnd !== 'string') {
+      return false;
+    }
+
+    const startTime = this.parseTimeString(quietHoursStart);
+    const endTime = this.parseTimeString(quietHoursEnd);
+    
+    if (!startTime || !endTime) return false;
 
     const currentTime = date.getHours() * 60 + date.getMinutes();
-    const startTimeParts = settings.quietHoursStart.split(':').map(Number);
-    const endTimeParts = settings.quietHoursEnd.split(':').map(Number);
-    
-    // Validate time parsing
-    if (startTimeParts.length !== 2 || endTimeParts.length !== 2) return false;
-    if (startTimeParts.some(isNaN) || endTimeParts.some(isNaN)) return false;
-    
-    const startHour = startTimeParts[0]!;
-    const startMin = startTimeParts[1]!;
-    const endHour = endTimeParts[0]!;
-    const endMin = endTimeParts[1]!;
-    
-    const quietStart = startHour * 60 + startMin;
-    const quietEnd = endHour * 60 + endMin;
+    const quietStart = startTime.hour * 60 + startTime.minute;
+    const quietEnd = endTime.hour * 60 + endTime.minute;
 
     if (quietStart <= quietEnd) {
       return currentTime >= quietStart && currentTime <= quietEnd;

@@ -45,14 +45,75 @@ export class ScheduleTemplate extends Model {
   }
 
   @writer async updateTemplateData(data: TemplateTaskData[]) {
+    // Validate the input data before updating
+    this.validateTemplateData(data);
+    
     await this.update((template) => {
       template.templateData = JSON.stringify(data);
     });
   }
 
+  // Validation helper method
+  private validateTemplateData(data: TemplateTaskData[]): void {
+    if (!Array.isArray(data)) {
+      throw new Error('Template data must be an array');
+    }
+
+    const validPriorities = ['low', 'medium', 'high', 'critical'] as const;
+    
+    data.forEach((task, index) => {
+      // Check required fields
+      if (typeof task.weekNumber !== 'number' || task.weekNumber < 1) {
+        throw new Error(`Invalid weekNumber at index ${index}: must be a positive number`);
+      }
+      
+      if (typeof task.dayOfWeek !== 'number' || task.dayOfWeek < 0 || task.dayOfWeek > 6) {
+        throw new Error(`Invalid dayOfWeek at index ${index}: must be a number between 0-6`);
+      }
+      
+      if (typeof task.taskType !== 'string' || task.taskType.trim() === '') {
+        throw new Error(`Invalid taskType at index ${index}: must be a non-empty string`);
+      }
+      
+      if (typeof task.title !== 'string' || task.title.trim() === '') {
+        throw new Error(`Invalid title at index ${index}: must be a non-empty string`);
+      }
+      
+      if (typeof task.description !== 'string') {
+        throw new Error(`Invalid description at index ${index}: must be a string`);
+      }
+      
+      if (!validPriorities.includes(task.priority)) {
+        throw new Error(`Invalid priority at index ${index}: must be one of ${validPriorities.join(', ')}`);
+      }
+      
+      if (typeof task.estimatedDuration !== 'number' || task.estimatedDuration < 0) {
+        throw new Error(`Invalid estimatedDuration at index ${index}: must be a non-negative number`);
+      }
+      
+      // Check optional fields
+      if (task.requiredSupplies !== undefined) {
+        if (!Array.isArray(task.requiredSupplies)) {
+          throw new Error(`Invalid requiredSupplies at index ${index}: must be an array if provided`);
+        }
+        
+        task.requiredSupplies.forEach((supply, supplyIndex) => {
+          if (typeof supply !== 'string' || supply.trim() === '') {
+            throw new Error(`Invalid supply at index ${index}, supply ${supplyIndex}: must be a non-empty string`);
+          }
+        });
+      }
+    });
+  }
+
   // Helper methods for JSON fields
   getTemplateData(): TemplateTaskData[] {
-    return this.templateData ? JSON.parse(this.templateData) : [];
+    try {
+      return this.templateData ? JSON.parse(this.templateData) : [];
+    } catch (error) {
+      console.error('Error parsing template data:', error);
+      return []; // Return empty array as fallback
+    }
   }
 
   @writer async markAsDeleted() {
