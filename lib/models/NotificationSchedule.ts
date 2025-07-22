@@ -78,7 +78,7 @@ export class NotificationSchedule extends Model {
   @writer async updateSettings(settings: Partial<NotificationSettings>) {
     await this.update((schedule) => {
       const currentSettings = this.getNotificationSettings();
-      this.notificationSettings = JSON.stringify({
+      schedule.notificationSettings = JSON.stringify({
         ...currentSettings,
         ...settings,
       });
