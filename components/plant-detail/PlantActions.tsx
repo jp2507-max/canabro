@@ -3,6 +3,7 @@ import {
   triggerMediumHaptic,
   triggerWarningHaptic,
 } from '@/lib/utils/haptics';
+import { logger } from '@/lib/config/production';
 import { router } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { View, Alert, Modal } from 'react-native';
@@ -155,7 +156,7 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
           const plantRecord = await database.collections.get<Plant>('plants').find(plantId);
           setPlant(plantRecord);
         } catch (error) {
-          console.error('Error loading plant:', error);
+          logger.error('Error loading plant:', error);
         }
       };
       loadPlant();
@@ -230,7 +231,7 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
       setShowMetricsModal(false);
       Alert.alert(t('common:success'), t('plants:metricsUpdated'));
     } catch (error) {
-      console.error('Error saving metrics:', error);
+      logger.error('Error saving metrics:', error);
       Alert.alert(t('common:error'), t('plants:failedToSaveMetrics'));
     }
   }, [database, plant, plantId, t]);
@@ -254,7 +255,7 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
       setShowHarvestModal(false);
       Alert.alert(t('common:success'), t('plants:harvestRecorded'));
     } catch (error) {
-      console.error('Error saving harvest:', error);
+      logger.error('Error saving harvest:', error);
       Alert.alert(t('common:error'), t('plants:failedToSaveHarvest'));
     }
   }, [database, plant, t]);
@@ -269,7 +270,7 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
       <ThemedView variant="card" className="mb-4 mt-2 rounded-3xl p-2 shadow-lg">
         <ActionItem iconName="journal-outline" label={t('growJournal')} onPress={handleGrowJournal} />
 
-        <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
+        <View className="mx-4 h-px bg-border dark:bg-border-dark" />
 
         <ActionItem
           iconName="stats-chart-outline"
@@ -278,7 +279,7 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
           subLabel={t('trackPlantHealth')}
         />
 
-        <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
+        <View className="mx-4 h-px bg-border dark:bg-border-dark" />
 
         <ActionItem
           iconName="leaf-outline"
@@ -287,7 +288,7 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
           subLabel={t('recordHarvestData')}
         />
 
-        <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
+        <View className="mx-4 h-px bg-border dark:bg-border-dark" />
 
         <ActionItem
           iconName="trash-outline"

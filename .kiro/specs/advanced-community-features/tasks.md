@@ -136,8 +136,8 @@
   - Integrate with existing community posting and interaction systems
   - _Requirements: 5_
 
-- [ ] 7. Build advanced search and discovery features
-- [ ] 7.1 Create AdvancedSearch for comprehensive content discovery
+- [ ] **ACF-T07**: Build advanced search and discovery features
+- [ ] **ACF-T07.1**: Create AdvancedSearch for comprehensive content discovery
   - Build advanced search interface with multiple filters
   - Implement full-text search across all community content
   - Add search result ranking and relevance scoring
@@ -145,7 +145,7 @@
   - Integrate with existing search patterns and knowledge base
   - _Requirements: 6_
 
-- [ ] 7.2 Implement ContentRecommendations for personalized discovery
+- [ ] **ACF-T07.2**: Implement ContentRecommendations for personalized discovery
   - Build recommendation engine based on user interests and activity
   - Create personalized content feeds and suggestions
   - Implement trending content detection and promotion
@@ -153,7 +153,7 @@
   - Use existing user behavior tracking and analytics
   - _Requirements: 6_
 
-- [ ] 7.3 Create TopicTrending for community interest tracking
+- [ ] **ACF-T07.3**: Create TopicTrending for community interest tracking
   - Build trending topic detection and display system
   - Implement topic-based content organization
   - Add topic following and notification system
@@ -161,8 +161,8 @@
   - Integrate with existing tagging and categorization systems
   - _Requirements: 6_
 
-- [ ] 8. Performance optimization and testing
-- [ ] 8.1 Optimize real-time performance and scalability
+- [ ] **ACF-T08**: Performance optimization and testing
+- [ ] **ACF-T08.1**: Optimize real-time performance and scalability
   - Implement efficient WebSocket connection management
   - Create message batching and throttling for high-volume scenarios
   - Add connection retry logic and offline message queuing
@@ -170,7 +170,7 @@
   - Test performance with large user bases and high message volumes
   - _Requirements: 1, 2_
 
-- [ ] 8.2 Implement caching and data synchronization
+- [ ] **ACF-T08.2**: Implement caching and data synchronization
   - Create intelligent caching strategy for frequently accessed content
   - Implement offline-first messaging with sync when online
   - Add conflict resolution for concurrent message editing
@@ -178,7 +178,7 @@
   - Test synchronization across multiple devices and platforms
   - _Requirements: 1, 2_
 
-- [ ] 8.3 Test community features integration and user experience
+- [ ] **ACF-T08.3**: Test community features integration and user experience
   - Verify real-time messaging reliability and message delivery
   - Test notification system accuracy and timing
   - Validate content moderation effectiveness and accuracy
