@@ -10,6 +10,7 @@ import AddPlantModal from '../../../components/ui/AddPlantModal';
 import FloatingActionButton from '../../../components/ui/FloatingActionButton';
 import HomeHeader from '../../../components/ui/HomeHeader';
 import ThemedText from '../../../components/ui/ThemedText';
+import ThemedView from '../../../components/ui/ThemedView';
 
 import usePullToRefresh from '../../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
@@ -97,54 +98,52 @@ function HomeScreen({ database }: HomeScreenProps) {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100 dark:bg-neutral-900">
-
-
-      <EnhancedPlantList
-        database={database}
-        isLoading={isLoading}
-        onCountChange={handleCountChange}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        ListHeaderComponent={<HomeHeader plantCount={plantCount} />}
-        contentContainerStyle={{ paddingBottom: isFabMenuOpen ? 180 : 80 }}
-      />
-
-      {/* Floating Action Button and Menu */}
-      {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
-      {/* Note: Using bottom-20 to match community screen positioning above tab bar */}
-      <View className="absolute bottom-20 right-6 z-20 items-end">
-        {isFabMenuOpen && (
-          <View className="mb-4 items-end space-y-3">
-            {fabActions.map((action) => (
-              <View key={action.accessibilityLabel} className="flex-row items-center">
-                {action.label && (
-                  <View className="mr-3 rounded-lg bg-black/70 px-3 py-1.5 shadow-md dark:bg-neutral-700/90">
-                    <ThemedText className="text-xs font-medium text-white">
-                      {action.label}
-                    </ThemedText>
-                  </View>
-                )}
-                {/* Individual FABs no longer need absolute positioning as they are in a View container */}
-                <FloatingActionButton
-                  iconName={action.iconName}
-                  onPress={action.onPress}
-                  accessibilityLabel={action.accessibilityLabel}
-                  size={40} // Smaller size for action buttons - remains 40
-                  className="relative shadow-xl"
-                />
-              </View>
-            ))}
-          </View>
-        )}
-        {/* Main FAB - also no longer needs absolute positioning if its parent View handles it */}
-        <FloatingActionButton
-          iconName={isFabMenuOpen ? 'close-outline' : 'add-outline'}
-          onPress={() => setIsFabMenuOpen(!isFabMenuOpen)}
-          accessibilityLabel={isFabMenuOpen ? 'Close actions menu' : 'Open actions menu'}
-          size={56} // Adjusted to match calendar screen FAB size
-          className="relative shadow-2xl" // Simplified className, removed redundant rounded-full and background colors
+      <ThemedView className="flex-1">
+        <EnhancedPlantList
+          database={database}
+          isLoading={isLoading}
+          onCountChange={handleCountChange}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListHeaderComponent={<HomeHeader plantCount={plantCount} />}
+          contentContainerStyle={{ paddingBottom: isFabMenuOpen ? 180 : 80 }}
         />
-      </View>
+
+        {/* Floating Action Button and Menu */}
+        <View className="absolute bottom-20 right-6 z-20">
+          {isFabMenuOpen && (
+            <View className="mb-4 items-end space-y-3">
+              {fabActions.map((action) => (
+                <View key={action.accessibilityLabel} className="flex-row items-center">
+                  {action.label && (
+                    <View className="mr-3 rounded-lg bg-black/70 px-3 py-1.5 shadow-md dark:bg-neutral-700/90">
+                      <ThemedText className="text-xs font-medium text-white">
+                        {action.label}
+                      </ThemedText>
+                    </View>
+                  )}
+                  <View className="mb-3">
+                    <FloatingActionButton
+                      iconName={action.iconName}
+                      onPress={action.onPress}
+                      accessibilityLabel={action.accessibilityLabel}
+                      size={40}
+                      className="relative shadow-xl"
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+          <FloatingActionButton
+            iconName={isFabMenuOpen ? 'close-outline' : 'add-outline'}
+            onPress={() => setIsFabMenuOpen(!isFabMenuOpen)}
+            accessibilityLabel={isFabMenuOpen ? 'Close actions menu' : 'Open actions menu'}
+            size={56}
+            className="relative shadow-2xl"
+          />
+        </View>
+      </ThemedView>
 
       {/* Add Plant Modal */}
       <AddPlantModal

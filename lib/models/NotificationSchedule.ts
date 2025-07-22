@@ -9,6 +9,7 @@ import {
   writer,
 } from '@nozbe/watermelondb/decorators';
 
+import { Logger } from '@/lib/utils/production-utils';
 import { Plant } from './Plant';
 
 export interface NotificationSettings {
@@ -91,7 +92,7 @@ export class NotificationSchedule extends Model {
     try {
       return JSON.parse(this.notificationSettings);
     } catch (error) {
-      console.error('Failed to parse notification settings:', error);
+      Logger.error('Failed to parse notification settings:', error);
       // Return default settings if parsing fails
       return {
         enablePush: true,

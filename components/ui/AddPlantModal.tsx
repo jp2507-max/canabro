@@ -6,6 +6,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withSpring,
   withTiming,
   withSequence,
@@ -158,6 +159,17 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
     };
   });
 
+  // Animated props for ExpoBlurView to properly animate intensity
+  const animatedBlurProps = useAnimatedProps(() => {
+    'worklet';
+    return {
+      intensity: blurIntensity.value,
+    };
+  });
+
+  // Create animated version of ExpoBlurView
+  const AnimatedBlurView = Animated.createAnimatedComponent(ExpoBlurView);
+
   // Handle modal visibility changes
   useEffect(() => {
     if (visible) {
@@ -202,8 +214,8 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
               { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
               animatedBlurStyle,
             ]}>
-            <ExpoBlurView 
-              intensity={blurIntensity.value} 
+            <AnimatedBlurView 
+              animatedProps={animatedBlurProps}
               style={{ flex: 1 }} 
               tint="systemMaterialDark" 
             />

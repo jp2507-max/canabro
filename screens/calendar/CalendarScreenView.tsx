@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DateSelector from '../../components/calendar/DateSelector';
@@ -115,9 +115,7 @@ function CalendarScreenView({
   );
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-neutral-50 dark:bg-neutral-900"
-      edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
       <ThemedView className="flex-1">
         {/* Date Selector Header */}
         <ThemedView className="bg-white shadow-sm dark:bg-neutral-800">
@@ -159,13 +157,16 @@ function CalendarScreenView({
         )}
 
         {/* Floating Action Button */}
-        <FloatingActionButton
-          onPress={handleFabPress}
-          onLongPress={onOpenTaskActions}
-          accessibilityLabel={t('calendar.screen.add_task_button', 'Add Task')}
-          testID="calendar-fab"
-          size={56}
-        />
+        <View className="absolute bottom-20 right-6 z-20">
+          <FloatingActionButton
+            onPress={handleFabPress}
+            onLongPress={onOpenTaskActions}
+            accessibilityLabel={t('calendar.screen.add_task_button', 'Add Task')}
+            testID="calendar-fab"
+            size={56}
+            className="shadow-2xl"
+          />
+        </View>
 
         {/* Task Actions Modal */}
         <TaskActions

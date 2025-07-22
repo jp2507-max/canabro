@@ -3,6 +3,7 @@ import { Associations } from '@nozbe/watermelondb/Model';
 import { date, readonly, text, relation, writer, field } from '@nozbe/watermelondb/decorators';
 
 import { Plant } from './Plant';
+import { log } from '@/lib/utils/logger';
 
 export interface TaskCompletion {
   taskId: string;
@@ -103,7 +104,7 @@ export class PlantTask extends Model {
     try {
       return JSON.parse(this.completionData);
     } catch (error) {
-      console.error('Failed to parse completion data:', error);
+      log.error('Failed to parse completion data:', error);
       return null;
     }
   }
@@ -114,7 +115,7 @@ export class PlantTask extends Model {
     try {
       return JSON.parse(this.environmentalConditions);
     } catch (error) {
-      console.error('Failed to parse environmental conditions:', error);
+      log.error('Failed to parse environmental conditions:', error);
       return {};
     }
   }
