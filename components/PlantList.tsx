@@ -4,7 +4,8 @@ import { Database, Q } from '@nozbe/watermelondb';
 import { withObservables } from '@nozbe/watermelondb/react';
 import { useSafeRouter } from '@/lib/hooks/useSafeRouter';
 import React, { useEffect, useMemo } from 'react';
-import { View, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlashListWrapper } from './ui/FlashListWrapper';
 
 import { PlantCard, Plant as PlantCardData } from './my-plants/PlantCard';
 import { OptimizedIcon } from './ui/OptimizedIcon';
@@ -22,6 +23,15 @@ interface PlantListComponentProps {
   ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
   refreshing?: boolean;
   onRefresh?: () => void;
+  searchQuery?: string;
+  filters?: {
+    growthStages: string[];
+    healthRange: [number, number];
+    strainTypes: string[];
+    needsAttention: boolean;
+    sortBy: 'name' | 'planted_date' | 'health' | 'next_watering';
+    sortOrder: 'asc' | 'desc';
+  };
 }
 
 // This function now only needs the plant data, no theme dependency
@@ -69,6 +79,8 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
     ListHeaderComponent,
     refreshing = false,
     onRefresh,
+    searchQuery = '',
+    filters,
   }: PlantListComponentProps) => {
     const router = useSafeRouter();
     const { t } = useTranslation();
@@ -77,34 +89,101 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
     const plantIds = useMemo(() => plants.map(plant => plant.id), [plants]);
     const { attentionMap } = usePlantAttention(plantIds);
 
-    useEffect(() => {
-      if (onCountChange) {
-        onCountChange(plants?.length ?? 0);
-      }
-    }, [plants, onCountChange]);
-
-    // Sort plants by attention priority
-    const sortedPlants = useMemo(() => {
+    // Filter and sort plants
+    const filteredAndSortedPlants = useMemo(() => {
       if (!plants || plants.length === 0) return plants;
       
-      return [...plants].sort((a, b) => {
+      let filtered = [...plants];
+
+      // Apply search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        filtered = filtered.filter(plant => 
+          plant.name.toLowerCase().includes(query) ||
+          (plant.strain && plant.strain.toLowerCase().includes(query))
+        );
+      }
+
+      // Apply filters
+      if (filters) {
+        // Growth stage filter
+        if (filters.growthStages.length > 0) {
+          filtered = filtered.filter(plant => 
+            filters.growthStages.includes(plant.growthStage)
+          );
+        }
+
+        // Health range filter
+        filtered = filtered.filter(plant => {
+          const health = plant.healthPercentage ?? 75;
+          return health >= filters.healthRange[0] && health <= filters.healthRange[1];
+        });
+
+        // Strain type filter
+        if (filters.strainTypes.length > 0) {
+          filtered = filtered.filter(plant => 
+            filters.strainTypes.includes(plant.cannabisType || 'unknown')
+          );
+        }
+
+        // Needs attention filter
+        if (filters.needsAttention) {
+          filtered = filtered.filter(plant => {
+            const attention = attentionMap[plant.id];
+            return attention?.needsAttention;
+          });
+        }
+      }
+
+      // Sort plants
+      filtered.sort((a, b) => {
         const aAttention = attentionMap[a.id];
         const bAttention = attentionMap[b.id];
         
-        // Priority order: urgent > high > medium > low > no attention
-        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-        
-        const aPriority = aAttention?.needsAttention ? priorityOrder[aAttention.priorityLevel] || 0 : 0;
-        const bPriority = bAttention?.needsAttention ? priorityOrder[bAttention.priorityLevel] || 0 : 0;
-        
-        // Sort by priority (highest first), then by name
-        if (aPriority !== bPriority) {
-          return bPriority - aPriority;
+        // If no specific sort is requested, prioritize attention
+        if (!filters?.sortBy || filters.sortBy === 'name') {
+          // Priority order: urgent > high > medium > low > no attention
+          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+          
+          const aPriority = aAttention?.needsAttention ? priorityOrder[aAttention.priorityLevel] || 0 : 0;
+          const bPriority = bAttention?.needsAttention ? priorityOrder[bAttention.priorityLevel] || 0 : 0;
+          
+          // Sort by priority (highest first), then by name
+          if (aPriority !== bPriority) {
+            return bPriority - aPriority;
+          }
+          
+          const nameComparison = a.name.localeCompare(b.name);
+          return filters?.sortOrder === 'desc' ? -nameComparison : nameComparison;
         }
-        
-        return a.name.localeCompare(b.name);
+
+        // Apply specific sorting
+        let comparison = 0;
+        switch (filters.sortBy) {
+          case 'planted_date':
+            comparison = new Date(a.plantedDate).getTime() - new Date(b.plantedDate).getTime();
+            break;
+          case 'health':
+            comparison = (a.healthPercentage ?? 75) - (b.healthPercentage ?? 75);
+            break;
+          case 'next_watering':
+            comparison = (a.nextWateringDays ?? 3) - (b.nextWateringDays ?? 3);
+            break;
+          default:
+            comparison = a.name.localeCompare(b.name);
+        }
+
+        return filters.sortOrder === 'desc' ? -comparison : comparison;
       });
-    }, [plants, attentionMap]);
+
+      return filtered;
+    }, [plants, attentionMap, searchQuery, filters]);
+
+    useEffect(() => {
+      if (onCountChange) {
+        onCountChange(filteredAndSortedPlants?.length ?? 0);
+      }
+    }, [filteredAndSortedPlants, onCountChange]);
 
     const handlePress = React.useCallback(
       (plantId: string) => {
@@ -120,21 +199,17 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
       ({ item: wdbPlantItem }: { item: WDBPlant }) => {
         const plantCardData = getPlantCardData(wdbPlantItem, t('plantList.unknownStrain'));
 
-        return <PlantCard plant={plantCardData} onPress={handlePress} />;
+        return (
+          <PlantCard 
+            plant={plantCardData} 
+            onPress={handlePress}
+          />
+        );
       },
-      [handlePress, t]
+      [handlePress, t, searchQuery]
     );
 
     const keyExtractor = React.useCallback((item: WDBPlant) => item.id, []);
-
-    const getItemLayout = React.useCallback(
-      (_data: ArrayLike<WDBPlant> | null | undefined, index: number) => ({
-        length: 120, // Approximate height of PlantCard
-        offset: 120 * index,
-        index,
-      }),
-      []
-    );
 
     if (isLoading) {
       return (
@@ -148,11 +223,10 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
     }
 
     return (
-      <FlatList
-        data={sortedPlants}
+      <FlashListWrapper
+        data={filteredAndSortedPlants}
         keyExtractor={keyExtractor}
         renderItem={renderPlantCard}
-        getItemLayout={getItemLayout}
         ListEmptyComponent={<EmptyPlantList />}
         ListHeaderComponent={ListHeaderComponent}
         refreshControl={
@@ -166,16 +240,8 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
             />
           ) : undefined
         }
-        // Reanimated v3 + FlatList optimizations
-        initialNumToRender={10}
-        windowSize={10}
-        maxToRenderPerBatch={5}
-        updateCellsBatchingPeriod={100}
-        removeClippedSubviews={true}
-        // Performance optimizations
-        scrollEventThrottle={16}
+        estimatedItemSize={120} // Approximate height of PlantCard
         contentContainerStyle={{
-          flexGrow: 1,
           paddingTop: ListHeaderComponent ? 0 : 8,
           paddingBottom: 80,
         }}
@@ -198,6 +264,9 @@ const enhance = withObservables([], ({ database }: { database: Database }) => ({
       'health_percentage',
       'next_watering_days',
       'next_nutrient_days',
+      'growth_stage',
+      'cannabis_type',
+      'planted_date',
     ]),
 }));
 

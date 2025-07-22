@@ -21,6 +21,8 @@ export class PlantPhoto extends Model {
   @text('thumbnail_url') thumbnailUrl?: string;
   @text('caption') caption?: string;
   @text('growth_stage') growthStage!: string;
+  @field('is_primary') isPrimary?: boolean;
+  @field('is_deleted') isDeleted?: boolean;
   @field('file_size') fileSize?: number;
   @field('width') width?: number;
   @field('height') height?: number;
@@ -28,14 +30,17 @@ export class PlantPhoto extends Model {
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;
-  @field('is_deleted') isDeleted?: boolean;
 
   // Relations
   @relation('plants', 'plant_id') plant!: Plant;
 
   // Derived properties
   get isActive(): boolean {
-    return !this.isDeleted;
+    return !(this.isDeleted ?? false);
+  }
+
+  get isPrimaryPhoto(): boolean {
+    return this.isPrimary ?? false;
   }
 
   get formattedFileSize(): string {

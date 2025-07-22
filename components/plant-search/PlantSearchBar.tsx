@@ -14,7 +14,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  interpolate,
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
@@ -48,7 +47,6 @@ export const PlantSearchBar = React.memo(({
   const searchPlaceholder = placeholder || t('searchPlaceholder');
 
   // Animation values
-  const clearButtonScale = useSharedValue(0);
   const filterBadgeScale = useSharedValue(showFilterBadge ? 1 : 0);
   const searchBarScale = useSharedValue(1);
 
@@ -64,14 +62,6 @@ export const PlantSearchBar = React.memo(({
       stiffness: 200,
     });
   }, [showFilterBadge]);
-
-  // Update clear button visibility
-  React.useEffect(() => {
-    clearButtonScale.value = withSpring(searchQuery.length > 0 ? 1 : 0, {
-      damping: 15,
-      stiffness: 200,
-    });
-  }, [searchQuery]);
 
   const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
@@ -101,19 +91,6 @@ export const PlantSearchBar = React.memo(({
   }, []);
 
   // Animated styles
-  const _clearButtonAnimatedStyle = useAnimatedStyle(() => {
-    'worklet';
-    return {
-      transform: [
-        { scale: clearButtonScale.value },
-        { 
-          rotate: `${interpolate(clearButtonScale.value, [0, 1], [180, 0])}deg` 
-        }
-      ],
-      opacity: clearButtonScale.value,
-    };
-  });
-
   const filterBadgeAnimatedStyle = useAnimatedStyle(() => {
     'worklet';
     return {

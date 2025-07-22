@@ -125,9 +125,10 @@ export const PlantFilters = React.memo(({
   // Enhanced modal entrance animation
   const showModal = () => {
     'worklet';
+    const maxIntensity = Platform.OS === 'ios' ? 20 : 10;
     modalTranslateY.value = withSpring(0, ENTRANCE_CONFIG);
     backdropOpacity.value = withTiming(1, { duration: 300 });
-    blurIntensity.value = withTiming(20, { duration: 400 });
+    blurIntensity.value = withTiming(maxIntensity, { duration: 400 });
     headerScale.value = withSpring(1, SPRING_CONFIG);
   };
 
@@ -189,8 +190,9 @@ export const PlantFilters = React.memo(({
 
   const animatedBlurStyle = useAnimatedStyle(() => {
     'worklet';
+    const maxIntensity = Platform.OS === 'ios' ? 20 : 10;
     return {
-      opacity: interpolate(blurIntensity.value, [0, 20], [0, 1]),
+      opacity: interpolate(blurIntensity.value, [0, maxIntensity], [0, 1]),
     };
   });
 

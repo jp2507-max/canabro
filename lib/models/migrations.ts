@@ -602,6 +602,18 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 31: Add is_primary column to plant_photos table
+    {
+      toVersion: 31,
+      steps: [
+        addColumns({
+          table: 'plant_photos',
+          columns: [
+            { name: 'is_primary', type: 'boolean', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

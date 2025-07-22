@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 30, // Bumped to 30 to add new plant management tables and fields
+  version: 31, // Bumped to 31 to add is_primary column to plant_photos
   tables: [
     tableSchema({
       name: 'profiles',
@@ -254,6 +254,8 @@ export default appSchema({
         { name: 'thumbnail_url', type: 'string', isOptional: true },
         { name: 'caption', type: 'string', isOptional: true },
         { name: 'growth_stage', type: 'string' },
+        { name: 'is_primary', type: 'boolean', isOptional: true },
+        { name: 'is_deleted', type: 'boolean', isOptional: true },
         { name: 'file_size', type: 'number', isOptional: true },
         { name: 'width', type: 'number', isOptional: true },
         { name: 'height', type: 'number', isOptional: true },
@@ -261,7 +263,6 @@ export default appSchema({
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'last_synced_at', type: 'number', isOptional: true },
-        { name: 'is_deleted', type: 'boolean', isOptional: true },
       ],
     }),
     tableSchema({
