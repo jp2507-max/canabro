@@ -22,7 +22,7 @@ components/
 │   ├── VPDCalculator.tsx             # Uses existing calculation utilities
 │   └── TrichomeSelector.tsx          # Uses OptimizedIcon, AnimatedButton pattern
 ├── plant-gallery/
-│   ├── PhotoGallery.tsx              # Uses ThemedView, OptimizedIcon
+│   ├── PhotoGallery.tsx              # Uses ThemedView, OptimizedIcon, FlashListWrapper
 │   ├── PhotoViewer.tsx               # Uses existing image-picker utilities
 │   └── PhotoUploadModal.tsx          # Extends existing AddPlantForm photo logic
 ├── plant-harvest/
@@ -46,6 +46,9 @@ components/
 - **EnhancedKeyboardWrapper**: All forms will use this for proper keyboard handling and accessory toolbar
 - **FlashListWrapper**: Use for all list components instead of FlatList for better performance
 - **upload-image utilities**: Use existing uploadPlantGalleryImage and related functions for all image uploads
+- **haptics utilities**: Use existing haptics functions for all tactile feedback
+- **useButtonAnimation/useCardAnimation**: Use existing animation hooks for consistent interactions
+- **NetworkResilientImage**: Use for all image display components
 - **Existing form patterns**: Follow react-hook-form + Zod validation patterns from AddPlantForm
 - **Existing animation patterns**: Use Reanimated v3 patterns from PlantCard and other components
 
@@ -75,11 +78,12 @@ interface PlantPhoto {
 
 **Design Features:**
 - Grid layout using ThemedView with NativeWind v4 responsive classes
-- Lazy loading with FlatList (following PlantList.tsx patterns)
+- Use FlashListWrapper for performance with large photo collections
 - Add photo button using existing AnimatedButton component from AddPlantForm
 - Growth stage badges using OptimizedIcon with semantic color tokens
 - Smooth animations using Reanimated v3 worklets (following PlantCard patterns)
 - Uses existing image-picker utilities (takePhoto, selectFromGallery)
+- Uses NetworkResilientImage for reliable image display
 
 #### PhotoViewer Component
 ```typescript
@@ -93,11 +97,12 @@ interface PhotoViewerProps {
 ```
 
 **Design Features:**
-- Full-screen modal with swipe gestures
-- Zoom and pan capabilities using react-native-gesture-handler
-- Photo metadata overlay (date, growth stage, caption)
-- Delete functionality with confirmation
+- Full-screen modal with swipe gestures using react-native-gesture-handler
+- Zoom and pan capabilities using existing gesture patterns
+- Photo metadata overlay (date, growth stage, caption) using ThemedText
+- Delete functionality with confirmation using existing haptics
 - Smooth transitions with shared element animations
+- Uses NetworkResilientImage for reliable full-screen display
 
 ### 2. Comprehensive Metrics System
 
@@ -134,12 +139,14 @@ interface PlantMetrics {
 ```
 
 **Design Features:**
-- Multi-step form with logical groupings
-- Visual indicators for trichome status (color-coded icons)
-- Unit toggles for measurements (metric/imperial)
+- Multi-step form using EnhancedKeyboardWrapper for proper keyboard handling
+- All inputs use EnhancedTextInput with proper validation and error states
+- Visual indicators for trichome status using OptimizedIcon with color-coded states
+- Unit toggles for measurements using AnimatedSelectionButton patterns
 - Auto-calculation of VPD from temperature and humidity
-- Input validation with helpful error messages
-- Progress indicators showing optimal ranges
+- Input validation with Zod schemas and helpful error messages using existing patterns
+- Progress indicators showing optimal ranges using ThemedView styling
+- Uses existing haptics for user feedback
 
 #### MetricsChart Component
 ```typescript
@@ -152,10 +159,10 @@ interface MetricsChartProps {
 ```
 
 **Design Features:**
-- Line charts using react-native-chart-kit or Victory Native
-- Optimal range highlighting (green zones)
-- Interactive data points with tooltips
-- Time range selector
+- Line charts using react-native-chart-kit or Victory Native with ThemedView containers
+- Optimal range highlighting (green zones) using semantic color tokens
+- Interactive data points with tooltips using ThemedText
+- Time range selector using AnimatedSelectionButton patterns
 - Export functionality for data sharing
 
 ### 3. Harvest Management System
@@ -177,11 +184,11 @@ interface HarvestData {
 ```
 
 **Design Features:**
-- Step-by-step harvest recording process
-- Weight input with unit conversion
+- Step-by-step harvest recording process using EnhancedKeyboardWrapper
+- Weight inputs using EnhancedTextInput with unit conversion
 - Automatic yield efficiency calculations
-- Photo capture for harvest documentation
-- Integration with plant timeline
+- Photo capture for harvest documentation using existing image-picker utilities
+- Integration with plant timeline using existing patterns
 
 ### 4. Search and Filter System
 
@@ -196,10 +203,10 @@ interface PlantSearchBarProps {
 ```
 
 **Design Features:**
-- Real-time search with debouncing
-- Clear button when text is entered
-- Filter button with active filter indicator
-- Smooth animations for state changes
+- Real-time search using EnhancedTextInput with debouncing
+- Clear button when text is entered using OptimizedIcon
+- Filter button with active filter indicator using existing button animations
+- Smooth animations for state changes using Reanimated v3 patterns
 
 #### PlantFilters Component
 ```typescript
@@ -214,11 +221,11 @@ interface PlantFilters {
 ```
 
 **Design Features:**
-- Bottom sheet modal for filter options
-- Multi-select chips for categories
-- Range sliders for numeric values
-- Quick filter presets (e.g., "Needs Attention")
-- Clear all filters option
+- Bottom sheet modal for filter options using ThemedView
+- Multi-select chips using AnimatedSelectionButton patterns
+- Range sliders for numeric values with proper theming
+- Quick filter presets and clear all functionality
+- Uses existing haptics for user feedback
 
 ### 5. Notification System
 
@@ -238,10 +245,10 @@ interface CareReminder {
 
 **Design Features:**
 - Local notifications using expo-notifications
-- Reminder cards with plant photos
-- Quick action buttons (Mark Done, Snooze, Reschedule)
-- Batch operations for multiple plants
-- Integration with device calendar
+- Reminder cards with plant photos using NetworkResilientImage
+- Quick action buttons using existing AnimatedButton patterns
+- Batch operations for multiple plants using FlashListWrapper
+- Integration with device calendar for reminder sync
 
 ## Data Models
 
@@ -333,14 +340,14 @@ export class CareReminder extends Model {
 ### Validation Strategy
 - **Form Validation**: Zod schemas for all input forms with custom error messages
 - **Data Validation**: Model-level validation for database constraints
-- **Network Errors**: Graceful handling of Supabase sync failures
-- **Image Upload Errors**: Retry logic with user feedback
+- **Network Errors**: Graceful handling of Supabase sync failures using existing patterns
+- **Image Upload Errors**: Retry logic with user feedback using existing upload-image utilities
 
 ### Error Recovery
 - **Offline Support**: WatermelonDB provides offline-first functionality
 - **Sync Conflicts**: Automatic resolution with user notification for critical conflicts
 - **Data Corruption**: Backup and restore mechanisms
-- **Performance Issues**: Lazy loading and pagination for large datasets
+- **Performance Issues**: Lazy loading and pagination using FlashListWrapper
 
 ## Testing Strategy
 
@@ -352,15 +359,15 @@ export class CareReminder extends Model {
 
 ### Integration Testing
 - **End-to-End Flows**: Complete plant lifecycle from creation to harvest
-- **Photo Upload**: Camera integration and Supabase storage
+- **Photo Upload**: Camera integration and Supabase storage using existing utilities
 - **Notification System**: Local notification scheduling and handling
-- **Search Performance**: Large dataset filtering and sorting
+- **Search Performance**: Large dataset filtering and sorting with FlashListWrapper
 
 ### Performance Testing
-- **Large Photo Collections**: Gallery performance with 100+ photos
+- **Large Photo Collections**: Gallery performance with 100+ photos using FlashListWrapper
 - **Metrics History**: Chart rendering with extensive historical data
 - **Search Responsiveness**: Real-time filtering with large plant collections
-- **Memory Usage**: Image caching and cleanup strategies
+- **Memory Usage**: Image caching and cleanup using NetworkResilientImage
 
 ## Security Considerations
 
@@ -380,18 +387,18 @@ export class CareReminder extends Model {
 
 ### Image Handling
 - **Thumbnail Generation**: Automatic thumbnail creation for gallery views
-- **Lazy Loading**: Progressive image loading in galleries
-- **Compression**: Automatic image compression before upload
-- **Caching**: Intelligent image caching with cleanup
+- **Lazy Loading**: Progressive image loading using NetworkResilientImage
+- **Compression**: Automatic image compression using existing upload-image utilities
+- **Caching**: Intelligent image caching with cleanup using NetworkResilientImage
 
 ### Database Performance
 - **Indexing**: Proper indexes on frequently queried fields
-- **Pagination**: Limit query results for large datasets
+- **Pagination**: Limit query results using FlashListWrapper for large datasets
 - **Background Sync**: Non-blocking Supabase synchronization
 - **Query Optimization**: Efficient WatermelonDB queries with proper relations
 
 ### UI Performance
 - **Memoization**: React.memo for expensive components
-- **Virtualization**: FlatList for large plant collections
-- **Animation Optimization**: Reanimated v3 worklets for smooth animations
+- **Virtualization**: FlashListWrapper for large plant collections
+- **Animation Optimization**: Reanimated v3 worklets using existing animation hooks
 - **Bundle Splitting**: Code splitting for optional features

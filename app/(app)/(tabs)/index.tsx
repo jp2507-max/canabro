@@ -5,11 +5,13 @@ import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EnhancedPlantList } from '../../../components/PlantList';
-import { useTranslation } from 'react-i18next';
+import { PlantSearchBar } from '../../../components/plant-search/PlantSearchBar';
+import { PlantFilters, PlantFiltersData } from '../../../components/plant-search/PlantFilters';
 import AddPlantModal from '../../../components/ui/AddPlantModal';
 import FloatingActionButton from '../../../components/ui/FloatingActionButton';
 import HomeHeader from '../../../components/ui/HomeHeader';
 import ThemedText from '../../../components/ui/ThemedText';
+import ThemedView from '../../../components/ui/ThemedView';
 
 import usePullToRefresh from '../../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
@@ -23,13 +25,22 @@ interface HomeScreenProps {
 type TaskRoute = '/(app)/(tabs)/calendar/add-plant-task' | '/(app)/(tabs)/calendar/add-task';
 
 function HomeScreen({ database }: HomeScreenProps) {
-  const { t } = useTranslation();
   const router = useSafeRouter();
   const { refreshing, handleRefresh } = usePullToRefresh({ showFeedback: true, forceSync: true });
   const [isAddPlantModalVisible, setIsAddPlantModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [plantCount, setPlantCount] = useState(0);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<PlantFiltersData>({
+    growthStages: [],
+    healthRange: [0, 100],
+    strainTypes: [],
+    needsAttention: false,
+    sortBy: 'name',
+    sortOrder: 'asc',
+  });
 
   const handleCountChange = (count: number) => {
     setPlantCount(count);
@@ -50,6 +61,37 @@ function HomeScreen({ database }: HomeScreenProps) {
     setIsFabMenuOpen(false);
     router.push(route);
   };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleFilterPress = () => {
+    setShowFilters(true);
+  };
+
+  const handleFiltersApply = (filters: PlantFiltersData) => {
+    setActiveFilters(filters);
+    setShowFilters(false);
+  };
+
+  const handleClearAllFilters = () => {
+    setActiveFilters({
+      growthStages: [],
+      healthRange: [0, 100],
+      strainTypes: [],
+      needsAttention: false,
+      sortBy: 'name',
+      sortOrder: 'asc',
+    });
+  };
+
+  const hasActiveFilters = 
+    activeFilters.growthStages.length > 0 ||
+    activeFilters.strainTypes.length > 0 ||
+    activeFilters.needsAttention ||
+    activeFilters.healthRange[0] > 0 ||
+    activeFilters.healthRange[1] < 100;
 
   type IconName =
     | 'default'
@@ -97,17 +139,29 @@ function HomeScreen({ database }: HomeScreenProps) {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100 dark:bg-neutral-900">
-
-      
-      <EnhancedPlantList
-        database={database}
-        isLoading={isLoading}
-        onCountChange={handleCountChange}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        ListHeaderComponent={<HomeHeader plantCount={plantCount} />}
-        contentContainerStyle={{ paddingBottom: isFabMenuOpen ? 180 : 80 }}
-      />
+      <ThemedView className="flex-1">
+        {/* Header */}
+        <HomeHeader plantCount={plantCount} />
+        
+        {/* Search Bar */}
+        <PlantSearchBar
+          onSearchChange={handleSearchChange}
+          onFilterPress={handleFilterPress}
+          showFilterBadge={hasActiveFilters}
+        />
+        
+        {/* Plant List */}
+        <EnhancedPlantList
+          database={database}
+          isLoading={isLoading}
+          onCountChange={handleCountChange}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          searchQuery={searchQuery}
+          filters={activeFilters}
+          contentContainerStyle={{ paddingBottom: isFabMenuOpen ? 180 : 80 }}
+        />
+      </ThemedView>
 
       {/* Floating Action Button and Menu */}
       {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
@@ -151,6 +205,15 @@ function HomeScreen({ database }: HomeScreenProps) {
         visible={isAddPlantModalVisible}
         onClose={() => setIsAddPlantModalVisible(false)}
         onSuccess={handleAddPlantSuccess}
+      />
+
+      {/* Filters Modal */}
+      <PlantFilters
+        visible={showFilters}
+        filters={activeFilters}
+        onFiltersChange={handleFiltersApply}
+        onClearAll={handleClearAllFilters}
+        onClose={() => setShowFilters(false)}
       />
     </SafeAreaView>
   );

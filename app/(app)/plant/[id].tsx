@@ -1,4 +1,4 @@
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback } from 'react';
@@ -16,6 +16,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 // Modern animation imports
 import {
@@ -30,13 +31,28 @@ import { PlantDetailRow } from '../../../components/plant-detail/PlantDetailRow'
 import { PlantHeader } from '../../../components/plant-detail/PlantHeader';
 import { PlantHeroImage } from '../../../components/plant-detail/PlantHeroImage';
 import { PlantInfoCard } from '../../../components/plant-detail/PlantInfoCard';
+import { PhotoGallery } from '../../../components/plant-gallery/PhotoGallery';
+import { PhotoViewer } from '../../../components/plant-gallery/PhotoViewer';
+import { PhotoUploadModal } from '../../../components/plant-gallery/PhotoUploadModal';
 import { OptimizedIcon, IconName } from '../../../components/ui/OptimizedIcon';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
 import { Plant } from '../../../lib/models/Plant';
+import { PlantPhoto } from '../../../lib/models/PlantPhoto';
 import { formatDate, formatBoolean, formatNumber } from '../../../screens/plantHelpers';
 import { useDatabase } from '../../../lib/contexts/DatabaseProvider';
+
+// Types
+interface PhotoUploadData {
+  imageUrl: string;
+  thumbnailUrl?: string;
+  caption?: string;
+  growthStage: string;
+  width?: number;
+  height?: number;
+  fileSize?: number;
+}
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -98,6 +114,104 @@ function AnimatedNavButton({
 // Base component receiving the plant observable
 function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
   const { sync, database } = useWatermelon();
+  const { t } = useTranslation();
+  const [photos, setPhotos] = React.useState<PlantPhoto[]>([]);
+  const [showPhotoViewer, setShowPhotoViewer] = React.useState(false);
+  const [showPhotoUpload, setShowPhotoUpload] = React.useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = React.useState(0);
+
+  // Load plant photos
+  React.useEffect(() => {
+    if (!plant || !database) return;
+
+    const loadPhotos = async () => {
+      try {
+        const plantPhotos = await (database.collections
+          .get('plant_photos') as unknown as {
+            query: (...args: unknown[]) => { fetch: () => Promise<PlantPhoto[]> }
+          })
+          .query(
+            Q.where('plant_id', plant.id),
+            Q.where('is_deleted', Q.notEq(true)),
+            Q.sortBy('taken_at', Q.desc)
+          )
+          .fetch();
+        setPhotos(plantPhotos);
+      } catch (error) {
+        console.error('Error loading photos:', error);
+      }
+    };
+
+    loadPhotos();
+
+    // Set up subscription for real-time updates
+    const subscription = (database.collections
+      .get('plant_photos') as unknown as {
+        query: (...args: unknown[]) => { observe: () => { subscribe: (callback: (photos: PlantPhoto[]) => void) => { unsubscribe: () => void } } }
+      })
+      .query(
+        Q.where('plant_id', plant.id),
+        Q.where('is_deleted', Q.notEq(true)),
+        Q.sortBy('taken_at', Q.desc)
+      )
+      .observe()
+      .subscribe((newPhotos: PlantPhoto[]) => setPhotos(newPhotos));
+
+    return () => subscription.unsubscribe();
+  }, [plant, database]);
+
+  const handlePhotoPress = useCallback((photo: PlantPhoto, index: number) => {
+    setSelectedPhotoIndex(index);
+    setShowPhotoViewer(true);
+  }, []);
+
+  const handleAddPhoto = useCallback(() => {
+    setShowPhotoUpload(true);
+  }, []);
+
+  const handlePhotoUpload = useCallback(async (photoData: PhotoUploadData) => {
+    if (!plant || !database) return;
+
+    try {
+      await database.write(async () => {
+        const photosCollection = (database.collections.get('plant_photos') as unknown as {
+          create: (callback: (photo: PlantPhoto) => void) => Promise<PlantPhoto>
+        });
+        await photosCollection.create((photo: PlantPhoto) => {
+          photo.plantId = plant.id;
+          photo.imageUrl = photoData.imageUrl;
+          photo.thumbnailUrl = photoData.thumbnailUrl;
+          photo.caption = photoData.caption;
+          photo.growthStage = photoData.growthStage || plant.growthStage;
+          photo.fileSize = photoData.fileSize;
+          photo.width = photoData.width;
+          photo.height = photoData.height;
+        });
+      });
+      setShowPhotoUpload(false);
+    } catch (error) {
+      console.error('Error saving photo:', error);
+      Alert.alert('Error', 'Failed to save photo');
+    }
+  }, [plant, database]);
+
+  const handlePhotoDelete = useCallback(async (photoId: string) => {
+    if (!database) return;
+
+    try {
+      await database.write(async () => {
+        const photo = await (database.collections.get('plant_photos') as unknown as {
+          find: (id: string) => Promise<PlantPhoto>
+        }).find(photoId);
+        await photo.update((p: PlantPhoto) => {
+          p.isDeleted = true;
+        });
+      });
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      Alert.alert('Error', 'Failed to delete photo');
+    }
+  }, [database]);
 
   const handleDelete = async () => {
     if (!plant) return;
@@ -152,10 +266,10 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
             </View>
             <Animated.View entering={FadeInUp.delay(200).duration(600)}>
               <ThemedText variant="heading" className="mb-2 text-center text-xl font-bold">
-                Loading Plant Details
+                {t('plants.detail.loadingTitle')}
               </ThemedText>
               <ThemedText variant="muted" className="max-w-xs text-center">
-                Fetching your plant information...
+                {t('plants.detail.loadingSubtitle')}
               </ThemedText>
             </Animated.View>
             <Animated.View entering={FadeInUp.delay(400).duration(600)} className="mt-8">
@@ -232,9 +346,21 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
             </PlantInfoCard>
           </Animated.View>
 
+          {/* Photo Gallery Card */}
+          <Animated.View entering={FadeInDown.delay(800).duration(600)}>
+            <PlantInfoCard title="Photo Gallery">
+              <PhotoGallery
+                plantId={plant.id}
+                photos={photos}
+                onPhotoPress={handlePhotoPress}
+                onAddPhoto={handleAddPhoto}
+              />
+            </PlantInfoCard>
+          </Animated.View>
+
           {/* Notes Card with conditional rendering and animation */}
           {plant.notes && plant.notes.trim() !== '' && (
-            <Animated.View entering={FadeInDown.delay(800).duration(600)}>
+            <Animated.View entering={FadeInDown.delay(1000).duration(600)}>
               <PlantInfoCard title="Notes">
                 <ThemedText className="text-base leading-relaxed text-neutral-700 dark:text-neutral-200">
                   {plant.notes}
@@ -244,13 +370,30 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
           )}
 
           {/* Actions Card with final staggered entrance */}
-          <Animated.View entering={FadeInDown.delay(1000).duration(600)}>
+          <Animated.View entering={FadeInDown.delay(1200).duration(600)}>
             <PlantActions plantId={plant.id} onDelete={handleDelete} />
           </Animated.View>
         </View>
       </ScrollView>
 
       <SafeAreaView edges={['bottom']} />
+
+      {/* Photo Viewer Modal */}
+      <PhotoViewer
+        photos={photos}
+        initialIndex={selectedPhotoIndex}
+        visible={showPhotoViewer}
+        onClose={() => setShowPhotoViewer(false)}
+        onDelete={handlePhotoDelete}
+      />
+
+      {/* Photo Upload Modal */}
+      <PhotoUploadModal
+        visible={showPhotoUpload}
+        plantId={plant.id}
+        onClose={() => setShowPhotoUpload(false)}
+        onPhotoUploaded={handlePhotoUpload}
+      />
     </ThemedView>
   );
 }
@@ -260,7 +403,7 @@ const PlantDetailsWithDB = withDatabase(PlantDetailsScreenBase);
 
 const PlantDetailsEnhanced = withObservables(
   ['route', 'database'],
-  ({ database, route }: { database: Database; route: any }) => {
+  ({ database, route }: { database: Database; route: { params: { id: string } } }) => {
     const id = route?.params?.id as string | undefined;
 
     if (!database || !id) {
@@ -272,7 +415,9 @@ const PlantDetailsEnhanced = withObservables(
     }
 
     try {
-      const plantObservable = database.collections.get<Plant>('plants').findAndObserve(id);
+      const plantObservable = (database.collections.get('plants') as unknown as {
+        findAndObserve: (id: string) => unknown
+      }).findAndObserve(id);
       return { plant: plantObservable };
     } catch (error) {
       console.error(`[withObservables] Error observing plant with ID ${id}:`, error);
@@ -286,6 +431,7 @@ export default function PlantDetailsWrapper() {
   const params = useLocalSearchParams();
   const id = params.id as string;
   const { database } = useDatabase();
+  const { t } = useTranslation();
 
   if (!database) {
     // Simple fallback while database is initializing
@@ -311,10 +457,10 @@ export default function PlantDetailsWrapper() {
             </View>
             <Animated.View entering={FadeInUp.delay(200).duration(600)}>
               <ThemedText variant="heading" className="mb-2 text-center text-xl font-bold">
-                Missing Information
+                {t('plants.detail.missingInfoTitle')}
               </ThemedText>
               <ThemedText variant="muted" className="max-w-xs text-center">
-                No Plant ID was provided to view details.
+                {t('plants.detail.missingInfoSubtitle')}
               </ThemedText>
             </Animated.View>
             <Animated.View entering={FadeInUp.delay(400).duration(600)} className="mt-8">

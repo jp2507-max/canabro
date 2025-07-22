@@ -406,7 +406,13 @@
     "growJournal": "Grow Journal",
     "metrics": "Metrics",
     "comingSoon": "Coming Soon",
-    "deletePlant": "Delete Plant"
+    "deletePlant": "Delete Plant",
+    "detail": {
+      "loadingTitle": "Loading Plant Details",
+      "loadingSubtitle": "Fetching your plant information...",
+      "missingInfoTitle": "Missing Information",
+      "missingInfoSubtitle": "No Plant ID was provided to view details."
+    }
   },
   "tasks": {
     "taskType": "Task Type",

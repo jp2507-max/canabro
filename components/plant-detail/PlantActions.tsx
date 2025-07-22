@@ -4,8 +4,8 @@ import {
   triggerWarningHaptic,
 } from '@/lib/utils/haptics';
 import { router } from 'expo-router';
-import React, { useCallback } from 'react';
-import { View, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Alert, Modal } from 'react-native';
 import { useTranslation } from 'react-i18next';
 // Modern animation imports
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -21,6 +21,11 @@ import Animated, {
 import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
+import { MetricsInputForm } from '../plant-metrics/MetricsInputForm';
+import { HarvestForm } from '../plant-harvest/HarvestForm';
+import { useDatabase } from '@/lib/contexts/DatabaseProvider';
+import { Plant } from '@/lib/models/Plant';
+import { PlantMetrics } from '@/lib/models/PlantMetrics';
 
 interface PlantActionsProps {
   plantId: string;
@@ -137,6 +142,25 @@ function ActionItem({
 
 export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
   const { t } = useTranslation('plants');
+  const { database } = useDatabase();
+  const [showMetricsModal, setShowMetricsModal] = useState(false);
+  const [showHarvestModal, setShowHarvestModal] = useState(false);
+  const [plant, setPlant] = useState<Plant | null>(null);
+
+  // Load plant data when modals are opened
+  React.useEffect(() => {
+    if ((showMetricsModal || showHarvestModal) && database) {
+      const loadPlant = async () => {
+        try {
+          const plantRecord = await database.collections.get<Plant>('plants').find(plantId);
+          setPlant(plantRecord);
+        } catch (error) {
+          console.error('Error loading plant:', error);
+        }
+      };
+      loadPlant();
+    }
+  }, [showMetricsModal, showHarvestModal, database, plantId]);
   
   const handleGrowJournal = useCallback(() => {
     triggerMediumHaptic();
@@ -147,9 +171,91 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
   }, [plantId]);
 
   const handleMetrics = useCallback(() => {
-    triggerWarningHaptic();
-    Alert.alert(t('comingSoon'), 'Plant metrics tracking will be available soon.');
-  }, [t]);
+    triggerMediumHaptic();
+    setShowMetricsModal(true);
+  }, []);
+
+  const handleHarvest = useCallback(() => {
+    triggerMediumHaptic();
+    setShowHarvestModal(true);
+  }, []);
+
+  const handleMetricsSubmit = useCallback(async (data: any) => {
+    if (!database || !plant) return;
+    
+    try {
+      await database.write(async () => {
+        // Update plant with basic metrics
+        await plant.update((p) => {
+          if (data.healthPercentage !== undefined) p.healthPercentage = data.healthPercentage;
+          if (data.nextWateringDays !== undefined) p.nextWateringDays = data.nextWateringDays;
+          if (data.nextNutrientDays !== undefined) p.nextNutrientDays = data.nextNutrientDays;
+          if (data.height !== undefined) p.height = data.height;
+          if (data.nodeCount !== undefined) p.nodeCount = data.nodeCount;
+          if (data.stemDiameter !== undefined) p.stemDiameter = data.stemDiameter;
+          if (data.phLevel !== undefined) p.phLevel = data.phLevel;
+          if (data.ecPpm !== undefined) p.ecPpm = data.ecPpm;
+          if (data.temperature !== undefined) p.temperature = data.temperature;
+          if (data.humidity !== undefined) p.humidity = data.humidity;
+          if (data.vpd !== undefined) p.vpd = data.vpd;
+          if (data.trichomeStatus !== undefined) p.trichomeStatus = data.trichomeStatus;
+          if (data.pistilBrownPercentage !== undefined) p.pistilBrownPercentage = data.pistilBrownPercentage;
+          if (data.budDensity !== undefined) p.budDensity = data.budDensity;
+        });
+
+        // Create metrics record
+        const metricsCollection = database.collections.get<PlantMetrics>('plant_metrics');
+        await metricsCollection.create((metrics) => {
+          metrics.plantId = plantId;
+          metrics.healthPercentage = data.healthPercentage;
+          metrics.nextWateringDays = data.nextWateringDays;
+          metrics.nextNutrientDays = data.nextNutrientDays;
+          metrics.height = data.height;
+          metrics.heightUnit = data.heightUnit;
+          metrics.nodeCount = data.nodeCount;
+          metrics.stemDiameter = data.stemDiameter;
+          metrics.phLevel = data.phLevel;
+          metrics.ecPpm = data.ecPpm;
+          metrics.temperature = data.temperature;
+          metrics.temperatureUnit = data.temperatureUnit;
+          metrics.humidity = data.humidity;
+          metrics.vpd = data.vpd;
+          metrics.trichomeStatus = data.trichomeStatus;
+          metrics.pistilBrownPercentage = data.pistilBrownPercentage;
+          metrics.budDensity = data.budDensity;
+          metrics.notes = data.notes;
+        });
+      });
+
+      setShowMetricsModal(false);
+      Alert.alert(t('success'), t('metricsUpdated'));
+    } catch (error) {
+      console.error('Error saving metrics:', error);
+      Alert.alert(t('error'), t('failedToSaveMetrics'));
+    }
+  }, [database, plant, plantId, t]);
+
+  const handleHarvestSubmit = useCallback(async (data: any) => {
+    if (!database || !plant) return;
+    
+    try {
+      await database.write(async () => {
+        await plant.update((p) => {
+          p.wetWeight = data.wet_weight;
+          p.dryWeight = data.dry_weight;
+          p.trimWeight = data.trim_weight;
+          p.harvestDate = data.harvest_date;
+          p.growthStage = 'harvest';
+        });
+      });
+
+      setShowHarvestModal(false);
+      Alert.alert(t('success'), t('harvestRecorded'));
+    } catch (error) {
+      console.error('Error saving harvest:', error);
+      Alert.alert(t('error'), t('failedToSaveHarvest'));
+    }
+  }, [database, plant, t]);
 
   const handleDelete = useCallback(() => {
     triggerWarningHaptic();
@@ -157,26 +263,73 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
   }, [onDelete]);
 
   return (
-    <ThemedView variant="card" className="mb-4 mt-2 rounded-3xl p-2 shadow-lg">
-      <ActionItem iconName="journal-outline" label={t('growJournal')} onPress={handleGrowJournal} />
+    <>
+      <ThemedView variant="card" className="mb-4 mt-2 rounded-3xl p-2 shadow-lg">
+        <ActionItem iconName="journal-outline" label={t('growJournal')} onPress={handleGrowJournal} />
 
-      <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
+        <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
 
-      <ActionItem
-        iconName="stats-chart-outline"
-        label={t('metrics')}
-        onPress={handleMetrics}
-        subLabel={t('comingSoon')}
-      />
+        <ActionItem
+          iconName="stats-chart-outline"
+          label={t('metrics')}
+          onPress={handleMetrics}
+          subLabel={t('trackPlantHealth')}
+        />
 
-      <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
+        <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
 
-      <ActionItem
-        iconName="trash-outline"
-        label={t('deletePlant')}
-        onPress={handleDelete}
-        isDestructive
-      />
-    </ThemedView>
+        <ActionItem
+          iconName="leaf-outline"
+          label={t('harvest')}
+          onPress={handleHarvest}
+          subLabel={t('recordHarvestData')}
+        />
+
+        <View className="mx-4 h-px bg-neutral-200 dark:bg-neutral-700" />
+
+        <ActionItem
+          iconName="trash-outline"
+          label={t('deletePlant')}
+          onPress={handleDelete}
+          isDestructive
+        />
+      </ThemedView>
+
+      {/* Metrics Modal */}
+      <Modal
+        visible={showMetricsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowMetricsModal(false)}
+      >
+        <ThemedView className="flex-1">
+          {plant && (
+            <MetricsInputForm
+              plantId={plantId}
+              onSubmit={handleMetricsSubmit}
+              onCancel={() => setShowMetricsModal(false)}
+            />
+          )}
+        </ThemedView>
+      </Modal>
+
+      {/* Harvest Modal */}
+      <Modal
+        visible={showHarvestModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowHarvestModal(false)}
+      >
+        <ThemedView className="flex-1">
+          {plant && (
+            <HarvestForm
+              plant={plant}
+              onSubmit={handleHarvestSubmit}
+              onCancel={() => setShowHarvestModal(false)}
+            />
+          )}
+        </ThemedView>
+      </Modal>
+    </>
   );
 }
