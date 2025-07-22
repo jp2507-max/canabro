@@ -87,15 +87,37 @@ export async function deleteRecord<T extends Model>(
 }
 
 /**
- * Type-safe soft delete operation (mark as deleted)
+ * Type guard to check if a model supports soft delete
  */
-export async function softDeleteRecord<T extends Model>(
+function isSoftDeletable<T extends Model>(
+  model: T
+): model is T & { isDeleted: boolean } {
+  return 'isDeleted' in model && typeof (model as unknown as { isDeleted: unknown }).isDeleted === 'boolean';
+}
+
+/**
+ * Interface for models that support soft delete
+ */
+export interface SoftDeletableModel extends Model {
+  isDeleted: boolean;
+  update: (updater: (record: this) => void) => Promise<this>;
+}
+
+/**
+ * Type-safe soft delete operation (mark as deleted)
+ * Only works with models that have an isDeleted field
+ */
+export async function softDeleteRecord<T extends SoftDeletableModel>(
   database: Database,
   record: T
 ): Promise<T> {
+  if (!isSoftDeletable(record)) {
+    throw new Error('Record does not support soft delete - missing isDeleted property');
+  }
+
   return await database.write(async () => {
-    return await record.update((r: T) => {
-      (r as T & { isDeleted?: boolean }).isDeleted = true;
+    return await record.update((r) => {
+      r.isDeleted = true;
     });
   });
 }

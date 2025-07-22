@@ -207,23 +207,23 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
         const metricsCollection = database.collections.get<PlantMetrics>('plant_metrics');
         await metricsCollection.create((metrics) => {
           metrics.plantId = plantId;
-          metrics.healthPercentage = data.healthPercentage;
-          metrics.nextWateringDays = data.nextWateringDays;
-          metrics.nextNutrientDays = data.nextNutrientDays;
-          metrics.height = data.height;
-          metrics.heightUnit = data.heightUnit;
-          metrics.nodeCount = data.nodeCount;
-          metrics.stemDiameter = data.stemDiameter;
-          metrics.phLevel = data.phLevel;
-          metrics.ecPpm = data.ecPpm;
-          metrics.temperature = data.temperature;
-          metrics.temperatureUnit = data.temperatureUnit;
-          metrics.humidity = data.humidity;
-          metrics.vpd = data.vpd;
-          metrics.trichomeStatus = data.trichomeStatus;
-          metrics.pistilBrownPercentage = data.pistilBrownPercentage;
-          metrics.budDensity = data.budDensity;
-          metrics.notes = data.notes;
+          if (data.healthPercentage !== undefined) metrics.healthPercentage = data.healthPercentage;
+          if (data.nextWateringDays !== undefined) metrics.nextWateringDays = data.nextWateringDays;
+          if (data.nextNutrientDays !== undefined) metrics.nextNutrientDays = data.nextNutrientDays;
+          if (data.height !== undefined) metrics.height = data.height;
+          if (data.heightUnit !== undefined) metrics.heightUnit = data.heightUnit;
+          if (data.nodeCount !== undefined) metrics.nodeCount = data.nodeCount;
+          if (data.stemDiameter !== undefined) metrics.stemDiameter = data.stemDiameter;
+          if (data.phLevel !== undefined) metrics.phLevel = data.phLevel;
+          if (data.ecPpm !== undefined) metrics.ecPpm = data.ecPpm;
+          if (data.temperature !== undefined) metrics.temperature = data.temperature;
+          if (data.temperatureUnit !== undefined) metrics.temperatureUnit = data.temperatureUnit;
+          if (data.humidity !== undefined) metrics.humidity = data.humidity;
+          if (data.vpd !== undefined) metrics.vpd = data.vpd;
+          if (data.trichomeStatus !== undefined) metrics.trichomeStatus = data.trichomeStatus;
+          if (data.pistilBrownPercentage !== undefined) metrics.pistilBrownPercentage = data.pistilBrownPercentage;
+          if (data.budDensity !== undefined) metrics.budDensity = data.budDensity;
+          if (data.notes !== undefined) metrics.notes = data.notes;
         });
       });
 
@@ -241,10 +241,10 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
     try {
       await database.write(async () => {
         await plant.update((p) => {
-          p.wetWeight = data.wet_weight;
-          p.dryWeight = data.dry_weight;
-          p.trimWeight = data.trim_weight;
-          p.harvestDate = data.harvest_date;
+          p.wetWeight = data.wetWeight || data.wet_weight; // Support both formats for backward compatibility
+          p.dryWeight = data.dryWeight || data.dry_weight;
+          p.trimWeight = data.trimWeight || data.trim_weight;
+          p.harvestDate = data.harvestDate || data.harvest_date;
           p.growthStage = 'harvest';
         });
       });

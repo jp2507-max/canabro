@@ -1,5 +1,7 @@
 {
   "common": {
+    "metricsUpdated": "Plant metrics updated successfully!",
+    "failedToSaveMetrics": "Failed to save plant metrics. Please try again.",
     "welcome": "Welcome",
     "justNow": "Just now",
     "minutesAgo": "{{count}}m ago",
@@ -821,6 +823,8 @@
       "message": "{{metric}}: {{value}}{{unit}} on {{date}}"
     }
   },
+  "harvestRecorded": "Harvest data has been successfully recorded!",
+  "failedToSaveHarvest": "Failed to save harvest data. Please try again.",
   "harvestForm": {
     "title": "Record Harvest",
     "subtitle": "Record harvest data for {{plantName}}",

@@ -190,7 +190,8 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
         const photosCollection = getCollection<PlantPhoto>(database, 'plant_photos');
         const photo = await photosCollection.find(photoId);
         await photo.update((p: PlantPhoto) => {
-          p.isDeleted = true;
+          // Use the correct field name that matches the database column
+          p.isDeleted = true; // This will be mapped to 'is_deleted' in the database
         });
       });
     } catch (error) {

@@ -1,5 +1,7 @@
 {
   "common": {
+    "metricsUpdated": "Pflanzenmetriken erfolgreich aktualisiert!",
+    "failedToSaveMetrics": "Speichern der Pflanzenmetriken fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "welcome": "Willkommen",
     "justNow": "Gerade eben",
     "minutesAgo": "vor {{count}}m",
@@ -682,6 +684,8 @@
       "message": "{{metric}}: {{value}}{{unit}} am {{date}}"
     }
   },
+  "harvestRecorded": "Erntedaten wurden erfolgreich gespeichert!",
+  "failedToSaveHarvest": "Speichern der Erntedaten fehlgeschlagen. Bitte versuchen Sie es erneut.",
   "harvestForm": {
     "title": "Ernte erfassen",
     "subtitle": "Erntedaten für {{plantName}} erfassen",
