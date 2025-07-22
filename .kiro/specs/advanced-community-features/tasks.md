@@ -7,7 +7,7 @@
   - Create CommunityEvent model for live community activities
   - Write database migration scripts for new tables and relationships
   - Set up Supabase Realtime subscriptions for live updates
-  - _Requirements: 1.1, 1.2, 2.1, 3.1, 4.1, 5.1_
+  - _Requirements: 1, 2, 3, 4, 5, 6_
 
 - [ ] 2. Implement real-time messaging system
 - [ ] 2.1 Create DirectMessaging component for private conversations
@@ -16,7 +16,7 @@
   - Add message status indicators (sent, delivered, read)
   - Create typing indicators and online presence display
   - Integrate with existing user authentication and profiles
-  - _Requirements: 1.1, 1.2, 1.3, 1.4_
+  - _Requirements: 1_
 
 - [ ] 2.2 Create GroupChat component for community discussions
   - Build group conversation interface with member management
@@ -24,7 +24,7 @@
   - Add group admin controls and moderation features
   - Create group invitation and joining system
   - Use existing ThemedView and EnhancedTextInput components
-  - _Requirements: 1.1, 1.2, 1.5_
+  - _Requirements: 1_
 
 - [ ] 2.3 Implement MessageComposer with rich content support
   - Build enhanced message input with photo and file attachments
@@ -32,7 +32,7 @@
   - Implement message formatting (bold, italic, mentions)
   - Create voice message recording and playback
   - Integrate with existing image handling utilities
-  - _Requirements: 1.3, 1.4, 1.5_
+  - _Requirements: 1_
 
 - [ ] 3. Build live notification system
 - [ ] 3.1 Create LiveNotificationCenter for real-time alerts
@@ -41,7 +41,7 @@
   - Add notification categorization and priority handling
   - Create notification history and management interface
   - Integrate with existing push notification system
-  - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - _Requirements: 2_
 
 - [ ] 3.2 Implement NotificationPreferences for user control
   - Build comprehensive notification settings interface
@@ -49,7 +49,7 @@
   - Implement quiet hours and do-not-disturb functionality
   - Create notification frequency and batching controls
   - Use existing settings and profile management patterns
-  - _Requirements: 2.2, 2.5_
+  - _Requirements: 2_
 
 - [ ] 3.3 Create ActivityFeed for community engagement tracking
   - Build real-time activity feed with live updates
@@ -57,7 +57,7 @@
   - Add engagement metrics and trending content detection
   - Create activity notification triggers and rules
   - Integrate with existing community post and interaction systems
-  - _Requirements: 2.1, 2.3, 2.4_
+  - _Requirements: 2_
 
 - [ ] 4. Implement advanced content filtering and moderation
 - [ ] 4.1 Create ContentModerationSystem for automated filtering
@@ -66,7 +66,7 @@
   - Add image content moderation using AI analysis
   - Create automated action system (flag, hide, remove)
   - Integrate with existing community posting and content systems
-  - _Requirements: 3.1, 3.2, 3.3_
+  - _Requirements: 3_
 
 - [ ] 4.2 Create ModerationDashboard for community management
   - Build moderation interface for community managers
@@ -74,7 +74,7 @@
   - Add user management tools (warnings, suspensions, bans)
   - Create moderation analytics and reporting
   - Use existing admin interface patterns and permissions
-  - _Requirements: 3.2, 3.4, 3.5_
+  - _Requirements: 3_
 
 - [ ] 4.3 Implement UserReporting system for community policing
   - Build user reporting interface for inappropriate content
@@ -82,7 +82,7 @@
   - Implement community-based content review
   - Add appeal system for moderation actions
   - Integrate with existing user profiles and community features
-  - _Requirements: 3.1, 3.3, 3.5_
+  - _Requirements: 3_
 
 - [ ] 5. Build enhanced social features
 - [ ] 5.1 Create UserFollowing system for social connections
@@ -91,7 +91,7 @@
   - Add follow notifications and activity updates
   - Create follower discovery and recommendation system
   - Integrate with existing user profiles and community interactions
-  - _Requirements: 4.1, 4.2, 4.3_
+  - _Requirements: 4_
 
 - [ ] 5.2 Implement SocialGroups for interest-based communities
   - Build group creation and management interface
@@ -99,7 +99,7 @@
   - Implement group-specific content and discussions
   - Add group moderation and admin controls
   - Use existing community patterns and group management
-  - _Requirements: 4.1, 4.4, 4.5_
+  - _Requirements: 4_
 
 - [ ] 5.3 Create UserAchievements and gamification system
   - Build achievement system for community participation
@@ -107,7 +107,7 @@
   - Add badges and recognition for helpful contributions
   - Create achievement notifications and celebrations
   - Integrate with existing user profiles and activity tracking
-  - _Requirements: 4.2, 4.3_
+  - _Requirements: 4_
 
 - [ ] 6. Implement live community events and features
 - [ ] 6.1 Create LiveEvents system for community gatherings
@@ -116,7 +116,7 @@
   - Add event notifications and reminder system
   - Create event participation tracking and analytics
   - Integrate with existing calendar and notification systems
-  - _Requirements: 5.1, 5.2, 5.3_
+  - _Requirements: 5_
 
 - [ ] 6.2 Implement LiveDiscussions for real-time conversations
   - Build live discussion rooms with real-time chat
@@ -124,7 +124,7 @@
   - Add participant management and speaking permissions
   - Implement discussion recording and replay functionality
   - Use existing messaging and real-time infrastructure
-  - _Requirements: 5.1, 5.4, 5.5_
+  - _Requirements: 5_
 
 - [ ] 6.3 Create CommunityPolls for collective decision making
   - Build poll creation and voting interface
@@ -132,7 +132,7 @@
   - Add poll analytics and participation tracking
   - Create poll notifications and engagement features
   - Integrate with existing community posting and interaction systems
-  - _Requirements: 5.2, 5.3, 5.4_
+  - _Requirements: 5_
 
 - [ ] 7. Build advanced search and discovery features
 - [ ] 7.1 Create AdvancedSearch for comprehensive content discovery
@@ -141,7 +141,7 @@
   - Add search result ranking and relevance scoring
   - Create saved searches and search alerts
   - Integrate with existing search patterns and knowledge base
-  - _Requirements: 6.1, 6.2, 6.3_
+  - _Requirements: 6_
 
 - [ ] 7.2 Implement ContentRecommendations for personalized discovery
   - Build recommendation engine based on user interests and activity
@@ -149,7 +149,7 @@
   - Implement trending content detection and promotion
   - Add recommendation explanation and feedback system
   - Use existing user behavior tracking and analytics
-  - _Requirements: 6.1, 6.4, 6.5_
+  - _Requirements: 6_
 
 - [ ] 7.3 Create TopicTrending for community interest tracking
   - Build trending topic detection and display system
@@ -157,7 +157,7 @@
   - Add topic following and notification system
   - Create topic analytics and engagement metrics
   - Integrate with existing tagging and categorization systems
-  - _Requirements: 6.2, 6.3, 6.4_
+  - _Requirements: 6_
 
 - [ ] 8. Performance optimization and testing
 - [ ] 8.1 Optimize real-time performance and scalability
@@ -166,7 +166,7 @@
   - Add connection retry logic and offline message queuing
   - Optimize database queries for real-time operations
   - Test performance with large user bases and high message volumes
-  - _Requirements: 1.1, 1.2, 2.1_
+  - _Requirements: 1, 2_
 
 - [ ] 8.2 Implement caching and data synchronization
   - Create intelligent caching strategy for frequently accessed content
@@ -174,7 +174,7 @@
   - Add conflict resolution for concurrent message editing
   - Create data consistency checks and repair mechanisms
   - Test synchronization across multiple devices and platforms
-  - _Requirements: 1.1, 2.1, 2.2_
+  - _Requirements: 1, 2_
 
 - [ ] 8.3 Test community features integration and user experience
   - Verify real-time messaging reliability and message delivery
@@ -182,4 +182,4 @@
   - Validate content moderation effectiveness and accuracy
   - Test social features engagement and user adoption
   - Perform end-to-end community workflow testing
-  - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 6.1_
+  - _Requirements: 1, 2, 3, 4, 5, 6_

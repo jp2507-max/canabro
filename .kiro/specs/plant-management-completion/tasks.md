@@ -42,6 +42,24 @@
   - Create CareReminder model with scheduling capabilities
   - Add new fields to existing Plant model (node_count, stem_diameter, ph_level, etc.)
   - Write database migration scripts for new tables and fields
+  - **Migration Rollback Strategy:**
+    - Create rollback scripts for each migration with DROP TABLE and ALTER TABLE statements
+    - Test rollback procedures in development environment before production deployment
+    - Document rollback order and dependencies between migrations
+    - Implement migration version tracking to enable selective rollbacks
+    - Create backup procedures before applying migrations in production
+  - **Data Seeding Strategy:**
+    - Create seed data for default growth stages (seedling, vegetative, flowering, harvest)
+    - Seed default care reminder templates (watering, feeding, pruning, inspection)
+    - Add sample strain data for autocomplete functionality
+    - Create default metric ranges and optimal values for VPD calculations
+    - Implement seeding scripts that check for existing data to prevent duplicates
+    - Add development-only sample plant data for testing purposes
+  - **Production Readiness:**
+    - Validate all foreign key constraints and relationships
+    - Test migration performance with large datasets
+    - Verify data integrity after migrations complete
+    - Create monitoring for migration success/failure in production
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5_
 
 - [x] 2. Implement photo gallery system

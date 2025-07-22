@@ -32,7 +32,6 @@ export interface Plant {
 interface PlantCardProps {
   plant: Plant;
   onPress?: (plantId: string) => void;
-  searchQuery?: string;
 }
 
 const StyledReanimatedImage = Animated.createAnimatedComponent(ExpoImage);

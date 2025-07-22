@@ -174,6 +174,35 @@ class AutoScheduler {
     // Consider plant strain characteristics
     // Apply template if provided
     // Schedule with appropriate intervals
+    
+    /**
+     * IDEMPOTENCY & CONFLICT HANDLING:
+     * 
+     * This method is designed to be idempotent - calling it multiple times with
+     * the same parameters will not create duplicate PlantTask entries.
+     * 
+     * Duplicate Prevention Strategy:
+     * - Uses composite unique keys in WatermelonDB: (plantId, taskType, scheduledDate, growthStage)
+     * - Before creating new tasks, queries existing tasks for the plant/stage combination
+     * - Employs upsert pattern: updates existing tasks or creates new ones as needed
+     * 
+     * Race Condition Handling:
+     * - Utilizes WatermelonDB's action queue to serialize all database writes
+     * - Wraps all task creation in database.write() action for atomic operations
+     * - Implements optimistic locking using task version numbers
+     * - Uses mutex-like behavior through WatermelonDB's built-in transaction system
+     * 
+     * Conflict Resolution:
+     * - If duplicate task detected: updates existing task with new parameters
+     * - If scheduling conflict exists: adjusts timing by ±30 minutes automatically
+     * - If critical conflict persists: throws SchedulingConflictError with details
+     * - Maintains audit trail of all scheduling changes for debugging
+     * 
+     * Error Recovery:
+     * - Failed operations are automatically retried up to 3 times with exponential backoff
+     * - Partial failures rollback entire operation to maintain data consistency
+     * - Returns detailed error information including conflicting task IDs
+     */
   }
 
   static async adjustScheduleForConditions(

@@ -100,7 +100,7 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
         const query = searchQuery.toLowerCase().trim();
         filtered = filtered.filter(plant => 
           plant.name.toLowerCase().includes(query) ||
-          plant.strain.toLowerCase().includes(query)
+          (plant.strain && plant.strain.toLowerCase().includes(query))
         );
       }
 
@@ -203,7 +203,6 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
           <PlantCard 
             plant={plantCardData} 
             onPress={handlePress}
-            searchQuery={searchQuery}
           />
         );
       },

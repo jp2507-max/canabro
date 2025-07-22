@@ -1,4 +1,4 @@
-import { Database, Q } from '@nozbe/watermelondb';
+import { Database } from '@nozbe/watermelondb';
 import { withDatabase, withObservables } from '@nozbe/watermelondb/react';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback } from 'react';
@@ -17,6 +17,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+
+import { getCollection, PlantPhotoOperations, createRecord } from '../../../lib/utils/watermelon-helpers';
 
 // Modern animation imports
 import {
@@ -126,16 +128,11 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
 
     const loadPhotos = async () => {
       try {
-        const plantPhotos = await (database.collections
-          .get('plant_photos') as unknown as {
-            query: (...args: unknown[]) => { fetch: () => Promise<PlantPhoto[]> }
-          })
-          .query(
-            Q.where('plant_id', plant.id),
-            Q.where('is_deleted', Q.notEq(true)),
-            Q.sortBy('taken_at', Q.desc)
-          )
-          .fetch();
+        const plantPhotosCollection = getCollection<PlantPhoto>(database, 'plant_photos');
+        const plantPhotos = await PlantPhotoOperations.fetchByPlantId(
+          plantPhotosCollection,
+          plant.id
+        );
         setPhotos(plantPhotos);
       } catch (error) {
         console.error('Error loading photos:', error);
@@ -145,17 +142,11 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
     loadPhotos();
 
     // Set up subscription for real-time updates
-    const subscription = (database.collections
-      .get('plant_photos') as unknown as {
-        query: (...args: unknown[]) => { observe: () => { subscribe: (callback: (photos: PlantPhoto[]) => void) => { unsubscribe: () => void } } }
-      })
-      .query(
-        Q.where('plant_id', plant.id),
-        Q.where('is_deleted', Q.notEq(true)),
-        Q.sortBy('taken_at', Q.desc)
-      )
-      .observe()
-      .subscribe((newPhotos: PlantPhoto[]) => setPhotos(newPhotos));
+    const plantPhotosCollection = getCollection<PlantPhoto>(database, 'plant_photos');
+    const subscription = PlantPhotoOperations.observeByPlantId(
+      plantPhotosCollection,
+      plant.id
+    ).subscribe((newPhotos: PlantPhoto[]) => setPhotos(newPhotos));
 
     return () => subscription.unsubscribe();
   }, [plant, database]);
@@ -173,20 +164,16 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
     if (!plant || !database) return;
 
     try {
-      await database.write(async () => {
-        const photosCollection = (database.collections.get('plant_photos') as unknown as {
-          create: (callback: (photo: PlantPhoto) => void) => Promise<PlantPhoto>
-        });
-        await photosCollection.create((photo: PlantPhoto) => {
-          photo.plantId = plant.id;
-          photo.imageUrl = photoData.imageUrl;
-          photo.thumbnailUrl = photoData.thumbnailUrl;
-          photo.caption = photoData.caption;
-          photo.growthStage = photoData.growthStage || plant.growthStage;
-          photo.fileSize = photoData.fileSize;
-          photo.width = photoData.width;
-          photo.height = photoData.height;
-        });
+      const photosCollection = getCollection<PlantPhoto>(database, 'plant_photos');
+      await createRecord(database, photosCollection, (photo: PlantPhoto) => {
+        photo.plantId = plant.id;
+        photo.imageUrl = photoData.imageUrl;
+        photo.thumbnailUrl = photoData.thumbnailUrl;
+        photo.caption = photoData.caption;
+        photo.growthStage = photoData.growthStage || plant.growthStage;
+        photo.fileSize = photoData.fileSize;
+        photo.width = photoData.width;
+        photo.height = photoData.height;
       });
       setShowPhotoUpload(false);
     } catch (error) {
@@ -200,9 +187,8 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
 
     try {
       await database.write(async () => {
-        const photo = await (database.collections.get('plant_photos') as unknown as {
-          find: (id: string) => Promise<PlantPhoto>
-        }).find(photoId);
+        const photosCollection = getCollection<PlantPhoto>(database, 'plant_photos');
+        const photo = await photosCollection.find(photoId);
         await photo.update((p: PlantPhoto) => {
           p.isDeleted = true;
         });
@@ -415,9 +401,8 @@ const PlantDetailsEnhanced = withObservables(
     }
 
     try {
-      const plantObservable = (database.collections.get('plants') as unknown as {
-        findAndObserve: (id: string) => unknown
-      }).findAndObserve(id);
+      const plantsCollection = getCollection<Plant>(database, 'plants');
+      const plantObservable = plantsCollection.findAndObserve(id);
       return { plant: plantObservable };
     } catch (error) {
       console.error(`[withObservables] Error observing plant with ID ${id}:`, error);

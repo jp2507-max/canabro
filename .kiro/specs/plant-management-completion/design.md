@@ -97,8 +97,8 @@ interface PhotoViewerProps {
 ```
 
 **Design Features:**
-- Full-screen modal with swipe gestures using react-native-gesture-handler
-- Zoom and pan capabilities using existing gesture patterns
+- Full-screen modal with swipe gestures using Gesture.Pan() and GestureDetector
+- Zoom and pan capabilities using Gesture.Pinch() and existing gesture patterns
 - Photo metadata overlay (date, growth stage, caption) using ThemedText
 - Delete functionality with confirmation using existing haptics
 - Smooth transitions with shared element animations

@@ -1,6 +1,5 @@
 import { Database } from '@nozbe/watermelondb';
 import { useState } from 'react';
-import * as React from 'react';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +11,7 @@ import FloatingActionButton from '../../../components/ui/FloatingActionButton';
 import HomeHeader from '../../../components/ui/HomeHeader';
 import ThemedText from '../../../components/ui/ThemedText';
 import ThemedView from '../../../components/ui/ThemedView';
+import { EnhancedKeyboardWrapper } from '../../../components/keyboard/EnhancedKeyboardWrapper';
 
 import usePullToRefresh from '../../../lib/hooks/usePullToRefresh';
 import useWatermelon from '../../../lib/hooks/useWatermelon';
@@ -139,82 +139,84 @@ function HomeScreen({ database }: HomeScreenProps) {
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100 dark:bg-neutral-900">
-      <ThemedView className="flex-1">
-        {/* Header */}
-        <HomeHeader plantCount={plantCount} />
-        
-        {/* Search Bar */}
-        <PlantSearchBar
-          onSearchChange={handleSearchChange}
-          onFilterPress={handleFilterPress}
-          showFilterBadge={hasActiveFilters}
+      <EnhancedKeyboardWrapper>
+        <ThemedView className="flex-1">
+          {/* Header */}
+          <HomeHeader plantCount={plantCount} />
+          
+          {/* Search Bar */}
+          <PlantSearchBar
+            onSearchChange={handleSearchChange}
+            onFilterPress={handleFilterPress}
+            showFilterBadge={hasActiveFilters}
+          />
+          
+          {/* Plant List */}
+          <EnhancedPlantList
+            database={database}
+            isLoading={isLoading}
+            onCountChange={handleCountChange}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            searchQuery={searchQuery}
+            filters={activeFilters}
+            contentContainerStyle={{ paddingBottom: isFabMenuOpen ? 180 : 80 }}
+          />
+        </ThemedView>
+
+        {/* Floating Action Button and Menu */}
+        {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
+        {/* Note: Padding changed from p-4 to p-6 */}
+        <View className="absolute bottom-0 right-0 z-20 items-end p-6">
+          {isFabMenuOpen && (
+            <View className="mb-4 items-end space-y-3">
+              {fabActions.map((action) => (
+                <View key={action.accessibilityLabel} className="flex-row items-center">
+                  {action.label && (
+                    <View className="mr-3 rounded-lg bg-black/70 px-3 py-1.5 shadow-md dark:bg-neutral-700/90">
+                      <ThemedText className="text-xs font-medium text-white">
+                        {action.label}
+                      </ThemedText>
+                    </View>
+                  )}
+                  {/* Individual FABs no longer need absolute positioning as they are in a View container */}
+                  <FloatingActionButton
+                    iconName={action.iconName}
+                    onPress={action.onPress}
+                    accessibilityLabel={action.accessibilityLabel}
+                    size={40} // Smaller size for action buttons - remains 40
+                    className="relative shadow-xl"
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+          {/* Main FAB - also no longer needs absolute positioning if its parent View handles it */}
+          <FloatingActionButton
+            iconName={isFabMenuOpen ? 'close-outline' : 'add-outline'}
+            onPress={() => setIsFabMenuOpen(!isFabMenuOpen)}
+            accessibilityLabel={isFabMenuOpen ? 'Close actions menu' : 'Open actions menu'}
+            size={56} // Adjusted to match calendar screen FAB size
+            className="relative shadow-2xl" // Simplified className, removed redundant rounded-full and background colors
+          />
+        </View>
+
+        {/* Add Plant Modal */}
+        <AddPlantModal
+          visible={isAddPlantModalVisible}
+          onClose={() => setIsAddPlantModalVisible(false)}
+          onSuccess={handleAddPlantSuccess}
         />
-        
-        {/* Plant List */}
-        <EnhancedPlantList
-          database={database}
-          isLoading={isLoading}
-          onCountChange={handleCountChange}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          searchQuery={searchQuery}
+
+        {/* Filters Modal */}
+        <PlantFilters
+          visible={showFilters}
           filters={activeFilters}
-          contentContainerStyle={{ paddingBottom: isFabMenuOpen ? 180 : 80 }}
+          onFiltersChange={handleFiltersApply}
+          onClearAll={handleClearAllFilters}
+          onClose={() => setShowFilters(false)}
         />
-      </ThemedView>
-
-      {/* Floating Action Button and Menu */}
-      {/* Container for FABs to ensure they are positioned correctly relative to each other and the screen edge */}
-      {/* Note: Padding changed from p-4 to p-6 */}
-      <View className="absolute bottom-0 right-0 z-20 items-end p-6">
-        {isFabMenuOpen && (
-          <View className="mb-4 items-end space-y-3">
-            {fabActions.map((action) => (
-              <View key={action.accessibilityLabel} className="flex-row items-center">
-                {action.label && (
-                  <View className="mr-3 rounded-lg bg-black/70 px-3 py-1.5 shadow-md dark:bg-neutral-700/90">
-                    <ThemedText className="text-xs font-medium text-white">
-                      {action.label}
-                    </ThemedText>
-                  </View>
-                )}
-                {/* Individual FABs no longer need absolute positioning as they are in a View container */}
-                <FloatingActionButton
-                  iconName={action.iconName}
-                  onPress={action.onPress}
-                  accessibilityLabel={action.accessibilityLabel}
-                  size={40} // Smaller size for action buttons - remains 40
-                  className="relative shadow-xl"
-                />
-              </View>
-            ))}
-          </View>
-        )}
-        {/* Main FAB - also no longer needs absolute positioning if its parent View handles it */}
-        <FloatingActionButton
-          iconName={isFabMenuOpen ? 'close-outline' : 'add-outline'}
-          onPress={() => setIsFabMenuOpen(!isFabMenuOpen)}
-          accessibilityLabel={isFabMenuOpen ? 'Close actions menu' : 'Open actions menu'}
-          size={56} // Adjusted to match calendar screen FAB size
-          className="relative shadow-2xl" // Simplified className, removed redundant rounded-full and background colors
-        />
-      </View>
-
-      {/* Add Plant Modal */}
-      <AddPlantModal
-        visible={isAddPlantModalVisible}
-        onClose={() => setIsAddPlantModalVisible(false)}
-        onSuccess={handleAddPlantSuccess}
-      />
-
-      {/* Filters Modal */}
-      <PlantFilters
-        visible={showFilters}
-        filters={activeFilters}
-        onFiltersChange={handleFiltersApply}
-        onClearAll={handleClearAllFilters}
-        onClose={() => setShowFilters(false)}
-      />
+      </EnhancedKeyboardWrapper>
     </SafeAreaView>
   );
 }
