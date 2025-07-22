@@ -141,7 +141,7 @@ function ActionItem({
 }
 
 export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
-  const { t } = useTranslation('plants');
+  const { t } = useTranslation(['common', 'plants']);
   const { database } = useDatabase();
   const [showMetricsModal, setShowMetricsModal] = useState(false);
   const [showHarvestModal, setShowHarvestModal] = useState(false);
@@ -228,10 +228,10 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
       });
 
       setShowMetricsModal(false);
-      Alert.alert(t('success'), t('metricsUpdated'));
+      Alert.alert(t('common:success'), t('plants:metricsUpdated'));
     } catch (error) {
       console.error('Error saving metrics:', error);
-      Alert.alert(t('error'), t('failedToSaveMetrics'));
+      Alert.alert(t('common:error'), t('plants:failedToSaveMetrics'));
     }
   }, [database, plant, plantId, t]);
 
@@ -241,19 +241,21 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
     try {
       await database.write(async () => {
         await plant.update((p) => {
-          p.wetWeight = data.wetWeight || data.wet_weight; // Support both formats for backward compatibility
-          p.dryWeight = data.dryWeight || data.dry_weight;
-          p.trimWeight = data.trimWeight || data.trim_weight;
-          p.harvestDate = data.harvestDate || data.harvest_date;
+          // Use nullish coalescing to handle falsy values like 0
+          // Prefer camelCase properties, fall back to snake_case if undefined
+          p.wetWeight = data.wetWeight ?? data.wet_weight ?? null;
+          p.dryWeight = data.dryWeight ?? data.dry_weight ?? null;
+          p.trimWeight = data.trimWeight ?? data.trim_weight ?? null;
+          p.harvestDate = data.harvestDate ?? data.harvest_date ?? null;
           p.growthStage = 'harvest';
         });
       });
 
       setShowHarvestModal(false);
-      Alert.alert(t('success'), t('harvestRecorded'));
+      Alert.alert(t('common:success'), t('plants:harvestRecorded'));
     } catch (error) {
       console.error('Error saving harvest:', error);
-      Alert.alert(t('error'), t('failedToSaveHarvest'));
+      Alert.alert(t('common:error'), t('plants:failedToSaveHarvest'));
     }
   }, [database, plant, t]);
 

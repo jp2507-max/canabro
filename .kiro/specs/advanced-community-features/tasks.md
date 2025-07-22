@@ -120,7 +120,7 @@
   - Integrate with existing calendar and notification systems
   - _Requirements: 5_
 
-- [ ] 6.2 Implement LiveDiscussions for real-time conversations
+- [ ] **ACF-T06.2**: Implement LiveDiscussions for real-time conversations
   - Build live discussion rooms with real-time chat
   - Create discussion moderation and management tools
   - Add participant management and speaking permissions
@@ -128,7 +128,7 @@
   - Use existing messaging and real-time infrastructure
   - _Requirements: 5_
 
-- [ ] 6.3 Create CommunityPolls for collective decision making
+- [ ] **ACF-T06.3**: Create CommunityPolls for collective decision making
   - Build poll creation and voting interface
   - Implement real-time vote counting and results display
   - Add poll analytics and participation tracking
@@ -281,30 +281,30 @@
   - Archive deployment artifacts
   - _Dependencies: ACF-DEP02, ACF-DEP03_
 
-- [ ] **ACF-DEP05**: Beta testing rollout (10% of users)
+- [ ] **ACF-DEP11**: Beta testing rollout (10% of users)
   - Configure feature flags for gradual rollout
   - Deploy OTA update to beta channel
   - Monitor performance and error rates
   - Collect and analyze user feedback
   - _Dependencies: ACF-DEP04_
 
-- [ ] **ACF-DEP06**: Production deployment
+- [ ] **ACF-DEP12**: Production deployment
   - Final verification of all features in staging
   - Deploy backend services to production
   - Submit app updates to App Store and Play Store
   - Deploy OTA update to production channel (50% rollout)
   - Monitor system metrics and error rates
-  - _Dependencies: ACF-DEP05_
+  - _Dependencies: ACF-DEP11_
 
-- [ ] **ACF-DEP07**: Full production rollout
+- [ ] **ACF-DEP13**: Full production rollout
   - After 24 hours of stable operation, increase to 100% rollout
   - Monitor system performance and user feedback
   - Prepare rollback plan if issues arise
-  - _Dependencies: ACF-DEP06_
+  - _Dependencies: ACF-DEP12_
 
-- [ ] **ACF-DEP08**: Post-deployment monitoring
+- [ ] **ACF-DEP14**: Post-deployment monitoring
   - Monitor real-time infrastructure performance
   - Track feature adoption and engagement metrics
   - Identify and address any performance bottlenecks
   - Document lessons learned for future deployments
-  - _Dependencies: ACF-DEP07_
+  - _Dependencies: ACF-DEP13_
