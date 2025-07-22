@@ -174,6 +174,10 @@ function PlantDetailsScreenBase({ plant }: { plant: Plant | null }) {
         photo.fileSize = photoData.fileSize;
         photo.width = photoData.width;
         photo.height = photoData.height;
+        
+        // Set required fields with default values
+        photo.isPrimary = false; // Default to false for new photos
+        photo.isDeleted = false; // Default to false for new photos
       });
       setShowPhotoUpload(false);
     } catch (error) {
