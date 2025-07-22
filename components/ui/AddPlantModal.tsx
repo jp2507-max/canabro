@@ -58,10 +58,11 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
   // Enhanced modal entrance animation
   const showModal = () => {
     'worklet';
+    const maxIntensity = Platform.OS === 'ios' ? 20 : 10;
     // Sophisticated entrance sequence
     modalTranslateY.value = withSpring(0, ENTRANCE_CONFIG);
     backdropOpacity.value = withTiming(1, { duration: 300 });
-    blurIntensity.value = withTiming(20, { duration: 400 });
+    blurIntensity.value = withTiming(maxIntensity, { duration: 400 });
 
     // Staggered content animations for polish
     headerScale.value = withSequence(
@@ -151,8 +152,9 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
   const animatedBlurStyle = useAnimatedStyle(() => {
     'worklet';
+    const maxIntensity = Platform.OS === 'ios' ? 20 : 10;
     return {
-      opacity: interpolate(blurIntensity.value, [0, 20], [0, 1], Extrapolation.CLAMP),
+      opacity: interpolate(blurIntensity.value, [0, maxIntensity], [0, 1], Extrapolation.CLAMP),
     };
   });
 
@@ -200,7 +202,11 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
               { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
               animatedBlurStyle,
             ]}>
-            <ExpoBlurView intensity={20} style={{ flex: 1 }} tint="systemMaterialDark" />
+            <ExpoBlurView
+              intensity={Platform.OS === 'ios' ? 20 : 10}
+              style={{ flex: 1 }}
+              tint="systemMaterialDark"
+            />
           </Animated.View>
           {/* Gradient overlay for enhanced depth */}
           <Animated.View

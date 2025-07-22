@@ -21,8 +21,8 @@ export class PlantPhoto extends Model {
   @text('thumbnail_url') thumbnailUrl?: string;
   @text('caption') caption?: string;
   @text('growth_stage') growthStage!: string;
-  @field('is_primary') isPrimary!: boolean;
-  @field('is_deleted') isDeleted!: boolean;
+  @field('is_primary') isPrimary?: boolean;
+  @field('is_deleted') isDeleted?: boolean;
   @field('file_size') fileSize?: number;
   @field('width') width?: number;
   @field('height') height?: number;
@@ -36,7 +36,11 @@ export class PlantPhoto extends Model {
 
   // Derived properties
   get isActive(): boolean {
-    return !this.isDeleted;
+    return !(this.isDeleted ?? false);
+  }
+
+  get isPrimaryPhoto(): boolean {
+    return this.isPrimary ?? false;
   }
 
   get formattedFileSize(): string {

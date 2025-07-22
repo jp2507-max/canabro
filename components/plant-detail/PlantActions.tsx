@@ -15,7 +15,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  runOnUI,
   interpolateColor as rInterpolateColor,
 } from 'react-native-reanimated';
 
@@ -229,10 +228,10 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
       });
 
       setShowMetricsModal(false);
-      Alert.alert(t('common:success'), t('plants:metricsUpdated'));
+      Alert.alert(t('common:success'), t('common:metricsUpdated'));
     } catch (error) {
       logger.error('Error saving metrics:', error);
-      Alert.alert(t('common:error'), t('plants:failedToSaveMetrics'));
+      Alert.alert(t('common:error'), t('common:failedToSaveMetrics'));
     }
   }, [database, plant, plantId, t]);
 
@@ -243,20 +242,28 @@ export function PlantActions({ plantId, onDelete }: PlantActionsProps) {
       await database.write(async () => {
         await plant.update((p) => {
           // Use nullish coalescing to handle falsy values like 0
-          // Prefer camelCase properties, fall back to snake_case if undefined
-          p.wetWeight = data.wetWeight ?? data.wet_weight ?? null;
-          p.dryWeight = data.dryWeight ?? data.dry_weight ?? null;
-          p.trimWeight = data.trimWeight ?? data.trim_weight ?? null;
-          p.harvestDate = data.harvestDate ?? data.harvest_date ?? null;
+          // Update the correct model fields (snake_case as defined in Plant model)
+          if (data.wetWeight !== undefined || data.wet_weight !== undefined) {
+            p.wetWeight = data.wetWeight ?? data.wet_weight ?? null;
+          }
+          if (data.dryWeight !== undefined || data.dry_weight !== undefined) {
+            p.dryWeight = data.dryWeight ?? data.dry_weight ?? null;
+          }
+          if (data.trimWeight !== undefined || data.trim_weight !== undefined) {
+            p.trimWeight = data.trimWeight ?? data.trim_weight ?? null;
+          }
+          if (data.harvestDate !== undefined || data.harvest_date !== undefined) {
+            p.harvestDate = data.harvestDate ?? data.harvest_date ?? null;
+          }
           p.growthStage = 'harvest';
         });
       });
 
       setShowHarvestModal(false);
-      Alert.alert(t('common:success'), t('plants:harvestRecorded'));
+      Alert.alert(t('common:success'), t('harvestRecorded'));
     } catch (error) {
       logger.error('Error saving harvest:', error);
-      Alert.alert(t('common:error'), t('plants:failedToSaveHarvest'));
+      Alert.alert(t('common:error'), t('failedToSaveHarvest'));
     }
   }, [database, plant, t]);
 
