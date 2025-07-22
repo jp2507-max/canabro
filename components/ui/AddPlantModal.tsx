@@ -69,11 +69,13 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
       withTiming(1.05, { duration: 200 }),
       withSpring(1, SPRING_CONFIG)
     );
+    // Apply withTiming to the shared value directly
     contentOpacity.value = withTiming(1, { duration: 400 });
   };
 
   // Enhanced modal exit animation
   const hideModal = () => {
+    'worklet';
     // Sophisticated exit sequence with proper completion callback
     modalTranslateY.value = withSpring(screenHeight * 0.6, SPRING_CONFIG, (finished) => {
       'worklet';
@@ -84,6 +86,7 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
     backdropOpacity.value = withTiming(0, { duration: 250 });
     blurIntensity.value = withTiming(0, { duration: 300 });
     headerScale.value = withTiming(0.95, { duration: 200 });
+    // Apply withTiming to the shared value directly
     contentOpacity.value = withTiming(0, { duration: 200 });
   };
 
@@ -145,10 +148,10 @@ export function AddPlantModal({ visible, onClose, onSuccess }: AddPlantModalProp
 
   const animatedContentStyle = useAnimatedStyle(() => {
     'worklet';
-    // Animate opacity smoothly when showing/hiding the modal content
-    // Using withTiming for smooth transitions between states
+    // Animate opacity based on the shared value
+    // The animation timing should be applied when changing the shared value, not here
     return {
-      opacity: withTiming(contentOpacity.value, { duration: 200 }),
+      opacity: contentOpacity.value,
     };
   });
 
