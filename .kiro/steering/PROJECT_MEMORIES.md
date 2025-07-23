@@ -47,24 +47,16 @@ This file documents all AI agent memories and key implementation notes for the C
 - Use custom logger (not `console.log`) for production. Babel strips console statements in prod. Hermes enabled for iOS. Use Sentry for error logging. *(Project rule)*
 - When debugging React Native component issues by commenting out sections, ensure the debugging approach still allows reproduction of the original error. *(ID: 190704)*
 
+## Documentation & Research Standards (2025)
+- **React Native Reanimated v3.19.0+**: Project uses latest version with automatic workletization - no manual 'worklet' directives needed. Always verify current API syntax via Brave Search or Context7 before implementation.
+- **Always fetch fresh documentation**: When working with any library or technology, use Brave Search or Context7 to get the most current documentation, API changes, and best practices. Never assume knowledge of library APIs without verification.
+- **Quality improvement mandate**: Using up-to-date documentation sources significantly improves code quality and prevents deprecated API usage. This is a critical requirement for all development work.
+
 ## Miscellaneous
 - User prefers that the `--quality hd` flag be appended to every snapai icon prompt. *(ID: 190686)*
 - The project’s bottom tab navigation uses `@bottom-tabs/react-navigation` with sfSymbol icons and custom styling; do not replace it with `@react-navigation/bottom-tabs` unless the user explicitly requests a change. *(ID: 190659)*
 - Fixed "Invalid selectedDate provided, using current date: {}" error in DateSelector by adding comprehensive date validation throughout the calendar data flow. *(ID: 190606)*
 - The user prefers that the assistant use Brave Search when looking up information to fix issues. *(ID: 190616)*
-
----
-
-*This file is auto-generated from AI agent memories. For updates, re-run the agent with a request to export current memories.*
-- User prefers that the `--quality hd` flag be appended to every snapai icon prompt. *(ID: 190686)*
-- The project's bottom tab navigation uses `@bottom-tabs/react-navigation` with sfSymbol icons and custom styling; do not replace it with `@react-navigation/bottom-tabs` unless the user explicitly requests a change. *(ID: 190659)*
-- Fixed "Invalid selectedDate provided, using current date: {}" error in DateSelector by adding comprehensive date validation throughout the calendar data flow. *(ID: 190606)*
-- The user prefers that the assistant use Brave Search when looking up information to fix issues. *(ID: 190616)*
-
-## Documentation & Research Standards (2025)
-- **React Native Reanimated v3.19.0+**: Project uses latest version with automatic workletization - no manual 'worklet' directives needed. Always verify current API syntax via Brave Search or Context7 before implementation.
-- **Always fetch fresh documentation**: When working with any library or technology, use Brave Search or Context7 to get the most current documentation, API changes, and best practices. Never assume knowledge of library APIs without verification.
-- **Quality improvement mandate**: Using up-to-date documentation sources significantly improves code quality and prevents deprecated API usage. This is a critical requirement for all development work.
 
 ---
 
