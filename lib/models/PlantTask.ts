@@ -1,6 +1,7 @@
 import { Model } from '@nozbe/watermelondb';
 import { Associations } from '@nozbe/watermelondb/Model';
 import { date, readonly, text, relation, writer, field, json } from '@nozbe/watermelondb/decorators';
+import { log } from '../utils/logger';
 
 import { Plant } from './Plant';
 import { ScheduleTemplate, TemplateTaskData } from './ScheduleTemplate';
@@ -193,6 +194,7 @@ export class PlantTask extends Model {
     });
   }
 
+  @writer
   private async createNextRecurringTask() {
     try {
       // Implementation for creating next recurring task
@@ -225,9 +227,9 @@ export class PlantTask extends Model {
         newTask.sequenceNumber = (this.sequenceNumber || 0) + 1;
       });
       
-      console.log(`[PlantTask] Successfully created next recurring task for ${this.taskType} with ${interval} day interval`);
+      log.info(`[PlantTask] Successfully created next recurring task for ${this.taskType} with ${interval} day interval`);
     } catch (error) {
-      console.error(`[PlantTask] Failed to create next recurring task for ${this.taskType}:`, error);
+      log.error(`[PlantTask] Failed to create next recurring task for ${this.taskType}:`, error);
       // Don't throw the error to prevent parent transaction from failing
       // The current task completion should still succeed even if next task creation fails
     }
@@ -265,7 +267,7 @@ export class PlantTask extends Model {
         }
       }
     } catch (error) {
-      console.error(`[PlantTask] Error retrieving custom intervals for ${this.taskType}:`, error);
+      log.error(`[PlantTask] Error retrieving custom intervals for ${this.taskType}`, { error });
       // Fall through to default intervals
     }
 

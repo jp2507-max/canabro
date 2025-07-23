@@ -15,7 +15,7 @@ import { PlantTask } from '@/lib/models/PlantTask';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
-import { triggerLightHapticSync, triggerMediumHaptic } from '@/lib/utils/haptics';
+import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import { useTranslation } from 'react-i18next';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -126,7 +126,7 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
-      triggerMediumHaptic();
+      triggerMediumHapticSync();
       onComplete(task);
     }
   }, [task, onComplete]);
