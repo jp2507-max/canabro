@@ -1,7 +1,3 @@
----
-description: Adding Animations
-alwaysApply: false
----
 # 🎬 React Native Reanimated Production Guide
 
 ## 📅 Last Updated: July 2025

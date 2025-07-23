@@ -63,21 +63,18 @@ const DayHeader = React.memo(({ date, isSelected, onSelect }: DayHeaderProps) =>
       runOnJS(handlePress)();
     });
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = isSelected 
-      ? '#000000' // Dark circle for selected day like in reference
-      : 'transparent';
-    
-    return {
-      transform: [{ scale: scale.value }],
-      backgroundColor,
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    backgroundColor: isSelected ? undefined : 'transparent',
+  }));
+
+  // Use className for theming instead of inline style for better theming support
+  const dayButtonClassName = `mx-2 h-12 w-12 items-center justify-center rounded-full ${isSelected ? 'bg-foreground dark:bg-foreground-dark' : ''}`;
 
   return (
     <GestureDetector gesture={tapGesture}>
       <AnimatedPressable
-        className="mx-2 h-12 w-12 items-center justify-center rounded-full"
+        className={dayButtonClassName}
         style={animatedStyle}
         accessibilityRole="button"
         accessibilityLabel={`Select ${format(date, 'EEEE, MMMM d')}`}
@@ -173,13 +170,13 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
     transform: [{ scale: completionScale.value }],
   }));
 
-  // Get task priority color for left border (like in reference image)
+  // Get task priority color class for left border (using semantic color classes)
   const getPriorityColor = useCallback(() => {
     switch (task.priorityLevel) {
-      case 'critical': return '#ef4444'; // red-500
-      case 'high': return '#f59e0b'; // amber-500  
-      case 'medium': return '#8b5cf6'; // purple-500
-      default: return '#10b981'; // primary-500
+      case 'critical': return 'bg-red-500';
+      case 'high': return 'bg-amber-500';  
+      case 'medium': return 'bg-purple-500';
+      default: return 'bg-primary-500';
     }
   }, [task.priorityLevel]);
 
@@ -200,10 +197,9 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
         accessibilityRole="button"
         accessibilityLabel={`Task: ${task.title}`}>
         
-        {/* Colored left border */}
+        {/* Colored left border with semantic priority color */}
         <ThemedView 
-          className="absolute left-0 top-0 bottom-0 w-1"
-          style={{ backgroundColor: getPriorityColor() }} 
+          className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor()}`}
         />
         
         <ThemedView className="flex-row items-center p-4 pl-6">

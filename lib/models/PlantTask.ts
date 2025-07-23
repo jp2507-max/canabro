@@ -3,6 +3,8 @@ import { Associations } from '@nozbe/watermelondb/Model';
 import { date, readonly, text, relation, writer, field, json } from '@nozbe/watermelondb/decorators';
 
 import { Plant } from './Plant';
+import { ScheduleTemplate, TemplateTaskData } from './ScheduleTemplate';
+import { generateUuid } from '../utils/uuid';
 
 export interface TaskCompletion {
   taskId: string;
@@ -130,7 +132,7 @@ export class PlantTask extends Model {
 
   // Writer methods
   @writer async markAsCompleted(completionData?: Partial<TaskCompletion>) {
-    await this.update((task) => {
+    await this.update(async (task) => {
       task.status = 'completed';
       task.notificationId = undefined; // Clear notification ID
       
@@ -141,12 +143,12 @@ export class PlantTask extends Model {
           ...completionData,
         } as TaskCompletion;
       }
-    });
 
-    // If this is a recurring task, create the next one
-    if (this.parentTaskId) {
-      await this.createNextRecurringTask();
-    }
+      // If this is a recurring task, create the next one within the same transaction
+      if (this.parentTaskId) {
+        await this.createNextRecurringTask();
+      }
+    });
   }
 
   @writer async markAsIncomplete() {
@@ -191,27 +193,22 @@ export class PlantTask extends Model {
   }
 
   private async createNextRecurringTask() {
-    // Implementation for creating next recurring task
-    // This would be used for tasks that repeat (like watering every 3 days)
-    const database = this.database;
+    try {
+      // Implementation for creating next recurring task
+      // This would be used for tasks that repeat (like watering every 3 days)
+      const database = this.database;
+      
+      // Calculate next due date based on task type and configurable intervals
+      const nextDueDate = new Date(this.dueDate);
+      
+      // Get interval from template or plant settings, fallback to defaults
+      const interval = await this.getRecurringInterval();
+      nextDueDate.setDate(nextDueDate.getDate() + interval);
     
-    // Calculate next due date based on task type and plant needs
-    const nextDueDate = new Date(this.dueDate);
-    
-    // Default intervals by task type
-    const intervals: Record<string, number> = {
-      watering: 3, // days
-      feeding: 7, // days
-      inspection: 1, // days
-      pruning: 14, // days
-    };
-    
-    const interval = intervals[this.taskType] || 7;
-    nextDueDate.setDate(nextDueDate.getDate() + interval);
-
-    await database.write(async () => {
+      // Create the next task within the existing transaction with error handling
       await database.get<PlantTask>('plant_tasks').create((newTask) => {
-        newTask.taskId = `${this.taskType}_${Date.now()}`;
+        // Use robust UUID generation instead of timestamp-based ID
+        newTask.taskId = generateUuid();
         newTask.plantId = this.plantId;
         newTask.title = this.title;
         newTask.description = this.description;
@@ -226,6 +223,63 @@ export class PlantTask extends Model {
         newTask.parentTaskId = this.parentTaskId || this.id;
         newTask.sequenceNumber = (this.sequenceNumber || 0) + 1;
       });
-    });
+      
+      console.log(`[PlantTask] Successfully created next recurring task for ${this.taskType} with ${interval} day interval`);
+    } catch (error) {
+      console.error(`[PlantTask] Failed to create next recurring task for ${this.taskType}:`, error);
+      // Don't throw the error to prevent parent transaction from failing
+      // The current task completion should still succeed even if next task creation fails
+    }
+  }
+
+  /**
+   * Gets the recurring interval for this task type from various sources
+   * Priority: Template data > Plant-specific settings > Default intervals
+   */
+  private async getRecurringInterval(): Promise<number> {
+    try {
+      // First, try to get interval from template if available
+      if (this.templateId) {
+        const template = await this.database.get<ScheduleTemplate>('schedule_templates').find(this.templateId);
+        if (template && template.templateData) {
+          const taskData = template.templateData.find((task: TemplateTaskData) => task.taskType === this.taskType);
+          if (taskData) {
+            // Calculate interval based on template task frequency
+            // For now, use a simple weekly interval, but this could be enhanced
+            // to support more complex scheduling patterns from template data
+            return 7; // Default weekly interval from template
+          }
+        }
+      }
+
+      // Second, try to get plant-specific intervals if plant has custom settings
+      const plant = await this.database.get<Plant>('plants').find(this.plantId);
+      if (plant) {
+        // Check for plant-specific watering/feeding intervals
+        if (this.taskType === 'watering' && plant.nextWateringDays) {
+          return plant.nextWateringDays;
+        }
+        if (this.taskType === 'feeding' && plant.nextNutrientDays) {
+          return plant.nextNutrientDays;
+        }
+      }
+    } catch (error) {
+      console.error(`[PlantTask] Error retrieving custom intervals for ${this.taskType}:`, error);
+      // Fall through to default intervals
+    }
+
+    // Fallback to default intervals by task type
+    const defaultIntervals: Record<string, number> = {
+      watering: 3, // days
+      feeding: 7, // days
+      inspection: 1, // days
+      pruning: 14, // days
+      training: 7, // days
+      defoliation: 14, // days
+      flushing: 21, // days
+      harvest: 70, // days (full cycle)
+    };
+    
+    return defaultIntervals[this.taskType] || 7; // Default to weekly if task type not found
   }
 }
