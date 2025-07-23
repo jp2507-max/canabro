@@ -1,6 +1,12 @@
 # Advanced Task Management System - Implementation Plan
 
-- [ ] 1. Reuse existing data models and extend for task management
+- [x] 1. Reuse existing data models and extend for task management
+
+
+
+
+
+
   - ✅ **REUSE**: CareReminder model from plant-management-completion (already implemented)
   - ✅ **REUSE**: NotificationSchedule logic from plant-management-completion
   - Create ScheduleTemplate model with WatermelonDB decorators (new for templates)
@@ -9,14 +15,18 @@
   - _Requirements: R1-AC1, R1-AC2, R2-AC1, R3-AC1, R4-AC1, R5-AC1, R6-AC1_
   - _Reuse Benefit: 70% of notification infrastructure already complete_
 
-- [ ] 2. Implement task-focused interface
+- [ ] 2. Implement task-focused interface (ask me for a design image before you start, just for inspiration, no need to stick on it)
 - [ ] 2.1 Create WeeklyTaskView component with horizontal 5-day layout
+
+
+
+
   - Build main horizontal 5-day task interface optimized for plant care workflows
   - Implement FlashList for high-performance virtualized day selector
   - Create simple day selection with visual indicators for today and selected day
   - Add smooth day transitions using Reanimated v3 automatic workletization
   - Implement swipe navigation between days with momentum scrolling
-  - Use date-fns for simple date manipulation and formatting
+  - Use day-js for simple date manipulation and formatting
   - _Requirements: R1-AC1, R1-AC2, R1-AC3_
 
 - [ ] 2.2 Create TaskCard component with task-focused design
@@ -36,7 +46,7 @@
   - Create smooth date selection animations with date-fns utilities
   - Add task count indicators on day headers for quick overview
   - Implement simple navigation controls (today button, date picker)
-  - Add locale-aware date formatting with date-fns locales
+  - Add locale-aware date formatting with day-js locales
   - _Requirements: R1-AC1, R1-AC5_
 
 - [ ] 3. Build schedule template system
