@@ -35,7 +35,13 @@ export function ProtectedRoute({
     
     return (
       <View className="flex-1 items-center justify-center bg-neutral-50 dark:bg-neutral-900">
-        <ActivityIndicator size="large" className="text-primary-600" />
+        <ActivityIndicator 
+          size="large" 
+          color="#4f46e5" /* primary-600 color */
+          accessibilityRole="progressbar"
+          accessibilityLabel="Loading authentication status"
+          importantForAccessibility="yes"
+        />
       </View>
     );
   }
