@@ -63,7 +63,7 @@ export default {
     ],
     scheme: 'canabro',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic', // Allow automatic dark/light mode switching
     splash: {
       image: './assets/splash.png',
@@ -75,6 +75,7 @@ export default {
       supportsTablet: true,
       bundleIdentifier: 'com.canabro.app',
       deploymentTarget: '16.0',
+      icon: './assets/images/icon.png', // Explicitly set iOS icon
       config: {
         usesNonExemptEncryption: false,
       },
@@ -96,9 +97,10 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
+        foregroundImage: './assets/images/icon.png', // Use the same icon for Android adaptive icon
         backgroundColor: '#ffffff',
       },
+      icon: './assets/images/icon.png', // Explicitly set Android icon for older devices
       package: 'com.canabro.app',
       permissions: [
         'android.permission.CAMERA',

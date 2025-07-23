@@ -9,7 +9,7 @@ import { User } from '@supabase/supabase-js';
 export { useSession, useAuthGuard } from '../hooks/useSession';
 
 // Navigation utilities
-export { useAuthNavigation, navigateWithAuth, replaceWithAuth } from './auth-navigation';
+export { default as useAuthNavigation, replaceWithAuth } from './auth-navigation';
 
 // Component for route protection
 export { ProtectedRoute, withProtectedRoute } from '../../components/ui/ProtectedRoute';
