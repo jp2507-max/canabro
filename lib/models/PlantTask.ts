@@ -244,27 +244,24 @@ export class PlantTask extends Model {
       // First, try to get interval from template if available
       if (this.templateId) {
         const template = await this.database.get<ScheduleTemplate>('schedule_templates').find(this.templateId);
-        if (template && template.templateData) {
-          const taskData = template.templateData.find((task: TemplateTaskData) => task.taskType === this.taskType);
-          if (taskData) {
-            // Calculate interval based on template task frequency
-            // For now, use a simple weekly interval, but this could be enhanced
-            // to support more complex scheduling patterns from template data
-            return 7; // Default weekly interval from template
-          }
+        const taskData = template?.templateData?.find((task: TemplateTaskData) => task.taskType === this.taskType);
+        if (taskData) {
+          // Calculate interval based on template task frequency
+          // For now, use a simple weekly interval, but this could be enhanced
+          // to support more complex scheduling patterns from template data
+          return 7; // Default weekly interval from template
         }
       }
 
       // Second, try to get plant-specific intervals if plant has custom settings
-      const plant = await this.database.get<Plant>('plants').find(this.plantId);
-      if (plant) {
-        // Check for plant-specific watering/feeding intervals
-        if (this.taskType === 'watering' && plant.nextWateringDays) {
-          return plant.nextWateringDays;
-        }
-        if (this.taskType === 'feeding' && plant.nextNutrientDays) {
-          return plant.nextNutrientDays;
-        }
+      const plant = await this.database.get<Plant>('plants').find(this.plantId).catch(() => null);
+      
+      // Check for plant-specific watering/feeding intervals using optional chaining
+      if (this.taskType === 'watering' && plant?.nextWateringDays) {
+        return plant.nextWateringDays;
+      }
+      if (this.taskType === 'feeding' && plant?.nextNutrientDays) {
+        return plant.nextNutrientDays;
       }
     } catch (error) {
       log.error(`[PlantTask] Error retrieving custom intervals for ${this.taskType}`, { error });

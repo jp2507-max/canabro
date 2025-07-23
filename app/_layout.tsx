@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { View, useColorScheme as useSystemColorScheme } from 'react-native';
+import { View, ActivityIndicator, useColorScheme as useSystemColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,13 +10,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { log } from '@/lib/utils/logger';
 
-import { AuthProvider } from '../lib/contexts/AuthProvider';
+import { AuthProvider, useAuth } from '../lib/contexts/AuthProvider';
 import { DatabaseProvider } from '../lib/contexts/DatabaseProvider';
 import { NotificationProvider } from '../lib/contexts/NotificationContext';
 import { QueryProvider } from '../lib/contexts/QueryProvider';
 import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 
 import { NavigationErrorBoundary } from '../components/ui/ErrorBoundary';
+import { SplashScreenController } from '../components/ui/SplashScreenController';
 
 // Import our react-query type declarations to avoid type errors
 import '../lib/types/react-query';
@@ -33,6 +34,7 @@ function RootLayoutContent() {
       <NavigationErrorBoundary>
         <QueryProvider>
           <AuthProvider>
+            <SplashScreenController />
             <DatabaseProvider>
               {/* The DatabaseProvider now handles nesting the SyncProvider internally */}
               <NotificationProvider>
@@ -40,13 +42,43 @@ function RootLayoutContent() {
                   style={nativeWindColorScheme === 'dark' ? 'light' : 'dark'} 
                   backgroundColor="transparent" 
                 />
-                <Stack screenOptions={{ headerShown: false }} />
+                <AppNavigator />
               </NotificationProvider>
             </DatabaseProvider>
           </AuthProvider>
         </QueryProvider>
       </NavigationErrorBoundary>
     </View>
+  );
+}
+
+// App-level navigator implementing Expo Router v5 protected routes
+function AppNavigator() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-neutral-50 dark:bg-neutral-900">
+        <ActivityIndicator size="large" className="text-primary-600" />
+      </View>
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Protected routes for authenticated users */}
+      <Stack.Protected guard={!!user}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+
+      {/* Protected routes for unauthenticated users */}
+      <Stack.Protected guard={!user}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+
+      {/* Optional: Add a catch-all route for any unmatched paths */}
+      <Stack.Screen name="+not-found" />
+    </Stack>
   );
 }
 
