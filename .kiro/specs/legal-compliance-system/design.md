@@ -4,13 +4,34 @@
 
 The Legal & Compliance System provides comprehensive legal protection and regulatory compliance for CanaBro. This system integrates privacy controls, content moderation, age verification, and jurisdiction-specific compliance to ensure safe and legal operation across different markets and regulatory environments.
 
+## 2025 Technical Context
+
+**GDPR & Privacy Libraries:**
+- Didomi SDK for React Native - comprehensive consent management
+- Axeptio React Native SDK - TCF compliance for publishers
+- OneTrust integration available for enterprise consent management
+- Supabase now GDPR-compliant with EU hosting and DPA (Data Processing Agreement)
+
+**Content Moderation Solutions:**
+- Stream Chat React Native includes built-in moderation tools
+- NSFW.js for client-side image moderation
+- TensorFlow.js for custom AI moderation models
+- Parse-based content moderation applications available
+
+**Age Verification Standards:**
+- EU's official age verification app launching July 2025
+- Privacy-preserving verification methods gaining adoption
+- Mobile app consent management becoming more sophisticated on iOS
+
 ## Architecture
 
 ### Existing Foundation
 - **User Authentication**: Supabase Auth with user profiles
 - **Content System**: Community posts, comments, and user-generated content
-- **Data Storage**: WatermelonDB and Supabase for user data management
+- **Data Storage**: WatermelonDB and Supabase for user data management (Supabase is GDPR-compliant with EU hosting)
 - **Location Services**: Expo Location for geographic compliance
+- **Consent Management**: Consider Didomi SDK or Axeptio for comprehensive GDPR consent
+- **Content Moderation**: Leverage Stream Chat's built-in moderation or custom TensorFlow.js solutions
 
 ### Compliance Components Architecture
 ```

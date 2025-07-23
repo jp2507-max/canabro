@@ -4,33 +4,39 @@ alwaysApply: false
 ---
 # 🎬 React Native Reanimated Production Guide
 
-## 📅 Last Updated: June 2025
+## 📅 Last Updated: January 2025
 
-Essential patterns for React Native Reanimated v3 - Production-ready with single source of truth.
+Essential patterns for React Native Reanimated v3.19.0+ - Production-ready with automatic workletization.
 
 ---
 
-## 🎯 **Single Source of Truth: `.value` Syntax**
+## 🚀 **Automatic Workletization (3.19.0+)**
 
-**Use `.value` for all shared value operations** - this is the standard, production-proven approach that works across all Reanimated versions and setups.
+**React Native Reanimated 3.19.0+ automatically workletizes functions** passed to Reanimated hooks, eliminating the need for manual `'worklet'` directives in most cases.
 
 ```tsx
-// ✅ STANDARD PATTERN (USE THIS EVERYWHERE)
+// ✅ AUTOMATIC WORKLETIZATION (3.19.0+)
 import { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 const scale = useSharedValue(1);
 
-// Reading values in useAnimatedStyle
+// ✅ No 'worklet' directive needed - automatically workletized
 const animatedStyle = useAnimatedStyle(() => {
   return { transform: [{ scale: scale.value }] };
 });
 
-// Setting values in event handlers
+// ✅ Referenced functions are also automatically workletized
+function getTransform() {
+  return { transform: [{ scale: scale.value }] };
+}
+const animatedStyle2 = useAnimatedStyle(getTransform);
+
+// ✅ Setting values in event handlers
 const handlePress = () => {
   scale.value = withSpring(1.2);
 };
 
-// Batch updates for performance
+// ✅ Manual worklets still need 'worklet' directive
 const handleComplexUpdate = () => {
   runOnUI(() => {
     'worklet';
@@ -39,6 +45,10 @@ const handleComplexUpdate = () => {
   })();
 };
 ```
+
+## 🎯 **Single Source of Truth: `.value` Syntax**
+
+**Continue using `.value` for all shared value operations** - this remains the standard, production-proven approach that works across all Reanimated versions.
 
 ## 📦 **Modern Imports (2025)**
 
@@ -74,13 +84,22 @@ width.value = withSpring(200);
 <Animated.View style={{ width: width * 5 }} /> // Won't work!
 ```
 
-### **useAnimatedStyle**
+### **useAnimatedStyle (Automatic Workletization)**
 ```tsx
-// ✅ CORRECT: Read shared values, return styles
+// ✅ AUTOMATIC (3.19.0+): No 'worklet' directive needed
 const animatedStyle = useAnimatedStyle(() => ({
   transform: [{ translateX: offset.value }],
   opacity: isVisible.value ? 1 : 0,
 }));
+
+// ✅ REFERENCED FUNCTIONS: Also automatically workletized
+function getStyles() {
+  return {
+    transform: [{ translateX: offset.value }],
+    opacity: isVisible.value ? 1 : 0,
+  };
+}
+const animatedStyle2 = useAnimatedStyle(getStyles);
 
 // ❌ AVOID: Mutating shared values inside
 const animatedStyle = useAnimatedStyle(() => {
@@ -123,21 +142,24 @@ return (
 // 🎯 Avoid complex className conditions when animating
 ```
 
-## 👆 **Modern Gesture Patterns**
+## 👆 **Modern Gesture Patterns (Automatic Workletization)**
 
 ```tsx
-// ✅ Modern Gesture API
+// ✅ Modern Gesture API with automatic workletization (3.19.0+)
 const context = useSharedValue({ startX: 0, startY: 0 });
 
 const panGesture = Gesture.Pan()
   .onStart(() => {
+    // ✅ No 'worklet' directive needed - automatically workletized
     context.value = { startX: x.value, startY: y.value };
   })
   .onUpdate((event) => {
+    // ✅ No 'worklet' directive needed - automatically workletized
     x.value = context.value.startX + event.translationX;
     y.value = context.value.startY + event.translationY;
   })
   .onEnd(() => {
+    // ✅ No 'worklet' directive needed - automatically workletized
     x.value = withSpring(0);
     y.value = withSpring(0);
   });
@@ -306,128 +328,168 @@ const handlePress = () => {
 - **Early adopters**: RC is stable but no stable release announced yet
 - **Meta-scale teams**: RC is production-ready if you follow Rules of React strictly
 
-## 🚨 **Avoiding Reanimated 3.17+ Warnings (Canabro Project)**
+## 🚀 **Reanimated 3.19.0+ Automatic Workletization**
 
-### **📋 Completed Migration (June 8, 2025)**
-Our Canabro app has been fully migrated to comply with Reanimated 3.17+ best practices. **All 25 animation files** have been updated to prevent warnings.
+### **🎉 Major Improvement: No More Manual 'worklet' Directives**
+React Native Reanimated 3.19.0+ introduces automatic workletization, eliminating the need for manual `'worklet'` directives in most common cases.
 
-### **⚠️ Critical Rules to Prevent Regression**
+### **✅ Automatically Workletized (No 'worklet' Needed)**
 
-#### **1. Always Use Explicit 'worklet' Directives**
+#### **1. Functions Passed to Reanimated Hooks**
 ```tsx
-// ✅ CORRECT - Explicit worklet directive
+// ✅ AUTOMATIC - No 'worklet' directive needed
 const animatedStyle = useAnimatedStyle(() => {
-  'worklet'; // ← ALWAYS ADD THIS
-  return {
-    transform: [{ scale: scale.value }],
-  };
+  return { transform: [{ scale: scale.value }] };
 });
 
-// ❌ CAUSES WARNINGS - Missing worklet directive
-const animatedStyle = useAnimatedStyle(() => {
-  return {
-    transform: [{ scale: scale.value }],
-  };
+const scrollHandler = useAnimatedScrollHandler((event) => {
+  translationY.value = event.contentOffset.y;
+});
+
+const scrollHandler2 = useAnimatedScrollHandler({
+  onScroll: (event) => {
+    // ✅ AUTOMATIC - No 'worklet' directive needed
+    position.value = event.contentOffset.x;
+  },
+  onEndDrag: (event) => {
+    // ✅ AUTOMATIC - No 'worklet' directive needed
+    scrollToNearestItem(event.contentOffset.x);
+  },
 });
 ```
 
-#### **2. Never Access .value During Component Render**
+#### **2. Referenced Functions**
 ```tsx
-// ✅ CORRECT - Access .value only in worklets
-const Component = () => {
-  const scale = useSharedValue(1);
-  
-  const animatedStyle = useAnimatedStyle(() => {
-    'worklet';
-    return { transform: [{ scale: scale.value }] }; // ← OK in worklet
-  });
-  
-  return <Animated.View style={animatedStyle} />;
-};
+// ✅ AUTOMATIC - Referenced functions are automatically workletized
+function getAnimatedStyles() {
+  return { transform: [{ scale: scale.value }] };
+}
 
-// ❌ CAUSES WARNINGS - Reading .value during render
-const Component = () => {
-  const scale = useSharedValue(1);
-  console.log(scale.value); // ← NEVER DO THIS
-  
-  return <View style={{ opacity: scale.value }} />; // ← NEVER DO THIS
-};
+const animatedStyle = useAnimatedStyle(getAnimatedStyles);
 ```
 
-#### **3. Proper Gesture Handler Patterns**
+#### **3. Gesture Handler Callbacks**
 ```tsx
-// ✅ CORRECT - Worklets in gesture handlers
+// ✅ AUTOMATIC - Gesture callbacks are automatically workletized
 const gesture = Gesture.Tap()
   .onBegin(() => {
-    'worklet'; // ← ALWAYS ADD THIS
     scale.value = withSpring(0.95);
   })
   .onEnd(() => {
-    'worklet'; // ← ALWAYS ADD THIS
     scale.value = withSpring(1);
   });
-
-// ❌ CAUSES WARNINGS - Missing worklet directives
-const gesture = Gesture.Tap()
-  .onBegin(() => {
-    scale.value = withSpring(0.95); // ← Missing 'worklet'
-  });
 ```
 
-#### **4. Don't Modify Objects After Worklet Assignment**
+#### **4. Object Methods in Handler Objects**
 ```tsx
-// ✅ CORRECT - Create new objects
-const animatedStyle = useAnimatedStyle(() => {
-  'worklet';
-  return {
-    transform: [
-      { scale: scale.value },
-      { translateX: x.value }
-    ],
-  };
-});
+// ✅ AUTOMATIC - Object methods are automatically workletized
+const handlerObject = {
+  onBeginDrag() {
+    console.log('Dragging...');
+  },
+  onScroll() {
+    console.log('Scrolling...');
+  }
+};
 
-// ❌ CAUSES WARNINGS - Modifying existing arrays/objects
-const baseTransform = [{ scale: scale.value }];
-baseTransform.push({ translateX: x.value }); // ← DON'T DO THIS
+const handler = useAnimatedScrollHandler(handlerObject);
 ```
 
-### **🔍 Code Review Checklist for New Animations**
-Before adding any new animations, ensure:
+### **⚠️ Still Requires Manual 'worklet' Directive**
 
-- [ ] All `useAnimatedStyle` hooks include `'worklet'` directive
-- [ ] All gesture handlers include `'worklet'` directive  
+#### **1. Functions from Conditional Expressions**
+```tsx
+// ❌ MANUAL 'worklet' REQUIRED
+const foo = someCondition
+  ? () => {
+      'worklet'; // ← Still needed
+      return { width: 100 };
+    }
+  : () => {
+      'worklet'; // ← Still needed
+      return { width: 200 };
+    };
+
+const style = useAnimatedStyle(foo);
+```
+
+#### **2. Imported Functions**
+```tsx
+// bar.ts
+export function bar() {
+  'worklet'; // ← Still needed for imported functions
+  return { width: 100 };
+}
+
+// foo.ts
+import { bar } from './bar';
+const style = useAnimatedStyle(bar);
+```
+
+#### **3. Custom Worklets with runOnUI**
+```tsx
+// ❌ MANUAL 'worklet' REQUIRED
+function myWorklet() {
+  'worklet'; // ← Still needed for custom worklets
+  console.log('Hello from UI thread');
+}
+
+function onPress() {
+  runOnUI(myWorklet)();
+}
+```
+
+#### **4. Animation Callbacks**
+```tsx
+// ❌ MANUAL 'worklet' REQUIRED in animation callbacks
+offset.value = withSpring(100, {}, (finished) => {
+  'worklet'; // ← Still needed in animation callbacks
+  if (finished) {
+    scale.value = withSpring(1.2);
+  }
+});
+```
+
+### **🔍 Code Review Checklist for 3.19.0+**
+Before adding new animations, ensure:
+
+- [ ] Functions passed to Reanimated hooks don't need `'worklet'` (automatic)
+- [ ] Gesture handler callbacks don't need `'worklet'` (automatic)
+- [ ] Conditional expressions still need manual `'worklet'`
+- [ ] Imported functions still need manual `'worklet'`
+- [ ] Custom worklets with `runOnUI` still need manual `'worklet'`
+- [ ] Animation callbacks still need manual `'worklet'`
 - [ ] No `.value` access during component render
-- [ ] No modification of objects after worklet assignment
 - [ ] Proper cleanup with `cancelAnimation` on unmount
-- [ ] Test in development mode for any console warnings
 
-### **📁 Files Successfully Updated (Reference)**
-All these files now follow proper patterns - use them as examples:
-- `components/AddPlantForm.tsx` - Complex form animations
-- `components/plant-detail/PlantHeroImage.tsx` - Image interactions
-- `lib/animations/useGestureAnimation.ts` - Advanced gesture patterns
-- `lib/animations/useScrollAnimation.ts` - Scroll-based animations
+### **📁 Migration from Pre-3.19.0**
+If upgrading from older versions:
 
-### **🔧 Quick Fix Template**
-When Reanimated warnings appear, apply this pattern:
+1. **Remove unnecessary 'worklet' directives** from `useAnimatedStyle` callbacks
+2. **Remove unnecessary 'worklet' directives** from gesture handler callbacks
+3. **Keep 'worklet' directives** for conditional expressions and imported functions
+4. **Test thoroughly** to ensure automatic workletization is working correctly
+
+## 🔄 **Backward Compatibility (Pre-3.19.0)**
+
+If you're still using React Native Reanimated versions before 3.19.0, you'll need to manually add `'worklet'` directives:
+
 ```tsx
-// Add 'worklet' to useAnimatedStyle
+// Pre-3.19.0 - Manual 'worklet' directives required
 const animatedStyle = useAnimatedStyle(() => {
-  'worklet'; // ← Add this line
-  return {
-    // ...existing style code...
-  };
+  'worklet'; // ← Required in older versions
+  return { transform: [{ scale: scale.value }] };
 });
 
-// Add 'worklet' to gesture handlers
 const gesture = Gesture.Tap()
   .onBegin(() => {
-    'worklet'; // ← Add this line
-    // ...existing gesture code...
+    'worklet'; // ← Required in older versions
+    scale.value = withSpring(0.95);
   });
 ```
+
+**Upgrade Recommendation**: Update to React Native Reanimated 3.19.0+ to benefit from automatic workletization and improved developer experience.
 
 ---
 
-**Status**: Production-ready single source of truth (`.value` syntax) 🎉
+**Status**: Production-ready with automatic workletization (3.19.0+) 🚀

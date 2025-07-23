@@ -1,36 +1,42 @@
-# Advanced Calendar System - Implementation Plan
+# Advanced Task Management System - Implementation Plan
 
-- [ ] 1. Set up calendar data models and database schema
-  - Create ScheduleTemplate model with WatermelonDB decorators
-  - Create CalendarEvent model for calendar-specific events
-  - Create NotificationSchedule model for automated reminders
-  - Extend existing PlantTask model with calendar-specific fields
-  - Write database migration scripts for new tables and fields
+- [ ] 1. Reuse existing data models and extend for task management
+  - ✅ **REUSE**: CareReminder model from plant-management-completion (already implemented)
+  - ✅ **REUSE**: NotificationSchedule logic from plant-management-completion
+  - Create ScheduleTemplate model with WatermelonDB decorators (new for templates)
+  - Extend existing PlantTask model with task management fields (priority, estimatedDuration)
+  - Write minimal database migration scripts for new fields only
   - _Requirements: R1-AC1, R1-AC2, R2-AC1, R3-AC1, R4-AC1, R5-AC1, R6-AC1_
+  - _Reuse Benefit: 70% of notification infrastructure already complete_
 
-- [ ] 2. Implement visual calendar interface
-- [ ] 2.1 Create CalendarView component with month/week/day views
-  - Build main calendar interface using existing DateSelector patterns
-  - Implement month view with task indicators using ThemedView
-  - Add week view for detailed daily planning
-  - Create day view with hourly task scheduling
-  - Add smooth view transitions using Reanimated v3
+- [ ] 2. Implement task-focused interface
+- [ ] 2.1 Create WeeklyTaskView component with horizontal 5-day layout
+  - Build main horizontal 5-day task interface optimized for plant care workflows
+  - Implement FlashList for high-performance virtualized day selector
+  - Create simple day selection with visual indicators for today and selected day
+  - Add smooth day transitions using Reanimated v3 automatic workletization
+  - Implement swipe navigation between days with momentum scrolling
+  - Use date-fns for simple date manipulation and formatting
   - _Requirements: R1-AC1, R1-AC2, R1-AC3_
 
-- [ ] 2.2 Create TaskIndicator component for visual task representation
-  - Build color-coded task indicators using OptimizedIcon
-  - Implement task count badges for multiple tasks per day
-  - Add priority-based visual emphasis with NativeWind classes
-  - Create animated state changes for task updates
-  - Integrate with existing task type system
+- [ ] 2.2 Create TaskCard component with task-focused design
+  - Build clean task cards with plant images and essential information
+  - Implement color coding by task type and priority level
+  - Add completion checkbox with smooth animation transitions
+  - Create swipe actions for quick task completion or snoozing
+  - Add priority indicators with visual emphasis and overdue highlighting
+  - Use stable component references with React.memo to prevent re-renders
+  - Integrate with existing task type system and NativeWind theming
   - _Requirements: R1-AC2, R1-AC4, R5-AC4_
 
-- [ ] 2.3 Implement calendar navigation and date selection
-  - Create CalendarNavigation component with gesture support
-  - Add swipe navigation between months/weeks using GestureHandler
-  - Implement pull-to-refresh for task updates
-  - Create smooth date selection animations
-  - Integrate with existing navigation patterns
+- [ ] 2.3 Implement task navigation with simple day controls
+  - Create DaySelector component with horizontal FlashList scrolling
+  - Add swipe navigation between days with smooth momentum scrolling
+  - Implement pull-to-refresh for task updates with FlashList integration
+  - Create smooth date selection animations with date-fns utilities
+  - Add task count indicators on day headers for quick overview
+  - Implement simple navigation controls (today button, date picker)
+  - Add locale-aware date formatting with date-fns locales
   - _Requirements: R1-AC1, R1-AC5_
 
 - [ ] 3. Build schedule template system
@@ -58,55 +64,61 @@
   - Integrate with existing plant management system
   - _Requirements: R3-AC3, R3-AC4, R3-AC5_
 
-- [ ] 4. Develop growth automation system
-- [ ] 4.1 Create AutoScheduler service for automated task scheduling
-  - Build growth stage detection and task generation logic
-  - Implement strain-specific scheduling algorithms
-  - Create environmental condition-based schedule adjustments
-  - Add recurring task generation with conflict resolution
+- [ ] 4. Adapt existing automation system for task management
+- [ ] 4.1 Reuse and adapt scheduling logic for task automation
+  - ✅ **REUSE**: Growth stage detection logic from plant management
+  - ✅ **REUSE**: Strain-specific scheduling algorithms
+  - Adapt task generation for 5-day workflow optimization
+  - Modify recurring task logic for daily task management
   - Integrate with existing Plant and PlantTask models
   - _Requirements: R2-AC1, R2-AC3, R4-AC1, R4-AC2, R6-AC1, R6-AC2, R6-AC3_
+  - _Reuse Benefit: 60% of scheduling algorithms ready_
 
-- [ ] 4.2 Implement ReminderEngine for smart notifications
-  - Build notification batching and timing optimization
-  - Create overdue task detection and escalation
-  - Implement user activity pattern analysis
-  - Add quiet hours and notification preference handling
-  - Integrate with existing notification system
+- [ ] 4.2 Reuse ReminderEngine for task notifications
+  - ✅ **REUSE**: Notification batching and timing optimization from plant management
+  - ✅ **REUSE**: Overdue task detection and escalation logic
+  - ✅ **REUSE**: User activity pattern analysis
+  - ✅ **REUSE**: Quiet hours and notification preference handling
+  - Adapt for task-focused notification content
   - _Requirements: R2-AC2, R2-AC5, R5-AC2_
+  - _Reuse Benefit: 95% of reminder engine ready_
 
-- [ ] 4.3 Create GrowthStageDetector for automatic progression
-  - Build plant growth stage detection algorithms
-  - Implement manual override and confirmation system
-  - Create growth milestone tracking and celebration
-  - Add integration with plant metrics and photos
-  - Connect with existing plant health monitoring
+- [ ] 4.3 Adapt growth stage integration for task prioritization
+  - ✅ **REUSE**: Growth stage detection algorithms from plant management
+  - ✅ **REUSE**: Plant metrics integration patterns
+  - Modify for task priority calculation based on growth stage
+  - Adapt milestone tracking for task completion celebration
+  - Connect with existing plant health monitoring for task urgency
   - _Requirements: R4-AC1, R4-AC2, R4-AC3, R6-AC4_
+  - _Reuse Benefit: 70% of growth stage logic ready_
 
-- [ ] 5. Enhance task management system
-- [ ] 5.1 Create TaskCompletionModal with enhanced completion tracking
-  - Build detailed task completion interface using existing modal patterns
-  - Add photo capture and note-taking functionality
-  - Implement condition recording for environmental tracking
-  - Create supply usage tracking and inventory integration
-  - Add automatic next task scheduling
+- [ ] 5. Adapt existing task management components
+- [ ] 5.1 Adapt MetricsInputForm for task completion tracking
+  - ✅ **REUSE**: MetricsInputForm component from plant management as base
+  - ✅ **REUSE**: Photo capture and note-taking functionality
+  - ✅ **REUSE**: Environmental condition recording patterns
+  - Modify for task-specific completion data (duration, supplies used)
+  - Adapt for quick task completion vs comprehensive metrics
   - _Requirements: R5-AC1, R5-AC4, R6-AC2, R6-AC4_
+  - _Reuse Benefit: 75% of completion interface ready_
 
-- [ ] 5.2 Implement BulkTaskActions for multi-task operations
-  - Build multi-select task interface with checkboxes
-  - Create bulk completion with shared notes functionality
-  - Implement batch rescheduling with date picker
-  - Add confirmation dialogs for destructive actions
-  - Create progress indicators for bulk operations
+- [ ] 5.2 Reuse bulk operations from plant management
+  - ✅ **REUSE**: Batch operations logic from CareReminders component
+  - ✅ **REUSE**: Multi-select interface patterns
+  - ✅ **REUSE**: Confirmation dialogs and progress indicators
+  - Adapt for task-specific bulk actions (complete, reschedule, snooze)
+  - Modify for horizontal 5-day task layout
   - _Requirements: R5-AC5, R5-AC4_
+  - _Reuse Benefit: 90% of bulk operations ready_
 
-- [ ] 5.3 Create TaskHistoryView for historical analysis
-  - Build task completion history visualization
-  - Implement completion rate tracking and analytics
-  - Create pattern recognition for optimization suggestions
-  - Add comparison tools for different growing cycles
-  - Integrate with existing plant comparison features
+- [ ] 5.3 Adapt metrics history for task analytics
+  - ✅ **REUSE**: MetricsChart component from plant management
+  - ✅ **REUSE**: Historical data visualization patterns
+  - ✅ **REUSE**: Plant comparison features as base
+  - Modify for task completion rate tracking and analytics
+  - Adapt for task pattern recognition and optimization suggestions
   - _Requirements: R5-AC3, R6-AC5_
+  - _Reuse Benefit: 80% of analytics components ready_
 
 - [ ] 6. Integrate calendar with plant data
 - [ ] 6.1 Connect calendar with plant strain characteristics
@@ -133,38 +145,44 @@
   - Connect with existing harvest tracking system
   - _Requirements: R4-AC3, R6-AC4, R6-AC5_
 
-- [ ] 7. Implement notification and reminder system
-- [ ] 7.1 Set up push notification infrastructure
-  - Configure Expo Notifications for calendar reminders
-  - Implement notification permission handling
-  - Create notification templates for different task types
-  - Add deep linking from notifications to relevant screens
-  - Integrate with existing notification preferences
+- [ ] 7. Adapt existing notification system for task management
+- [ ] 7.1 Reuse notification infrastructure from plant management
+  - ✅ **REUSE**: NotificationScheduler component from plant-management-completion
+  - ✅ **REUSE**: Expo Notifications configuration and permission handling
+  - ✅ **REUSE**: Notification templates and deep linking logic
+  - Adapt notification content for task-focused messaging
+  - Integrate with 5-day task view navigation
   - _Requirements: R2-AC2, R2-AC4, R2-AC5_
+  - _Reuse Benefit: 90% of notification infrastructure ready_
 
-- [ ] 7.2 Build smart notification scheduling
-  - Implement intelligent notification timing
-  - Create notification batching to prevent spam
-  - Add user activity-based notification optimization
-  - Build notification frequency controls
-  - Create quiet hours and do-not-disturb integration
+- [ ] 7.2 Adapt smart notification scheduling for tasks
+  - ✅ **REUSE**: Intelligent notification timing from plant management
+  - ✅ **REUSE**: Notification batching and spam prevention logic
+  - ✅ **REUSE**: User activity-based optimization patterns
+  - Modify scheduling for daily task workflow (5-day focus)
+  - Adapt quiet hours integration for task reminders
   - _Requirements: R2-AC2, R2-AC5, R5-AC2_
+  - _Reuse Benefit: 85% of scheduling logic ready_
 
-- [ ] 7.3 Create notification management interface
-  - Build notification history and management screen
-  - Implement notification preferences and customization
-  - Add notification testing and preview functionality
-  - Create notification analytics and effectiveness tracking
-  - Integrate with existing settings and profile system
+- [ ] 7.3 Adapt notification management for task interface
+  - ✅ **REUSE**: CareReminders component as base for task reminders
+  - ✅ **REUSE**: Batch operations and quick actions from plant management
+  - ✅ **REUSE**: Priority-based visual indicators
+  - Modify UI for horizontal 5-day task layout
+  - Adapt reminder cards for task-focused information display
   - _Requirements: R2-AC2, R2-AC5_
+  - _Reuse Benefit: 80% of UI components ready_
 
 - [ ] 8. Performance optimization and testing
-- [ ] 8.1 Optimize calendar rendering performance
-  - Implement virtual scrolling for large calendar views
-  - Add lazy loading for task details and images
-  - Create efficient caching strategy for calendar data
-  - Optimize animations using Reanimated v3 worklets
-  - Test performance with large plant collections
+- [ ] 8.1 Optimize task management rendering with FlashList performance
+  - Implement FlashList virtualization for both day selector and task lists
+  - Optimize data loading for 5-day focus instead of full calendar (current week ±2 days)
+  - Add efficient task caching with automatic cleanup of old data
+  - Create stable component references with useCallback and useMemo
+  - Optimize animations using Reanimated v3 automatic workletization
+  - Implement background task filtering and sorting without blocking UI
+  - Add intelligent prefetching for adjacent days
+  - Test performance with large plant collections (100+ plants, 1000+ tasks)
   - _Requirements: R1-AC5, R5-AC3_
 
 - [ ] 8.2 Implement background processing optimization

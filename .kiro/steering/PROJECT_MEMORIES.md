@@ -36,7 +36,7 @@ This file documents all AI agent memories and key implementation notes for the C
 - In `useCardAnimation.ts`, pressed shadow state uses higher opacity for dark mode and lower for light mode. Use `useColorScheme` to select appropriate shadow values. *(IDs: 190593, 190584)*
 - As of June 2025, React Compiler is still in RC phase. Continue using `.value` syntax with Reanimated. *(ID: 190577)*
 - StrainAutocomplete.tsx migrated to consistent v2 `.value` syntax. Remaining files with v3 syntax: `UserAvatar.tsx`, `StrainsView.tsx`. Maintain v2 syntax for compatibility. *(ID: 190568)*
-- Always add `'worklet'` in Reanimated worklets and never access `.value` outside worklets. *(Project rule)*
+- **UPDATED**: React Native Reanimated v3.19.0+ uses automatic workletization - no manual `'worklet'` directives needed. Never access `.value` outside worklets. *(Project rule updated 2025)*
 
 ## Styling & Theming
 - Only use NativeWind v4 for styling. All theming/dark mode via semantic tokens and `dark:` prefixes. Use `ThemedView`/`ThemedText` for all custom UI. *(Project rule)*
@@ -46,6 +46,11 @@ This file documents all AI agent memories and key implementation notes for the C
 ## Debugging & Logging
 - Use custom logger (not `console.log`) for production. Babel strips console statements in prod. Hermes enabled for iOS. Use Sentry for error logging. *(Project rule)*
 - When debugging React Native component issues by commenting out sections, ensure the debugging approach still allows reproduction of the original error. *(ID: 190704)*
+
+## Documentation & Research Standards (2025)
+- **React Native Reanimated v3.19.0+**: Project uses latest version with automatic workletization - no manual 'worklet' directives needed. Always verify current API syntax via Brave Search or Context7 before implementation.
+- **Always fetch fresh documentation**: When working with any library or technology, use Brave Search or Context7 to get the most current documentation, API changes, and best practices. Never assume knowledge of library APIs without verification.
+- **Quality improvement mandate**: Using up-to-date documentation sources significantly improves code quality and prevents deprecated API usage. This is a critical requirement for all development work.
 
 ## Miscellaneous
 - User prefers that the `--quality hd` flag be appended to every snapai icon prompt. *(ID: 190686)*

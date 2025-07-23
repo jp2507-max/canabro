@@ -2,7 +2,27 @@
 
 ## Overview
 
-The Production Infrastructure system establishes the operational foundation for CanaBro's production deployment. This system integrates with Expo's EAS services, implements comprehensive monitoring solutions, and creates automated deployment pipelines to ensure reliable, scalable, and maintainable production operations.
+The Production Infrastructure system establishes the operational foundation for CanaBro's production deployment using the latest 2025 technologies. This system integrates with Expo SDK 53, React Native 0.79, EAS services, implements comprehensive monitoring solutions with Sentry, and creates automated deployment pipelines using GitHub Actions to ensure reliable, scalable, and maintainable production operations.
+
+## Latest Technology Stack (2025)
+
+### Core Infrastructure
+- **Expo SDK 53** with React Native 0.79 (latest stable release)
+- **React Native Reanimated 3.19.0+** with automatic workletization (no manual 'worklet' directives needed)
+- **Metro bundler** with enhanced package exports and deferred hashing for faster startup
+- **EAS Build & Update** with improved CI/CD integration and rollback mechanisms
+
+### Monitoring & Analytics
+- **Sentry React Native SDK** with enhanced performance monitoring and AI-powered error grouping
+- **New React Native DevTools** for advanced debugging capabilities
+- **Flipper** with enhanced profiling features for development
+- **Web Vitals for Mobile** tracking for performance optimization
+
+### CI/CD & Deployment
+- **GitHub Actions** with expo-github-action for streamlined automation
+- **EAS Build** non-interactive mode for reliable CI environments
+- Enhanced **build caching** and **parallel processing** capabilities
+- **OIDC integration** for secure secrets management
 
 ## Architecture
 
@@ -41,7 +61,7 @@ infrastructure/
 
 ### 1. Over-the-Air Updates System
 
-#### EASUpdateManager Service
+#### EASUpdateManager Service (Enhanced for 2025)
 ```typescript
 interface EASUpdateConfig {
   channel: 'production' | 'staging' | 'development';
@@ -49,6 +69,10 @@ interface EASUpdateConfig {
   criticalUpdate: boolean;
   rollbackOnError: boolean;
   updateMessage?: string;
+  // New in 2025: Enhanced configuration options
+  incrementalUpdate: boolean;
+  metroConfig?: MetroBundlerConfig;
+  targetRNVersion: string; // React Native 0.79+
 }
 
 interface UpdateStatus {
@@ -57,31 +81,41 @@ interface UpdateStatus {
   progress: number;
   error?: string;
   rollbackAvailable: boolean;
+  // New in 2025: Enhanced status tracking
+  bundleSize: number;
+  downloadSpeed: number;
+  isIncremental: boolean;
+  compatibilityCheck: boolean;
 }
 
 class EASUpdateManager {
   static async checkForUpdates(): Promise<UpdateStatus | null> {
-    // Check for available updates
+    // Enhanced update checking with React Native 0.79 compatibility
+    // Leverage Metro bundler improvements for faster update detection
     // Handle update availability based on criticality
     // Respect user preferences for non-critical updates
+    // New: Incremental update detection
   }
 
   static async downloadUpdate(updateId: string): Promise<void> {
-    // Download update in background
-    // Show progress to user if needed
-    // Handle download failures with retry logic
+    // Enhanced download with Metro bundler optimizations
+    // Show progress to user with improved UX
+    // Handle download failures with exponential backoff retry logic
+    // New: Support for incremental updates to reduce download size
   }
 
   static async applyUpdate(updateId: string): Promise<void> {
-    // Apply downloaded update
-    // Restart app if necessary
-    // Handle application failures
+    // Apply downloaded update with React Native 0.79 compatibility checks
+    // Restart app if necessary with graceful handling
+    // Handle application failures with automatic rollback
+    // New: Validate update integrity before application
   }
 
   static async rollbackUpdate(): Promise<void> {
-    // Rollback to previous stable version
+    // Enhanced rollback with EAS Update rollback API
     // Clear problematic update cache
-    // Notify monitoring systems
+    // Notify Sentry monitoring systems
+    // New: Automatic rollback triggers based on error thresholds
   }
 }
 ```

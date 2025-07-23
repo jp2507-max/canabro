@@ -4,6 +4,26 @@
 
 The Plant Diagnosis System will transform CanaBro's basic diagnosis framework into a comprehensive plant health analysis platform. This system will provide cannabis growers with AI-powered problem identification, evidence-based treatment recommendations, and expert guidance to maintain healthy plants and maximize yields.
 
+## Technology Context & Latest Developments (2025)
+
+### AI/ML Plant Disease Detection Advances
+- **State-of-the-art Performance**: Recent research shows deep learning models achieving 95%+ accuracy in plant disease classification
+- **Mobile-First Approach**: TensorFlow.js and TensorFlow Lite optimized for mobile deployment with MobileNet architectures
+- **Real-time Processing**: Modern mobile devices can process plant disease detection in <300ms with optimized models
+- **Cannabis-Specific Models**: Emerging specialized datasets and models for cannabis plant health (GrowDoc.ca, plant.health API by Kindwise)
+
+### React Native & TensorFlow.js Integration (2025)
+- **TensorFlow.js 4.x**: Enhanced mobile performance with WebGL and WASM backends
+- **React Native Compatibility**: Improved platform adapter with better memory management
+- **Automatic Workletization**: React Native Reanimated 3.19.0+ eliminates manual 'worklet' directives
+- **Performance Optimizations**: Batch processing, model compression, and progressive loading capabilities
+
+### IoT Integration Opportunities
+- **Smart Sensor Integration**: Real-time environmental monitoring (temperature, humidity, soil moisture)
+- **Predictive Analytics**: IoT data combined with AI for proactive plant health alerts
+- **Mobile-IoT Bridge**: React Native apps as central hubs for IoT plant monitoring systems
+- **Agriculture 5.0**: Human-centric approach combining technology with sustainable practices
+
 ## Requirements
 
 ### Requirement 1: Visual Symptom Identification
@@ -24,11 +44,18 @@ The Plant Diagnosis System will transform CanaBro's basic diagnosis framework in
 
 #### Acceptance Criteria
 
-1. WHEN uploading a plant photo THEN the AI system SHALL analyze visible symptoms and provide diagnosis suggestions
-2. WHEN AI analysis is complete THEN the system SHALL show confidence scores for each diagnosis
-3. WHEN multiple issues are detected THEN the system SHALL prioritize them by severity and urgency
-4. WHEN AI is uncertain THEN the system SHALL recommend consulting the community or experts
-5. WHEN analysis fails THEN the system SHALL gracefully fallback to manual symptom selection
+1. WHEN uploading a plant photo THEN the AI system SHALL analyze visible symptoms and provide diagnosis suggestions within 300ms
+2. WHEN AI analysis is complete THEN the system SHALL show confidence scores for each diagnosis with explainable AI visualizations
+3. WHEN multiple issues are detected THEN the system SHALL prioritize them by severity and urgency using bounding box detection
+4. WHEN AI is uncertain THEN the system SHALL recommend consulting the community or experts with structured case data
+5. WHEN analysis fails THEN the system SHALL gracefully fallback to manual symptom selection with guided workflows
+
+#### Enhanced Technical Requirements (2025)
+- **Model Performance**: Achieve 95%+ accuracy using cannabis-specific training datasets
+- **Mobile Optimization**: Utilize TensorFlow.js 4.x with MobileNet architecture for <50MB model size
+- **Real-time Processing**: Implement progressive analysis with immediate feedback and detailed results
+- **Explainable AI**: Provide visual attention maps and confidence breakdowns for diagnosis transparency
+- **Offline Capability**: Support offline analysis with model caching and sync when connectivity returns
 
 ### Requirement 3: Evidence-Based Treatment Recommendations
 
@@ -60,11 +87,18 @@ The Plant Diagnosis System will transform CanaBro's basic diagnosis framework in
 
 #### Acceptance Criteria
 
-1. WHEN plant metrics indicate risk THEN the system SHALL send preventive care alerts
-2. WHEN environmental conditions are problematic THEN the system SHALL suggest immediate corrections
-3. WHEN growth patterns are abnormal THEN the system SHALL recommend investigation and monitoring
-4. WHEN similar plants had issues THEN the system SHALL warn about potential problems
-5. WHEN prevention measures are suggested THEN the system SHALL track their effectiveness
+1. WHEN plant metrics indicate risk THEN the system SHALL send preventive care alerts with severity levels
+2. WHEN environmental conditions are problematic THEN the system SHALL suggest immediate corrections with IoT integration
+3. WHEN growth patterns are abnormal THEN the system SHALL recommend investigation and monitoring with trend analysis
+4. WHEN similar plants had issues THEN the system SHALL warn about potential problems using community data
+5. WHEN prevention measures are suggested THEN the system SHALL track their effectiveness with outcome analytics
+
+#### IoT Integration & Smart Monitoring (2025)
+- **Environmental Sensors**: Integrate temperature, humidity, soil moisture, and light sensors for real-time monitoring
+- **Predictive Analytics**: Use machine learning on IoT data to predict plant health issues 24-48 hours in advance
+- **Smart Alerts**: Context-aware notifications based on plant growth stage, environmental conditions, and historical patterns
+- **Agriculture 5.0 Approach**: Combine automated monitoring with human expertise for sustainable growing practices
+- **Mobile-IoT Bridge**: React Native app as central hub for multiple IoT devices and sensor networks
 
 ### Requirement 6: Community Integration and Expert Consultation
 
