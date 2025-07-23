@@ -10,7 +10,7 @@ applyTo: "**"
 - **TypeScript strict mode**: All code is typed. Use interfaces, never enums. Structure files: main export, subcomponents, helpers, types.
 - **State Management**: Server state via TanStack Query v5 (`@tanstack/react-query`), global client state via React Context + useReducer, local DB via WatermelonDB. Supabase is the backend (auth, DB, real-time, storage).
 - **Styling**: NativeWind v4 is the only styling system. Use semantic color tokens (see `global.css`), never hardcoded colors. All layouts use safe area utilities (`pt-safe`, `h-screen-safe`).
-- **Animations**: React Native Reanimated v3 only. Use `.value` and explicit `'worklet'` in all worklets. Never animate with className conditions. Use custom hooks from `lib/animations/` for reusable patterns.
+- **Animations**: React Native Reanimated v3.19.0+ with automatic workletization. No manual `'worklet'` directives needed. Never access `.value` outside worklets. Use custom hooks from `lib/animations/` for reusable patterns.
 - **Custom Components**: Always check for existing utilities/components before creating new ones. Key utilities: `@/lib/utils/haptics`, `@/lib/utils/image-picker.ts`, `@/lib/utils/upload-image.ts`, `@/components/ui/EnhancedTextInput`, `@/components/keyboard/EnhancedKeyboardWrapper`.
 
 ## 🛠️ Developer Workflows
@@ -21,7 +21,7 @@ applyTo: "**"
 
 ## 📦 Project-Specific Patterns & Conventions
 - **Styling**: Only use NativeWind v4. All theming/dark mode via semantic tokens and `dark:` prefixes. Use `ThemedView`/`ThemedText` for all custom UI. Reference `.github/instructions/Nativewind Theming Best Practices.instructions.md` for safe area and advanced patterns.
-- **Animations**: Always add `'worklet'` in `useAnimatedStyle` and gesture handlers. Never access `.value` outside worklets. Cancel animations on unmount. Reference `.github/instructions/React Native Reanimated Best Practices.instructions.md` for all animation code.
+- **Animations**: React Native Reanimated v3.19.0+ uses automatic workletization - no manual `'worklet'` directives needed. Never access `.value` outside worklets. Cancel animations on unmount. Reference `.github/instructions/React Native Reanimated Best Practices.instructions.md` for all animation code.
 - **Data**: Use TanStack Query for all server state. Use proper query keys and cache strategies. Use WatermelonDB for local relationships. Use Supabase for all backend (auth, DB, storage, real-time). Implement optimistic updates and error boundaries.
 - **Navigation**: File-based routing only. Use dynamic routes and params. Handle navigation state and deep links. See `app/` for structure.
 - **Accessibility**: All components must have a11y props, semantic roles, and support screen readers. See `scripts/ui-refinement-plan.md` for patterns.
@@ -37,16 +37,22 @@ applyTo: "**"
 ## 🚨 Key Rules for AI Agents
 1. **Never duplicate logic**—always check for existing utilities/components first.
 2. **Never hardcode colors or styles**—use semantic tokens and NativeWind only.
-3. **Always add `'worklet'` in Reanimated worklets and never access `.value` outside worklets.**
+3. **React Native Reanimated v3.19.0+**: Automatic workletization enabled - no manual `'worklet'` directives needed. Never access `.value` outside worklets.
 4. **All code must be fully optimized, DRY, and follow strict TypeScript.**
-5. **If uncertain, research with Context7/BraveSearch MCP and check `.github/instructions/` for latest best practices.**
-6. **Always provide file names and break code into reusable modules/components.**
-7. **Document only what is discoverable in the codebase, not aspirational practices.**
+5. **Always provide file names and break code into reusable modules/components.**
+6. **Document only what is discoverable in the codebase, not aspirational practices.**
+
+## Documentation & Research Rules
+1. **Always use Brave Search or Context7** to fetch the latest documentation when working with any library or technology
+2. **Never assume API knowledge** - always verify current syntax, best practices, and version-specific features
+3. **Check for breaking changes** and new features in library updates before implementation
+4. **Prioritize official documentation** and recent community examples over outdated information
 
 ## 📚 Reference Files
-- **only for Styling**: `.github/instructions/Nativewind Theming Best Practices.instructions.md`
-- **only for Animation**: `.github/instructions/React Native Reanimated Best Practices.instructions.md`
+- **Styling**: `.github/instructions/Nativewind Theming Best Practices.instructions.md`
+- **Animation**: `.github/instructions/React Native Reanimated Best Practices.instructions.md`
 - **Build/Release/Testing**: `tasks/`, `scripts/`
 - **Product Requirements Document (PRD)**: `.taskmaster/docs/prd.txt`
+
 ---
 If any section is unclear or incomplete, please provide feedback for further iteration.

@@ -70,7 +70,9 @@
 - [ ] 5. Implement age verification and access control
 - [ ] 5.1 Create age verification service and validation system
   - Build AgeVerificationService with multiple verification methods
-  - Implement document verification, self-declaration, and third-party validation
+  - Implement privacy-preserving age verification aligned with EU 2025 standards
+  - Add integration capability with EU's official age verification app (July 2025)
+  - Create GDPR-compliant age verification that proves 18+ without collecting extra personal data
   - Add age verification result storage with security and privacy protection
   - Create verification level management (basic, enhanced, premium)
   - Build age verification audit trail and compliance reporting
@@ -120,10 +122,11 @@
 - [ ] 7. Implement jurisdiction-specific compliance and restrictions
 - [ ] 7.1 Create location-based compliance management system
   - Build LocationComplianceService for geographic compliance checking
-  - Create JurisdictionManager for location-specific legal requirements
+  - Create JurisdictionManager for location-specific legal requirements (Germany: 18+ cannabis cultivation legal since April 2024)
   - Implement real-time location detection and compliance rule application
   - Add compliance rule database with regular legal requirement updates
   - Build location-based content filtering and access restrictions
+  - Position app as "growing assistant" or educational tool in Germany, not promoting consumption/sales
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [ ] 7.2 Implement regional content filtering and legal warnings

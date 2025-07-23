@@ -33,13 +33,14 @@
   - Integrate with existing image handling utilities
   - _Requirements: 1.4, 7.1_
 
-- [ ] 3. Enhance AI-powered photo analysis system
-- [ ] 3.1 Upgrade PhotoAnalyzer with advanced AI capabilities
-  - Enhance existing DiagnosisAICore with cannabis-specific model
-  - Implement confidence scoring and uncertainty handling
-  - Add bounding box visualization for affected areas
-  - Create real-time analysis progress with visual feedback
-  - Integrate with existing CameraCapture component
+- [ ] 3. Enhance AI-powered photo analysis system (2025 Enhanced)
+- [ ] 3.1 Upgrade PhotoAnalyzer with TensorFlow.js 4.x and advanced AI capabilities
+  - Implement TensorFlow.js 4.x with MobileNetV3 + EfficientNet architecture for <300ms inference
+  - Integrate cannabis-specific training datasets achieving 95%+ accuracy
+  - Add explainable AI with visual attention maps and confidence breakdowns
+  - Implement real-time progressive analysis with React Native Reanimated 3.19.0+ worklets
+  - Create offline-first architecture with local model caching and cloud sync
+  - Add performance monitoring for battery impact and memory optimization
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
 - [ ] 3.2 Implement AI model management and updates
@@ -108,14 +109,22 @@
   - Integrate with existing expert guide system
   - _Requirements: 4.2, 4.3_
 
-- [ ] 6. Implement proactive prevention system
-- [ ] 6.1 Create RiskAssessment component for health monitoring
-  - Build automated risk assessment using plant metrics
-  - Implement predictive modeling based on historical data
-  - Create visual risk dashboard with severity indicators
-  - Add customizable risk thresholds and alert preferences
-  - Integrate with existing plant metrics and environmental data
+- [ ] 6. Implement IoT-integrated proactive prevention system (2025 Enhanced)
+- [ ] 6.1 Create EnvironmentalMonitor component for IoT sensor integration
+  - Build real-time environmental monitoring with WebSocket connections
+  - Implement multi-sensor data fusion (temperature, humidity, soil moisture, pH, light)
+  - Create predictive analytics combining IoT + visual data for 24-48h advance alerts
+  - Add smart threshold management based on plant growth stage and strain
+  - Integrate with existing plant metrics and create mobile-IoT bridge architecture
   - _Requirements: 5.1, 5.2, 5.3_
+
+- [ ] 6.2 Create SmartAlerts system with predictive capabilities
+  - Build ML models for predictive plant health alerts using IoT data streams
+  - Implement context-aware notifications based on environmental conditions
+  - Create Agriculture 5.0 approach combining automated monitoring with human expertise
+  - Add edge computing capabilities for local trend analysis and anomaly detection
+  - Integrate with existing notification system and calendar for preventive scheduling
+  - _Requirements: 5.1, 5.2, 5.4, 5.5_
 
 - [ ] 6.2 Implement PreventiveAlerts for proactive warnings
   - Build alert system for environmental and growth risks
@@ -183,14 +192,23 @@
   - Integrate with existing profile and achievement systems
   - _Requirements: 7.3, 7.4, 7.5_
 
-- [ ] 9. Performance optimization and testing
-- [ ] 9.1 Optimize AI processing and model performance
-  - Implement model compression for mobile deployment
-  - Create batch processing for multiple image analyses
-  - Add caching strategy for common diagnosis results
-  - Optimize progressive loading for better user experience
-  - Test performance with large image datasets
+- [ ] 9. Performance optimization and testing (2025 Enhanced)
+- [ ] 9.1 Optimize AI processing with TensorFlow.js 4.x and mobile performance
+  - Implement TensorFlow.js 4.x WebGL/WASM backends for 3x performance improvement
+  - Create quantized MobileNetV3 models under 50MB with 95%+ accuracy retention
+  - Add React Native Reanimated 3.19.0+ worklet runtime for non-blocking inference
+  - Implement progressive analysis with immediate feedback and detailed results
+  - Create battery optimization with adaptive processing based on device state
+  - Test performance with large cannabis-specific image datasets and IoT data streams
   - _Requirements: 2.1, 2.2, 2.5_
+
+- [ ] 9.2 Implement edge computing and offline-first architecture
+  - Create local-first processing with cloud enhancement for complex cases
+  - Implement intelligent model caching and versioning system
+  - Add full offline diagnosis capability with sync when connectivity returns
+  - Create background IoT data processing using worklets and background tasks
+  - Test offline functionality in remote growing locations with limited connectivity
+  - _Requirements: 2.1, 2.5, 5.1_
 
 - [ ] 9.2 Optimize knowledge base and search performance
   - Implement efficient full-text search indexing

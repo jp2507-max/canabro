@@ -13,36 +13,40 @@
 
 - [ ] **ACF-T02**: Implement real-time messaging system
 - [ ] **ACF-T02.1**: Create DirectMessaging component for private conversations
-  - Build messaging interface using existing community patterns
-  - Implement real-time message delivery with Supabase Realtime
-  - Add message status indicators (sent, delivered, read)
-  - Create typing indicators and online presence display
-  - Integrate with existing user authentication and profiles
+  - Build messaging interface using FlashList for message virtualization (`estimatedItemSize: 80`)
+  - Implement real-time message delivery with Supabase Realtime v2 and Broadcast API
+  - Add message status indicators with automatic workletization (Reanimated v3.19.0+)
+  - Create typing indicators and online presence with Presence v2
+  - Integrate react-native-keyboard-controller for enhanced keyboard handling
+  - Use react-native-fast-image for optimized message media loading
   - _Requirements: 1_
 
 - [ ] **ACF-T02.2**: Create GroupChat component for community discussions
-  - Build group conversation interface with member management
-  - Implement real-time group message synchronization
-  - Add group admin controls and moderation features
-  - Create group invitation and joining system
-  - Use existing ThemedView and EnhancedTextInput components
+  - Build group conversation interface with FlashList virtualization for member lists
+  - Implement real-time group message synchronization with message batching
+  - Add group admin controls with automatic workletization for smooth animations
+  - Create group invitation system with rate limiting protection (100 msgs/sec)
+  - Use existing ThemedView and EnhancedTextInput with keyboard controller integration
+  - Implement offline-first architecture with WatermelonDB sync
   - _Requirements: 1_
 
 - [ ] **ACF-T02.3**: Implement MessageComposer with rich content support
-  - Build enhanced message input with photo and file attachments
-  - Add emoji picker and reaction system
-  - Implement message formatting (bold, italic, mentions)
-  - Create voice message recording and playback
-  - Integrate with existing image handling utilities
+  - Build enhanced message input with react-native-keyboard-controller integration
+  - Add photo/file attachments using optimized upload-image.ts utility
+  - Implement emoji picker with automatic workletization for smooth animations
+  - Create message formatting with real-time preview (bold, italic, mentions)
+  - Add voice message recording with proper cleanup on component unmount
+  - Use MMKV for draft message persistence and offline support
   - _Requirements: 1_
 
 - [ ] **ACF-T03**: Build live notification system
 - [ ] **ACF-T03.1**: Create LiveNotificationCenter for real-time alerts
-  - Build notification center using existing notification patterns
-  - Implement real-time notification delivery via Supabase Realtime
-  - Add notification categorization and priority handling
-  - Create notification history and management interface
-  - Integrate with existing push notification system
+  - Build notification center with FlashList for large notification histories
+  - Implement real-time delivery via Supabase Realtime v2 with automatic reconnection
+  - Add notification batching and rate limiting protection (100 msgs/sec)
+  - Create notification history with automatic workletization for smooth scrolling
+  - Integrate with Expo Notifications v2 for enhanced push notifications
+  - Use MMKV for notification persistence and offline queuing
   - _Requirements: 2_
 
 - [ ] **ACF-T03.2**: Implement NotificationPreferences for user control
@@ -54,11 +58,12 @@
   - _Requirements: 2_
 
 - [ ] **ACF-T03.3**: Create ActivityFeed for community engagement tracking
-  - Build real-time activity feed with live updates
-  - Implement activity filtering and personalization
-  - Add engagement metrics and trending content detection
-  - Create activity notification triggers and rules
-  - Integrate with existing community post and interaction systems
+  - Build real-time activity feed with FlashList virtualization (`estimatedItemSize: 120`)
+  - Implement activity filtering with intelligent prefetching and caching
+  - Add engagement metrics with automatic workletization for smooth interactions
+  - Create activity notification triggers with background processing optimization
+  - Integrate with existing community systems using WatermelonDB for offline-first
+  - Use react-native-fast-image for optimized activity media loading
   - _Requirements: 2_
 
 - [ ] **ACF-T04**: Implement advanced content filtering and moderation
@@ -162,20 +167,22 @@
   - _Requirements: 6_
 
 - [ ] **ACF-T08**: Performance optimization and testing
-- [ ] **ACF-T08.1**: Optimize real-time performance and scalability
-  - Implement efficient WebSocket connection management
-  - Create message batching and throttling for high-volume scenarios
-  - Add connection retry logic and offline message queuing
-  - Optimize database queries for real-time operations
-  - Test performance with large user bases and high message volumes
+- [ ] **ACF-T08.1**: Optimize real-time performance and scalability (2025 Standards)
+  - Implement enhanced WebSocket connection management with Supabase Realtime v2
+  - Create intelligent message batching with rate limiting (100 msgs/sec per user)
+  - Add exponential backoff reconnection logic with connection pooling
+  - Optimize database queries with proper indexing and connection pooling
+  - Test performance with FlashList virtualization for 10k+ message histories
+  - Implement memory management with proper animation cleanup (cancelAnimation)
   - _Requirements: 1, 2_
 
-- [ ] **ACF-T08.2**: Implement caching and data synchronization
-  - Create intelligent caching strategy for frequently accessed content
-  - Implement offline-first messaging with sync when online
-  - Add conflict resolution for concurrent message editing
-  - Create data consistency checks and repair mechanisms
-  - Test synchronization across multiple devices and platforms
+- [ ] **ACF-T08.2**: Implement caching and data synchronization (2025 Optimizations)
+  - Create intelligent caching with MMKV for high-performance storage
+  - Implement offline-first messaging with WatermelonDB sync and conflict resolution
+  - Add message compression and deduplication for network optimization
+  - Create data consistency checks with automatic repair mechanisms
+  - Test synchronization with background app refresh optimization
+  - Implement smart prefetching based on user behavior patterns
   - _Requirements: 1, 2_
 
 - [ ] **ACF-T08.3**: Test community features integration and user experience

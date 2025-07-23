@@ -4,6 +4,30 @@
 
 The Advanced Community Features system enhances CanaBro's existing community platform with real-time capabilities, advanced social features, and intelligent content discovery. This system builds upon existing community components while adding real-time messaging, live notifications, enhanced search, and social networking features to create a vibrant cannabis growing community.
 
+## 2025 Technology Updates & Best Practices
+
+### React Native Reanimated v3.19.0+ Enhancements
+- **Automatic Workletization**: No manual `'worklet'` directives needed for `useAnimatedStyle`, `useAnimatedScrollHandler`, and other Reanimated hooks
+- **Performance Optimizations**: Worklets automatically run on UI thread with improved closure capturing
+- **Best Practices**: 
+  - Never access `.value` outside worklets
+  - Use proper cleanup with `cancelAnimation` on component unmount
+  - Optimize closure capturing by extracting specific properties from large objects
+  - Leverage file-level workletization for utility files with `'worklet';` at top
+
+### Supabase Realtime 2025 Features
+- **Enhanced WebSocket Performance**: Improved connection management and automatic reconnection
+- **Message Batching**: Intelligent batching for high-throughput messaging scenarios
+- **Presence v2**: Enhanced user presence tracking with better state synchronization
+- **Broadcast Improvements**: Low-latency messaging with better error handling and retry logic
+- **Rate Limiting**: Built-in protection against message spam with automatic throttling
+
+### Performance Optimization Standards
+- **FlashList Integration**: Use `@shopify/flash-list` for all large message lists and feeds (>50 items)
+- **Virtualization Best Practices**: Proper `estimatedItemSize` configuration and `getItemType` optimization
+- **Memory Management**: Implement proper cleanup for WebSocket connections and animation cleanup
+- **Network Optimization**: Message compression, intelligent caching, and offline-first architecture
+
 ## Architecture
 
 ### Existing Foundation
@@ -16,11 +40,13 @@ The Advanced Community Features system enhances CanaBro's existing community pla
 ```
 components/
 ├── messaging/
-│   ├── DirectMessaging.tsx           # Private messaging interface
+│   ├── DirectMessaging.tsx           # Private messaging interface with FlashList optimization
 │   ├── GroupChat.tsx                 # Group conversation management
-│   ├── MessageComposer.tsx           # Rich message composition
-│   ├── ConversationList.tsx          # Message thread management
-│   └── MessageNotifications.tsx      # Message-specific notifications
+│   ├── MessageComposer.tsx           # Rich message composition with Reanimated v3.19.0+
+│   ├── ConversationList.tsx          # Message thread management using FlashList
+│   ├── MessageNotifications.tsx      # Message-specific notifications
+│   ├── MessageBubble.tsx             # Optimized message bubble with automatic workletization
+│   └── MessageInput.tsx              # Enhanced input with react-native-keyboard-controller
 ├── live-notifications/
 │   ├── LiveNotificationCenter.tsx    # Real-time notification hub
 │   ├── NotificationPreferences.tsx   # User notification controls
@@ -101,11 +127,17 @@ interface MessageReaction {
 ```
 
 **Design Features:**
-- Real-time message delivery using Supabase Realtime subscriptions
-- Typing indicators and online presence status
+- Real-time message delivery using Supabase Realtime v2 with enhanced WebSocket performance
+- Typing indicators and online presence status with Presence v2
 - Rich message content with plant photos and strain information
-- Message reactions and reply threading
+- Message reactions and reply threading with optimized animations
 - End-to-end message encryption for privacy
+- **Performance Enhancements (2025)**:
+  - FlashList for message virtualization with `estimatedItemSize: 80`
+  - Automatic workletization for smooth scroll animations
+  - Message batching for high-frequency updates
+  - Intelligent caching with offline-first architecture
+  - react-native-keyboard-controller for enhanced keyboard handling
 
 #### GroupChat Component
 ```typescript
@@ -189,11 +221,16 @@ type NotificationType =
 ```
 
 **Design Features:**
-- Real-time notification delivery via Supabase Realtime
-- Intelligent notification grouping and batching
+- Real-time notification delivery via Supabase Realtime with enhanced reliability
+- Intelligent notification grouping and batching with rate limiting protection
 - Actionable notifications with quick response options
-- Priority-based notification handling
+- Priority-based notification handling with automatic throttling
 - Deep linking to relevant content and screens
+- **2025 Optimizations**:
+  - Broadcast API for low-latency notifications
+  - Automatic reconnection with exponential backoff
+  - Background processing optimization for battery efficiency
+  - Push notification integration with Expo Notifications v2
 
 #### ActivityFeed Component
 ```typescript
@@ -232,11 +269,17 @@ type ActivityType =
 ```
 
 **Design Features:**
-- Real-time activity stream with live updates
+- Real-time activity stream with live updates using Supabase Realtime v2
 - Personalized activity filtering based on user interests
 - Activity aggregation and intelligent summarization
 - Social engagement tracking and analytics
 - Privacy controls for activity visibility
+- **Performance Features (2025)**:
+  - FlashList virtualization for infinite scroll feeds
+  - Automatic workletization for smooth animations and interactions
+  - Intelligent prefetching and caching strategies
+  - Background sync with conflict resolution
+  - Memory-efficient image loading with react-native-fast-image
 
 ### 3. Advanced Search and Discovery
 
@@ -671,62 +714,164 @@ export class CommunityPoll extends Model {
 - **Recording Failures**: Multiple recording sources with backup options
 - **Real-Time Sync Issues**: Conflict resolution with participant notification
 
-## Testing Strategy
+## Testing Strategy (2025 Standards)
 
 ### Real-Time Feature Testing
-- **Message Delivery**: Test message delivery across different network conditions
-- **Notification System**: Validate notification delivery and user preferences
-- **Live Events**: Test event hosting, participation, and recording functionality
-- **Social Features**: Test follow relationships, group management, and social interactions
+- **Message Delivery**: Test message delivery across different network conditions with Supabase Realtime v2
+- **Notification System**: Validate notification delivery with rate limiting and batching
+- **Live Events**: Test event hosting with WebSocket connection stability
+- **Social Features**: Test follow relationships and group management with concurrent users
 
-### Performance Testing
-- **Concurrent Users**: Test system performance with high concurrent user loads
-- **Message Volume**: Test messaging system with high message volumes
-- **Search Performance**: Test search functionality with large content databases
-- **Real-Time Updates**: Test real-time update performance and reliability
+### Performance Testing (Enhanced 2025)
+- **FlashList Performance**: Test virtualization with large datasets (10k+ items)
+- **Animation Performance**: Test Reanimated v3.19.0+ automatic workletization
+- **Memory Usage**: Monitor memory consumption with large message histories
+- **Battery Impact**: Test background processing and WebSocket efficiency
+- **Network Resilience**: Test offline-first capabilities and sync reliability
+
+### Load Testing
+- **Concurrent Users**: Test with 1000+ concurrent WebSocket connections
+- **Message Volume**: Test high-frequency messaging (100 msgs/sec per user)
+- **Search Performance**: Test full-text search with 100k+ messages
+- **Real-Time Updates**: Test broadcast performance with large user groups
 
 ### Integration Testing
-- **Cross-Feature Integration**: Test integration between messaging, notifications, and social features
-- **Existing System Integration**: Validate integration with existing community features
-- **Mobile Performance**: Test performance on various mobile devices and network conditions
-- **Offline Functionality**: Test offline capabilities and sync when reconnected
+- **Cross-Feature Integration**: Test messaging, notifications, and social features
+- **Existing System Integration**: Validate with current CanaBro components
+- **Mobile Performance**: Test on various devices (iOS 16+, Android API 23+)
+- **Offline Functionality**: Test WatermelonDB sync and conflict resolution
+- **Keyboard Handling**: Test react-native-keyboard-controller integration
+
+## Implementation Recommendations (2025)
+
+### Core Dependencies
+```json
+{
+  "react-native-reanimated": "^3.19.0",
+  "@shopify/flash-list": "^1.7.1",
+  "react-native-keyboard-controller": "^1.12.2",
+  "react-native-fast-image": "^8.6.3",
+  "react-native-mmkv": "^2.12.2",
+  "@supabase/supabase-js": "^2.45.4"
+}
+```
+
+### Messaging Implementation Pattern
+```typescript
+// Use FlashList for message virtualization
+import { FlashList } from '@shopify/flash-list';
+import { useAnimatedStyle } from 'react-native-reanimated';
+
+const MessageList = ({ messages }: { messages: Message[] }) => {
+  // Automatic workletization - no 'worklet' directive needed
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: 1,
+      transform: [{ translateY: 0 }]
+    };
+  });
+
+  return (
+    <FlashList
+      data={messages}
+      renderItem={({ item }) => <MessageBubble message={item} />}
+      estimatedItemSize={80}
+      keyExtractor={(item) => item._id.toString()}
+      inverted
+    />
+  );
+};
+```
+
+### Real-Time Connection Pattern
+```typescript
+// Enhanced Supabase Realtime with proper cleanup
+useEffect(() => {
+  const channel = supabase
+    .channel(`chat:${conversationId}`)
+    .on('broadcast', { event: 'message' }, (payload) => {
+      // Handle incoming messages with batching
+      handleIncomingMessage(payload);
+    })
+    .on('presence', { event: 'sync' }, () => {
+      // Handle presence updates
+      updateUserPresence();
+    })
+    .subscribe();
+
+  return () => {
+    channel.unsubscribe();
+  };
+}, [conversationId]);
+```
+
+### Animation Cleanup Pattern
+```typescript
+// Proper animation cleanup with Reanimated v3.19.0+
+useEffect(() => {
+  return () => {
+    // Cancel any ongoing animations
+    cancelAnimation(animatedValue);
+  };
+}, []);
+```
 
 ## Security Considerations
 
 ### Communication Security
 - **Message Encryption**: End-to-end encryption for private messages
-- **Data Privacy**: Secure handling of user communication data
-- **Access Control**: Proper authorization for group and event access
-- **Content Moderation**: Automated and manual moderation for all communication
+- **Data Privacy**: Secure handling of user communication data with GDPR compliance
+- **Access Control**: Row Level Security (RLS) policies in Supabase
+- **Content Moderation**: AI-powered content filtering with manual review
 
 ### Social Feature Security
-- **Privacy Controls**: Granular privacy settings for social interactions
-- **Spam Prevention**: Anti-spam measures for follows, messages, and notifications
-- **Abuse Prevention**: Reporting and blocking mechanisms for user protection
-- **Data Protection**: Secure storage and handling of social relationship data
+- **Privacy Controls**: Granular privacy settings with user consent management
+- **Spam Prevention**: Rate limiting with Supabase quotas (100 msgs/sec)
+- **Abuse Prevention**: Reporting system with automated blocking
+- **Data Protection**: Encrypted storage with secure key management
 
-### Real-Time Security
-- **Connection Security**: Secure WebSocket connections with authentication
-- **Rate Limiting**: Protection against abuse and spam in real-time features
-- **Event Security**: Secure event hosting with proper access controls
-- **Notification Security**: Secure notification delivery with user verification
+### Real-Time Security (2025 Standards)
+- **Connection Security**: JWT-based WebSocket authentication
+- **Rate Limiting**: Built-in Supabase protection with custom throttling
+- **Event Security**: Channel-based access control with user verification
+- **Notification Security**: Push notification encryption and validation
 
-## Performance Optimizations
+## Performance Optimizations (2025 Standards)
 
 ### Real-Time Performance
-- **Connection Management**: Efficient WebSocket connection pooling and management
-- **Message Batching**: Intelligent batching of messages and notifications
-- **Caching Strategy**: Strategic caching of frequently accessed social data
-- **Database Optimization**: Optimized queries for real-time data retrieval
+- **Connection Management**: Enhanced WebSocket connection pooling with Supabase Realtime v2
+- **Message Batching**: Intelligent batching with rate limiting protection (quotas: 100 msgs/sec)
+- **Caching Strategy**: Strategic caching with MMKV for high-performance storage
+- **Database Optimization**: Optimized queries with proper indexing and connection pooling
+
+### List Virtualization & UI Performance
+- **FlashList Integration**: Replace all FlatList instances with `@shopify/flash-list`
+  - Message lists: `estimatedItemSize: 80`
+  - Activity feeds: `estimatedItemSize: 120`
+  - User lists: `estimatedItemSize: 60`
+- **Reanimated v3.19.0+ Optimizations**:
+  - Automatic workletization for all animations
+  - Proper cleanup with `cancelAnimation` on unmount
+  - Optimized closure capturing for large objects
+- **Memory Management**: 
+  - Image optimization with react-native-fast-image
+  - Proper WebSocket cleanup and reconnection logic
+  - Background processing optimization
 
 ### Social Feature Performance
-- **Feed Generation**: Efficient algorithm for personalized social feeds
-- **Search Optimization**: Fast search with proper indexing and caching
-- **Recommendation Engine**: Optimized recommendation algorithms with caching
-- **Group Management**: Efficient group member and content management
+- **Feed Generation**: Efficient algorithm with FlashList virtualization
+- **Search Optimization**: Full-text search with proper indexing and debouncing
+- **Recommendation Engine**: ML-based recommendations with intelligent caching
+- **Group Management**: Optimized member management with pagination
 
-### Mobile Optimization
-- **Offline Support**: Robust offline functionality with intelligent sync
-- **Battery Optimization**: Efficient real-time connections to minimize battery usage
-- **Data Usage**: Optimized data usage for mobile networks
-- **Background Processing**: Efficient background processing for notifications and sync
+### Mobile Optimization (2025)
+- **Offline Support**: WatermelonDB integration for offline-first architecture
+- **Battery Optimization**: 
+  - Background app refresh optimization
+  - Intelligent WebSocket connection management
+  - Push notification batching
+- **Data Usage**: 
+  - Message compression and deduplication
+  - Image optimization and progressive loading
+  - Smart prefetching based on user behavior
+- **Keyboard Handling**: react-native-keyboard-controller for enhanced UX

@@ -4,6 +4,27 @@
 
 The Plant Diagnosis System extends CanaBro's existing diagnosis framework to create a comprehensive plant health analysis platform. The system builds upon existing DiagnosisAICore, CameraCapture, and DiagnosisResultCard components while adding advanced AI analysis, expert knowledge integration, and community consultation features.
 
+## 2025 Technology Stack & Optimizations
+
+### AI/ML Infrastructure
+- **TensorFlow.js 4.x**: Latest version with enhanced mobile performance and WebGL/WASM backends
+- **Model Architecture**: MobileNetV3 + EfficientNet for optimal mobile performance (<50MB models)
+- **Cannabis-Specific Training**: Leverage specialized datasets and transfer learning from agricultural models
+- **Edge Computing**: On-device inference with cloud fallback for complex cases
+- **Explainable AI**: Attention maps and confidence visualization for transparent diagnosis
+
+### React Native Performance (2025)
+- **Reanimated 3.19.0+**: Automatic workletization eliminates manual 'worklet' directives
+- **New Architecture**: Fabric renderer and TurboModules for improved performance
+- **Memory Optimization**: Streaming image uploads and progressive model loading
+- **Background Processing**: Worklet runtimes for non-blocking AI inference
+
+### IoT Integration Capabilities
+- **Sensor Networks**: Temperature, humidity, soil moisture, pH, light intensity monitoring
+- **Real-time Data**: WebSocket connections for live environmental data streaming
+- **Predictive Analytics**: ML models trained on IoT + visual data for proactive alerts
+- **Edge-to-Cloud**: Local processing with cloud aggregation for pattern recognition
+
 ## Architecture
 
 ### Existing Foundation
@@ -12,6 +33,13 @@ The Plant Diagnosis System extends CanaBro's existing diagnosis framework to cre
 - **Results Display**: DiagnosisResultCard for showing diagnosis results
 - **Community Integration**: Existing community posting and interaction system
 - **Plant Data**: Comprehensive plant metrics and photo tracking
+
+### Enhanced Architecture (2025)
+- **TensorFlow.js 4.x Integration**: Upgraded AI core with WebGL/WASM backends for 3x performance improvement
+- **Cannabis-Specific Models**: Integration with specialized plant health APIs (plant.health by Kindwise, GrowDoc.ca patterns)
+- **React Native Reanimated 3.19.0+**: Automatic workletization for smooth UI animations without manual 'worklet' directives
+- **IoT Integration Layer**: Real-time sensor data processing for environmental monitoring
+- **Explainable AI Components**: Visual attention maps and confidence breakdowns for transparent diagnosis
 
 ### Enhanced Components Architecture
 ```
@@ -87,13 +115,17 @@ interface SymptomImage {
 - Filter and search functionality for quick symptom finding
 - Multi-symptom selection for complex diagnosis scenarios
 
-#### PhotoAnalyzer Component (Enhanced)
+#### PhotoAnalyzer Component (Enhanced 2025)
 ```typescript
 interface PhotoAnalyzerProps {
   plantId: string;
   onAnalysisComplete: (results: DiagnosisResults) => void;
   existingPhotos?: PlantPhoto[];
   comparisonMode?: boolean;
+  iotData?: EnvironmentalSensorData; // New: IoT integration
+  enableExplainableAI?: boolean; // New: AI transparency
+  realtimeMode?: boolean; // New: Live camera analysis
+  offlineMode?: boolean; // New: Offline-first capability
 }
 
 interface DiagnosisResults {
@@ -104,12 +136,51 @@ interface DiagnosisResults {
     processingTime: number;
     modelVersion: string;
     detectedFeatures: string[];
+    attentionMaps?: AttentionMap[]; // New: Explainable AI
+    iotCorrelation?: IoTCorrelationData; // New: Environmental context
+    performanceMetrics: PerformanceMetrics; // New: Performance tracking
   };
   recommendations: {
     additionalPhotos?: string[];
     manualVerification?: boolean;
     expertConsultation?: boolean;
+    environmentalAdjustments?: EnvironmentalRecommendation[]; // New: IoT-based suggestions
+    preventiveMeasures?: PreventiveMeasure[]; // New: Proactive care
   };
+  explainability: ExplainableAIData; // New: Full AI transparency
+}
+
+interface AttentionMap {
+  boundingBox: BoundingBox;
+  confidence: number;
+  featureType: string;
+  explanation: string;
+}
+
+interface PerformanceMetrics {
+  inferenceTime: number;
+  memoryUsage: number;
+  modelSize: number;
+  batteryImpact: number;
+}
+
+interface ExplainableAIData {
+  confidenceBreakdown: ConfidenceScore[];
+  visualAttention: AttentionMap[];
+  similarCases: CaseReference[];
+  decisionPath: DecisionNode[];
+}
+  symptomType: string;
+  heatmapData: number[][];
+}
+
+interface EnvironmentalSensorData {
+  temperature: number;
+  humidity: number;
+  soilMoisture: number;
+  lightIntensity: number;
+  ph: number;
+  timestamp: Date;
 }
 
 interface Diagnosis {
@@ -123,12 +194,19 @@ interface Diagnosis {
 }
 ```
 
-**Design Features:**
-- Enhanced TensorFlow.js model with cannabis-specific training
-- Real-time analysis progress with visual feedback
-- Confidence scoring with uncertainty handling
-- Bounding box visualization for affected areas
-- Comparison mode for before/after treatment photos
+**Design Features (2025 Enhanced):**
+- **TensorFlow.js 4.x**: Cannabis-specific MobileNet models with 95%+ accuracy and <300ms processing
+- **Explainable AI**: Visual attention maps and confidence breakdowns for transparent diagnosis
+- **IoT Integration**: Environmental sensor data correlation for context-aware analysis
+- **Real-time Processing**: Progressive analysis with immediate feedback using React Native Reanimated 3.19.0+
+- **Offline-First Architecture**: Local model caching with cloud sync for remote growing operations
+- **Performance Monitoring**: Battery impact tracking and memory optimization for extended use
+- **Edge Computing**: On-device inference with cloud fallback for complex multi-symptom cases
+- **Predictive Analytics**: Combine visual + IoT data for 24-48 hour advance problem prediction
+- **Progressive Analysis**: Immediate feedback with detailed results following
+- **Offline-First**: Model caching with sync capabilities for connectivity-independent operation
+- **React Native Reanimated 3.19.0+**: Smooth animations without manual worklet directives
+- **Memory Optimization**: Streaming image processing to prevent OOM crashes on mobile devices
 
 ### 2. Treatment System
 
@@ -311,7 +389,81 @@ interface SearchFilters {
 - Search history and saved searches
 - Auto-complete and search suggestions
 
-### 4. Prevention System
+### 4. IoT Integration & Environmental Monitoring (New 2025)
+
+#### EnvironmentalMonitor Component
+```typescript
+interface EnvironmentalMonitorProps {
+  plantId: string;
+  sensorIds: string[];
+  onDataUpdate: (data: EnvironmentalReading) => void;
+  alertThresholds: EnvironmentalThresholds;
+}
+
+interface EnvironmentalReading {
+  sensorId: string;
+  timestamp: Date;
+  temperature: number;
+  humidity: number;
+  soilMoisture: number;
+  lightIntensity: number;
+  ph: number;
+  co2Level?: number;
+  airQuality?: number;
+}
+
+interface EnvironmentalThresholds {
+  temperature: { min: number; max: number; optimal: number };
+  humidity: { min: number; max: number; optimal: number };
+  soilMoisture: { min: number; max: number; optimal: number };
+  ph: { min: number; max: number; optimal: number };
+}
+
+interface IoTCorrelationData {
+  environmentalImpact: number; // 0-1 scale
+  riskFactors: EnvironmentalRiskFactor[];
+  recommendations: EnvironmentalRecommendation[];
+  predictiveAlerts: PredictiveAlert[];
+}
+```
+
+**Design Features:**
+- **Real-time Monitoring**: WebSocket connections for live sensor data streaming
+- **Predictive Analytics**: ML models trained on IoT + visual data for proactive alerts
+- **Smart Thresholds**: Dynamic adjustment based on plant growth stage and strain
+- **Multi-sensor Fusion**: Combine multiple environmental factors for comprehensive analysis
+- **Mobile-IoT Bridge**: React Native app as central hub for sensor network management
+
+#### SmartAlerts Component
+```typescript
+interface SmartAlertsProps {
+  plantId: string;
+  iotData: EnvironmentalReading[];
+  visualAnalysis: DiagnosisResults[];
+  onAlertGenerated: (alert: SmartAlert) => void;
+}
+
+interface SmartAlert {
+  id: string;
+  type: 'environmental' | 'visual' | 'predictive' | 'combined';
+  severity: 'info' | 'warning' | 'critical' | 'emergency';
+  message: string;
+  actionRequired: boolean;
+  timeframe: string; // "immediate", "within 24h", "within week"
+  recommendations: AlertRecommendation[];
+  dataSource: DataSource[];
+}
+
+interface PredictiveAlert {
+  predictedIssue: string;
+  probability: number;
+  timeframe: number; // hours until predicted occurrence
+  preventiveMeasures: PreventiveMeasure[];
+  confidence: number;
+}
+```
+
+### 5. Prevention System
 
 #### RiskAssessment Component
 ```typescript
@@ -558,16 +710,32 @@ export class PlantRiskAssessment extends Model {
 - **Liability Protection**: Clear disclaimers and liability limitations
 - **Professional Standards**: Enforcement of professional conduct standards
 
-## Performance Optimizations
+## Performance Optimizations (2025 Enhanced)
 
-### AI Processing
-- **Model Optimization**: Compressed models for mobile deployment
-- **Batch Processing**: Efficient handling of multiple image analyses
-- **Caching Strategy**: Cache common diagnosis results and recommendations
-- **Progressive Loading**: Incremental result delivery for better user experience
+### AI Processing & Mobile Performance
+- **TensorFlow.js 4.x Optimization**: WebGL and WASM backends for 3x faster inference
+- **Model Compression**: Quantized MobileNetV3 models under 50MB with 95%+ accuracy retention
+- **Worklet Runtime**: React Native Reanimated 3.19.0+ automatic workletization for UI thread operations
+- **Progressive Analysis**: Immediate low-confidence results followed by detailed analysis
+- **Memory Management**: Streaming image processing with automatic garbage collection
+- **Battery Optimization**: Adaptive processing based on device battery level and thermal state
+
+### Edge Computing & Offline Capabilities
+- **Local-First Architecture**: Primary processing on-device with cloud enhancement
+- **Model Caching**: Intelligent model versioning and update management
+- **Offline Diagnosis**: Full functionality without internet connectivity
+- **Sync Optimization**: Differential sync for diagnosis history and treatment outcomes
+- **Background Processing**: IoT data processing using background tasks and worklets
+
+### IoT Data Processing
+- **Real-time Streaming**: WebSocket connections with automatic reconnection
+- **Data Compression**: Efficient sensor data encoding and transmission
+- **Edge Analytics**: Local trend analysis and anomaly detection
+- **Predictive Caching**: Pre-load environmental models based on sensor patterns
+- **Multi-sensor Fusion**: Efficient correlation algorithms for environmental + visual data
 
 ### Knowledge Base Performance
-- **Content Indexing**: Efficient full-text search indexing
-- **Image Optimization**: Compressed images with progressive loading
-- **Caching Strategy**: Cache frequently accessed guides and search results
-- **Offline Access**: Download guides for offline reading and reference
+- **Vector Search**: Semantic search using embeddings for better content discovery
+- **Content Delivery**: CDN optimization for global guide and image distribution
+- **Lazy Loading**: Progressive content loading based on user interaction patterns
+- **Offline Sync**: Smart caching of frequently accessed guides and references
