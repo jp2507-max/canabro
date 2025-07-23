@@ -169,7 +169,6 @@ interface ExplainableAIData {
   visualAttention: AttentionMap[];
   similarCases: CaseReference[];
   decisionPath: DecisionNode[];
-}
   symptomType: string;
   heatmapData: number[][];
 }

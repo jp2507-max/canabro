@@ -47,7 +47,6 @@
     "@bottom-tabs/react-navigation": "^0.9.2",
     "@expo/metro-config": "^0.20.17",
     "@hookform/resolvers": "^5.0.0",
-    "@marceloterreiro/flash-calendar": "^1.0.0",
     "@nozbe/simdjson": "^3.9.4",
     "@nozbe/watermelondb": "^0.28.0",
     "@react-native-community/datetimepicker": "8.4.1",
