@@ -51,15 +51,12 @@ const DayHeader = React.memo(({ date, isSelected, onSelect }: DayHeaderProps) =>
 
   const tapGesture = Gesture.Tap()
     .onStart(() => {
-      'worklet';
       scale.value = withSpring(0.9, { damping: 20, stiffness: 400 });
     })
     .onEnd(() => {
-      'worklet';
       scale.value = withSpring(1, { damping: 15, stiffness: 300 });
     })
     .onFinalize(() => {
-      'worklet';
       runOnJS(handlePress)();
     });
 
@@ -136,29 +133,23 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
 
   const cardTapGesture = Gesture.Tap()
     .onStart(() => {
-      'worklet';
       scale.value = withSpring(0.98, { damping: 20, stiffness: 400 });
     })
     .onEnd(() => {
-      'worklet';
       scale.value = withSpring(1, { damping: 15, stiffness: 300 });
     })
     .onFinalize(() => {
-      'worklet';
       runOnJS(handlePress)();
     });
 
   const completeTapGesture = Gesture.Tap()
     .onStart(() => {
-      'worklet';
       completionScale.value = withSpring(0.9, { damping: 20, stiffness: 400 });
     })
     .onEnd(() => {
-      'worklet';
       completionScale.value = withSpring(1, { damping: 15, stiffness: 300 });
     })
     .onFinalize(() => {
-      'worklet';
       runOnJS(handleComplete)();
     });
 
@@ -339,7 +330,7 @@ export default function WeeklyTaskView({
           />
         ) : (
           <ThemedView className="flex-1 items-center justify-center px-4">
-            <OptimizedIcon name="calendar-outline" size={48} color="#9ca3af" />
+            <OptimizedIcon name="calendar-outline" size={48} className="text-neutral-400 dark:text-neutral-500" />
             <ThemedText className="mt-4 text-center text-lg font-medium text-neutral-500 dark:text-neutral-400">
               {t('calendar.weekly_view.no_tasks', 'No tasks for this day')}
             </ThemedText>

@@ -132,7 +132,8 @@ export class PlantTask extends Model {
 
   // Writer methods
   @writer async markAsCompleted(completionData?: Partial<TaskCompletion>) {
-    await this.update(async (task) => {
+    // First, update the task status and completion data synchronously
+    await this.update((task) => {
       task.status = 'completed';
       task.notificationId = undefined; // Clear notification ID
       
@@ -143,12 +144,12 @@ export class PlantTask extends Model {
           ...completionData,
         } as TaskCompletion;
       }
-
-      // If this is a recurring task, create the next one within the same transaction
-      if (this.parentTaskId) {
-        await this.createNextRecurringTask();
-      }
     });
+
+    // If this is a recurring task, create the next one in a separate transaction
+    if (this.parentTaskId) {
+      await this.createNextRecurringTask();
+    }
   }
 
   @writer async markAsIncomplete() {
