@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -15,10 +15,8 @@ import { PlantTask } from '@/lib/models/PlantTask';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
-import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
+import { triggerLightHapticSync, triggerMediumHaptic } from '@/lib/utils/haptics';
 import { useTranslation } from 'react-i18next';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export interface WeeklyTaskViewProps {
   tasks: PlantTask[];
@@ -51,28 +49,43 @@ const DayHeader = React.memo(({ date, isSelected, onSelect }: DayHeaderProps) =>
 
   const tapGesture = Gesture.Tap()
     .onStart(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       scale.value = withSpring(0.9, { damping: 20, stiffness: 400 });
     })
     .onEnd(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       scale.value = withSpring(1, { damping: 15, stiffness: 300 });
     })
     .onFinalize(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       runOnJS(handlePress)();
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    backgroundColor: isSelected ? undefined : 'transparent',
-  }));
-
-  // Use className for theming instead of inline style for better theming support
-  const dayButtonClassName = `mx-2 h-12 w-12 items-center justify-center rounded-full ${isSelected ? 'bg-foreground dark:bg-foreground-dark' : ''}`;
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = isSelected 
+      ? '#000000' // Dark circle for selected day like in reference
+      : 'transparent';
+    
+    return {
+      transform: [{ scale: scale.value }],
+      backgroundColor,
+    };
+  });
 
   return (
     <GestureDetector gesture={tapGesture}>
-      <AnimatedPressable
-        className={dayButtonClassName}
-        style={animatedStyle}
+      <Animated.View
+        style={[
+          {
+            marginHorizontal: 8,
+            height: 48,
+            width: 48,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 24,
+          },
+          animatedStyle,
+        ]}
         accessibilityRole="button"
         accessibilityLabel={`Select ${format(date, 'EEEE, MMMM d')}`}
         accessibilityState={{ selected: isSelected }}>
@@ -98,7 +111,7 @@ const DayHeader = React.memo(({ date, isSelected, onSelect }: DayHeaderProps) =>
             {format(date, 'd')}
           </ThemedText>
         </ThemedView>
-      </AnimatedPressable>
+      </Animated.View>
     </GestureDetector>
   );
 });
@@ -126,30 +139,36 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
-      triggerMediumHapticSync();
+      triggerMediumHaptic();
       onComplete(task);
     }
   }, [task, onComplete]);
 
   const cardTapGesture = Gesture.Tap()
     .onStart(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       scale.value = withSpring(0.98, { damping: 20, stiffness: 400 });
     })
     .onEnd(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       scale.value = withSpring(1, { damping: 15, stiffness: 300 });
     })
     .onFinalize(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       runOnJS(handlePress)();
     });
 
   const completeTapGesture = Gesture.Tap()
     .onStart(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       completionScale.value = withSpring(0.9, { damping: 20, stiffness: 400 });
     })
     .onEnd(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       completionScale.value = withSpring(1, { damping: 15, stiffness: 300 });
     })
     .onFinalize(() => {
+      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
       runOnJS(handleComplete)();
     });
 
@@ -161,36 +180,47 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
     transform: [{ scale: completionScale.value }],
   }));
 
-  // Get task priority color class for left border (using semantic color classes)
+  // Get task priority color for left border (like in reference image)
   const getPriorityColor = useCallback(() => {
     switch (task.priorityLevel) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-amber-500';  
-      case 'medium': return 'bg-purple-500';
-      default: return 'bg-primary-500';
+      case 'critical': return '#ef4444'; // red-500
+      case 'high': return '#f59e0b'; // amber-500  
+      case 'medium': return '#8b5cf6'; // purple-500
+      default: return '#10b981'; // primary-500
     }
   }, [task.priorityLevel]);
 
   return (
     <GestureDetector gesture={cardTapGesture}>
-      <AnimatedPressable
-        className="mx-4 mb-3 overflow-hidden rounded-2xl bg-white dark:bg-neutral-800"
+      <Animated.View
         style={[
-          cardAnimatedStyle,
           {
+            marginHorizontal: 16,
+            marginBottom: 12,
+            borderRadius: 16,
+            backgroundColor: 'white',
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.1,
             shadowRadius: 3,
             elevation: 2,
+            overflow: 'hidden',
           },
+          cardAnimatedStyle,
         ]}
         accessibilityRole="button"
         accessibilityLabel={`Task: ${task.title}`}>
         
-        {/* Colored left border with semantic priority color */}
-        <ThemedView 
-          className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor()}`}
+        {/* Colored left border */}
+        <View 
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+            backgroundColor: getPriorityColor(),
+          }}
         />
         
         <ThemedView className="flex-row items-center p-4 pl-6">
@@ -221,24 +251,32 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
           {/* Completion checkbox */}
           {onComplete && (
             <GestureDetector gesture={completeTapGesture}>
-              <AnimatedPressable
-                className={`ml-3 h-6 w-6 items-center justify-center rounded-full border-2 ${
-                  task.isCompleted 
-                    ? 'border-primary-500 bg-primary-500' 
-                    : 'border-neutral-300 dark:border-neutral-600'
-                }`}
-                style={completeButtonAnimatedStyle}
+              <Animated.View
+                style={[
+                  {
+                    marginLeft: 12,
+                    height: 24,
+                    width: 24,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 12,
+                    borderWidth: 2,
+                    borderColor: task.isCompleted ? '#10b981' : '#d1d5db',
+                    backgroundColor: task.isCompleted ? '#10b981' : 'transparent',
+                  },
+                  completeButtonAnimatedStyle,
+                ]}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: task.isCompleted }}
                 accessibilityLabel="Mark task as completed">
                 {task.isCompleted && (
                   <OptimizedIcon name="checkmark" size={14} color="#ffffff" />
                 )}
-              </AnimatedPressable>
+              </Animated.View>
             </GestureDetector>
           )}
         </ThemedView>
-      </AnimatedPressable>
+      </Animated.View>
     </GestureDetector>
   );
 });
@@ -330,7 +368,7 @@ export default function WeeklyTaskView({
           />
         ) : (
           <ThemedView className="flex-1 items-center justify-center px-4">
-            <OptimizedIcon name="calendar-outline" size={48} className="text-neutral-400 dark:text-neutral-500" />
+            <OptimizedIcon name="calendar-outline" size={48} color="#9ca3af" />
             <ThemedText className="mt-4 text-center text-lg font-medium text-neutral-500 dark:text-neutral-400">
               {t('calendar.weekly_view.no_tasks', 'No tasks for this day')}
             </ThemedText>
