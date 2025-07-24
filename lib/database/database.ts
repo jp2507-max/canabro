@@ -22,6 +22,7 @@ import { Strain } from '../models/Strain';
 import { PlantPhoto } from '../models/PlantPhoto';
 import { PlantMetrics } from '../models/PlantMetrics';
 import { CareReminder } from '../models/CareReminder';
+import { ScheduleTemplate } from '../models/ScheduleTemplate';
 // Note: CommunityQuestion and CommunityPlantShare models removed in schema v27
 // Note: Notification model commented out as it doesn't exist yet
 import migrations from '../models/migrations';
@@ -84,6 +85,7 @@ const modelClasses = [
   PlantPhoto,
   PlantMetrics,
   CareReminder,
+  ScheduleTemplate,
 ];
 
 // Create appropriate adapter based on configuration

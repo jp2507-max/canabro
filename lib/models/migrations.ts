@@ -614,6 +614,46 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 32: Add schedule_templates table and extend plant_tasks for advanced calendar system
+    {
+      toVersion: 32,
+      steps: [
+        // Create schedule_templates table
+        createTable({
+          name: 'schedule_templates',
+          columns: [
+            { name: 'name', type: 'string' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'category', type: 'string' },
+            { name: 'strain_type', type: 'string', isOptional: true },
+            { name: 'duration_weeks', type: 'number' },
+            { name: 'created_by', type: 'string' },
+            { name: 'is_public', type: 'boolean' },
+            { name: 'usage_count', type: 'number' },
+            { name: 'template_data', type: 'string' }, // JSON string
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+          ],
+        }),
+        // Add new task management fields to plant_tasks table
+        addColumns({
+          table: 'plant_tasks',
+          columns: [
+            { name: 'priority', type: 'string', isOptional: true },
+            { name: 'estimated_duration', type: 'number', isOptional: true },
+            { name: 'template_id', type: 'string', isOptional: true },
+            { name: 'week_number', type: 'number', isOptional: true },
+            { name: 'completion_data', type: 'string', isOptional: true }, // JSON string
+            { name: 'auto_generated', type: 'boolean', isOptional: true },
+            { name: 'parent_task_id', type: 'string', isOptional: true },
+            { name: 'sequence_number', type: 'number', isOptional: true },
+            { name: 'environmental_conditions', type: 'string', isOptional: true }, // JSON string
+          ],
+        }),
+      ],
+    },
   ],
 });
 

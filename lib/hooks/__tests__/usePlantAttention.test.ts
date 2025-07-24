@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook, waitFor } from '@testing-library/react-native';
 import { usePlantAttention, useSinglePlantAttention } from '../usePlantAttention';
 
 // Mock WatermelonDB
@@ -40,7 +40,7 @@ describe('usePlantAttention', () => {
     expect(result.current.totalPlantsNeedingAttention).toBe(0);
   });
 
-  it('filters by plant IDs when provided', () => {
+  it('filters by plant IDs when provided', async () => {
     const plantIds = ['plant1', 'plant2'];
     // Mock WatermelonDB query and observable
     const mockReminders = [
@@ -51,9 +51,9 @@ describe('usePlantAttention', () => {
 
     // Mock database.collections.get().query().observe().subscribe()
     const observeMock = jest.fn().mockReturnValue({
-      subscribe: ({ next }: any) => {
+      subscribe: (subscriber: { next: (data: unknown) => void; error?: (err: unknown) => void }) => {
         // Only pass reminders for plant1 and plant2
-        next(mockReminders.filter(r => plantIds.includes(r.plantId)));
+        subscriber.next(mockReminders.filter(r => plantIds.includes(r.plantId)));
         return { unsubscribe: jest.fn() };
       },
     });
@@ -66,14 +66,13 @@ describe('usePlantAttention', () => {
       },
     });
 
-    const { result, waitForNextUpdate } = renderHook(() => usePlantAttention(plantIds));
+    const { result } = renderHook(() => usePlantAttention(plantIds));
 
     // Wait for hook to update after mock data is pushed
-    // (simulate async effect)
-    setTimeout(() => {
+    await waitFor(() => {
       expect(Object.keys(result.current.attentionMap)).toEqual(expect.arrayContaining(['plant1', 'plant2']));
       expect(Object.keys(result.current.attentionMap)).not.toContain('plant3');
-    }, 0);
+    });
 
     // Restore original database after test
     jest.spyOn(require('@/lib/models'), 'database', 'get').mockReturnValue(originalDatabase);

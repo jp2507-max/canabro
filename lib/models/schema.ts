@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 31, // Bumped to 31 to add is_primary column to plant_photos
+  version: 32, // Bumped to 32 to add schedule_templates table and extend plant_tasks
   tables: [
     tableSchema({
       name: 'profiles',
@@ -185,6 +185,16 @@ export default appSchema({
         { name: 'status', type: 'string' },
         { name: 'notification_id', type: 'string', isOptional: true },
         { name: 'user_id', type: 'string', isIndexed: true },
+        // New task management fields for advanced calendar system
+        { name: 'priority', type: 'string', isOptional: true },
+        { name: 'estimated_duration', type: 'number', isOptional: true },
+        { name: 'template_id', type: 'string', isOptional: true },
+        { name: 'week_number', type: 'number', isOptional: true },
+        { name: 'completion_data', type: 'string', isOptional: true }, // JSON string
+        { name: 'auto_generated', type: 'boolean', isOptional: true },
+        { name: 'parent_task_id', type: 'string', isOptional: true },
+        { name: 'sequence_number', type: 'number', isOptional: true },
+        { name: 'environmental_conditions', type: 'string', isOptional: true }, // JSON string
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],
@@ -308,6 +318,25 @@ export default appSchema({
         { name: 'is_completed', type: 'boolean' },
         { name: 'repeat_interval', type: 'number', isOptional: true },
         { name: 'completed_at', type: 'number', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'last_synced_at', type: 'number', isOptional: true },
+        { name: 'is_deleted', type: 'boolean', isOptional: true },
+      ],
+    }),
+    // Schedule templates table for advanced calendar system
+    tableSchema({
+      name: 'schedule_templates',
+      columns: [
+        { name: 'name', type: 'string' },
+        { name: 'description', type: 'string', isOptional: true },
+        { name: 'category', type: 'string' },
+        { name: 'strain_type', type: 'string', isOptional: true },
+        { name: 'duration_weeks', type: 'number' },
+        { name: 'created_by', type: 'string' },
+        { name: 'is_public', type: 'boolean' },
+        { name: 'usage_count', type: 'number' },
+        { name: 'template_data', type: 'string' }, // JSON string
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
         { name: 'last_synced_at', type: 'number', isOptional: true },

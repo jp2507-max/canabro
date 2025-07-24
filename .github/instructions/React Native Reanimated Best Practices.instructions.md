@@ -3,7 +3,7 @@ applyTo: 'Animation, Theming'
 ---
 # 🎬 React Native Reanimated Production Guide
 
-## 📅 Last Updated: January 2025
+## 📅 Last Updated: July 2025
 
 Essential patterns for React Native Reanimated v3.19.0+ - Production-ready with automatic workletization.
 

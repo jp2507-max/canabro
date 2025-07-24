@@ -12,7 +12,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, Dimensions, Alert, TouchableOpacity } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-gifted-charts';
 import { useColorScheme } from 'nativewind';
 import dayjs from 'dayjs';
 
@@ -167,7 +167,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       return null;
     }
 
-    // Prepare chart data with proper date formatting based on time range
+    // Prepare chart data for react-native-gifted-charts
     const getDateFormat = (timeRange: TimeRange): string => {
       switch (timeRange) {
         case '7d':
@@ -183,46 +183,20 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       }
     };
 
-    const labels = filteredData.map(metric =>  
-      dayjs(metric.recordedAt).format(getDateFormat(selectedTimeRange))
-    );
-
-    const values = filteredData.map(metric => {
+    const chartPoints = filteredData.map((metric, index) => {
       const value = metric[selectedMetric] as number;
-      return value || 0;
+      const label = dayjs(metric.recordedAt).format(getDateFormat(selectedTimeRange));
+      
+      return {
+        value: value || 0,
+        label: index % Math.ceil(filteredData.length / 6) === 0 ? label : '', // Show only some labels to avoid crowding
+        dataPointText: `${(value || 0).toFixed(currentMetricConfig.key === 'phLevel' ? 1 : 0)}`,
+        onFocus: () => handleDataPointClick(metric, value, dayjs(metric.recordedAt).format('MMM DD, YYYY')),
+      };
     });
 
-    return {
-      labels,
-      datasets: [
-        {
-          data: values,
-          color: (_opacity = 1) => isDark ? currentMetricConfig.darkColor : currentMetricConfig.color,
-          strokeWidth: 2,
-        },
-      ],
-    };
-  }, [metricsData, selectedMetric, selectedTimeRange, currentMetricConfig, isDark]);
-
-  // Chart configuration
-  const chartConfig = {
-    backgroundColor: 'transparent',
-    backgroundGradientFrom: isDark ? '#1f2937' : '#ffffff',
-    labelColor: (_opacity = 1) => isDark ? `rgba(209, 213, 219, ${_opacity})` : `rgba(55, 65, 81, ${_opacity})`,
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '4',
-      strokeWidth: '2',
-      stroke: currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6',
-    },
-    propsForBackgroundLines: {
-      strokeDasharray: '', // solid lines
-      stroke: isDark ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)',
-      strokeWidth: 1,
-    },
-  };
+    return chartPoints;
+  }, [metricsData, selectedMetric, selectedTimeRange, currentMetricConfig]);
 
   // Handle time range selection
   const handleTimeRangeChange = (range: TimeRange) => {
@@ -237,25 +211,17 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
   };
 
   // Handle chart data point press
-  const handleDataPointClick = (data: { index?: number }) => {
-    if (data.index !== undefined && metricsData && metricsData[data.index]) {
-      const metric = metricsData[data.index];
-      if (metric) {
-        const value = metric[selectedMetric] as number;
-        const date = dayjs(metric.recordedAt).format('MMM DD, YYYY'); 
-        
-        Alert.alert(
-          t('metricsChart.dataPoint.title'),
-          t('metricsChart.dataPoint.message', {
-            metric: t(currentMetricConfig?.label || ''),
-            value: value?.toFixed(currentMetricConfig?.key === 'phLevel' ? 1 : 0),
-            unit: currentMetricConfig?.unit || '',
-            date,
-          })
-        );
-        triggerLightHaptic();
-      }
-    }
+  const handleDataPointClick = (metric: PlantMetrics, value: number, date: string) => {
+    Alert.alert(
+      t('metricsChart.dataPoint.title'),
+      t('metricsChart.dataPoint.message', {
+        metric: t(currentMetricConfig?.label || ''),
+        value: value?.toFixed(currentMetricConfig?.key === 'phLevel' ? 1 : 0),
+        unit: currentMetricConfig?.unit || '',
+        date,
+      })
+    );
+    triggerLightHaptic();
   };
 
   if (loading) {
@@ -413,21 +379,15 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
             >
               <LineChart
                 data={chartData}
-                width={screenWidth - 64} // Responsive: recalculate on orientation change
+                width={screenWidth - 64}
                 height={220}
-                chartConfig={chartConfig}
-                bezier
-                style={{
-                  marginVertical: 8,
-                  borderRadius: 16,
-                }}
-                onDataPointClick={handleDataPointClick}
-                withInnerLines={true}
-                withOuterLines={true}
-                withVerticalLines={true}
-                withHorizontalLines={true}
-                withDots={true}
-                withShadow={false}
+                curved
+                color={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
+                thickness={2}
+                dataPointsColor={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
+                dataPointsRadius={4}
+                isAnimated
+                animationDuration={800}
               />
             </ThemedView>
 

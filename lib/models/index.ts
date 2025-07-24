@@ -20,6 +20,7 @@ export { Profile } from './Profile';
 export { PlantPhoto } from './PlantPhoto';
 export { PlantMetrics } from './PlantMetrics';
 export { CareReminder } from './CareReminder';
+export { ScheduleTemplate } from './ScheduleTemplate';
 
 // Strain-related models
 export { Strain } from './Strain';
