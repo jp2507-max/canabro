@@ -1,122 +1,33 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Pressable, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useTranslation } from 'react-i18next';
 
-import { format, addDays, isToday } from '@/lib/utils/date';
+import { format } from '@/lib/utils/date';
+import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import { PlantTask } from '@/lib/models/PlantTask';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
-import { triggerLightHapticSync, triggerMediumHaptic } from '@/lib/utils/haptics';
-import { useTranslation } from 'react-i18next';
+import DaySelector from './DaySelector';
+import TaskNavigation from './TaskNavigation';
 
 export interface WeeklyTaskViewProps {
   tasks: PlantTask[];
   onTaskPress?: (task: PlantTask) => void;
   onTaskComplete?: (task: PlantTask) => void;
   onDateSelect?: (date: Date) => void;
+  onRefresh?: () => Promise<void>;
+  refreshing?: boolean;
 }
 
-interface DayHeaderProps {
-  date: Date;
-  isSelected: boolean;
-  onSelect: (date: Date) => void;
-}
 
-// Individual day header component inspired by the reference image
-const DayHeader = React.memo(({ date, isSelected, onSelect }: DayHeaderProps) => {
-  const scale = useSharedValue(1);
-  const selection = useSharedValue(isSelected ? 1 : 0);
-  
-  const isCurrentToday = isToday(date);
-  
-  React.useEffect(() => {
-    selection.value = withTiming(isSelected ? 1 : 0, { duration: 250 });
-  }, [isSelected, selection]);
-
-  const handlePress = useCallback(() => {
-    triggerLightHapticSync();
-    onSelect(date);
-  }, [date, onSelect]);
-
-  const tapGesture = Gesture.Tap()
-    .onStart(() => {
-      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
-      scale.value = withSpring(0.9, { damping: 20, stiffness: 400 });
-    })
-    .onEnd(() => {
-      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-    })
-    .onFinalize(() => {
-      // ✅ Automatic workletization in v3.19.0+ - no 'worklet' needed
-      runOnJS(handlePress)();
-    });
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = isSelected 
-      ? '#000000' // Dark circle for selected day like in reference
-      : 'transparent';
-    
-    return {
-      transform: [{ scale: scale.value }],
-      backgroundColor,
-    };
-  });
-
-  return (
-    <GestureDetector gesture={tapGesture}>
-      <Animated.View
-        style={[
-          {
-            marginHorizontal: 8,
-            height: 48,
-            width: 48,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 24,
-          },
-          animatedStyle,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={`Select ${format(date, 'EEEE, MMMM d')}`}
-        accessibilityState={{ selected: isSelected }}>
-        <ThemedView className="items-center">
-          <ThemedText 
-            className={`text-xs font-medium ${
-              isSelected 
-                ? 'text-white' 
-                : isCurrentToday 
-                  ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-neutral-500 dark:text-neutral-400'
-            }`}>
-            {format(date, 'E').charAt(0)} {/* Single letter like S M T W T */}
-          </ThemedText>
-          <ThemedText 
-            className={`text-lg font-bold ${
-              isSelected 
-                ? 'text-white'
-                : isCurrentToday
-                  ? 'text-primary-700 dark:text-primary-300'
-                  : 'text-neutral-800 dark:text-neutral-200'
-            }`}>
-            {format(date, 'd')}
-          </ThemedText>
-        </ThemedView>
-      </Animated.View>
-    </GestureDetector>
-  );
-});
-
-DayHeader.displayName = 'DayHeader';
 
 interface TaskCardProps {
   task: PlantTask;
@@ -126,7 +37,6 @@ interface TaskCardProps {
 
 // Task card component inspired by the reference image
 const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
-  const { t } = useTranslation();
   const scale = useSharedValue(1);
   const completionScale = useSharedValue(1);
 
@@ -139,7 +49,7 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
-      triggerMediumHaptic();
+      triggerMediumHapticSync();
       onComplete(task);
     }
   }, [task, onComplete]);
@@ -180,127 +90,103 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
     transform: [{ scale: completionScale.value }],
   }));
 
-  // Get task priority color for left border (like in reference image)
-  const getPriorityColor = useCallback(() => {
+  // Get task priority color for left border using NativeWind semantic token classes
+  const getPriorityClass = useCallback(() => {
     switch (task.priorityLevel) {
-      case 'critical': return '#ef4444'; // red-500
-      case 'high': return '#f59e0b'; // amber-500  
-      case 'medium': return '#8b5cf6'; // purple-500
-      default: return '#10b981'; // primary-500
+      case 'critical':
+        return 'bg-error dark:bg-error-dark';
+      case 'high':
+        return 'bg-warning dark:bg-warning-dark';
+      case 'medium':
+        return 'bg-secondary dark:bg-secondary-dark';
+      default:
+        return 'bg-primary dark:bg-primary-dark';
     }
   }, [task.priorityLevel]);
 
   return (
     <GestureDetector gesture={cardTapGesture}>
-      <Animated.View
-        style={[
-          {
-            marginHorizontal: 16,
-            marginBottom: 12,
-            borderRadius: 16,
-            backgroundColor: 'white',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 3,
-            elevation: 2,
-            overflow: 'hidden',
-          },
-          cardAnimatedStyle,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={`Task: ${task.title}`}>
-        
-        {/* Colored left border */}
-        <View 
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 4,
-            backgroundColor: getPriorityColor(),
-          }}
-        />
-        
-        <ThemedView className="flex-row items-center p-4 pl-6">
-          {/* Task Content */}
-          <ThemedView className="flex-1">
-            <ThemedText className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              {task.title}
-            </ThemedText>
-            
-            {task.description && (
-              <ThemedText className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                {task.description}
+      <ThemedView className="mx-4 mb-3 rounded-2xl overflow-hidden">
+        <Animated.View
+          style={cardAnimatedStyle}
+          accessibilityRole="button"
+          accessibilityLabel={`Task: ${task.title}`}
+        >
+          {/* Colored left border using ThemedView and semantic tokens, all via NativeWind classes */}
+          <ThemedView
+            className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-tl-2xl rounded-bl-2xl ${getPriorityClass()}`}
+          />
+          <ThemedView className="flex-row items-center p-4 pl-6 bg-white dark:bg-neutral-900 shadow-sm">
+            {/* Task Content */}
+            <ThemedView className="flex-1">
+              <ThemedText className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {task.title}
               </ThemedText>
-            )}
-            
-            {/* Time estimate like in reference */}
-            {task.estimatedDuration && (
-              <ThemedView className="mt-2 flex-row items-center">
-                <ThemedView className="rounded-full bg-neutral-100 dark:bg-neutral-700 px-3 py-1">
-                  <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                    {task.estimatedDurationFormatted}
-                  </ThemedText>
+              {task.description && (
+                <ThemedText className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  {task.description}
+                </ThemedText>
+              )}
+              {/* Time estimate like in reference */}
+              {task.estimatedDuration && (
+                <ThemedView className="mt-2 flex-row items-center">
+                  <ThemedView className="rounded-full bg-neutral-100 dark:bg-neutral-700 px-3 py-1">
+                    <ThemedText className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                      {task.estimatedDurationFormatted}
+                    </ThemedText>
+                  </ThemedView>
                 </ThemedView>
-              </ThemedView>
+              )}
+            </ThemedView>
+            {/* Completion checkbox */}
+            {onComplete && (
+              <GestureDetector gesture={completeTapGesture}>
+                <ThemedView
+                  className={`ml-3 h-6 w-6 items-center justify-center rounded-full border-2 transition-colors duration-200
+                  ${task.isCompleted
+                      ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark'
+                      : 'border-neutral-300 bg-transparent dark:border-neutral-700'}
+                `}
+                >
+                  <Animated.View
+                    style={completeButtonAnimatedStyle}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: task.isCompleted }}
+                    accessibilityLabel="Mark task as completed"
+                  >
+                    {task.isCompleted && (
+                      <OptimizedIcon
+                        name="checkmark"
+                        size={14}
+                        // Use semantic text color tokens for the checkmark
+                        className="text-white dark:text-foreground"
+                      />
+                    )}
+                  </Animated.View>
+                </ThemedView>
+              </GestureDetector>
             )}
           </ThemedView>
-
-          {/* Completion checkbox */}
-          {onComplete && (
-            <GestureDetector gesture={completeTapGesture}>
-              <Animated.View
-                style={[
-                  {
-                    marginLeft: 12,
-                    height: 24,
-                    width: 24,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: task.isCompleted ? '#10b981' : '#d1d5db',
-                    backgroundColor: task.isCompleted ? '#10b981' : 'transparent',
-                  },
-                  completeButtonAnimatedStyle,
-                ]}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: task.isCompleted }}
-                accessibilityLabel="Mark task as completed">
-                {task.isCompleted && (
-                  <OptimizedIcon name="checkmark" size={14} color="#ffffff" />
-                )}
-              </Animated.View>
-            </GestureDetector>
-          )}
-        </ThemedView>
-      </Animated.View>
+        </Animated.View>
+      </ThemedView>
     </GestureDetector>
   );
 });
 
 TaskCard.displayName = 'TaskCard';
 
-export default function WeeklyTaskView({ 
-  tasks, 
-  onTaskPress, 
-  onTaskComplete, 
-  onDateSelect 
+export default function WeeklyTaskView({
+  tasks,
+  onTaskPress,
+  onTaskComplete,
+  onDateSelect,
+  onRefresh,
+  refreshing = false
 }: WeeklyTaskViewProps) {
   const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Generate 5-day range (today + 4 future days)
-  const dates = useMemo(() => {
-    const result = [];
-    const today = new Date();
-    for (let i = 0; i < 5; i++) {
-      result.push(addDays(today, i));
-    }
-    return result;
-  }, []);
+
 
   // Filter tasks for selected date
   const tasksForSelectedDate = useMemo(() => {
@@ -317,8 +203,8 @@ export default function WeeklyTaskView({
   }, [onDateSelect]);
 
   const renderTaskItem = useCallback(({ item }: { item: PlantTask }) => (
-    <TaskCard 
-      task={item} 
+    <TaskCard
+      task={item}
       onPress={onTaskPress}
       onComplete={onTaskComplete}
     />
@@ -336,25 +222,25 @@ export default function WeeklyTaskView({
         </ThemedText>
       </ThemedView>
 
-      {/* Horizontal 5-day calendar */}
-      <ThemedView className="mb-4 py-2">
-        <ThemedView className="flex-row justify-center">
-          {dates.map((date, index) => {
-            const dateStr = format(date, 'yyyy-MM-dd');
-            const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
-            const isSelected = dateStr === selectedDateStr;
-            
-            return (
-              <DayHeader
-                key={`${dateStr}-${index}`}
-                date={date}
-                isSelected={isSelected}
-                onSelect={handleDateSelect}
-              />
-            );
-          })}
-        </ThemedView>
-      </ThemedView>
+      {/* Simple navigation controls (today button, date picker) */}
+      <TaskNavigation
+        selectedDate={selectedDate}
+        onDateSelect={handleDateSelect}
+        onTodayPress={() => {
+          const today = new Date();
+          setSelectedDate(today);
+        }}
+      />
+
+      {/* Horizontal day selector with FlashList scrolling */}
+      <DaySelector
+        selectedDate={selectedDate}
+        onDateSelect={handleDateSelect}
+        tasks={tasks}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+        dateRange={14} // Show 14 days for better navigation
+      />
 
       {/* Tasks list */}
       <ThemedView className="flex-1">
@@ -368,7 +254,7 @@ export default function WeeklyTaskView({
           />
         ) : (
           <ThemedView className="flex-1 items-center justify-center px-4">
-            <OptimizedIcon name="calendar-outline" size={48} color="#9ca3af" />
+            <OptimizedIcon name="calendar-outline" size={48} className="text-neutral-400 dark:text-neutral-500" />
             <ThemedText className="mt-4 text-center text-lg font-medium text-neutral-500 dark:text-neutral-400">
               {t('calendar.weekly_view.no_tasks', 'No tasks for this day')}
             </ThemedText>

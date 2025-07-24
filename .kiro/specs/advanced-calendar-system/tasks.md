@@ -31,7 +31,13 @@
   - Use day-js for simple date manipulation and formatting
   - _Requirements: R1-AC1, R1-AC2, R1-AC3_
 
-- [ ] 2.2 Create TaskCard component with task-focused design
+- [x] 2.2 Create TaskCard component with task-focused design
+
+
+
+
+
+
   - Build clean task cards with plant images and essential information
   - Implement color coding by task type and priority level
   - Add completion checkbox with smooth animation transitions
@@ -41,7 +47,13 @@
   - Integrate with existing task type system and NativeWind theming
   - _Requirements: R1-AC2, R1-AC4, R5-AC4_
 
-- [ ] 2.3 Implement task navigation with simple day controls
+- [x] 2.3 Implement task navigation with simple day controls
+
+
+
+
+
+
   - Create DaySelector component with horizontal FlashList scrolling
   - Add swipe navigation between days with smooth momentum scrolling
   - Implement pull-to-refresh for task updates with FlashList integration

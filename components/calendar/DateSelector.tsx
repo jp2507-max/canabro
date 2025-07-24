@@ -1,6 +1,6 @@
-import { format, addDays, isToday, isYesterday, isTomorrow } from '@/lib/utils/date';
-import React, { useMemo, useCallback, useEffect } from 'react';
-import { ScrollView, Pressable } from 'react-native';
+import { format, addDays, isToday, isYesterday, isTomorrow, formatLocaleDate } from '@/lib/utils/date';
+import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, RefreshControl } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -10,11 +10,15 @@ import Animated, {
   interpolateColor,
   runOnJS,
 } from 'react-native-reanimated';
+import { FlashList } from '@shopify/flash-list';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
-import { triggerLightHapticSync } from '../../lib/utils/haptics';
+import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { triggerLightHapticSync, triggerMediumHaptic } from '../../lib/utils/haptics';
 import { useTranslation } from 'react-i18next';
+import { PlantTask } from '@/lib/models/PlantTask';
 
 // Reanimated AnimatedPressable
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -22,17 +26,21 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export interface DateSelectorProps {
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
+  tasks?: PlantTask[];
+  onRefresh?: () => Promise<void>;
+  refreshing?: boolean;
 }
 
 interface DateItemProps {
   date: Date;
   isSelected: boolean;
   onSelect: (date: Date) => void;
+  taskCount?: number;
 }
 
-// Individual date item component with animations
-const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
-  const { t } = useTranslation();
+// Individual date item component with animations and task count
+const DateItem = React.memo(({ date, isSelected, onSelect, taskCount = 0 }: DateItemProps) => {
+  const { t, i18n } = useTranslation();
   const scale = useSharedValue(1);
   const shadowOpacity = useSharedValue(0.1);
   const elevation = useSharedValue(1);
@@ -47,7 +55,7 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
     selection.value = withTiming(isSelected ? 1 : 0, { duration: 250 });
   }, [isSelected, selection]);
 
-  // Get display label for special dates
+  // Get display label for special dates with locale support
   const getDateLabel = useCallback(() => {
     // Validate date before using it
     if (!date || typeof date.getTime !== 'function' || isNaN(date.getTime())) {
@@ -60,12 +68,16 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
     if (isCurrentTomorrow) return t('calendar.date_selector.tomorrow', 'Tomorrow');
 
     try {
-      return format(date, 'E');
+      // Use locale-aware formatting
+      return formatLocaleDate(date, { 
+        format: 'E', 
+        language: i18n.language as 'en' | 'de' 
+      });
     } catch (error) {
       console.error('[DateSelector] Error formatting date label:', error);
       return t('calendar.date_selector.invalid_date', 'Invalid');
     }
-  }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow, date, t]);
+  }, [isCurrentToday, isCurrentYesterday, isCurrentTomorrow, date, t, i18n.language]);
 
   // Pre-compute a serialisable primitive so the worklet never touches Date methods
   const timestamp = useMemo(() => {
@@ -133,7 +145,7 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
   return (
     <GestureDetector gesture={tapGesture}>
       <AnimatedPressable
-        className="mx-2 h-16 w-16 items-center justify-center rounded-full"
+        className="mx-2 h-16 w-16 items-center justify-center rounded-full relative"
         style={[
           animatedStyle,
           {
@@ -146,10 +158,20 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
         accessibilityLabel={`Select date ${
           !date || typeof date.getTime !== 'function' || isNaN(date.getTime())
             ? 'Invalid Date'
-            : format(date, 'PPP')
-        }`}
+            : formatLocaleDate(date, { format: 'PPP', language: i18n.language as 'en' | 'de' })
+        }${taskCount > 0 ? `, ${taskCount} tasks` : ''}`}
         accessibilityState={{ selected: isSelected }}
         accessibilityHint={isSelected ? 'Currently selected date' : 'Tap to select this date'}>
+        
+        {/* Task count indicator */}
+        {taskCount > 0 && (
+          <ThemedView className="absolute -top-1 -right-1 bg-primary dark:bg-primary-dark rounded-full min-w-5 h-5 items-center justify-center px-1">
+            <ThemedText className="text-xs font-bold text-white dark:text-foreground">
+              {taskCount > 9 ? '9+' : taskCount}
+            </ThemedText>
+          </ThemedView>
+        )}
+        
         <ThemedText
           className={`text-xs font-medium ${
             isSelected
@@ -179,7 +201,11 @@ const DateItem = React.memo(({ date, isSelected, onSelect }: DateItemProps) => {
 
 DateItem.displayName = 'DateItem';
 
-function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
+function DateSelector({ selectedDate, onDateSelect, tasks = [], onRefresh, refreshing = false }: DateSelectorProps) {
+  const { t, i18n } = useTranslation();
+  const flashListRef = useRef<FlashList<Date>>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
   // Ensure selectedDate is always a valid Date object with more robust validation
   const safeSelectedDate = useMemo(() => {
     // Check for null, undefined, or non-objects first
@@ -211,15 +237,34 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
     return selectedDate;
   }, [selectedDate]);
 
-  // Generate date range (7 days: 3 before, today, 3 after)
+  // Generate extended date range (14 days: 7 before, today, 6 after) for better navigation
   const dates = useMemo(() => {
     const result = [];
     const today = new Date();
-    for (let i = -3; i <= 3; i++) {
+    for (let i = -7; i <= 6; i++) {
       result.push(addDays(today, i));
     }
     return result;
   }, []);
+
+  // Calculate task counts for each date
+  const taskCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    tasks.forEach(task => {
+      try {
+        const taskDate = new Date(task.dueDate);
+        if (!isNaN(taskDate.getTime())) {
+          const dateKey = format(taskDate, 'yyyy-MM-dd');
+          counts[dateKey] = (counts[dateKey] || 0) + 1;
+        }
+      } catch (error) {
+        console.warn('[DateSelector] Invalid task due date:', task.dueDate);
+      }
+    });
+    
+    return counts;
+  }, [tasks]);
 
   const handleDateSelect = useCallback(
     (date: Date) => {
@@ -234,49 +279,165 @@ function DateSelector({ selectedDate, onDateSelect }: DateSelectorProps) {
         return;
       }
 
+      triggerLightHapticSync();
       console.log('[DateSelector] Date selected:', date);
       onDateSelect(date);
     },
     [onDateSelect]
   );
 
+  // Navigate to today
+  const handleTodayPress = useCallback(() => {
+    const today = new Date();
+    handleDateSelect(today);
+    
+    // Scroll to today in the list
+    const todayIndex = dates.findIndex(date => isToday(date));
+    if (todayIndex !== -1 && flashListRef.current) {
+      flashListRef.current.scrollToIndex({ index: todayIndex, animated: true });
+    }
+    
+    triggerMediumHaptic();
+  }, [dates, handleDateSelect]);
+
+  // Handle date picker
+  const handleDatePickerChange = useCallback((event: { type: string }, date?: Date) => {
+    setShowDatePicker(false);
+    if (date && event.type === 'set') {
+      handleDateSelect(date);
+    }
+  }, [handleDateSelect]);
+
+  const handleDatePickerPress = useCallback(() => {
+    setShowDatePicker(true);
+    triggerLightHapticSync();
+  }, []);
+
+  // Render individual date item for FlashList
+  const renderDateItem = useCallback(({ item: date, index }: { item: Date; index: number }) => {
+    // Validate dates before formatting to avoid RangeError
+    let dateString = 'invalid';
+    let selectedDateString = 'invalid';
+    let isSelected = false;
+    let taskCount = 0;
+
+    try {
+      if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
+        dateString = format(date, 'yyyy-MM-dd');
+        taskCount = taskCounts[dateString] || 0;
+      }
+      // Use safeSelectedDate instead of selectedDate
+      selectedDateString = format(safeSelectedDate, 'yyyy-MM-dd');
+      isSelected = dateString === selectedDateString && dateString !== 'invalid';
+    } catch (error) {
+      console.error('[DateSelector] Error formatting dates for comparison:', error);
+      isSelected = false;
+    }
+
+    return (
+      <DateItem
+        key={`${dateString}-${index}`}
+        date={date}
+        isSelected={isSelected}
+        onSelect={handleDateSelect}
+        taskCount={taskCount}
+      />
+    );
+  }, [safeSelectedDate, handleDateSelect, taskCounts]);
+
+  // Scroll to selected date when it changes
+  useEffect(() => {
+    const selectedIndex = dates.findIndex(date => {
+      try {
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const selectedStr = format(safeSelectedDate, 'yyyy-MM-dd');
+        return dateStr === selectedStr;
+      } catch {
+        return false;
+      }
+    });
+    
+    if (selectedIndex !== -1 && flashListRef.current) {
+      // Small delay to ensure FlashList is ready
+      setTimeout(() => {
+        flashListRef.current?.scrollToIndex({ 
+          index: selectedIndex, 
+          animated: true,
+          viewPosition: 0.5 // Center the selected item
+        });
+      }, 100);
+    }
+  }, [safeSelectedDate, dates]);
+
   return (
     <ThemedView className="mb-4">
-      <ScrollView
+      {/* Navigation controls */}
+      <ThemedView className="flex-row items-center justify-between px-4 mb-2">
+        <Pressable
+          onPress={handleTodayPress}
+          className="flex-row items-center bg-primary/10 dark:bg-primary-dark/10 px-3 py-2 rounded-full"
+          accessibilityRole="button"
+          accessibilityLabel={t('calendar.date_selector.today_button', 'Go to today')}
+        >
+          <OptimizedIcon name="calendar" size={16} className="text-primary dark:text-primary-dark mr-1" />
+          <ThemedText className="text-sm font-medium text-primary dark:text-primary-dark">
+            {t('calendar.date_selector.today', 'Today')}
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          onPress={handleDatePickerPress}
+          className="flex-row items-center bg-neutral-100 dark:bg-neutral-800 px-3 py-2 rounded-full"
+          accessibilityRole="button"
+          accessibilityLabel={t('calendar.date_selector.date_picker', 'Open date picker')}
+        >
+          <OptimizedIcon name="calendar-outline" size={16} className="text-neutral-600 dark:text-neutral-400 mr-1" />
+          <ThemedText className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+            {formatLocaleDate(safeSelectedDate, { 
+              format: 'MMM d', 
+              language: i18n.language as 'en' | 'de' 
+            })}
+          </ThemedText>
+        </Pressable>
+      </ThemedView>
+
+      {/* Horizontal scrollable date list with FlashList */}
+      <FlashList
+        ref={flashListRef}
+        data={dates}
+        renderItem={renderDateItem}
+        estimatedItemSize={80}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
         decelerationRate="fast"
         snapToInterval={80} // Snap to each date item (64px width + 16px margin)
-        snapToAlignment="start">
-        {dates.map((date, index) => {
-          // Validate dates before formatting to avoid RangeError
-          let dateString = 'invalid';
-          let selectedDateString = 'invalid';
-          let isSelected = false;
-
-          try {
-            if (date && typeof date.getTime === 'function' && !isNaN(date.getTime())) {
-              dateString = format(date, 'yyyy-MM-dd');
-            }
-            // Use safeSelectedDate instead of selectedDate
-            selectedDateString = format(safeSelectedDate, 'yyyy-MM-dd');
-            isSelected = dateString === selectedDateString && dateString !== 'invalid';
-          } catch (error) {
-            console.error('[DateSelector] Error formatting dates for comparison:', error);
-            isSelected = false;
-          }
-
-          return (
-            <DateItem
-              key={`${dateString}-${index}`}
-              date={date}
-              isSelected={isSelected}
-              onSelect={handleDateSelect}
+        snapToAlignment="center"
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#10b981"
+              colors={['#10b981']}
+              title={t('calendar.date_selector.pull_to_refresh', 'Pull to refresh tasks')}
             />
-          );
-        })}
-      </ScrollView>
+          ) : undefined
+        }
+        keyExtractor={(item, index) => `date-${format(item, 'yyyy-MM-dd')}-${index}`}
+      />
+
+      {/* Date picker modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={safeSelectedDate}
+          mode="date"
+          display="default"
+          onChange={handleDatePickerChange}
+          maximumDate={addDays(new Date(), 365)} // Allow selection up to 1 year in future
+          minimumDate={addDays(new Date(), -365)} // Allow selection up to 1 year in past
+        />
+      )}
     </ThemedView>
   );
 }

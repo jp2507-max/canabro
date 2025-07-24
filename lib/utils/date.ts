@@ -71,6 +71,10 @@ export function isTomorrow(date: Parameters<typeof dayjs>[0]): boolean {
   return dayjs(date).isSame(dayjs().add(1, 'day'), 'day');
 }
 
+export function isSameDay(date1: Parameters<typeof dayjs>[0], date2: Parameters<typeof dayjs>[0]): boolean {
+  return dayjs(date1).isSame(dayjs(date2), 'day');
+}
+
 /**
  * Validates if a date is in the future, accounting for timezone differences
  * and providing a safety buffer to prevent false positives
