@@ -147,8 +147,10 @@ export class PlantTask extends Model {
       }
     });
 
-    // If this is a recurring task, create the next one in a separate transaction
-    if (this.parentTaskId) {
+    // If this is a recurring task (either initial or child), create the next one
+    // The initial task has no parentTaskId, so we check if it is part of a recurring series by other means
+    // For now, assume that if sequenceNumber is defined or templateId is set, it's a recurring task
+    if (this.templateId || this.parentTaskId) {
       await this.createNextRecurringTask();
     }
   }

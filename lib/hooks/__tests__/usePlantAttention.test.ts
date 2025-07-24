@@ -51,7 +51,7 @@ describe('usePlantAttention', () => {
 
     // Mock database.collections.get().query().observe().subscribe()
     const observeMock = jest.fn().mockReturnValue({
-      subscribe: (subscriber: { next: (data: unknown) => void }) => {
+      subscribe: (subscriber: { next: (data: unknown) => void; error?: (err: unknown) => void }) => {
         // Only pass reminders for plant1 and plant2
         subscriber.next(mockReminders.filter(r => plantIds.includes(r.plantId)));
         return { unsubscribe: jest.fn() };

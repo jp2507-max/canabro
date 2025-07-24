@@ -78,7 +78,7 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
     },
   });
 
-  const watchedType = watch('type');
+  const watchedType = watch('type') as 'watering' | 'nutrients' | 'inspection' | 'custom';
   const watchedScheduledFor = watch('scheduledFor');
 
   // Check calendar permissions on mount
@@ -141,25 +141,29 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
     }
   }, [calendarPermission.status, plant.name, requestCalendarPermissions]);
 
-  const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
+  const handleDateChange = useCallback((event: { type: string; nativeEvent: { timestamp: number; utcOffset: number } }, selectedDate?: Date) => {
     setShowDatePicker(false);
-    if (selectedDate) {
+    if (selectedDate && watchedScheduledFor) {
       // Preserve the time from the current scheduled date
       const currentDate = watchedScheduledFor;
-      const newDate = new Date(selectedDate);
-      newDate.setHours(currentDate.getHours(), currentDate.getMinutes());
-      setValue('scheduledFor', newDate);
+      if (currentDate) {
+        const newDate = new Date(selectedDate);
+        newDate.setHours(currentDate.getHours(), currentDate.getMinutes());
+        setValue('scheduledFor', newDate);
+      }
     }
   }, [setValue, watchedScheduledFor]);
 
-  const handleTimeChange = useCallback((event: any, selectedTime?: Date) => {
+  const handleTimeChange = useCallback((event: { type: string; nativeEvent: { timestamp: number; utcOffset: number } }, selectedTime?: Date) => {
     setShowTimePicker(false);
-    if (selectedTime) {
+    if (selectedTime && watchedScheduledFor) {
       // Preserve the date from the current scheduled date
       const currentDate = watchedScheduledFor;
-      const newDate = new Date(currentDate);
-      newDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
-      setValue('scheduledFor', newDate);
+      if (currentDate) {
+        const newDate = new Date(currentDate);
+        newDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
+        setValue('scheduledFor', newDate);
+      }
     }
   }, [setValue, watchedScheduledFor]);
 
@@ -430,7 +434,7 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
             onBlur={onBlur}
             placeholder={t('notificationScheduler.titlePlaceholder')}
             error={errors.title?.message}
-            leftIcon={getTypeIcon(watchedType)}
+            leftIcon={getTypeIcon(watchedType || 'custom')}
             returnKeyType="next"
             className="mb-4"
           />
@@ -480,7 +484,7 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
                   className="mr-3 text-neutral-600 dark:text-neutral-400"
                 />
                 <ThemedText className="flex-1">
-                  {value.toLocaleDateString()}
+                  {value?.toLocaleDateString() || ''}
                 </ThemedText>
                 <OptimizedIcon
                   name="chevron-down"
@@ -500,10 +504,10 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
                   className="mr-3 text-neutral-600 dark:text-neutral-400"
                 />
                 <ThemedText className="flex-1">
-                  {value.toLocaleTimeString([], { 
+                  {value?.toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
-                  })}
+                  }) || ''}
                 </ThemedText>
                 <OptimizedIcon
                   name="chevron-down"
@@ -516,7 +520,7 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
         />
 
         {/* Date Picker Modal */}
-        {showDatePicker && (
+        {showDatePicker && watchedScheduledFor && (
           <DateTimePicker
             testID="dateTimePicker"
             value={watchedScheduledFor}
@@ -528,7 +532,7 @@ const NotificationScheduler: React.FC<NotificationSchedulerProps> = ({
         )}
 
         {/* Time Picker Modal */}
-        {showTimePicker && (
+        {showTimePicker && watchedScheduledFor && (
           <DateTimePicker
             testID="dateTimePicker"
             value={watchedScheduledFor}
