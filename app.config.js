@@ -24,6 +24,7 @@ export default {
       ],
       'expo-font',
       'expo-secure-store',
+      'expo-calendar', // Add expo-calendar plugin for calendar permissions and functionality
       'expo-task-manager', // Required for background tasks
       'expo-background-task', // Add this back for the new background task library
       'expo-localization',
