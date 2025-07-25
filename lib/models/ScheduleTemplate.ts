@@ -12,7 +12,7 @@ import {
 export interface TemplateTaskData {
   weekNumber: number;
   dayOfWeek: number;
-  taskType: string;
+  taskType: import('../types/taskTypes').TaskType;
   title: string;
   description: string;
   priority: 'low' | 'medium' | 'high' | 'critical';

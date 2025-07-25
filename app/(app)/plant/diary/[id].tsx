@@ -26,6 +26,7 @@ import useWatermelon from '../../../../lib/hooks/useWatermelon';
 import { DiaryEntry } from '../../../../lib/models/DiaryEntry';
 import { Plant } from '../../../../lib/models/Plant';
 import { triggerLightHaptic } from '../../../../lib/utils/haptics';
+import { refreshControlColors } from '@/lib/constants/colors';
 import EnhancedKeyboardWrapper from '../../../../components/keyboard/EnhancedKeyboardWrapper';
 
 // Simplified interfaces for props
@@ -260,8 +261,8 @@ const PlantDiaryScreenBase = React.memo(function PlantDiaryScreenBase({
             <RefreshControl
               refreshing={refreshing || isSyncing}
               onRefresh={onRefresh}
-              colors={['rgb(var(--color-primary-500))']}
-              tintColor="rgb(var(--color-primary-500))"
+              colors={refreshControlColors.colors}
+              tintColor={refreshControlColors.tintColor}
             />
           }
           ListEmptyComponent={

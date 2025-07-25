@@ -1,4 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
+import type { TaskType } from '../types/taskTypes';
 import { Associations } from '@nozbe/watermelondb/Model';
 import { date, readonly, text, relation, writer, field, json } from '@nozbe/watermelondb/decorators';
 import { log } from '../utils/logger';
@@ -42,7 +43,7 @@ export class PlantTask extends Model {
   @text('plant_id') plantId!: string;
   @text('title') title!: string;
   @text('description') description?: string;
-  @text('task_type') taskType!: string;
+  @text('task_type') taskType!: TaskType;
   @text('due_date') dueDate!: string;
   @text('status') status!: string;
   @text('notification_id') notificationId?: string;

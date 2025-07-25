@@ -280,6 +280,83 @@
     "comingSoon": "Demnächst verfügbar",
     "deletePlant": "Pflanze löschen"
   },
+  "templates": {
+    "searchPlaceholder": "Vorlagen suchen...",
+    "resultsCount": "{{count}} Vorlage gefunden",
+    "resultsCount_other": "{{count}} Vorlagen gefunden",
+    "categories": {
+      "all": "Alle",
+      "indoor": "Indoor",
+      "outdoor": "Outdoor", 
+      "hydroponic": "Hydroponisch",
+      "soil": "Erde",
+      "beginner": "Anfänger",
+      "advanced": "Fortgeschritten"
+    },
+    "sortOptions": {
+      "popular": "Beliebt",
+      "newest": "Neueste",
+      "rating": "Bewertung",
+      "duration": "Dauer"
+    },
+    "templateCard": {
+      "weeks": "Wochen",
+      "tasks": "Aufgaben",
+      "more": "mehr",
+      "avgTask": "Ø/Aufgabe"
+    },
+    "emptyState": {
+      "noResults": "Keine Vorlagen gefunden",
+      "noTemplates": "Keine Vorlagen verfügbar",
+      "tryDifferentSearch": "Versuchen Sie einen anderen Suchbegriff",
+      "createFirst": "Erstellen Sie Ihre erste Vorlage, um zu beginnen"
+    },
+    "demo": {
+      "title": "Vorlagenbibliothek",
+      "description": "Durchsuchen und wählen Sie Zeitplanvorlagen für Ihre Pflanzen",
+      "selected": "Ausgewählt",
+      "weeks": "Wochen",
+      "tasks": "Aufgaben",
+      "previewTitle": "Vorlagenvorschau",
+      "saveSuccess": "Vorlage gespeichert",
+      "templateName": "Vorlagenname",
+      "duration": "Dauer",
+      "category": "Kategorie",
+      "public": "Öffentlich",
+      "createNew": "Neue Vorlage erstellen",
+      "editSample": "Beispielvorlage bearbeiten",
+      "features": "Funktionen",
+      "feature1": "Wochenweise Aufgabenplanung",
+      "feature2": "Drag-and-Drop Aufgabenplanung",
+      "feature3": "Aufgabenvorlagenbibliothek",
+      "feature4": "Vorlagenvalidierung",
+      "feature5": "Vorschaufunktion"
+    },
+    "editor": {
+      "createTemplate": "Vorlage erstellen",
+      "editTemplate": "Vorlage bearbeiten",
+      "preview": "Vorschau",
+      "basicInfo": "Grundinformationen",
+      "templateName": "Vorlagenname",
+      "templateNamePlaceholder": "Vorlagenname eingeben",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Beschreiben Sie Ihren Anbauplan",
+      "category": "Kategorie",
+      "durationWeeks": "Dauer (Wochen)",
+      "makePublic": "Öffentlich machen",
+      "weeklyPlanning": "Wochenplanung",
+      "taskLibrary": "Aufgabenbibliothek",
+      "week": "Woche",
+      "tasks": "Aufgaben",
+      "addTask": "Aufgabe hinzufügen",
+      "dropHere": "Hier ablegen",
+      "validation": {
+        "nameRequired": "Vorlagenname ist erforderlich",
+        "durationRange": "Dauer muss zwischen 1 und 52 Wochen liegen",
+        "tasksRequired": "Mindestens eine Aufgabe ist erforderlich"
+      }
+    }
+  },
   "tasks": {
     "taskType": "Aufgabentyp",
     "selectPlant": "Pflanze auswählen",

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import useWatermelon from '../../lib/hooks/useWatermelon';
 import { PlantTask } from '../../lib/models/PlantTask';
+import { isTaskType } from '@/lib/types/taskTypes';
 import { Plant } from '../../lib/models/Plant';
 import { useColorScheme } from 'nativewind';
 import ThemedText from '../ui/ThemedText';
@@ -108,7 +109,11 @@ export default function AddTaskToPlantScreen() {
           task.plantId = selectedPlant;
           task.title = TASK_TYPES.find(t => t.id === selectedTaskType)?.name || selectedTaskType;
           task.description = notes;
-          task.taskType = selectedTaskType;
+          if (isTaskType(selectedTaskType)) {
+            task.taskType = selectedTaskType;
+          } else {
+            throw new Error('Invalid task type');
+          }
           task.dueDate = dueDate.toISOString();
           task.status = 'pending';
           task.userId = 'current_user'; // TODO: Get from auth context

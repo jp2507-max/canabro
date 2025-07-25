@@ -71,6 +71,10 @@ export function isTomorrow(date: Parameters<typeof dayjs>[0]): boolean {
   return dayjs(date).isSame(dayjs().add(1, 'day'), 'day');
 }
 
+export function isSameDay(date1: Parameters<typeof dayjs>[0], date2: Parameters<typeof dayjs>[0]): boolean {
+  return dayjs(date1).isSame(dayjs(date2), 'day');
+}
+
 /**
  * Validates if a date is in the future, accounting for timezone differences
  * and providing a safety buffer to prevent false positives
@@ -116,4 +120,14 @@ export function addDaysToDate(date: Parameters<typeof dayjs>[0], days: number): 
     throw new Error('addDaysToDate: days parameter must be a finite number');
   }
   return dayjs(date).add(days, 'day').toDate();
+}
+
+/**
+ * Returns the start of the day (00:00:00) for the given date
+ * 
+ * @param date - The date to get the start of day for
+ * @returns New Date object set to start of day
+ */
+export function startOfDay(date: Parameters<typeof dayjs>[0]): Date {
+  return dayjs(date).startOf('day').toDate();
 } 
