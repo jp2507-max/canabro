@@ -74,7 +74,7 @@ const DayItem = React.memo(({ item, onSelect }: DayItemProps) => {
     const backgroundColor = aliasedInterpolateColor(
       selection.value,
       [0, 1],
-      ['transparent', 'var(--primary-500)'] // Use CSS variable for primary-500
+      ['transparent', 'rgb(22, 163, 74)'] // Use actual RGB value for primary-500
     );
 
     return {
@@ -260,8 +260,8 @@ export default function DaySelector({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={"var(--primary-500)"}
-              colors={["var(--primary-500)"]}
+              tintColor="#16a34a"
+              colors={["#16a34a"]}
             />
           ) : undefined
         }

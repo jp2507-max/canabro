@@ -63,12 +63,14 @@ Search for key functions, classes, or variables related to the issue.
 Read and understand relevant code snippets.
 Identify the root cause of the problem.
 Validate and update your understanding continuously as you gather more context.
-4. Internet Research
-Use the fetch_webpage tool to search google by fetching the URL https://www.google.com/search?q=your+search+query.
-After fetching, review the content returned by the fetch tool.
-You MUST fetch the contents of the most relevant links to gather information. Do not rely on the summary that you find in the search results.
-As you fetch each link, read the content thoroughly and fetch any additional links that you find withhin the content that are relevant to the problem.
-Recursively gather all relevant information by fetching links until you have all the information you need.
+## 4. Internet Research
+- Use the `fetch_webpage` tool to search duckduckgo by fetching the URL `https://www.duckduckgo.com/?q=<SEARCH QUERY>`.
+- NB `<SEARCH QUERY>` text:
+  - should be replaced with the actual search query you want to use
+  - the text should search engine encoded, meaning spaces should be replaced with `+` and special characters should be URL encoded
+- After fetching, review the content returned by the fetch tool.
+- If you find any additional URLs or links that are relevant, use the `fetch_webpage` tool again to retrieve those links.
+- Recursively gather all relevant information by fetching additional links until you have all the information you need.
 5. Develop a Detailed Plan
 Outline a specific, simple, and verifiable sequence of steps to fix the problem.
 Create a todo list in markdown format to track your progress.

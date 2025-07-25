@@ -2,6 +2,7 @@
 import database from '../database/database';
 import { ScheduleTemplate, TemplateTaskData } from '../models/ScheduleTemplate';
 import { BaseService, ApiResponse, createService } from './service-factory';
+import { log } from '../utils/logger';
 
 /**
  * Service for managing template sharing and community features
@@ -138,7 +139,7 @@ export class TemplateSharingService extends BaseService {
       });
 
       // Log the changes for debugging (in production, this would be stored in a versions table)
-      console.log(`Template ${templateId} updated: ${changes}`);
+      log.info(`Template ${templateId} updated: ${changes}`);
 
       return this.wrapResponse<boolean>(true, null);
     } catch (error) {
@@ -268,7 +269,7 @@ export class TemplateSharingService extends BaseService {
     // 2. Handle template versioning
     // 3. Manage community features like ratings, comments
     
-    console.log(`Syncing template ${template.id} to Supabase (not implemented yet)`);
+    log.info(`Syncing template ${template.id} to Supabase (not implemented yet)`, { templateId: template.id });
     
     // Example structure:
     // await supabase

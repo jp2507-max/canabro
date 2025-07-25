@@ -136,7 +136,7 @@ const TaskCard = memo<TaskCardProps>(({
   // Completion checkbox animation
   const checkboxAnimatedStyle = useAnimatedStyle(() => ({
   transform: [{ scale: withSpring(isCompleted ? 1.1 : 1) }],
-  backgroundColor: withSpring(isCompleted ? taskColor : 'var(--color-neutral-100)'),
+  backgroundColor: withSpring(isCompleted ? taskColor : 'rgb(251, 246, 239)'),
   }));
 
   // Task completion animation

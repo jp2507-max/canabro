@@ -234,13 +234,13 @@ describe('TemplateSharing', () => {
 
   it('handles close button', () => {
     const mockOnClose = jest.fn();
-    const { getByRole } = render(
+    const { getByTestId } = render(
       <TemplateSharing {...defaultProps} onClose={mockOnClose} />
     );
     
-    // Find and press close button (assuming it has proper accessibility role)
-    const closeButtons = getByRole('button');
-    fireEvent.press(closeButtons);
+    // Find and press close button using testID
+    const closeButton = getByTestId('template-sharing-close-button');
+    fireEvent.press(closeButton);
     
     expect(mockOnClose).toHaveBeenCalled();
   });

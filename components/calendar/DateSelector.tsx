@@ -1,6 +1,7 @@
 import { format, addDays, isToday, isYesterday, isTomorrow, formatLocaleDate } from '@/lib/utils/date';
 import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, RefreshControl } from 'react-native';
+
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -418,8 +419,8 @@ function DateSelector({ selectedDate, onDateSelect, tasks = [], onRefresh, refre
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#10b981"
-              colors={['#10b981']}
+              tintColor="rgb(var(--color-primary-500))"
+              colors={['rgb(var(--color-primary-500))']}
               title={t('calendar.date_selector.pull_to_refresh', 'Pull to refresh tasks')}
             />
           ) : undefined

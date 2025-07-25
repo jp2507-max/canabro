@@ -499,6 +499,7 @@ export const TemplateSharing: React.FC<TemplateSharingProps> = ({
             </View>
             <Pressable
               onPress={onClose}
+              testID="template-sharing-close-button"
               className="w-8 h-8 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800"
             >
               <OptimizedIcon name="close" size={20} color="#6B7280" />
