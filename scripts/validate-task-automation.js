@@ -5,78 +5,226 @@
  * reuses and adapts existing scheduling logic.
  */
 
+import { TaskAutomationService } from '../lib/services/TaskAutomationService.js';
+import { PlantTaskIntegration } from '../lib/services/PlantTaskIntegration.js';
+import { GrowthStage } from '../lib/types/plant.js';
+import { TaskType } from '../lib/types/taskTypes.js';
+import { database } from '../lib/models/index.js';
+import { addDays } from 'date-fns';
+
 async function validateTaskAutomation() {
     console.log('🧪 Validating Task Automation Service Implementation...\n');
+    let validationErrors = [];
 
     try {
         // Test 1: Validate growth stage configurations
-        console.log('✅ Test 1: Growth stage configurations');
-        console.log('- Growth stage configs loaded successfully');
-        console.log('- Strain scheduling configs loaded successfully');
-        console.log('- Task priority matrix configured correctly\n');
+        console.log('🔍 Test 1: Validating growth stage configurations...');
+        const growthStageConfigs = TaskAutomationService.getGrowthStageConfigs();
+        if (!growthStageConfigs || Object.keys(growthStageConfigs).length === 0) {
+            validationErrors.push('Growth stage configs not loaded');
+        }
+        
+        // Validate specific growth stages
+        const requiredStages = Object.values(GrowthStage);
+        for (const stage of requiredStages) {
+            if (!growthStageConfigs[stage]) {
+                validationErrors.push(`Missing config for growth stage: ${stage}`);
+            } else {
+                const config = growthStageConfigs[stage];
+                if (!config.taskPriorities || Object.keys(config.taskPriorities).length === 0) {
+                    validationErrors.push(`Missing task priorities for stage: ${stage}`);
+                }
+                if (!config.recommendedTasks || config.recommendedTasks.length === 0) {
+                    validationErrors.push(`Missing recommended tasks for stage: ${stage}`);
+                }
+            }
+        }
+        console.log(`✅ Growth stage configs validated (${Object.keys(growthStageConfigs).length} stages)`);
 
         // Test 2: Validate strain-specific scheduling
-        console.log('✅ Test 2: Strain-specific scheduling logic');
-        console.log('- Strain data integration working');
-        console.log('- Cannabis type fallback logic implemented');
-        console.log('- Growth stage modifiers applied correctly\n');
+        console.log('🔍 Test 2: Validating strain-specific scheduling...');
+        const strainConfigs = TaskAutomationService.getStrainSchedulingConfigs();
+        const requiredStrainTypes = ['indica', 'sativa', 'hybrid', 'cbd', 'unknown'];
+        
+        for (const strainType of requiredStrainTypes) {
+            if (!strainConfigs[strainType]) {
+                validationErrors.push(`Missing strain config for: ${strainType}`);
+            } else {
+                const config = strainConfigs[strainType];
+                if (typeof config.wateringFrequency !== 'number' || config.wateringFrequency <= 0) {
+                    validationErrors.push(`Invalid watering frequency for ${strainType}`);
+                }
+                if (typeof config.feedingFrequency !== 'number' || config.feedingFrequency <= 0) {
+                    validationErrors.push(`Invalid feeding frequency for ${strainType}`);
+                }
+            }
+        }
+        console.log(`✅ Strain scheduling configs validated (${Object.keys(strainConfigs).length} strain types)`);
 
         // Test 3: Validate task generation patterns
-        console.log('✅ Test 3: Task generation for 5-day workflow');
-        console.log('- Tasks optimized for 5-day view (current week ±2 days)');
-        console.log('- Task frequency calculation based on strain and growth stage');
-        console.log('- Priority assignment based on growth stage and task type\n');
+        console.log('🔍 Test 3: Validating task generation patterns...');
+        const mockPlant = {
+            id: 'test-plant-123',
+            name: 'Test Plant',
+            growthStage: GrowthStage.VEGETATIVE,
+            strainId: 'test-strain-001',
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        try {
+            const tasks = await TaskAutomationService.scheduleForGrowthStage(mockPlant, GrowthStage.VEGETATIVE);
+            if (!Array.isArray(tasks)) {
+                validationErrors.push('Task generation did not return array');
+            } else if (tasks.length === 0) {
+                validationErrors.push('No tasks generated for vegetative stage');
+            } else {
+                // Validate task structure
+                const validTask = tasks[0];
+                if (!validTask.type || !validTask.dueDate || !validTask.priority) {
+                    validationErrors.push('Generated task missing required fields');
+                }
+            }
+            console.log(`✅ Task generation validated (${tasks.length} tasks generated)`);
+        } catch (error) {
+            validationErrors.push(`Task generation failed: ${error.message}`);
+        }
 
         // Test 4: Validate recurring task logic
-        console.log('✅ Test 4: Recurring task logic adaptation');
-        console.log('- CareReminder patterns adapted for PlantTask model');
-        console.log('- Sequence numbering for recurring tasks');
-        console.log('- Interval calculation based on task type and plant needs\n');
+        console.log('🔍 Test 4: Validating recurring task logic...');
+        try {
+            const recurringTasks = await TaskAutomationService.generateRecurringTasks(
+                mockPlant, 
+                'watering', 
+                3, 
+                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+            );
+            
+            if (!Array.isArray(recurringTasks)) {
+                validationErrors.push('Recurring task generation did not return array');
+            } else if (recurringTasks.length < 8) { // Should generate at least 8 tasks for 30 days
+                validationErrors.push('Insufficient recurring tasks generated');
+            } else {
+                // Validate interval consistency
+                const intervals = recurringTasks.map(task => new Date(task.dueDate));
+                const expectedInterval = 3 * 24 * 60 * 60 * 1000; // 3 days in ms
+                
+                for (let i = 1; i < intervals.length; i++) {
+                    const actualInterval = intervals[i].getTime() - intervals[i-1].getTime();
+                    if (Math.abs(actualInterval - expectedInterval) > 1000 * 60 * 60) { // Allow 1 hour tolerance
+                        validationErrors.push('Recurring task intervals inconsistent');
+                        break;
+                    }
+                }
+            }
+            console.log(`✅ Recurring task logic validated (${recurringTasks.length} tasks)`);
+        } catch (error) {
+            validationErrors.push(`Recurring task generation failed: ${error.message}`);
+        }
 
         // Test 5: Validate environmental adjustments
-        console.log('✅ Test 5: Environmental condition adjustments');
-        console.log('- Humidity-based watering schedule adjustments');
-        console.log('- pH-based feeding priority modifications');
-        console.log('- Temperature-based inspection frequency changes\n');
+        console.log('🔍 Test 5: Validating environmental condition adjustments...');
+        const testConditions = [
+            { humidity: 80, expectedAdjustment: 12 }, // High humidity
+            { humidity: 30, expectedAdjustment: -6 }, // Low humidity
+            { pH: 5.0, expectedPriority: 'critical' }, // Low pH
+            { temperature: 35, expectedAdjustment: -2 } // High temperature
+        ];
+
+        for (const condition of testConditions) {
+            try {
+                const adjustment = TaskAutomationService.calculateEnvironmentalAdjustments('watering', condition);
+                
+                if (condition.humidity !== undefined) {
+                    if (adjustment.rescheduleHours !== condition.expectedAdjustment) {
+                        validationErrors.push(`Humidity adjustment incorrect: expected ${condition.expectedAdjustment}, got ${adjustment.rescheduleHours}`);
+                    }
+                }
+                if (condition.pH !== undefined) {
+                    if (adjustment.newPriority !== condition.expectedPriority) {
+                        validationErrors.push(`pH priority adjustment incorrect: expected ${condition.expectedPriority}, got ${adjustment.newPriority}`);
+                    }
+                }
+            } catch (error) {
+                validationErrors.push(`Environmental adjustment failed: ${error.message}`);
+            }
+        }
+        console.log('✅ Environmental adjustments validated');
 
         // Test 6: Validate integration components
-        console.log('✅ Test 6: Integration with existing systems');
-        console.log('- CareReminder migration to PlantTask format');
-        console.log('- Notification system integration maintained');
-        console.log('- Plant model integration preserved\n');
+        console.log('🔍 Test 6: Validating integration components...');
+        try {
+            // Test PlantTaskIntegration high-level API
+            const integrationResult = await PlantTaskIntegration.scheduleTasksForPlant(mockPlant, {
+                generateRecurring: true,
+                recurringInterval: 7,
+                optimizeFor5DayView: true
+            });
+            
+            if (!integrationResult || typeof integrationResult !== 'object') {
+                validationErrors.push('Integration result invalid');
+            } else {
+                if (!Array.isArray(integrationResult.tasks)) {
+                    validationErrors.push('Integration tasks not array');
+                }
+                if (typeof integrationResult.errors !== 'object') {
+                    validationErrors.push('Integration errors not object');
+                }
+            }
+            console.log(`✅ Integration components validated (${integrationResult.tasks.length} tasks)`);
+        } catch (error) {
+            validationErrors.push(`Integration validation failed: ${error.message}`);
+        }
 
         // Test 7: Validate 5-day workflow optimization
-        console.log('✅ Test 7: 5-day workflow optimization');
-        console.log('- Task generation focused on next 7 days');
-        console.log('- Bulk operations for daily task management');
-        console.log('- Overdue task rescheduling for better workflow\n');
+        console.log('🔍 Test 7: Validating 5-day workflow optimization...');
+        try {
+            const fiveDayTasks = await PlantTaskIntegration.getTasksFor5DayView([mockPlant.id]);
+            
+            if (!Array.isArray(fiveDayTasks)) {
+                validationErrors.push('5-day view tasks not array');
+            } else {
+                // Validate all tasks are within 5-day window
+                const now = new Date();
+                const fiveDaysLater = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+                
+                for (const task of fiveDayTasks) {
+                    const dueDate = new Date(task.dueDate);
+                    if (dueDate < now || dueDate > fiveDaysLater) {
+                        validationErrors.push('Task outside 5-day window in optimized view');
+                        break;
+                    }
+                }
+            }
+            console.log(`✅ 5-day workflow optimization validated (${fiveDayTasks.length} tasks)`);
+        } catch (error) {
+            validationErrors.push(`5-day optimization validation failed: ${error.message}`);
+        }
 
-        console.log('🎉 All Task Automation Service validations passed!');
-        console.log('\n📊 Implementation Summary:');
-        console.log('- ✅ 60% of scheduling algorithms reused from plant management');
-        console.log('- ✅ Growth stage detection logic integrated');
-        console.log('- ✅ Strain-specific scheduling patterns implemented');
-        console.log('- ✅ 5-day workflow optimization completed');
-        console.log('- ✅ CareReminder system integration maintained');
-        console.log('- ✅ Environmental condition adjustments working');
-        console.log('- ✅ Notification system compatibility preserved\n');
+        // Summary
+        if (validationErrors.length > 0) {
+            console.error(`❌ Validation failed with ${validationErrors.length} errors:`);
+            validationErrors.forEach(error => console.error(`  - ${error}`));
+            console.log('\n📊 Validation Results:');
+            console.log('- ❌ Growth stage configurations: Some issues found');
+            console.log('- ❌ Strain-specific scheduling: Some issues found');
+            console.log('- ❌ Task generation patterns: Some issues found');
+            console.log('- ❌ Recurring task logic: Some issues found');
+            console.log('- ❌ Environmental adjustments: Some issues found');
+            console.log('- ❌ Integration components: Some issues found');
+            console.log('- ❌ 5-day workflow optimization: Some issues found');
+            return false;
+        }
 
-        console.log('🔧 Key Features Implemented:');
-        console.log('1. TaskAutomationService - Core scheduling logic with strain/growth stage integration');
-        console.log('2. TaskSchedulingAdapter - Bridge between CareReminder and PlantTask systems');
-        console.log('3. PlantTaskIntegration - High-level API for task management workflow');
-        console.log('4. Growth stage transition handling with automatic task updates');
-        console.log('5. Environmental condition-based schedule adjustments');
-        console.log('6. 5-day view optimization for daily plant care workflows\n');
-
-        console.log('📋 Requirements Satisfied:');
-        console.log('- R2-AC1: Automated task generation based on growth stages ✅');
-        console.log('- R2-AC3: Recurring task logic for daily management ✅');
-        console.log('- R4-AC1: Plant lifecycle integration with task scheduling ✅');
-        console.log('- R4-AC2: Growth stage-based task prioritization ✅');
-        console.log('- R6-AC1: Strain-specific task scheduling ✅');
-        console.log('- R6-AC2: Environmental data integration ✅');
-        console.log('- R6-AC3: Plant data integration for personalized scheduling ✅\n');
+        console.log('\n🎉 All Task Automation Service validations passed!');
+        console.log('\n📊 Validation Results:');
+        console.log('- ✅ Growth stage configurations: Validated');
+        console.log('- ✅ Strain-specific scheduling: Validated');
+        console.log('- ✅ Task generation patterns: Validated');
+        console.log('- ✅ Recurring task logic: Validated');
+        console.log('- ✅ Environmental adjustments: Validated');
+        console.log('- ✅ Integration components: Validated');
+        console.log('- ✅ 5-day workflow optimization: Validated');
 
         return true;
     } catch (error) {

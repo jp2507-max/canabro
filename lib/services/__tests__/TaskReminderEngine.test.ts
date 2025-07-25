@@ -6,7 +6,7 @@
  */
 
 import { TaskReminderEngine, TaskNotificationConfig } from '../TaskReminderEngine';
-import { TaskType } from '@/lib/types/taskTypes';
+import { TaskType } from '../../types/taskTypes';
 
 // Mock dependencies
 jest.mock('../NotificationService', () => ({
@@ -177,6 +177,7 @@ describe('TaskReminderEngine', () => {
         taskType: 'watering',
         title: 'Water Test Plant',
         priority: 'medium',
+        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
         plant: {
           fetch: jest.fn().mockResolvedValue({ name: 'Test Plant' }),
         },
@@ -296,7 +297,7 @@ describe('TaskReminderEngine', () => {
   });
 
   describe('clearCache', () => {
-    it('should clear all cached data', () => {
+  it('should clear all cached data', async () => {
       // Add some data to cache first
       const mockTask: TaskNotificationConfig = {
         taskId: 'task-1',
@@ -308,7 +309,7 @@ describe('TaskReminderEngine', () => {
         priority: 'medium',
       };
 
-      taskReminderEngine.scheduleTaskNotifications([mockTask]);
+  await taskReminderEngine.scheduleTaskNotifications([mockTask]);
 
       // Clear cache
       taskReminderEngine.clearCache();

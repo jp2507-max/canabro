@@ -274,13 +274,14 @@ export function usePriorityTaskFiltering(tasks: PlantTask[] = []) {
     setLoading(true);
 
     try {
-      // Calculate priorities for all tasks
-      const taskPriorityPromises = tasks.map(async (task) => {
-        try {
-          const urgencyContext = await GrowthStageTaskPrioritization.calculateTaskPriority(
-            task.plantId,
-            task.id
-          );
+      // Use batch calculation for improved performance
+      const batchResults = await GrowthStageTaskPrioritization.calculateBatchTaskPriorities(tasks);
+
+      // Process results and create prioritized list
+      const taskPriorities = tasks.map((task) => {
+        const urgencyContext = batchResults.get(task.id);
+        
+        if (urgencyContext) {
           return {
             task,
             priority: urgencyContext.priorityFactors.finalPriority,
@@ -289,8 +290,9 @@ export function usePriorityTaskFiltering(tasks: PlantTask[] = []) {
                          urgencyContext.priorityFactors.environmentalUrgency +
                          urgencyContext.priorityFactors.timeUrgency,
           };
-        } catch (error) {
-          log.warn(`[usePriorityTaskFiltering] Failed to calculate priority for task ${task.id}:`, error);
+        } else {
+          // Fallback for tasks that couldn't be processed
+          log.warn(`[usePriorityTaskFiltering] No priority data for task ${task.id}, using defaults`);
           return {
             task,
             priority: task.priorityLevel,
@@ -298,8 +300,6 @@ export function usePriorityTaskFiltering(tasks: PlantTask[] = []) {
           };
         }
       });
-
-      const taskPriorities = await Promise.all(taskPriorityPromises);
 
       // Sort by priority and urgency score
       const priorityOrder: Record<'low' | 'medium' | 'high' | 'critical', number> = { 
@@ -315,7 +315,7 @@ export function usePriorityTaskFiltering(tasks: PlantTask[] = []) {
 
       setPrioritizedTasks(sortedTasks);
       
-      log.info(`[usePriorityTaskFiltering] Prioritized ${sortedTasks.length} tasks`);
+      log.info(`[usePriorityTaskFiltering] Prioritized ${sortedTasks.length} tasks using batch processing`);
     } catch (error) {
       log.error(`[usePriorityTaskFiltering] Error prioritizing tasks:`, error);
       setPrioritizedTasks(tasks); // Fallback to original order

@@ -20,7 +20,7 @@ import { TaskAutomationService } from './TaskAutomationService';
 import { TaskSchedulingAdapter } from './TaskSchedulingAdapter';
 import { GrowthStage } from '../types/plant';
 import { TaskType } from '../types/taskTypes';
-import database from '../database/database';
+import { database } from '../models';
 
 export interface TaskSchedulingOptions {
   useTemplate?: boolean;
@@ -223,11 +223,14 @@ export class PlantTaskIntegration {
       startOfTargetDay.setHours(0, 0, 0, 0);
       const endOfTargetDay = addDays(startOfTargetDay, 1);
 
+      const startTimestamp = startOfTargetDay.getTime();
+      const endTimestamp = endOfTargetDay.getTime();
+
       let query = database
         .get<PlantTask>('plant_tasks')
         .query(
           Q.where('plant_id', plantId),
-          Q.where('due_date', Q.between(startOfTargetDay.getTime(), endOfTargetDay.getTime())),
+          Q.where('due_date', Q.between(startTimestamp, endTimestamp)),
           Q.where('status', 'pending')
         );
 
@@ -241,10 +244,7 @@ export class PlantTaskIntegration {
 
       await database.write(async () => {
         for (const task of tasks) {
-          await task.markAsCompleted({
-            completedAt: new Date(),
-            notes: 'Bulk completed via 5-day view',
-          });
+          await task.markAsCompleted();
         }
       });
 
@@ -267,7 +267,7 @@ export class PlantTaskIntegration {
         .query(
           Q.where('plant_id', plantId),
           Q.where('status', 'pending'),
-          Q.where('due_date', Q.lt(now.getTime()))
+          Q.where('due_date', Q.lt(now.toISOString()))
         )
         .fetch();
 
@@ -280,7 +280,9 @@ export class PlantTaskIntegration {
             ? now 
             : addDays(now, 1);
 
-          await task.reschedule(newDueDate.toISOString());
+          await task.update(plantTask => {
+            plantTask.dueDate = newDueDate.toISOString();
+          });
         }
       });
 
@@ -299,7 +301,7 @@ export class PlantTaskIntegration {
       // Get all active plants
       const plants = await database
         .get<Plant>('plants')
-        .query(Q.where('is_deleted', Q.notEq(true)))
+        .query(Q.where('is_deleted', false))
         .fetch();
 
       log.info(`[PlantTaskIntegration] Checking ${plants.length} plants for growth stage transitions`);

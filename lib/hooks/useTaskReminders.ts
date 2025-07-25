@@ -167,7 +167,7 @@ export function useTaskReminders(): TaskReminderHookResult {
       
       for (const task of tasks) {
         try {
-          const plant = task.plant;
+          const plant = await task.plant;
           
           const config: TaskNotificationConfig = {
             taskId: task.id,
@@ -322,7 +322,7 @@ export function useTaskNotification(task: PlantTask | null) {
 
     const scheduleNotification = async () => {
       try {
-        const plant = task.plant;
+        const plant = await task.plant;
         
         const config: TaskNotificationConfig = {
           taskId: task.id,

@@ -128,7 +128,7 @@ export class TaskReminderEngine {
                 // Check if it's time for next escalation
                 if (this.shouldEscalate(escalation)) {
                     await this.sendEscalatedNotification(task, escalation);
-                    await this.updateEscalationLevel(escalation);
+                    await this.updateEscalationLevel(task, escalation);
                 }
             }
 
@@ -516,9 +516,11 @@ export class TaskReminderEngine {
             return this.overdueEscalations.get(task.id)!;
         }
 
-        const now = new Date();
-        const dueDate = new Date(task.dueDate);
-        const hoursOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60));
+    const now = new Date();
+    // Use escalationStartTime if available, otherwise dueDate
+    const escalationStartTime = (task as any).escalationStartTime ? new Date((task as any).escalationStartTime) : new Date(task.dueDate);
+    // Calculate hours overdue based on relevant timestamp
+    const hoursOverdue = Math.floor((now.getTime() - escalationStartTime.getTime()) / (1000 * 60 * 60));
 
         const escalation: OverdueTaskEscalation = {
             taskId: task.id,
@@ -554,11 +556,15 @@ export class TaskReminderEngine {
         });
     }
 
-    private async updateEscalationLevel(escalation: OverdueTaskEscalation): Promise<void> {
-        escalation.hasBeenEscalated = true;
-        escalation.hoursOverdue = Math.floor((new Date().getTime() - new Date().getTime()) / (1000 * 60 * 60));
-        escalation.escalationLevel = this.calculateEscalationLevel(escalation.hoursOverdue);
-        escalation.nextEscalationTime = this.calculateNextEscalationTime(escalation.hoursOverdue);
+    private async updateEscalationLevel(task: PlantTask, escalation: OverdueTaskEscalation): Promise<void> {
+    const now = new Date();
+    // Use escalationStartTime if available, otherwise dueDate
+    const escalationStartTime = (task as any).escalationStartTime ? new Date((task as any).escalationStartTime) : new Date(task.dueDate);
+    // Calculate hours overdue based on relevant timestamp
+    escalation.hasBeenEscalated = true;
+    escalation.hoursOverdue = Math.floor((now.getTime() - escalationStartTime.getTime()) / (1000 * 60 * 60));
+    escalation.escalationLevel = this.calculateEscalationLevel(escalation.hoursOverdue);
+    escalation.nextEscalationTime = this.calculateNextEscalationTime(escalation.hoursOverdue);
     }
 
     private calculateEscalationLevel(hoursOverdue: number): 'gentle' | 'standard' | 'urgent' | 'critical' {

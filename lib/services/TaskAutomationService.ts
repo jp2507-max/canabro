@@ -420,14 +420,15 @@ export class TaskAutomationService {
             const newDueDate = new Date(task.dueDate);
             newDueDate.setHours(newDueDate.getHours() + adjustments.rescheduleHours);
             
-            await task.update((t: PlantTask) => {
-              t.dueDate = newDueDate.toISOString();
-              t.priority = adjustments.newPriority || t.priority;
-              t.environmentalConditions = {
-                ...t.environmentalConditions,
-                ...conditions,
-              };
-            });
+              await task.update((t: PlantTask) => {
+                // Use model property names; ORM maps to DB columns
+                t.dueDate = newDueDate.toISOString();
+                t.priority = adjustments.newPriority || t.priority;
+                t.environmentalConditions = {
+                  ...t.environmentalConditions,
+                  ...conditions,
+                };
+              });
           }
         }
       });
@@ -700,5 +701,120 @@ export class TaskAutomationService {
     }
 
     return { rescheduleHours, newPriority };
+  }
+
+  /**
+   * Get growth stage configurations for validation and testing
+   */
+  static getGrowthStageConfigs(): Record<GrowthStage, GrowthStageConfig> {
+    return GROWTH_STAGE_CONFIGS;
+  }
+
+  /**
+   * Get strain scheduling configurations for validation and testing
+   */
+  static getStrainSchedulingConfigs(): Record<string, StrainSchedulingConfig> {
+    return STRAIN_SCHEDULING_CONFIGS;
+  }
+
+  // Task descriptions for validation and testing
+  private static readonly TASK_DESCRIPTIONS: Record<TaskType, Record<GrowthStage, string>> = {
+    watering: {
+      [GrowthStage.GERMINATION]: 'Maintain consistent moisture for germination. Water lightly when top soil feels dry.',
+      [GrowthStage.SEEDLING]: 'Water when top inch of soil is dry. Avoid overwatering young seedlings.',
+      [GrowthStage.VEGETATIVE]: 'Water thoroughly when top 2-3 inches of soil are dry. Increase frequency as plant grows.',
+      [GrowthStage.PRE_FLOWER]: 'Continue regular watering schedule. Monitor for signs of over/under watering.',
+      [GrowthStage.FLOWERING]: 'Water when soil is dry 2-3 inches down. Reduce frequency slightly during flowering.',
+      [GrowthStage.LATE_FLOWERING]: 'Reduce watering frequency. Allow soil to dry more between waterings.',
+      [GrowthStage.HARVEST]: 'Stop watering 2-3 days before harvest to stress plant and improve resin production.',
+      [GrowthStage.CURING]: 'No watering needed during curing process.',
+    },
+    feeding: {
+      [GrowthStage.GERMINATION]: 'No feeding required during germination. Seed contains all necessary nutrients.',
+      [GrowthStage.SEEDLING]: 'Begin light feeding with quarter-strength nutrients after first true leaves appear.',
+      [GrowthStage.VEGETATIVE]: 'Increase to full-strength vegetative nutrients. Feed every 2-3 waterings.',
+      [GrowthStage.PRE_FLOWER]: 'Transition to bloom nutrients. Reduce nitrogen, increase phosphorus and potassium.',
+      [GrowthStage.FLOWERING]: 'Use full bloom nutrient schedule. Monitor for nutrient burn or deficiency.',
+      [GrowthStage.LATE_FLOWERING]: 'Begin flushing with plain water 1-2 weeks before harvest.',
+      [GrowthStage.HARVEST]: 'No feeding during harvest.',
+      [GrowthStage.CURING]: 'No feeding needed during curing.',
+    },
+    inspection: {
+      [GrowthStage.GERMINATION]: 'Daily visual inspection for sprouting and moisture levels.',
+      [GrowthStage.SEEDLING]: 'Daily inspection for healthy growth, proper lighting, and pest signs.',
+      [GrowthStage.VEGETATIVE]: 'Inspect every 2-3 days for pests, nutrient issues, and training opportunities.',
+      [GrowthStage.PRE_FLOWER]: 'Daily inspection for sex determination and early flowering signs.',
+      [GrowthStage.FLOWERING]: 'Daily inspection for bud development, pest issues, and environmental problems.',
+      [GrowthStage.LATE_FLOWERING]: 'Inspect daily for harvest readiness - trichome color, pistil changes.',
+      [GrowthStage.HARVEST]: 'Inspect plants for optimal harvest timing based on trichome development.',
+      [GrowthStage.CURING]: 'Weekly inspection of curing jars for proper humidity and mold prevention.',
+    },
+    pruning: {
+      [GrowthStage.GERMINATION]: 'No pruning during germination.',
+      [GrowthStage.SEEDLING]: 'Remove any yellow or damaged leaves. Minimal pruning only.',
+      [GrowthStage.VEGETATIVE]: 'Begin topping and training. Remove lower growth that will not receive light.',
+      [GrowthStage.PRE_FLOWER]: 'Final pruning before flowering. Remove any remaining lower growth.',
+      [GrowthStage.FLOWERING]: 'Minimal pruning - only remove dead or yellowing leaves.',
+      [GrowthStage.LATE_FLOWERING]: 'No pruning during late flowering.',
+      [GrowthStage.HARVEST]: 'No pruning during harvest.',
+      [GrowthStage.CURING]: 'No pruning during curing.',
+    },
+    harvest: {
+      [GrowthStage.GERMINATION]: 'Not applicable during germination.',
+      [GrowthStage.SEEDLING]: 'Not applicable during seedling stage.',
+      [GrowthStage.VEGETATIVE]: 'Not applicable during vegetative stage.',
+      [GrowthStage.PRE_FLOWER]: 'Not applicable during pre-flower stage.',
+      [GrowthStage.FLOWERING]: 'Monitor for harvest readiness - check trichomes weekly.',
+      [GrowthStage.LATE_FLOWERING]: 'Prepare for harvest. Final checks on trichome development.',
+      [GrowthStage.HARVEST]: 'Execute harvest when trichomes are mostly cloudy with some amber.',
+      [GrowthStage.CURING]: 'Not applicable during curing.',
+    },
+    transplant: {
+      [GrowthStage.GERMINATION]: 'Transplant seedlings to larger containers when true leaves appear.',
+      [GrowthStage.SEEDLING]: 'Transplant to final container size when roots fill current container.',
+      [GrowthStage.VEGETATIVE]: 'Final transplant to largest container before flowering begins.',
+      [GrowthStage.PRE_FLOWER]: 'No transplanting during pre-flower - stress can affect flowering.',
+      [GrowthStage.FLOWERING]: 'No transplanting during flowering - causes stress and yield loss.',
+      [GrowthStage.LATE_FLOWERING]: 'No transplanting during late flowering.',
+      [GrowthStage.HARVEST]: 'No transplanting during harvest.',
+      [GrowthStage.CURING]: 'No transplanting during curing.',
+    },
+    training: {
+      [GrowthStage.GERMINATION]: 'No training during germination.',
+      [GrowthStage.SEEDLING]: 'Begin gentle LST (Low Stress Training) when plant has 3-4 nodes.',
+      [GrowthStage.VEGETATIVE]: 'Intensive training period - topping, LST, SCROG setup.',
+      [GrowthStage.PRE_FLOWER]: 'Final training adjustments before flowering stretch begins.',
+      [GrowthStage.FLOWERING]: 'Minimal training - only gentle adjustments during early flowering.',
+      [GrowthStage.LATE_FLOWERING]: 'No training during late flowering.',
+      [GrowthStage.HARVEST]: 'No training during harvest.',
+      [GrowthStage.CURING]: 'No training during curing.',
+    },
+    defoliation: {
+      [GrowthStage.GERMINATION]: 'No defoliation during germination.',
+      [GrowthStage.SEEDLING]: 'No defoliation during seedling stage.',
+      [GrowthStage.VEGETATIVE]: 'Light defoliation to improve airflow and light penetration.',
+      [GrowthStage.PRE_FLOWER]: 'Major defoliation session before flowering to open up canopy.',
+      [GrowthStage.FLOWERING]: 'Selective defoliation during early flowering (day 21 and 42).',
+      [GrowthStage.LATE_FLOWERING]: 'Minimal defoliation - only remove dead or yellowing leaves.',
+      [GrowthStage.HARVEST]: 'No defoliation during harvest.',
+      [GrowthStage.CURING]: 'No defoliation during curing.',
+    },
+    flushing: {
+      [GrowthStage.GERMINATION]: 'No flushing during germination.',
+      [GrowthStage.SEEDLING]: 'No flushing during seedling stage.',
+      [GrowthStage.VEGETATIVE]: 'Flush only if showing nutrient toxicity signs.',
+      [GrowthStage.PRE_FLOWER]: 'No flushing during pre-flower unless transitioning from synthetic nutrients.',
+      [GrowthStage.FLOWERING]: 'Begin final flush 1-2 weeks before harvest with plain pH-balanced water.',
+      [GrowthStage.LATE_FLOWERING]: 'Continue flushing process. Monitor runoff PPM levels.',
+      [GrowthStage.HARVEST]: 'Complete final flush. Plants ready when runoff PPM is <50.',
+      [GrowthStage.CURING]: 'No flushing during curing.',
+    },
+  };
+
+  /**
+   * Get task descriptions for validation and testing
+   */
+  static getTaskDescriptions(): Record<TaskType, Record<GrowthStage, string>> {
+    return this.TASK_DESCRIPTIONS;
   }
 }

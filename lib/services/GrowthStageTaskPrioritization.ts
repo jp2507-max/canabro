@@ -192,6 +192,110 @@ export class GrowthStageTaskPrioritization {
   }
 
   /**
+   * Batch calculate task priorities for multiple tasks
+   * Optimized to reduce database queries and improve performance
+   */
+  static async calculateBatchTaskPriorities(
+    tasks: PlantTask[]
+  ): Promise<Map<string, TaskUrgencyContext>> {
+    try {
+      log.info(`[GrowthStageTaskPrioritization] Calculating batch priorities for ${tasks.length} tasks`);
+      
+      const results = new Map<string, TaskUrgencyContext>();
+      
+      if (tasks.length === 0) {
+        return results;
+      }
+
+      // Group tasks by plant ID to minimize plant/metrics lookups
+      const tasksByPlantId = tasks.reduce((acc, task) => {
+        if (!acc[task.plantId]) {
+          acc[task.plantId] = [];
+        }
+        acc[task.plantId]!.push(task);
+        return acc;
+      }, {} as Record<string, PlantTask[]>);
+
+      // Batch fetch all plants and metrics
+      const plantIds = Object.keys(tasksByPlantId);
+      const plantsPromise = database.get<Plant>('plants').query(
+        Q.where('id', Q.oneOf(plantIds))
+      ).fetch();
+      
+      const metricsPromise = database.get<PlantMetrics>('plant_metrics').query(
+        Q.where('plant_id', Q.oneOf(plantIds)),
+        Q.where('is_deleted', Q.notEq(true)),
+        Q.sortBy('recorded_at', Q.desc)
+      ).fetch();
+
+      const [plants, allMetrics] = await Promise.all([plantsPromise, metricsPromise]);
+
+      // Create lookup maps
+      const plantMap = new Map(plants.map(plant => [plant.id, plant]));
+      const metricsMap = new Map<string, PlantMetrics>();
+      
+      // Get latest metrics for each plant
+      allMetrics.forEach(metric => {
+        if (!metricsMap.has(metric.plantId)) {
+          metricsMap.set(metric.plantId, metric);
+        }
+      });
+
+      // Calculate milestone progress for each plant (batch this too)
+      const milestoneProgressMap = new Map<string, MilestoneProgress>();
+      await Promise.all(
+        plants.map(async (plant) => {
+          try {
+            const milestoneProgress = await this.calculateMilestoneProgress(plant);
+            milestoneProgressMap.set(plant.id, milestoneProgress);
+          } catch (error) {
+            log.warn(`[GrowthStageTaskPrioritization] Failed to calculate milestone for plant ${plant.id}:`, error);
+          }
+        })
+      );
+
+      // Process all tasks
+      await Promise.all(
+        tasks.map(async (task) => {
+          try {
+            const plant = plantMap.get(task.plantId);
+            const latestMetrics = metricsMap.get(task.plantId);
+            const milestoneProgress = milestoneProgressMap.get(task.plantId);
+
+            if (!plant || !milestoneProgress) {
+              log.warn(`[GrowthStageTaskPrioritization] Missing data for task ${task.id}, skipping`);
+              return;
+            }
+
+            const priorityFactors = await this.calculatePriorityFactors(
+              plant, 
+              task, 
+              latestMetrics, 
+              milestoneProgress
+            );
+
+            results.set(task.id, {
+              plant,
+              task,
+              latestMetrics,
+              milestoneProgress,
+              priorityFactors,
+            });
+          } catch (error) {
+            log.warn(`[GrowthStageTaskPrioritization] Failed to calculate priority for task ${task.id}:`, error);
+          }
+        })
+      );
+
+      log.info(`[GrowthStageTaskPrioritization] Successfully calculated ${results.size} batch priorities`);
+      return results;
+    } catch (error) {
+      log.error(`[GrowthStageTaskPrioritization] Error calculating batch task priorities:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * ✅ REUSE: Adapt milestone tracking for task completion celebration
    * 
    * Tracks growth stage milestones and determines when tasks should be
@@ -390,36 +494,45 @@ export class GrowthStageTaskPrioritization {
 
   /**
    * Batch update task priorities for multiple plants
-   * Optimized for 5-day workflow management
+   * Optimized for 5-day workflow management with improved performance
    */
   static async updateTaskPrioritiesForPlants(plantIds: string[]): Promise<void> {
     try {
       log.info(`[GrowthStageTaskPrioritization] Updating task priorities for ${plantIds.length} plants`);
 
-      for (const plantId of plantIds) {
-        // Get pending tasks for the plant
-        const pendingTasks = await database
-          .get<PlantTask>('plant_tasks')
-          .query(
-            Q.where('plant_id', plantId),
-            Q.where('status', 'pending'),
-            Q.sortBy('due_date', Q.asc)
-          )
-          .fetch();
+      // Batch fetch all pending tasks for all plants
+      const allPendingTasks = await database
+        .get<PlantTask>('plant_tasks')
+        .query(
+          Q.where('plant_id', Q.oneOf(plantIds)),
+          Q.where('status', 'pending'),
+          Q.sortBy('due_date', Q.asc)
+        )
+        .fetch();
 
-        // Update priorities for each task
-        await database.write(async () => {
-          for (const task of pendingTasks) {
-            const urgencyContext = await this.calculateTaskPriority(plantId, task.id);
-            
+      if (allPendingTasks.length === 0) {
+        log.info(`[GrowthStageTaskPrioritization] No pending tasks found for plants`);
+        return;
+      }
+
+      // Use batch priority calculation
+      const batchResults = await this.calculateBatchTaskPriorities(allPendingTasks);
+
+      // Update all task priorities in a single transaction
+      await database.write(async () => {
+        const updatePromises = allPendingTasks.map(async (task) => {
+          const urgencyContext = batchResults.get(task.id);
+          if (urgencyContext) {
             await task.update((t) => {
               t.priority = urgencyContext.priorityFactors.finalPriority;
             });
           }
         });
 
-        log.info(`[GrowthStageTaskPrioritization] Updated ${pendingTasks.length} task priorities for plant ${plantId}`);
-      }
+        await Promise.all(updatePromises);
+      });
+
+      log.info(`[GrowthStageTaskPrioritization] Updated ${allPendingTasks.length} task priorities using batch processing`);
     } catch (error) {
       log.error(`[GrowthStageTaskPrioritization] Error updating task priorities:`, error);
       throw error;
@@ -467,15 +580,15 @@ export class GrowthStageTaskPrioritization {
 
   private static async getLatestPlantMetrics(plantId: string): Promise<PlantMetrics | undefined> {
     try {
-      const metrics = await database
-        .get<PlantMetrics>('plant_metrics')
-        .query(
-          Q.where('plant_id', plantId),
-          Q.where('is_deleted', Q.notEq(true)),
-          Q.sortBy('recorded_at', Q.desc),
-          Q.take(1)
-        )
-        .fetch();
+        const metrics = await database
+          .get<PlantMetrics>('plant_metrics')
+          .query(
+            Q.where('plant_id', plantId),
+            Q.where('is_deleted', false),
+            Q.sortBy('recorded_at', Q.desc),
+            Q.take(1)
+          )
+          .fetch();
 
       return metrics[0];
     } catch (error) {
@@ -504,7 +617,16 @@ export class GrowthStageTaskPrioritization {
 
   private static calculateTimeUrgency(task: PlantTask): number {
     const now = new Date();
+    // Null/invalid check for dueDate
+    if (!task.dueDate) {
+      log.warn(`[GrowthStageTaskPrioritization] Task ${task.id} has null dueDate, returning default urgency.`);
+      return 0.3; // Default low urgency for missing due date
+    }
     const dueDate = new Date(task.dueDate);
+    if (isNaN(dueDate.getTime())) {
+      log.warn(`[GrowthStageTaskPrioritization] Task ${task.id} has invalid dueDate (${task.dueDate}), returning default urgency.`);
+      return 0.3; // Default low urgency for invalid date
+    }
     const timeDiff = dueDate.getTime() - now.getTime();
     const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
 
