@@ -14,6 +14,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { triggerMediumHapticSync } from '../../lib/utils/haptics';
+import { refreshControlColors } from '@/lib/constants/colors';
 import {
   generateCDNImageURL,
   IMAGE_CACHE_POLICY,
@@ -785,7 +786,7 @@ const StrainsView: React.FC<Partial<StrainsViewProps>> = ({
           <RefreshControl
             refreshing={isFetching}
             onRefresh={handleRefresh}
-            tintColor="rgb(var(--color-primary-500))"
+            tintColor={refreshControlColors.tintColor}
           />
         }
         accessibilityLabel="Strains list"

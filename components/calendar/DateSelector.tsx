@@ -19,6 +19,7 @@ import ThemedView from '../ui/ThemedView';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import { triggerLightHapticSync, triggerMediumHaptic } from '../../lib/utils/haptics';
 import { useTranslation } from 'react-i18next';
+import { refreshControlColors } from '@/lib/constants/colors';
 import { PlantTask } from '@/lib/models/PlantTask';
 
 // Reanimated AnimatedPressable
@@ -166,7 +167,7 @@ const DateItem = React.memo(({ date, isSelected, onSelect, taskCount = 0 }: Date
         
         {/* Task count indicator */}
         {taskCount > 0 && (
-          <ThemedView className="absolute -top-1 -right-1 bg-primary dark:bg-primary-dark rounded-full min-w-5 h-5 items-center justify-center px-1">
+          <ThemedView className="absolute -top-1 -right-1 bg-accent rounded-full min-w-5 h-5 items-center justify-center px-1">
             <ThemedText className="text-xs font-bold text-white dark:text-foreground">
               {taskCount > 9 ? '9+' : taskCount}
             </ThemedText>
@@ -248,19 +249,29 @@ function DateSelector({ selectedDate, onDateSelect, tasks = [], onRefresh, refre
     return result;
   }, []);
 
-  // Calculate task counts for each date
+  // Calculate task counts for each date with explicit type checking
   const taskCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     
     tasks.forEach(task => {
-      try {
-        const taskDate = new Date(task.dueDate);
-        if (!isNaN(taskDate.getTime())) {
-          const dateKey = format(taskDate, 'yyyy-MM-dd');
-          counts[dateKey] = (counts[dateKey] || 0) + 1;
+      // Skip if task or dueDate is falsy or not a string/number
+      if (!task?.dueDate || (typeof task.dueDate !== 'string' && typeof task.dueDate !== 'number')) {
+        if (__DEV__ && task?.dueDate !== undefined) {
+          console.warn('[DateSelector] Invalid task due date format:', task.dueDate);
         }
-      } catch (error) {
-        console.warn('[DateSelector] Invalid task due date:', task.dueDate);
+        return;
+      }
+      
+      // Create date and validate
+      const taskDate = new Date(task.dueDate);
+      const time = taskDate.getTime();
+      
+      // Check if the date is valid
+      if (!isNaN(time) && taskDate.toString() !== 'Invalid Date') {
+        const dateKey = format(taskDate, 'yyyy-MM-dd');
+        counts[dateKey] = (counts[dateKey] || 0) + 1;
+      } else if (__DEV__) {
+        console.warn('[DateSelector] Invalid task due date value:', task.dueDate);
       }
     });
     
@@ -419,8 +430,8 @@ function DateSelector({ selectedDate, onDateSelect, tasks = [], onRefresh, refre
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="rgb(var(--color-primary-500))"
-              colors={['rgb(var(--color-primary-500))']}
+              tintColor={refreshControlColors.tintColor}
+              colors={refreshControlColors.colors}
               title={t('calendar.date_selector.pull_to_refresh', 'Pull to refresh tasks')}
             />
           ) : undefined

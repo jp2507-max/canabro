@@ -5,6 +5,7 @@
  * Uses validation functions from TemplateEditor.validation.ts
  */
 
+import { log } from './lib/utils/logger';
 import { 
   TemplateEditorData,
   createTestTemplateData,
@@ -30,7 +31,7 @@ const validateTemplateFeatures = (data: TemplateEditorData) => ({
 
 // Main test function with TypeScript types
 const runTests = (): boolean => {
-  console.log('🧪 Running TemplateEditor validation tests...');
+  log.info('🧪 Running TemplateEditor validation tests...');
 
   // Use imported validation functions
   const basicValidation = validateTemplateEditor.validateBasicInfo(testTemplateData);
@@ -43,21 +44,26 @@ const runTests = (): boolean => {
   const allErrors = [...basicValidation.errors, ...taskValidation.errors];
 
   // Test results output
-  console.log('📊 Test Results:');
-  console.log(`✅ Overall Valid: ${allValid}`);
-  console.log(`📝 Errors: ${allErrors.length === 0 ? 'None' : allErrors.join(', ')}`);
+  log.info('📊 Test Results:');
+  log.info(`✅ Overall Valid: ${allValid}`);
   
-  console.log('🎯 Task 3.2 Requirements:');
-  console.log(`  - Week-by-week planning interface: ${features.weekByWeekPlanning ? '✅' : '❌'}`);
-  console.log(`  - Drag-and-drop task scheduling: ${features.dragAndDropScheduling ? '✅' : '❌'}`);
-  console.log(`  - Task template library: ${features.taskTemplateLibrary ? '✅' : '❌'}`);
-  console.log(`  - Template validation: ${features.templateValidation ? '✅' : '❌'}`);
-  console.log(`  - Preview functionality: ${features.previewFunctionality ? '✅' : '❌'}`);
+  if (allErrors.length > 0) {
+    log.error(`📝 Errors: ${allErrors.join(', ')}`);
+  } else {
+    log.info('📝 No errors found');
+  }
+  
+  log.info('🎯 Task 3.2 Requirements:');
+  log.info(`  - Week-by-week planning interface: ${features.weekByWeekPlanning ? '✅' : '❌'}`);
+  log.info(`  - Drag-and-drop task scheduling: ${features.dragAndDropScheduling ? '✅' : '❌'}`);
+  log.info(`  - Task template library: ${features.taskTemplateLibrary ? '✅' : '❌'}`);
+  log.info(`  - Template validation: ${features.templateValidation ? '✅' : '❌'}`);
+  log.info(`  - Preview functionality: ${features.previewFunctionality ? '✅' : '❌'}`);
 
   if (allValid) {
-    console.log('🎉 All tests passed! TemplateEditor meets task 3.2 requirements.');
+    log.info('🎉 All tests passed! TemplateEditor meets task 3.2 requirements.');
   } else {
-    console.log('⚠️  Some tests failed. Please review the errors above.');
+    log.warn('⚠️  Some tests failed. Please review the errors above.');
   }
 
   return allValid;
@@ -70,12 +76,12 @@ const runTestSuite = (): void => {
     const success = runTests();
     
     // Then run the standard test suite for additional validation
-    console.log('\n🏃 Running standard test suite...');
+    log.info('\n🏃 Running standard test suite...');
     runTemplateEditorTests();
     
     process.exit(success ? 0 : 1);
   } catch (error) {
-    console.error('❌ Test runner error:', error);
+    log.error('Test runner error:', { error });
     process.exit(1);
   }
 };

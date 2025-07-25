@@ -20,6 +20,14 @@ interface TemplateStats {
   totalTasks: number;
 }
 
+interface TemplateVersion {
+  id: string;
+  version: string;
+  changes: string;
+  createdAt: Date;
+  templateData: TemplateTaskData[];
+}
+
 interface UseTemplateSharingReturn {
   // State
   loading: boolean;
@@ -27,7 +35,7 @@ interface UseTemplateSharingReturn {
   
   // Actions
   shareTemplate: () => Promise<void>;
-  exportTemplateData: () => Promise<void>;
+  exportTemplateData: () => Promise<string>;
   importTemplateData: (jsonData: string) => Promise<boolean>;
   togglePublicStatus: () => Promise<void>;
   generateLink: () => Promise<string>;
@@ -248,7 +256,7 @@ export const useTemplateSharing = (
  * Hook for managing template versioning
  */
 export const useTemplateVersioning = (template: ScheduleTemplate) => {
-  const [versions, setVersions] = useState<any[]>([]);
+  const [versions, setVersions] = useState<TemplateVersion[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Create new version

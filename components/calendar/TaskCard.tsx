@@ -44,7 +44,20 @@ import { PlantTask } from '@/lib/models/PlantTask';
 import type { TaskType } from '@/lib/types/taskTypes';
 
 
-// Task type color definitions using semantic tokens (CSS variables)
+// Direct color values for Reanimated animations
+const TASK_COLORS_DIRECT = {
+  watering: '#3b82f6',    // blue-500
+  feeding: '#8b5cf6',     // violet-500
+  inspection: '#10b981',  // emerald-500
+  pruning: '#ec4899',     // pink-500
+  harvest: '#f59e0b',     // amber-500
+  transplant: '#14b8a6',  // teal-500
+  training: '#f97316',    // orange-500
+  defoliation: '#ef4444', // red-500
+  flushing: '#06b6d4',    // cyan-500
+} as const;
+
+// Task type color definitions using semantic tokens (CSS variables) for static styling
 const TASK_COLORS = {
   watering: 'var(--color-task-watering)',
   feeding: 'var(--color-task-feeding)',
@@ -134,10 +147,16 @@ const TaskCard = memo<TaskCardProps>(({
   const taskTextColorClass = getTaskTextColorClass(taskTypeKey);
 
   // Completion checkbox animation
-  const checkboxAnimatedStyle = useAnimatedStyle(() => ({
-  transform: [{ scale: withSpring(isCompleted ? 1.1 : 1) }],
-  backgroundColor: withSpring(isCompleted ? taskColor : 'rgb(251, 246, 239)'),
-  }));
+  const checkboxAnimatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = isCompleted 
+      ? TASK_COLORS_DIRECT[taskTypeKey] 
+      : 'rgb(var(--color-neutral-100) / 1)';
+      
+    return {
+      transform: [{ scale: withSpring(isCompleted ? 1.1 : 1) }],
+      backgroundColor: withSpring(backgroundColor),
+    };
+  });
 
   // Task completion animation
   const completionAnimatedStyle = useAnimatedStyle(() => ({

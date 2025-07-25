@@ -11,6 +11,7 @@ import Animated, {
   FadeOutUp,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Q } from '@nozbe/watermelondb';
 
 import { FlashListWrapper } from '../ui/FlashListWrapper';
 import ThemedView from '../ui/ThemedView';
@@ -406,8 +407,8 @@ export const TemplateApplicator: React.FC<TemplateApplicatorProps> = ({
     // Get existing tasks for conflict detection
     const existingTasks = await database.get<PlantTask>('plant_tasks')
       .query(
-        // Q.where('plant_id', plant.id),
-        // Q.where('status', Q.notEq('completed'))
+        Q.where('plant_id', plant.id),
+        Q.where('status', Q.notEq('completed'))
       )
       .fetch();
 
