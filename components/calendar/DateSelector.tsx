@@ -7,7 +7,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  interpolateColor,
+  interpolateColor as rnInterpolateColor,
   runOnJS,
 } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
@@ -128,7 +128,7 @@ const DateItem = React.memo(({ date, isSelected, onSelect, taskCount = 0 }: Date
     });
 
   const animatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
+    const backgroundColor = rnInterpolateColor(
       selection.value,
       [0, 1],
       ['transparent', '#10b981'] // primary-500

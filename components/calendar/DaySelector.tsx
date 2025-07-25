@@ -6,7 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  interpolateColor,
+  interpolateColor as aliasedInterpolateColor,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -71,10 +71,10 @@ const DayItem = React.memo(({ item, onSelect }: DayItemProps) => {
     });
 
   const animatedStyle = useAnimatedStyle(() => {
-    const backgroundColor = interpolateColor(
+    const backgroundColor = aliasedInterpolateColor(
       selection.value,
       [0, 1],
-      ['transparent', '#10b981'] // primary-500
+      ['transparent', 'var(--primary-500)'] // Use CSS variable for primary-500
     );
 
     return {
@@ -260,8 +260,8 @@ export default function DaySelector({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#10b981"
-              colors={['#10b981']}
+              tintColor={"var(--primary-500)"}
+              colors={["var(--primary-500)"]}
             />
           ) : undefined
         }

@@ -134,7 +134,7 @@ export default function TaskNavigation({
             })}
           </ThemedText>
           <OptimizedIcon 
-            name="chevron-down-outline" 
+            name="chevron-down" 
             size={16} 
             className="text-neutral-500 dark:text-neutral-400 ml-1" 
           />

@@ -10,6 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
 
 import { format } from '@/lib/utils/date';
+import { Pressable } from 'react-native';
 import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import { PlantTask } from '@/lib/models/PlantTask';
 import ThemedText from '../ui/ThemedText';
@@ -141,29 +142,27 @@ const TaskCard = React.memo(({ task, onPress, onComplete }: TaskCardProps) => {
             {/* Completion checkbox */}
             {onComplete && (
               <GestureDetector gesture={completeTapGesture}>
-                <ThemedView
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: task.isCompleted }}
+                  accessibilityLabel="Mark task as completed"
                   className={`ml-3 h-6 w-6 items-center justify-center rounded-full border-2 transition-colors duration-200
-                  ${task.isCompleted
-                      ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark'
-                      : 'border-neutral-300 bg-transparent dark:border-neutral-700'}
-                `}
+                    ${task.isCompleted
+                        ? 'border-primary bg-primary dark:border-primary-dark dark:bg-primary-dark'
+                        : 'border-neutral-300 bg-transparent dark:border-neutral-700'}
+                  `}
+                  style={completeButtonAnimatedStyle}
+                  onPress={onComplete ? () => onComplete(task) : undefined}
                 >
-                  <Animated.View
-                    style={completeButtonAnimatedStyle}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: task.isCompleted }}
-                    accessibilityLabel="Mark task as completed"
-                  >
-                    {task.isCompleted && (
-                      <OptimizedIcon
-                        name="checkmark"
-                        size={14}
-                        // Use semantic text color tokens for the checkmark
-                        className="text-white dark:text-foreground"
-                      />
-                    )}
-                  </Animated.View>
-                </ThemedView>
+                  {task.isCompleted && (
+                    <OptimizedIcon
+                      name="checkmark"
+                      size={14}
+                      // Use semantic text color tokens for the checkmark
+                      className="text-white dark:text-foreground"
+                    />
+                  )}
+                </Pressable>
               </GestureDetector>
             )}
           </ThemedView>

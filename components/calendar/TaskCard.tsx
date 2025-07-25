@@ -1,4 +1,30 @@
 import React, { memo, useCallback, useState } from 'react';
+// Helper to map priority to NativeWind class
+function getPriorityColorClass(priority: keyof typeof PRIORITY_COLORS): string {
+  switch (priority) {
+    case 'low':
+      return 'bg-priority-low';
+    case 'medium':
+      return 'bg-priority-medium';
+    case 'high':
+      return 'bg-priority-high';
+    case 'critical':
+      return 'bg-priority-critical';
+    default:
+      return 'bg-priority-low';
+  }
+}
+
+// Helper to map task type to NativeWind class, with optional opacity
+function getTaskColorClass(type: keyof typeof TASK_COLORS, opacity20 = false): string {
+  const base = `bg-task-${type}`;
+  return opacity20 ? `${base}/20` : base;
+}
+
+// Helper to map task type to text color class
+function getTaskTextColorClass(type: keyof typeof TASK_COLORS): string {
+  return `text-task-${type}`;
+}
 import { View, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -6,6 +32,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   runOnJS,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -16,25 +43,26 @@ import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/hap
 import { PlantTask } from '@/lib/models/PlantTask';
 import type { TaskType } from '@/lib/types/taskTypes';
 
-// Task type color definitions
+
+// Task type color definitions using semantic tokens (CSS variables)
 const TASK_COLORS = {
-  watering: '#3B82F6',      // Blue
-  feeding: '#10B981',       // Green
-  inspection: '#F59E0B',    // Amber
-  pruning: '#EF4444',       // Red
-  harvest: '#8B5CF6',       // Purple
-  transplant: '#F97316',    // Orange
-  training: '#06B6D4',      // Cyan
-  defoliation: '#84CC16',   // Lime
-  flushing: '#A855F7',      // Violet
+  watering: 'var(--color-task-watering)',
+  feeding: 'var(--color-task-feeding)',
+  inspection: 'var(--color-task-inspection)',
+  pruning: 'var(--color-task-pruning)',
+  harvest: 'var(--color-task-harvest)',
+  transplant: 'var(--color-task-transplant)',
+  training: 'var(--color-task-training)',
+  defoliation: 'var(--color-task-defoliation)',
+  flushing: 'var(--color-task-flushing)',
 } as const;
 
-// Priority color definitions
+// Priority color definitions using semantic tokens (CSS variables)
 const PRIORITY_COLORS = {
-  low: '#6B7280',           // Gray
-  medium: '#F59E0B',        // Amber
-  high: '#EF4444',          // Red
-  critical: '#DC2626',      // Dark Red
+  low: 'var(--color-priority-low)',
+  medium: 'var(--color-priority-medium)',
+  high: 'var(--color-priority-high)',
+  critical: 'var(--color-priority-critical)',
 } as const;
 
 
@@ -77,11 +105,19 @@ const TaskCard = memo<TaskCardProps>(({
   onSnooze 
 }) => {
   const [isCompleted, setIsCompleted] = useState(task.isCompleted);
-  
+
   // Swipe gesture values
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
-  
+
+  // Cancel animations on unmount
+  React.useEffect(() => {
+    return () => {
+      cancelAnimation(translateX);
+      cancelAnimation(opacity);
+    };
+  }, []);
+
   // Card animation hook
   const { animatedStyle: cardAnimatedStyle, handlers } = useCardAnimation({
     enableHaptics: true,
@@ -90,14 +126,17 @@ const TaskCard = memo<TaskCardProps>(({
   });
 
   // Get task type color and icon
-  const taskColor = TASK_COLORS[task.taskType as keyof typeof TASK_COLORS] || TASK_COLORS.inspection;
+  const taskTypeKey = (task.taskType as keyof typeof TASK_COLORS) || 'inspection';
+  const taskColor = TASK_COLORS[taskTypeKey];
+  const taskColorClass = getTaskColorClass(taskTypeKey, true); // for bg with opacity
   const taskIcon = getTaskIconName(task.taskType as TaskType);
-  const priorityColor = PRIORITY_COLORS[task.priority ?? 'low'];
+  const priorityClass = getPriorityColorClass((task.priority ?? 'low') as keyof typeof PRIORITY_COLORS);
+  const taskTextColorClass = getTaskTextColorClass(taskTypeKey);
 
   // Completion checkbox animation
   const checkboxAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(isCompleted ? 1.1 : 1) }],
-    backgroundColor: withSpring(isCompleted ? taskColor : 'transparent'),
+  transform: [{ scale: withSpring(isCompleted ? 1.1 : 1) }],
+  backgroundColor: withSpring(isCompleted ? taskColor : 'var(--color-neutral-100)'),
   }));
 
   // Task completion animation
@@ -158,12 +197,14 @@ const TaskCard = memo<TaskCardProps>(({
         // Complete task
         translateX.value = withSpring(300);
         opacity.value = withSpring(0, undefined, () => {
+          'worklet';
           runOnJS(handleComplete)();
         });
       } else if (event.translationX < -threshold && onSnooze) {
         // Snooze task
         translateX.value = withSpring(-300);
         opacity.value = withSpring(0, undefined, () => {
+          'worklet';
           runOnJS(() => handleSnooze(60))(); // Snooze for 1 hour
         });
       } else {
@@ -223,8 +264,7 @@ const TaskCard = memo<TaskCardProps>(({
                   
                   {/* Priority indicator */}
                   <View
-                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-neutral-800"
-                    style={{ backgroundColor: priorityColor }}
+                    className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-neutral-800 ${priorityClass}`}
                   />
                 </View>
 
@@ -232,8 +272,7 @@ const TaskCard = memo<TaskCardProps>(({
                 <View className="flex-1">
                   <View className="flex-row items-center space-x-2 mb-1">
                     <View
-                      className="w-6 h-6 rounded-full items-center justify-center"
-                      style={{ backgroundColor: taskColor + '20' }}
+                      className={`w-6 h-6 rounded-full items-center justify-center ${taskColorClass}`}
                     >
                         {/*
                           TypeScript cannot guarantee the type of taskIcon due to dynamic key access.
@@ -242,7 +281,7 @@ const TaskCard = memo<TaskCardProps>(({
                         <Ionicons
                           name={taskIcon as any}
                           size={14}
-                          style={{ color: taskColor }}
+                          className={taskTextColorClass}
                         />
                     </View>
                     <ThemedText variant="default" className="font-semibold flex-1">
@@ -274,14 +313,16 @@ const TaskCard = memo<TaskCardProps>(({
                 <Animated.View style={[checkboxAnimatedStyle]}>
                   <Pressable
                     onPress={handleComplete}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isCompleted }}
+                    accessibilityLabel="Mark task as completed"
                     className={`
                       w-8 h-8 rounded-full border-2 items-center justify-center
                       ${isCompleted 
-                        ? 'border-transparent' 
-                        : 'border-neutral-300 dark:border-neutral-600'
+                        ? `${getTaskColorClass(taskTypeKey)} border-transparent` 
+                        : 'border-neutral-300 dark:border-neutral-600 bg-transparent'
                       }
                     `}
-                    style={{ backgroundColor: isCompleted ? taskColor : 'transparent' }}
                   >
                     {isCompleted && (
                       <Ionicons
