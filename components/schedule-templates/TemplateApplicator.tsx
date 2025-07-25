@@ -27,6 +27,7 @@ import { triggerLightHaptic, triggerHeavyHaptic } from '../../lib/utils/haptics'
 import { useDatabase } from '../../lib/hooks/useDatabase';
 import { generateUuid } from '../../lib/utils/uuid';
 import { addDays, format } from '../../lib/utils/date';
+import { isTaskType } from '../../lib/types/taskTypes';
 
 interface TemplateApplicatorProps {
   template: ScheduleTemplate;
@@ -538,7 +539,13 @@ export const TemplateApplicator: React.FC<TemplateApplicatorProps> = ({
                 task.plantId = plant.id;
                 task.title = templateTask.title;
                 task.description = templateTask.description;
-                task.taskType = templateTask.taskType as any;
+                
+                // Validate and set task type with proper type safety
+                if (!isTaskType(templateTask.taskType)) {
+                  throw new Error(`Invalid task type: ${templateTask.taskType}`);
+                }
+                task.taskType = templateTask.taskType;
+                
                 task.dueDate = taskDate.toISOString();
                 task.status = 'pending';
                 task.userId = plant.userId;

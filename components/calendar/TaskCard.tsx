@@ -80,7 +80,7 @@ const PRIORITY_COLORS = {
 
 
 // Task type icons
-const TASK_ICONS: Record<TaskType, string> = {
+const TASK_ICONS: Record<TaskType, TaskIconName> = {
   watering: 'water-outline',
   feeding: 'leaf-outline',
   inspection: 'eye-outline',
@@ -92,7 +92,8 @@ const TASK_ICONS: Record<TaskType, string> = {
   flushing: 'refresh-outline',
 };
 
-type TaskIconName = (typeof TASK_ICONS)[TaskType];
+// Type for valid Ionicons names
+type TaskIconName = keyof typeof Ionicons.glyphMap;
 
 function getTaskIconName(type: TaskType): TaskIconName {
   return TASK_ICONS[type] ?? TASK_ICONS.inspection;
@@ -298,7 +299,7 @@ const TaskCard = memo<TaskCardProps>(({
                           This is safe because getTaskIconName always returns a valid icon name.
                         */}
                         <Ionicons
-                          name={taskIcon as any}
+                          name={taskIcon}
                           size={14}
                           className={taskTextColorClass}
                         />
