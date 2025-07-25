@@ -1,4 +1,22 @@
 import React, { memo, useCallback, useState } from 'react';
+import { View, Pressable, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+  cancelAnimation,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+
+import ThemedText from '@/components/ui/ThemedText';
+import ThemedView from '@/components/ui/ThemedView';
+import { useCardAnimation } from '@/lib/animations';
+import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
+import { PlantTask } from '@/lib/models/PlantTask';
+import type { TaskType } from '@/lib/types/taskTypes';
+
 // Helper to map priority to NativeWind class
 function getPriorityColorClass(priority: keyof typeof PRIORITY_COLORS): string {
   switch (priority) {
@@ -25,23 +43,6 @@ function getTaskColorClass(type: keyof typeof TASK_COLORS, opacity20 = false): s
 function getTaskTextColorClass(type: keyof typeof TASK_COLORS): string {
   return `text-task-${type}`;
 }
-import { View, Pressable, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-  cancelAnimation,
-} from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-
-import ThemedText from '@/components/ui/ThemedText';
-import ThemedView from '@/components/ui/ThemedView';
-import { useCardAnimation } from '@/lib/animations';
-import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
-import { PlantTask } from '@/lib/models/PlantTask';
-import type { TaskType } from '@/lib/types/taskTypes';
 
 
 // Direct color values for Reanimated animations
@@ -151,8 +152,7 @@ const TaskCard = memo<TaskCardProps>(({
   const checkboxAnimatedStyle = useAnimatedStyle(() => {
     const backgroundColor = isCompleted 
       ? TASK_COLORS_DIRECT[taskTypeKey] 
-      : 'rgb(var(--color-neutral-100) / 1)';
-      
+      : '#F3F4F6'; // direct color value for uncompleted state (neutral-100)
     return {
       transform: [{ scale: withSpring(isCompleted ? 1.1 : 1) }],
       backgroundColor: withSpring(backgroundColor),
@@ -344,13 +344,13 @@ const TaskCard = memo<TaskCardProps>(({
                       }
                     `}
                   >
-                    {isCompleted && (
-                      <Ionicons
-                        name="checkmark"
-                        size={16}
-                        color="white"
-                      />
-                    )}
+                      {isCompleted && (
+                        <Ionicons
+                          name="checkmark"
+                          size={16}
+                          className="text-task-checkmark"
+                        />
+                      )}
                   </Pressable>
                 </Animated.View>
               </View>

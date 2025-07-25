@@ -120,4 +120,14 @@ export function addDaysToDate(date: Parameters<typeof dayjs>[0], days: number): 
     throw new Error('addDaysToDate: days parameter must be a finite number');
   }
   return dayjs(date).add(days, 'day').toDate();
+}
+
+/**
+ * Returns the start of the day (00:00:00) for the given date
+ * 
+ * @param date - The date to get the start of day for
+ * @returns New Date object set to start of day
+ */
+export function startOfDay(date: Parameters<typeof dayjs>[0]): Date {
+  return dayjs(date).startOf('day').toDate();
 } 
