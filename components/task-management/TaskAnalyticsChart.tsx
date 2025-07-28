@@ -25,6 +25,7 @@ import { useTaskAnalytics, TaskAnalyticsData, OptimizationSuggestion } from '@/l
 import { TaskType } from '@/lib/types/taskTypes';
 import { triggerLightHaptic } from '@/lib/utils/haptics';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { colors } from '@/lib/constants/colors';
 
 // Time range options
 type TimeRange = '7d' | '30d' | '90d' | 'all';
@@ -42,6 +43,14 @@ interface ChartTypeConfig {
   label: string;
   icon: 'checkmark-circle' | 'stats-chart-outline';
 }
+
+// Chart data interface
+type ChartData = {
+  data: any[];
+  legend?: { label: string; color: string; }[];
+  type: 'bar' | 'line';
+  color?: string;
+};
 
 const CHART_TYPES: ChartTypeConfig[] = [
   {
@@ -159,13 +168,6 @@ export const TaskAnalyticsChart: React.FC<TaskAnalyticsChartProps> = React.memo(
         return null;
     }
   }, [analyticsData, selectedChartType, selectedTimeRange, isDark]);
-
-  type ChartData = {
-    data: any[];
-    legend?: { label: string; color: string; }[];
-    type: 'bar' | 'line';
-    color?: string;
-  };
 
   // Handle time range selection
   const handleTimeRangeChange = (range: TimeRange) => {
@@ -413,7 +415,7 @@ export const TaskAnalyticsChart: React.FC<TaskAnalyticsChartProps> = React.memo(
               accessibilityHint="Displays task completion analytics and trends"
             >
               <ErrorBoundary fallback={<ChartErrorFallback />}>
-                {renderChart(chartData, screenWidth)}
+                {renderChart(chartData, screenWidth, isDark)}
               </ErrorBoundary>
             </ThemedView>
 
@@ -655,8 +657,12 @@ function getTaskTypeColor(taskType: TaskType, isDark: boolean): string {
 /**
  * Render chart based on type
  */
-const renderChart = (chartData: any, screenWidth: number) => {
+const renderChart = (chartData: ChartData, screenWidth: number, isDark: boolean) => {
   const chartWidth = screenWidth - 64;
+  
+  // Get appropriate colors for chart elements based on theme
+  const xAxisColor = isDark ? colors.darkNeutral[300] : colors.neutral[300];
+  const verticalLinesColor = isDark ? colors.darkNeutral[200] : colors.neutral[200];
 
   if (chartData.type === 'bar') {
     return (
@@ -670,7 +676,7 @@ const renderChart = (chartData: any, screenWidth: number) => {
         animationDuration={800}
         yAxisThickness={0}
         xAxisThickness={1}
-        xAxisColor="#E5E7EB"
+        xAxisColor={xAxisColor}
         showValuesAsTopLabel
         topLabelTextStyle={{ fontSize: 12, fontWeight: '600' }}
         // Enhanced styling
@@ -705,7 +711,7 @@ const renderChart = (chartData: any, screenWidth: number) => {
         endOpacity={0.1}
         // Better grid
         showVerticalLines
-        verticalLinesColor="#F3F4F6"
+        verticalLinesColor={verticalLinesColor}
         verticalLinesThickness={1}
         // Better spacing
         initialSpacing={0}

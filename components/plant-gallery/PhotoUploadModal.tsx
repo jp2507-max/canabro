@@ -31,6 +31,7 @@ import ThemedText from '../ui/ThemedText';
 import { takePhoto, selectFromGallery, ImageResult } from '../../lib/utils/image-picker';
 import { uploadPlantGalleryImage } from '../../lib/utils/upload-image';
 import { GrowthStage, GROWTH_STAGES, GROWTH_STAGES_ARRAY } from '../../lib/types/plant';
+import { createGrowthStageValidator } from '../../lib/validation';
 import {
   triggerLightHaptic,
   triggerMediumHaptic,
@@ -55,7 +56,7 @@ interface PhotoUploadModalProps {
 // Form schema
 const photoUploadSchema = z.object({
   caption: z.string().max(200).optional(),
-  growthStage: z.enum([GROWTH_STAGES.GERMINATION, GROWTH_STAGES.SEEDLING, GROWTH_STAGES.VEGETATIVE, GROWTH_STAGES.PRE_FLOWER, GROWTH_STAGES.FLOWERING, GROWTH_STAGES.LATE_FLOWERING, GROWTH_STAGES.HARVEST, GROWTH_STAGES.CURING]),
+  growthStage: createGrowthStageValidator(),
 });
 
 type PhotoUploadFormData = z.infer<typeof photoUploadSchema>;

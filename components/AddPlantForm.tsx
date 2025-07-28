@@ -56,8 +56,9 @@ import {
 } from '../lib/services/sync/strain-sync.service';
 import supabase from '../lib/supabase';
 import { uploadPlantGalleryImage } from '../lib/utils/upload-image';
-import { GrowthStage, GROWTH_STAGES, GROWTH_STAGES_ARRAY, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
+import { GrowthStage, GROWTH_STAGES_ARRAY, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
+import { createGrowthStageValidator } from '../lib/validation';
 
 interface PlantFormProps {
   userId: string;
@@ -82,7 +83,7 @@ function getPlantFormSchema(t: TFunction) {
     strain: z.string().min(1, t('addPlantForm.validation.strainRequired')),
     strain_id: z.string().optional(),
     planted_date: z.date({ required_error: t('addPlantForm.validation.plantedDateRequired') }),
-    growth_stage: z.enum([GROWTH_STAGES.GERMINATION, GROWTH_STAGES.SEEDLING, GROWTH_STAGES.VEGETATIVE, GROWTH_STAGES.PRE_FLOWER, GROWTH_STAGES.FLOWERING, GROWTH_STAGES.LATE_FLOWERING, GROWTH_STAGES.HARVEST, GROWTH_STAGES.CURING], { required_error: t('addPlantForm.validation.growthStageRequired') }),
+    growth_stage: createGrowthStageValidator(t('addPlantForm.validation.growthStageRequired')),
     cannabis_type: z.nativeEnum(CannabisType).optional(),
     grow_medium: z.nativeEnum(GrowMedium).optional(),
     light_condition: z.nativeEnum(LightCondition).optional(),

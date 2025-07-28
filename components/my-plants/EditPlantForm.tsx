@@ -60,6 +60,7 @@ import {
   CannabisType,
 } from '@/lib/types/plant';
 import { StrainSpecies } from '@/lib/types/strain';
+import { createGrowthStageValidator } from '@/lib/validation';
 
 // ✅ Animation Strategy (Following 2025 React Native Reanimated Guide):
 // - Using custom animation hooks for reusable patterns (form inputs, buttons)
@@ -228,9 +229,7 @@ const buildPlantFormSchema = (t: TFunction<'editPlantForm' | 'common'>) =>
       .nonempty(t('editPlantForm:validation.nameRequired')),
     strain: z.string().nonempty(t('editPlantForm:validation.strainRequired')),
     planted_date: z.date({ required_error: t('editPlantForm:validation.plantedDateRequired') }),
-    growth_stage: z.enum([GROWTH_STAGES.GERMINATION, GROWTH_STAGES.SEEDLING, GROWTH_STAGES.VEGETATIVE, GROWTH_STAGES.PRE_FLOWER, GROWTH_STAGES.FLOWERING, GROWTH_STAGES.LATE_FLOWERING, GROWTH_STAGES.HARVEST, GROWTH_STAGES.CURING], {
-      required_error: t('editPlantForm:validation.growthStageRequired'),
-    }),
+    growth_stage: createGrowthStageValidator(t('editPlantForm:validation.growthStageRequired')),
     notes: z.string().optional(),
     image_url: z.string().optional(),
     cannabis_type: z.nativeEnum(CannabisType),
