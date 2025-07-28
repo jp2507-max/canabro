@@ -71,6 +71,7 @@ const TASK_TYPE_COLORS = {
   transplant: { light: '#F97316', dark: '#FB923C' },
   training: { light: '#06B6D4', dark: '#22D3EE' },
   defoliation: { light: '#84CC16', dark: '#A3E635' },
+  flushing: { light: '#EC4899', dark: '#F472B6' },
 } as const;
 
 interface TaskAnalyticsChartProps {
@@ -191,9 +192,6 @@ export const TaskAnalyticsChart: React.FC<TaskAnalyticsChartProps> = React.memo(
     triggerLightHaptic();
   }, []);
 
-  // Prevent unused variable warning - this will be used when task type filtering UI is added
-  void handleTaskTypeToggle;
-
   if (loading) {
     return (
       <ThemedView className={`p-6 ${className}`}>
@@ -286,7 +284,7 @@ export const TaskAnalyticsChart: React.FC<TaskAnalyticsChartProps> = React.memo(
         </ScrollView>
 
         {/* Time Range Selector */}
-        <ThemedView className="flex-row space-x-2">
+        <ThemedView className="flex-row space-x-2 mb-3">
           {timeRangeOptions.map((option) => (
             <TouchableOpacity
               key={option.value}
@@ -309,6 +307,60 @@ export const TaskAnalyticsChart: React.FC<TaskAnalyticsChartProps> = React.memo(
               </ThemedView>
             </TouchableOpacity>
           ))}
+        </ThemedView>
+
+        {/* Task Type Filter */}
+        <ThemedView>
+          <ThemedText className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+            {t('taskAnalytics.filters.taskTypes')}
+          </ThemedText>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-row space-x-2"
+          >
+            {Object.keys(TASK_TYPE_COLORS).map((taskType) => {
+              const isSelected = selectedTaskTypes.includes(taskType as TaskType);
+              const taskTypeColor = getTaskTypeColor(taskType as TaskType, isDark);
+              
+              return (
+                <TouchableOpacity
+                  key={taskType}
+                  onPress={() => handleTaskTypeToggle(taskType as TaskType)}
+                  accessible={true}
+                  accessibilityLabel={`Toggle ${taskType} filter`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <ThemedView
+                    className={`px-3 py-2 rounded-lg border flex-row items-center space-x-2 ${
+                      isSelected
+                        ? 'border-opacity-100'
+                        : 'bg-neutral-100 dark:bg-neutral-700 border-neutral-200 dark:border-neutral-600'
+                    }`}
+                    style={isSelected ? { 
+                      backgroundColor: `${taskTypeColor}20`, 
+                      borderColor: taskTypeColor 
+                    } : {}}
+                  >
+                    <ThemedView
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: taskTypeColor }}
+                    />
+                    <ThemedText
+                      className={`text-sm font-medium ${
+                        isSelected
+                          ? 'text-neutral-900 dark:text-neutral-100'
+                          : 'text-neutral-700 dark:text-neutral-300'
+                      }`}
+                    >
+                      {t(`tasks.types.${taskType}`)}
+                    </ThemedText>
+                  </ThemedView>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </ThemedView>
       </ThemedView>
 
@@ -498,7 +550,7 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion }) => {
 /**
  * Process completion chart data
  */
-const processCompletionChartData = useMemo(() => (data: TaskAnalyticsData, isDark: boolean) => {
+function processCompletionChartData(data: TaskAnalyticsData, isDark: boolean) {
   const chartData = data.completionRates.map((rate) => ({
     value: rate.completionRate,
     label: rate.taskType.substring(0, 3).toUpperCase(),
@@ -520,12 +572,12 @@ const processCompletionChartData = useMemo(() => (data: TaskAnalyticsData, isDar
   }));
 
   return { data: chartData, legend, type: 'bar' as const };
-}, []);
+}
 
 /**
  * Process trends chart data
  */
-const processTrendsChartData = useMemo(() => (data: TaskAnalyticsData, timeRange: TimeRange, isDark: boolean) => {
+function processTrendsChartData(data: TaskAnalyticsData, timeRange: TimeRange, isDark: boolean) {
   const getDateFormat = (timeRange: TimeRange): string => {
     switch (timeRange) {
       case '7d':
@@ -563,12 +615,12 @@ const processTrendsChartData = useMemo(() => (data: TaskAnalyticsData, timeRange
     type: 'line' as const,
     color: isDark ? '#60A5FA' : '#3B82F6',
   };
-}, []);
+}
 
 /**
  * Process patterns chart data
  */
-const processPatternsChartData = useMemo(() => (data: TaskAnalyticsData, isDark: boolean) => {
+function processPatternsChartData(data: TaskAnalyticsData, isDark: boolean) {
   const chartData = data.patterns.map(pattern => ({
     value: pattern.consistencyScore,
     label: pattern.taskType.substring(0, 3).toUpperCase(),
@@ -590,7 +642,7 @@ const processPatternsChartData = useMemo(() => (data: TaskAnalyticsData, isDark:
   }));
 
   return { data: chartData, legend, type: 'bar' as const };
-}, []);
+}
 
 /**
  * Get task type color
@@ -603,7 +655,7 @@ function getTaskTypeColor(taskType: TaskType, isDark: boolean): string {
 /**
  * Render chart based on type
  */
-const renderChart = useCallback((chartData: any, screenWidth: number) => {
+const renderChart = (chartData: any, screenWidth: number) => {
   const chartWidth = screenWidth - 64;
 
   if (chartData.type === 'bar') {
@@ -661,4 +713,4 @@ const renderChart = useCallback((chartData: any, screenWidth: number) => {
       />
     );
   }
-}, []);
+};

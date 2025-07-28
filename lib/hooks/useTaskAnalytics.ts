@@ -416,8 +416,11 @@ function calculateOverallStats(tasks: PlantTask[]) {
 
   // Find most/least productive days
   const dayCompletions = completedTasks.reduce((days, task) => {
-    const day = dayjs(task.completionData?.completedAt).format('dddd');
-    days[day] = (days[day] || 0) + 1;
+    // Only process tasks with valid completion dates
+    if (task.completionData?.completedAt) {
+      const day = dayjs(task.completionData.completedAt).format('dddd');
+      days[day] = (days[day] || 0) + 1;
+    }
     return days;
   }, {} as Record<string, number>);
 

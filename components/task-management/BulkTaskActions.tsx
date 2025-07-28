@@ -10,6 +10,8 @@ import { useButtonAnimation } from '@/lib/animations/useButtonAnimation';
 import { triggerLightHapticSync, triggerMediumHapticSync, triggerHeavyHapticSync } from '@/lib/utils/haptics';
 import { PlantTask } from '@/lib/models/PlantTask';
 
+import { log } from '@/lib/utils/logger';
+
 interface BulkTaskActionsProps {
   selectedTasks: Set<string>;
   tasks: PlantTask[];
@@ -140,7 +142,7 @@ const BulkTaskActions: React.FC<BulkTaskActionsProps> = ({
               triggerMediumHapticSync();
               onClearSelection();
             } catch (error) {
-              console.error('Error completing tasks:', error);
+                  log.error('Error completing tasks:', error);
               Alert.alert(
                 t('taskManagement.bulkActions.error.title', 'Error'),
                 t('taskManagement.bulkActions.error.complete', 'Failed to complete tasks. Please try again.')
@@ -187,7 +189,7 @@ const BulkTaskActions: React.FC<BulkTaskActionsProps> = ({
               triggerLightHapticSync();
               onClearSelection();
             } catch (error) {
-              console.error('Error snoozing tasks:', error);
+                  log.error('Error snoozing tasks:', error);
               Alert.alert(
                 t('taskManagement.bulkActions.error.title', 'Error'),
                 t('taskManagement.bulkActions.error.snooze', 'Failed to snooze tasks. Please try again.')
@@ -229,7 +231,7 @@ const BulkTaskActions: React.FC<BulkTaskActionsProps> = ({
               triggerLightHapticSync();
               onClearSelection();
             } catch (error) {
-              console.error('Error rescheduling tasks:', error);
+                  log.error('Error rescheduling tasks:', error);
               Alert.alert(
                 t('taskManagement.bulkActions.error.title', 'Error'),
                 t('taskManagement.bulkActions.error.reschedule', 'Failed to reschedule tasks. Please try again.')
@@ -250,7 +252,7 @@ const BulkTaskActions: React.FC<BulkTaskActionsProps> = ({
               triggerLightHapticSync();
               onClearSelection();
             } catch (error) {
-              console.error('Error rescheduling tasks:', error);
+                  log.error('Error rescheduling tasks:', error);
               Alert.alert(
                 t('taskManagement.bulkActions.error.title', 'Error'),
                 t('taskManagement.bulkActions.error.reschedule', 'Failed to reschedule tasks. Please try again.')
@@ -289,7 +291,7 @@ const BulkTaskActions: React.FC<BulkTaskActionsProps> = ({
               triggerHeavyHapticSync();
               onClearSelection();
             } catch (error) {
-              console.error('Error deleting tasks:', error);
+                  log.error('Error deleting tasks:', error);
               Alert.alert(
                 t('taskManagement.bulkActions.error.title', 'Error'),
                 t('taskManagement.bulkActions.error.delete', 'Failed to delete tasks. Please try again.')

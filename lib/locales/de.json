@@ -282,7 +282,7 @@
   },
   "templates": {
     "searchPlaceholder": "Vorlagen suchen...",
-    "resultsCount": "{{count}} Vorlage gefunden",
+    "resultsCount_one": "{{count}} Vorlage gefunden",
     "resultsCount_other": "{{count}} Vorlagen gefunden",
     "categories": {
       "all": "Alle",
@@ -380,8 +380,13 @@
     "types": {
       "watering": "Bewässerung",
       "feeding": "Düngung",
+      "inspection": "Inspektion",
       "pruning": "Beschneidung",
-      "harvesting": "Ernte"
+      "harvest": "Ernte",
+      "transplant": "Umtopfen",
+      "training": "Training",
+      "defoliation": "Entblätterung",
+      "flushing": "Spülung"
     }
   },
   "forms": {
@@ -1079,6 +1084,9 @@
     "retry": "Wiederholen",
     "noData": "Keine Analytikdaten verfügbar",
     "noDataDescription": "Schließen Sie einige Aufgaben ab, um Analytik und Einblicke zu sehen",
+    "filters": {
+      "taskTypes": "Nach Aufgabentyp filtern"
+    },
     "timeRanges": {
       "7d": "7 Tage",
       "30d": "30 Tage",

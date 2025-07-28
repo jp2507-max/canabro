@@ -418,7 +418,7 @@
   },
   "templates": {
     "searchPlaceholder": "Search templates...",
-    "resultsCount": "{{count}} template found",
+    "resultsCount_one": "{{count}} template found",
     "resultsCount_other": "{{count}} templates found",
     "categories": {
       "all": "All",
@@ -594,8 +594,13 @@
     "types": {
       "watering": "Watering",
       "feeding": "Feeding",
+      "inspection": "Inspection",
       "pruning": "Pruning",
-      "harvesting": "Harvesting"
+      "harvest": "Harvest",
+      "transplant": "Transplant",
+      "training": "Training",
+      "defoliation": "Defoliation",
+      "flushing": "Flushing"
     },
     "addTask": "Add Task",
     "addTaskToPlant": "Add Task to Plant",
@@ -1302,6 +1307,9 @@
     "retry": "Retry",
     "noData": "No analytics data available",
     "noDataDescription": "Complete some tasks to see analytics and insights",
+    "filters": {
+      "taskTypes": "Filter by Task Type"
+    },
     "timeRanges": {
       "7d": "7 Days",
       "30d": "30 Days",
