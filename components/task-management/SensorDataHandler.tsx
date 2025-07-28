@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import * as haptics from '@/lib/utils/haptics';
 import { View, Text, Pressable, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -40,11 +41,14 @@ interface SensorReadingCardProps {
   reading: SensorReading;
 }
 
+
+type SensorType = 'environmental' | 'soil' | 'light' | 'multi';
+
 interface SensorStatus {
   sensorId: string;
   plantId: string;
   plantName: string;
-  sensorType: 'environmental' | 'soil' | 'light' | 'multi';
+  sensorType: SensorType;
   isActive: boolean;
   isConnected: boolean;
   lastReading?: SensorReading;
@@ -226,6 +230,8 @@ const SensorCard: React.FC<SensorCardProps> = React.memo(({ sensor, onToggle }) 
         <Pressable
           onPress={() => onToggle(sensor.sensorId)}
           className={`px-4 py-2 rounded-lg ${sensor.isActive ? 'bg-red-500 dark:bg-red-600' : 'bg-green-500 dark:bg-green-600'}`}
+          accessibilityRole="button"
+          accessibilityState={{ selected: sensor.isActive }}
         >
           <ThemedText className="text-white text-sm font-medium">
             {sensor.isActive ? t('sensors.deactivate') : t('sensors.activate')}
@@ -340,28 +346,34 @@ export const SensorDataHandler: React.FC<SensorDataHandlerProps> = ({
   const generateMockSensors = useCallback((): SensorStatus[] => {
     if (plantIds.length === 0) return [];
 
-    return plantIds.map((plantId, index) => ({
-      sensorId: `sensor_${plantId.slice(-4)}_${index + 1}`,
-      plantId,
-      plantName: `Plant ${index + 1}`,
-      sensorType: ['environmental', 'soil', 'light', 'multi'][index % 4] as any,
-      isActive: Math.random() > 0.2, // 80% active
-      isConnected: Math.random() > 0.1, // 90% connected
-      batteryLevel: Math.floor(Math.random() * 100),
-      signalStrength: Math.floor(Math.random() * 100),
-      lastReading: {
+    const sensorTypes: SensorType[] = ['environmental', 'soil', 'light', 'multi'];
+
+    return plantIds.map((plantId, index) => {
+      // Guarantee a SensorType fallback in case of unexpected index
+      const sensorType = sensorTypes[index % sensorTypes.length] ?? 'environmental';
+      return {
         sensorId: `sensor_${plantId.slice(-4)}_${index + 1}`,
         plantId,
-        timestamp: new Date(Date.now() - Math.random() * 300000), // Last 5 minutes
-        temperature: 18 + Math.random() * 15, // 18-33°C
-        humidity: 40 + Math.random() * 40, // 40-80%
-        soilMoisture: 20 + Math.random() * 60, // 20-80%
-        lightIntensity: Math.random() * 1000, // 0-1000 PPFD
-        ph: 5.5 + Math.random() * 2, // 5.5-7.5
-        ec: 800 + Math.random() * 1000, // 800-1800 ppm
-        co2: 400 + Math.random() * 600, // 400-1000 ppm
-      },
-    }));
+        plantName: `Plant ${index + 1}`,
+        sensorType,
+        isActive: Math.random() > 0.2, // 80% active
+        isConnected: Math.random() > 0.1, // 90% connected
+        batteryLevel: Math.floor(Math.random() * 100),
+        signalStrength: Math.floor(Math.random() * 100),
+        lastReading: {
+          sensorId: `sensor_${plantId.slice(-4)}_${index + 1}`,
+          plantId,
+          timestamp: new Date(Date.now() - Math.random() * 300000), // Last 5 minutes
+          temperature: 18 + Math.random() * 15, // 18-33°C
+          humidity: 40 + Math.random() * 40, // 40-80%
+          soilMoisture: 20 + Math.random() * 60, // 20-80%
+          lightIntensity: Math.random() * 1000, // 0-1000 PPFD
+          ph: 5.5 + Math.random() * 2, // 5.5-7.5
+          ec: 800 + Math.random() * 1000, // 800-1800 ppm
+          co2: 400 + Math.random() * 600, // 400-1000 ppm
+        },
+      };
+    });
   }, [plantIds]);
 
   const generateMockReading = useCallback((sensorId: string, plantId: string): SensorReading => ({
@@ -391,6 +403,8 @@ export const SensorDataHandler: React.FC<SensorDataHandlerProps> = ({
           onSensorAdjustments(adjustments);
         }
 
+  // Haptic feedback before notification
+  await haptics.triggerMediumHaptic();
         // Show notification about automatic adjustments
         Alert.alert(
           t('sensors.automaticAdjustments'),

@@ -346,7 +346,8 @@ export const EnvironmentalDashboard: React.FC<EnvironmentalDashboardProps> = ({
         setIsLoading(true);
       }
 
-      if (plantIds.length === 0) {
+      // Defensive: check for valid plantIds
+      if (!Array.isArray(plantIds) || plantIds.length === 0) {
         setTrends([]);
         setAlerts([]);
         setAdjustments([]);
@@ -354,29 +355,39 @@ export const EnvironmentalDashboard: React.FC<EnvironmentalDashboardProps> = ({
         return;
       }
 
-      // Load environmental data for all plants
+      // Only access firstPlantId if plantIds is non-empty
+      const firstPlantId = plantIds.length > 0 ? plantIds[0] : undefined;
+
+      // Prepare promises, only call services if plantIds is non-empty and firstPlantId is defined
+      const trendsPromise = firstPlantId
+        ? EnvironmentalDataIntegrationService.analyzeEnvironmentalTrends(firstPlantId, 7)
+        : Promise.resolve([]);
+
+      const alertsPromise = plantIds.length > 0
+        ? Promise.all(plantIds.map(plantId =>
+            EnvironmentalDataIntegrationService.generateEnvironmentalAlerts(plantId)
+          )).then(results => results.flat())
+        : Promise.resolve([]);
+
+      const adjustmentsPromise = plantIds.length > 0
+        ? EnvironmentalDataIntegrationService.integrateEnvironmentalDataWithCalendar(
+            plantIds,
+            {
+              start: selectedDate,
+              end: new Date(selectedDate.getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days
+            }
+          )
+        : Promise.resolve([]);
+
       const [trendsData, alertsData, adjustmentsData] = await Promise.all([
-        // Get trends for the first plant (could be enhanced to aggregate multiple plants)
-        plantIds.length > 0 ? EnvironmentalDataIntegrationService.analyzeEnvironmentalTrends(plantIds[0]!, 7) : Promise.resolve([]),
-        
-        // Get alerts for all plants
-        Promise.all(plantIds.map(plantId => 
-          EnvironmentalDataIntegrationService.generateEnvironmentalAlerts(plantId)
-        )).then(results => results.flat()),
-        
-        // Get schedule adjustments
-        EnvironmentalDataIntegrationService.integrateEnvironmentalDataWithCalendar(
-          plantIds,
-          {
-            start: selectedDate,
-            end: new Date(selectedDate.getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days
-          }
-        ),
+        trendsPromise,
+        alertsPromise,
+        adjustmentsPromise,
       ]);
 
-      // Get planning recommendations for the first plant
-      const planningRecommendations = plantIds.length > 0 
-        ? await EnvironmentalDataIntegrationService.getEnvironmentalRecommendationsForPlanning(plantIds[0]!, 7)
+      // Get planning recommendations for the first plant if available
+      const planningRecommendations = firstPlantId
+        ? await EnvironmentalDataIntegrationService.getEnvironmentalRecommendationsForPlanning(firstPlantId, 7)
         : [];
 
       setTrends(trendsData);

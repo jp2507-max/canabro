@@ -49,6 +49,9 @@ const ActionButton: React.FC<ActionButtonProps> = ({
       <Pressable
         {...handlers}
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        accessibilityLabel={`${title} - ${subtitle}`}
         className={`bg-surface dark:bg-surface-dark rounded-xl p-4 border border-outline/20 dark:border-outline-dark/20 ${
           disabled ? 'opacity-50' : ''
         }`}
@@ -119,26 +122,30 @@ export const StrainCalendarIntegration: React.FC<StrainCalendarIntegrationProps>
       )}
 
       {/* Strain-specific Actions */}
-      <View className="space-y-3">
-        <Text className="text-lg font-semibold text-on-background dark:text-on-background-dark">
+      <View>
+        <Text className="text-lg font-semibold text-on-background dark:text-on-background-dark mb-3">
           Strain-Specific Features
         </Text>
 
-        <ActionButton
-          title="Template Recommendations"
-          subtitle={hasStrainData ? "Get templates optimized for this strain" : "Strain data required"}
-          icon="📋"
-          onPress={handleShowTemplateRecommendations}
-          disabled={!hasStrainData}
-        />
+        <View className="mb-3">
+          <ActionButton
+            title="Template Recommendations"
+            subtitle={hasStrainData ? "Get templates optimized for this strain" : "Strain data required"}
+            icon="📋"
+            onPress={handleShowTemplateRecommendations}
+            disabled={!hasStrainData}
+          />
+        </View>
 
         {canCompare && (
-          <ActionButton
-            title="Compare Strain Schedules"
-            subtitle="Compare with another strain's growing schedule"
-            icon="⚖️"
-            onPress={handleShowStrainComparison}
-          />
+          <View className="mb-3">
+            <ActionButton
+              title="Compare Strain Schedules"
+              subtitle="Compare with another strain's growing schedule"
+              icon="⚖️"
+              onPress={handleShowStrainComparison}
+            />
+          </View>
         )}
 
         {!hasStrainData && (

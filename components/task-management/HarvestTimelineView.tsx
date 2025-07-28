@@ -32,6 +32,50 @@ interface TimelineItem {
   priority: 'low' | 'medium' | 'high' | 'critical';
 }
 
+interface FilterButtonProps {
+  filter: 'all' | 'upcoming' | 'ready' | 'completed';
+  label: string;
+  selectedFilter: 'all' | 'upcoming' | 'ready' | 'completed';
+  onFilterChange: (filter: 'all' | 'upcoming' | 'ready' | 'completed') => void;
+}
+
+const FilterButton: React.FC<FilterButtonProps> = ({
+  filter,
+  label,
+  selectedFilter,
+  onFilterChange,
+}) => {
+  const { animatedStyle, handlers } = useButtonAnimation({
+    enableHaptics: true,
+    onPress: () => onFilterChange(filter),
+  });
+
+  const isSelected = selectedFilter === filter;
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        {...handlers}
+        className={`px-4 py-2 rounded-full mr-2 ${
+          isSelected 
+            ? 'bg-primary-500 dark:bg-primary-400' 
+            : 'bg-surface-200 dark:bg-surface-700'
+        }`}
+      >
+        <ThemedText 
+          className={`text-sm font-medium ${
+            isSelected 
+              ? 'text-white dark:text-gray-900' 
+              : 'text-gray-700 dark:text-gray-300'
+          }`}
+        >
+          {label}
+        </ThemedText>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
 export const HarvestTimelineView: React.FC<HarvestTimelineViewProps> = ({
   plants,
   onPlantPress,
@@ -126,34 +170,13 @@ export const HarvestTimelineView: React.FC<HarvestTimelineViewProps> = ({
   );
 
   const renderFilterButton = (filter: typeof selectedFilter, label: string) => {
-    const { animatedStyle, handlers } = useButtonAnimation({
-      enableHaptics: true,
-      onPress: () => setSelectedFilter(filter),
-    });
-
-    const isSelected = selectedFilter === filter;
-
     return (
-      <Animated.View style={animatedStyle}>
-        <Pressable
-          {...handlers}
-          className={`px-4 py-2 rounded-full mr-2 ${
-            isSelected 
-              ? 'bg-primary-500 dark:bg-primary-400' 
-              : 'bg-surface-200 dark:bg-surface-700'
-          }`}
-        >
-          <ThemedText 
-            className={`text-sm font-medium ${
-              isSelected 
-                ? 'text-white dark:text-gray-900' 
-                : 'text-gray-700 dark:text-gray-300'
-            }`}
-          >
-            {label}
-          </ThemedText>
-        </Pressable>
-      </Animated.View>
+      <FilterButton
+        filter={filter}
+        label={label}
+        selectedFilter={selectedFilter}
+        onFilterChange={setSelectedFilter}
+      />
     );
   };
 

@@ -31,6 +31,45 @@ interface DashboardData {
   readyForPreparation: Plant[];
 }
 
+interface TabButtonProps {
+  tab: 'overview' | 'predictions' | 'analytics' | 'planning';
+  label: string;
+  activeTab: 'overview' | 'predictions' | 'analytics' | 'planning';
+  setActiveTab: (tab: 'overview' | 'predictions' | 'analytics' | 'planning') => void;
+}
+
+const TabButton: React.FC<TabButtonProps> = ({ tab, label, activeTab, setActiveTab }) => {
+  const { animatedStyle, handlers } = useButtonAnimation({
+    enableHaptics: true,
+    onPress: () => setActiveTab(tab),
+  });
+
+  const isActive = activeTab === tab;
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        {...handlers}
+        className={`px-4 py-2 rounded-lg mr-2 ${
+          isActive 
+            ? 'bg-primary-500 dark:bg-primary-400' 
+            : 'bg-surface-200 dark:bg-surface-700'
+        }`}
+      >
+        <ThemedText 
+          className={`text-sm font-medium ${
+            isActive 
+              ? 'text-white dark:text-gray-900' 
+              : 'text-gray-700 dark:text-gray-300'
+          }`}
+        >
+          {label}
+        </ThemedText>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
 export const HarvestPlanningDashboard: React.FC<HarvestPlanningDashboardProps> = ({
   plants,
   onPlantSelect,
@@ -155,34 +194,13 @@ export const HarvestPlanningDashboard: React.FC<HarvestPlanningDashboardProps> =
   };
 
   const renderTabButton = (tab: typeof activeTab, label: string) => {
-    const { animatedStyle, handlers } = useButtonAnimation({
-      enableHaptics: true,
-      onPress: () => setActiveTab(tab),
-    });
-
-    const isActive = activeTab === tab;
-
     return (
-      <Animated.View style={animatedStyle}>
-        <Pressable
-          {...handlers}
-          className={`px-4 py-2 rounded-lg mr-2 ${
-            isActive 
-              ? 'bg-primary-500 dark:bg-primary-400' 
-              : 'bg-surface-200 dark:bg-surface-700'
-          }`}
-        >
-          <ThemedText 
-            className={`text-sm font-medium ${
-              isActive 
-                ? 'text-white dark:text-gray-900' 
-                : 'text-gray-700 dark:text-gray-300'
-            }`}
-          >
-            {label}
-          </ThemedText>
-        </Pressable>
-      </Animated.View>
+      <TabButton
+        tab={tab}
+        label={label}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
     );
   };
 

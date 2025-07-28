@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
@@ -50,6 +50,9 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
       <Pressable
         {...handlers}
         className="bg-surface dark:bg-surface-dark rounded-xl p-4 mb-3 border border-outline/20 dark:border-outline-dark/20"
+        accessibilityRole="button"
+        accessibilityLabel={`Apply template: ${recommendation.templateName}. ${recommendation.strainType}, estimated duration ${recommendation.estimatedDuration} weeks. Match score ${recommendation.matchScore} percent.`}
+        accessibilityHint="Tap to apply this template to your calendar."
       >
         {/* Header with template name and match score */}
         <View className="flex-row justify-between items-start mb-3">
@@ -75,15 +78,21 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
         </View>
 
         {/* Reasons for recommendation */}
-        <View className="space-y-1">
-          {recommendation.reasons.map((reason, index) => (
-            <View key={index} className="flex-row items-center">
-              <View className="w-1.5 h-1.5 bg-primary dark:bg-primary-dark rounded-full mr-2" />
-              <Text className="text-sm text-on-surface-variant dark:text-on-surface-variant-dark flex-1">
-                {reason}
-              </Text>
-            </View>
-          ))}
+        <View>
+          {recommendation.reasons.map((reason, index) => {
+            const isLast = index === recommendation.reasons.length - 1;
+            return (
+              <View
+                key={index}
+                className={`flex-row items-center${!isLast ? ' mb-1' : ''}`}
+              >
+                <View className="w-1.5 h-1.5 bg-primary dark:bg-primary-dark rounded-full mr-2" />
+                <Text className="text-sm text-on-surface-variant dark:text-on-surface-variant-dark flex-1">
+                  {reason}
+                </Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* Action hint */}
@@ -149,7 +158,7 @@ export const StrainTemplateRecommendations: React.FC<StrainTemplateRecommendatio
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center p-6">
-        <View className="w-8 h-8 border-2 border-primary dark:border-primary-dark border-t-transparent rounded-full animate-spin mb-4" />
+        <ActivityIndicator size="large" color="#4F46E5" className="mb-4" />
         <Text className="text-on-surface-variant dark:text-on-surface-variant-dark text-center">
           Finding the best templates for {strainName}...
         </Text>
@@ -166,6 +175,8 @@ export const StrainTemplateRecommendations: React.FC<StrainTemplateRecommendatio
         <Pressable
           onPress={loadRecommendations}
           className="bg-primary dark:bg-primary-dark px-4 py-2 rounded-lg"
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading recommendations"
         >
           <Text className="text-on-primary dark:text-on-primary-dark font-medium">
             Try Again
@@ -206,6 +217,8 @@ export const StrainTemplateRecommendations: React.FC<StrainTemplateRecommendatio
             <Pressable
               onPress={onClose}
               className="w-8 h-8 rounded-full bg-surface-variant dark:bg-surface-variant-dark items-center justify-center"
+              accessibilityLabel="Close"
+              accessibilityRole="button"
             >
               <Text className="text-on-surface-variant dark:text-on-surface-variant-dark font-bold">
                 ×

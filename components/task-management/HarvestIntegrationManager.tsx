@@ -12,6 +12,7 @@ import { HarvestDataIntegrator } from '../../lib/services/HarvestDataIntegrator'
 
 import { HarvestTimelineView } from './HarvestTimelineView';
 import { HarvestPlanningDashboard } from './HarvestPlanningDashboard';
+import { HarvestWeightInputModal } from '../ui/HarvestWeightInputModal';
 
 interface HarvestIntegrationManagerProps {
     plants: Plant[];
@@ -27,6 +28,8 @@ export const HarvestIntegrationManager: React.FC<HarvestIntegrationManagerProps>
     mode = 'dashboard',
 }) => {
     const [loading, setLoading] = useState(false);
+    const [showHarvestModal, setShowHarvestModal] = useState(false);
+    const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
 
     useEffect(() => {
         // Auto-trigger harvest preparation for eligible plants
@@ -55,29 +58,26 @@ export const HarvestIntegrationManager: React.FC<HarvestIntegrationManagerProps>
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Record Harvest',
-                    onPress: () => showHarvestDialog(plant),
+                    onPress: () => {
+                        setSelectedPlant(plant);
+                        setShowHarvestModal(true);
+                    },
                 },
             ]
         );
     };
 
-    const showHarvestDialog = (plant: Plant) => {
-        Alert.prompt(
-            'Record Harvest Weight',
-            'Enter the wet weight in grams (optional):',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Harvest',
-                    onPress: async (wetWeightStr) => {
-                        await processHarvest(plant, wetWeightStr);
-                    },
-                },
-            ],
-            'plain-text',
-            '',
-            'numeric'
-        );
+    const handleHarvestConfirm = async (wetWeightStr?: string) => {
+        if (!selectedPlant) return;
+        
+        setShowHarvestModal(false);
+        await processHarvest(selectedPlant, wetWeightStr);
+        setSelectedPlant(null);
+    };
+
+    const handleHarvestCancel = () => {
+        setShowHarvestModal(false);
+        setSelectedPlant(null);
     };
 
     const processHarvest = async (plant: Plant, wetWeightStr?: string) => {
@@ -140,31 +140,58 @@ export const HarvestIntegrationManager: React.FC<HarvestIntegrationManagerProps>
 
     if (loading) {
         return (
-            <ThemedView className="flex-1 justify-center items-center p-4">
-                <ThemedText className="text-gray-500 dark:text-gray-400">
-                    Processing harvest data...
-                </ThemedText>
-            </ThemedView>
+            <>
+                <ThemedView className="flex-1 justify-center items-center p-4">
+                    <ThemedText className="text-gray-500 dark:text-gray-400">
+                        Processing harvest data...
+                    </ThemedText>
+                </ThemedView>
+                
+                <HarvestWeightInputModal
+                    visible={showHarvestModal}
+                    plantName={selectedPlant?.name || ''}
+                    onCancel={handleHarvestCancel}
+                    onConfirm={handleHarvestConfirm}
+                />
+            </>
         );
     }
 
     if (mode === 'timeline') {
         return (
-            <HarvestTimelineView
-                plants={plants}
-                onPlantPress={onNavigateToPlant}
-                onHarvestPress={handlePlantHarvest}
-                showAnalytics={true}
-            />
+            <>
+                <HarvestTimelineView
+                    plants={plants}
+                    onPlantPress={onNavigateToPlant}
+                    onHarvestPress={handlePlantHarvest}
+                    showAnalytics={true}
+                />
+                
+                <HarvestWeightInputModal
+                    visible={showHarvestModal}
+                    plantName={selectedPlant?.name || ''}
+                    onCancel={handleHarvestCancel}
+                    onConfirm={handleHarvestConfirm}
+                />
+            </>
         );
     }
 
     return (
-        <HarvestPlanningDashboard
-            plants={plants}
-            onPlantSelect={onNavigateToPlant}
-            onTasksGenerated={handleTasksGenerated}
-        />
+        <>
+            <HarvestPlanningDashboard
+                plants={plants}
+                onPlantSelect={onNavigateToPlant}
+                onTasksGenerated={handleTasksGenerated}
+            />
+            
+            <HarvestWeightInputModal
+                visible={showHarvestModal}
+                plantName={selectedPlant?.name || ''}
+                onCancel={handleHarvestCancel}
+                onConfirm={handleHarvestConfirm}
+            />
+        </>
     );
 };
 

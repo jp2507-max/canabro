@@ -42,10 +42,11 @@ const PredictionStage: React.FC<PredictionStageProps> = ({
     };
   });
 
+  // Use semantic tokens for status colors
   const getStatusColor = (): string => {
-    if (isCompleted) return 'bg-green-500';
-    if (isActive) return 'bg-primary dark:bg-primary-dark';
-    return 'bg-surface-variant dark:bg-surface-variant-dark';
+    if (isCompleted) return 'bg-success-500'; // completed = success
+    if (isActive) return 'bg-primary-500 dark:bg-primary-600'; // active = primary
+    return 'bg-neutral-200 dark:bg-neutral-700'; // default = neutral surface
   };
 
   const getStatusText = (): string => {
@@ -75,11 +76,12 @@ const PredictionStage: React.FC<PredictionStageProps> = ({
 };
 
 const ConfidenceBadge: React.FC<{ level: 'low' | 'medium' | 'high' }> = ({ level }) => {
+  // Use semantic tokens for confidence colors
   const getConfidenceColor = (): string => {
     switch (level) {
-      case 'high': return 'bg-green-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-orange-500';
+      case 'high': return 'bg-success-500';
+      case 'medium': return 'bg-warning-500';
+      case 'low': return 'bg-warning-600';
     }
   };
 
@@ -177,6 +179,8 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
           <Pressable
             onPress={loadPrediction}
             className="bg-primary dark:bg-primary-dark px-3 py-1 rounded-lg ml-3"
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading flowering prediction"
           >
             <Text className="text-xs text-on-primary dark:text-on-primary-dark font-medium">
               Retry
@@ -194,7 +198,12 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
   return (
     <View className="bg-surface dark:bg-surface-dark rounded-xl p-4 mb-4 border border-outline/20 dark:border-outline-dark/20">
       {/* Header */}
-      <Pressable onPress={toggleExpanded} disabled={!compact}>
+      <Pressable
+        onPress={toggleExpanded}
+        disabled={!compact}
+        accessibilityRole="button"
+        accessibilityLabel="Toggle flowering prediction details"
+      >
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-1">
             <Text className="text-lg font-semibold text-on-surface dark:text-on-surface-dark">

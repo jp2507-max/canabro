@@ -36,9 +36,9 @@ const TaskFrequencyComparison: React.FC<TaskFrequencyComparisonProps> = ({
   difference,
 }) => {
   const getDifferenceColor = (diff: number): string => {
-    if (Math.abs(diff) < 10) return 'text-on-surface-variant dark:text-on-surface-variant-dark';
-    if (diff > 0) return 'text-green-600 dark:text-green-400';
-    return 'text-red-600 dark:text-red-400';
+    if (Math.abs(diff) < 10) return 'text-muted-foreground'; // semantic neutral
+    if (diff > 0) return 'text-success-foreground'; // semantic positive
+    return 'text-error-foreground'; // semantic negative
   };
 
   const getDifferenceText = (diff: number): string => {
@@ -109,8 +109,8 @@ const TimelineDifference: React.FC<{
 }> = ({ title, difference, unit }) => {
   const getDifferenceColor = (diff: number): string => {
     if (Math.abs(diff) < 1) return 'text-on-surface-variant dark:text-on-surface-variant-dark';
-    if (diff > 0) return 'text-orange-600 dark:text-orange-400';
-    return 'text-green-600 dark:text-green-400';
+    if (diff > 0) return 'text-warning dark:text-warning-dark';
+    return 'text-success dark:text-success-dark';
   };
 
   const getDifferenceText = (diff: number, unit: string): string => {
@@ -175,7 +175,11 @@ export const StrainScheduleComparison: React.FC<StrainScheduleComparisonProps> =
     return (
       <View className="flex-1 bg-background dark:bg-background-dark">
         <View className="flex-1 justify-center items-center p-6">
-          <View className="w-8 h-8 border-2 border-primary dark:border-primary-dark border-t-transparent rounded-full animate-spin mb-4" />
+          <View
+            className="w-8 h-8 border-2 border-primary dark:border-primary-dark border-t-transparent rounded-full animate-spin mb-4"
+            accessibilityRole="progressbar"
+            accessibilityLabel="Loading, comparing strain schedules"
+          />
           <Text className="text-on-surface-variant dark:text-on-surface-variant-dark text-center">
             Comparing strain schedules...
           </Text>
@@ -221,6 +225,8 @@ export const StrainScheduleComparison: React.FC<StrainScheduleComparisonProps> =
           {onClose && (
             <Pressable
               onPress={onClose}
+              accessibilityLabel="Close"
+              accessibilityRole="button"
               className="w-8 h-8 rounded-full bg-surface-variant dark:bg-surface-variant-dark items-center justify-center"
             >
               <Text className="text-on-surface-variant dark:text-on-surface-variant-dark font-bold">

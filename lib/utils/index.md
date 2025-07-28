@@ -33,6 +33,9 @@ A comprehensive reference of all custom utilities, hooks, and components in the 
 - **`date.ts`** - Date formatting, parsing, and manipulation utilities with timezone support. Use for all date operations.
 - **`notification-scheduling.ts`** - Timezone-aware notification scheduling validation and error handling. Use for scheduling notifications with proper timezone handling.
 
+### Type Safety & Validation
+- **`task-type-validation.ts`** - Safe task type validation to prevent runtime errors from invalid task types. Provides validation functions and type guards for TaskType enum. Use for all task type handling to avoid unsafe casting.
+
 ### Navigation & Routing
 - **`taskNavigation.ts`** - Task-specific navigation utilities. Use for task flow navigation.
 

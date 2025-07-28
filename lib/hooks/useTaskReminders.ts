@@ -12,6 +12,7 @@ import { taskReminderEngine, TaskNotificationConfig } from '@/lib/services/TaskR
 import { PlantTask } from '@/lib/models/PlantTask';
 import { TaskType } from '@/lib/types/taskTypes';
 import { Logger } from '@/lib/utils/production-utils';
+import { validateTaskType } from '@/lib/utils/task-type-validation';
 
 export interface TaskReminderHookResult {
   // Scheduling functions
@@ -169,11 +170,22 @@ export function useTaskReminders(): TaskReminderHookResult {
         try {
           const plant = await task.plant;
           
+          // Validate task type before using it
+          const taskTypeValidation = validateTaskType(task.taskType, task.id);
+          if (!taskTypeValidation.isValid) {
+            Logger.warn('[useTaskReminders] Skipping task with invalid task type', { 
+              taskId: task.id, 
+              taskType: task.taskType,
+              error: taskTypeValidation.error 
+            });
+            continue;
+          }
+          
           const config: TaskNotificationConfig = {
             taskId: task.id,
             plantId: task.plantId,
             plantName: plant.name,
-            taskType: task.taskType as TaskType,
+            taskType: taskTypeValidation.taskType!,
             taskTitle: task.title,
             dueDate: new Date(task.dueDate),
             priority: task.priority || 'medium',
@@ -324,11 +336,23 @@ export function useTaskNotification(task: PlantTask | null) {
       try {
         const plant = await task.plant;
         
+        // Validate task type before using it
+        const taskTypeValidation = validateTaskType(task.taskType, task.id);
+        if (!taskTypeValidation.isValid) {
+          Logger.error('[useTaskNotification] Cannot schedule notification for task with invalid task type', { 
+            taskId: task.id, 
+            taskType: task.taskType,
+            error: taskTypeValidation.error 
+          });
+          setIsScheduled(false);
+          return;
+        }
+        
         const config: TaskNotificationConfig = {
           taskId: task.id,
           plantId: task.plantId,
           plantName: plant.name,
-          taskType: task.taskType as TaskType,
+          taskType: taskTypeValidation.taskType!,
           taskTitle: task.title,
           dueDate: new Date(task.dueDate),
           priority: task.priority || 'medium',

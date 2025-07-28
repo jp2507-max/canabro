@@ -61,15 +61,15 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = React.memo(({ weather, isO
   }, [weather.conditions]);
 
   const temperatureColor = useMemo(() => {
-    if (weather.temperature > 30) return 'text-red-600 dark:text-red-400';
-    if (weather.temperature < 15) return 'text-blue-600 dark:text-blue-400';
-    return 'text-green-600 dark:text-green-400';
+    if (weather.temperature > 30) return 'text-status-danger'; // hot
+    if (weather.temperature < 15) return 'text-status-info'; // cold
+    return 'text-status-success'; // normal
   }, [weather.temperature]);
 
   const humidityColor = useMemo(() => {
-    if (weather.humidity > 70) return 'text-orange-600 dark:text-orange-400';
-    if (weather.humidity < 40) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-green-600 dark:text-green-400';
+    if (weather.humidity > 70) return 'text-status-warning'; // high humidity
+    if (weather.humidity < 40) return 'text-status-warning'; // low humidity
+    return 'text-status-success'; // normal
   }, [weather.humidity]);
 
   return (
@@ -188,11 +188,11 @@ const WeatherRecommendations: React.FC<WeatherRecommendationProps> = React.memo(
   const getPriorityStyles = (priority: 'high' | 'medium' | 'low') => {
     switch (priority) {
       case 'high':
-        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200';
+        return 'bg-status-danger/10 border-status-danger/30 text-status-danger';
       case 'medium':
-        return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200';
+        return 'bg-status-warning/10 border-status-warning/30 text-status-warning';
       default:
-        return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
+        return 'bg-status-info/10 border-status-info/30 text-status-info';
     }
   };
 
@@ -439,17 +439,23 @@ export const WeatherIntegration: React.FC<WeatherIntegrationProps> = ({
           <View className="flex-row space-x-2">
             <Pressable
               onPress={loadWeatherData}
-              className="bg-blue-500 dark:bg-blue-600 px-3 py-2 rounded-lg"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('weather.refreshA11y', 'Refresh weather data')}
+              className="bg-primary-600 dark:bg-primary-500 px-3 py-2 rounded-lg"
             >
-              <ThemedText className="text-white text-sm font-medium">
+              <ThemedText className="text-on-primary text-sm font-medium">
                 {t('weather.refresh')}
               </ThemedText>
             </Pressable>
             <Pressable
               onPress={applyWeatherAdjustments}
-              className="bg-green-500 dark:bg-green-600 px-3 py-2 rounded-lg"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={t('weather.applyAdjustmentsA11y', 'Apply weather-based adjustments to plant schedule')}
+              className="bg-success-600 dark:bg-success-500 px-3 py-2 rounded-lg"
             >
-              <ThemedText className="text-white text-sm font-medium">
+              <ThemedText className="text-on-success text-sm font-medium">
                 {t('weather.applyAdjustments')}
               </ThemedText>
             </Pressable>
