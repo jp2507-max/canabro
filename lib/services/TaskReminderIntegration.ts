@@ -21,6 +21,7 @@ import { TaskAutomationService } from './TaskAutomationService';
 import { TaskSchedulingAdapter } from './TaskSchedulingAdapter';
 import { Logger } from '@/lib/utils/production-utils';
 import { TaskType } from '@/lib/types/taskTypes';
+import { createTaskTypeValidator } from '@/lib/utils/task-type-validation';
 import { GrowthStage } from '@/lib/types/plant';
 
 export class TaskReminderIntegration {
@@ -320,11 +321,15 @@ export class TaskReminderIntegration {
         try {
           const plant = await database.get<Plant>('plants').find(task.plantId);
           
+          // Safe task type validation with fallback
+          const safeTaskTypeValidator = createTaskTypeValidator('inspection');
+          const validatedTaskType = safeTaskTypeValidator(task.taskType, task.id);
+          
           const config: TaskNotificationConfig = {
             taskId: task.id,
             plantId: task.plantId,
             plantName: plant.name,
-            taskType: task.taskType as TaskType,
+            taskType: validatedTaskType,
             taskTitle: task.title,
             dueDate: new Date(task.dueDate),
             priority: task.priority || 'medium',

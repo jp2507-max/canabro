@@ -85,7 +85,11 @@ export const HarvestIntegrationManager: React.FC<HarvestIntegrationManagerProps>
             setLoading(true);
             log.info(`[HarvestIntegrationManager] Processing harvest for plant ${plant.id}`);
 
-            const wetWeight = wetWeightStr ? parseFloat(wetWeightStr) : undefined;
+            let wetWeight: number | undefined = undefined;
+            if (wetWeightStr !== undefined && wetWeightStr !== null) {
+                const parsed = parseFloat(wetWeightStr);
+                wetWeight = !isNaN(parsed) ? parsed : undefined;
+            }
 
             // Mark plant as harvested and schedule post-harvest tasks
             await PostHarvestScheduler.markPlantAsHarvested(plant, {

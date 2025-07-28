@@ -16,6 +16,7 @@ import { useCardAnimation } from '@/lib/animations';
 import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/haptics';
 import { PlantTask } from '@/lib/models/PlantTask';
 import type { TaskType } from '@/lib/types/taskTypes';
+import { createTaskTypeValidator } from '@/lib/utils/task-type-validation';
 
 // Direct color values for Reanimated animations
 const TASK_COLORS_DIRECT = {
@@ -120,6 +121,10 @@ const TaskCard = memo<TaskCardProps>(({
 }) => {
   const [isCompleted, setIsCompleted] = useState(task.isCompleted);
 
+  // Safe task type validation with fallback
+  const safeTaskTypeValidator = createTaskTypeValidator('inspection');
+  const validatedTaskType = safeTaskTypeValidator(task.taskType, task.id);
+
   // Swipe gesture values
   const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -140,10 +145,10 @@ const TaskCard = memo<TaskCardProps>(({
   });
 
   // Get task type color and icon
-  const taskTypeKey = (task.taskType as keyof typeof TASK_COLORS) || 'inspection';
+  const taskTypeKey = validatedTaskType;
   const taskColor = TASK_COLORS[taskTypeKey];
   const taskColorClass = getTaskColorClass(taskTypeKey, true); // for bg with opacity
-  const taskIcon = getTaskIconName(task.taskType as TaskType);
+  const taskIcon = getTaskIconName(validatedTaskType);
   const priorityClass = getPriorityColorClass((task.priority ?? 'low') as keyof typeof PRIORITY_COLORS);
   const taskTextColorClass = getTaskTextColorClass(taskTypeKey);
 

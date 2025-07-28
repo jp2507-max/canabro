@@ -549,6 +549,10 @@ export const SensorDataHandler: React.FC<SensorDataHandlerProps> = ({
           )}
           estimatedItemSize={200}
           showsVerticalScrollIndicator={false}
+          accessibilityRole="list"
+          accessibilityLabel={t('sensors.connectedSensorsListA11y', 'Connected sensors list')}
+          accessible
+          importantForAccessibility="yes"
         />
       </View>
     </View>

@@ -566,14 +566,16 @@ export const EnvironmentalDashboard: React.FC<EnvironmentalDashboardProps> = ({
 };
 
 const EnvironmentalDashboardWithErrorBoundary: React.FC<EnvironmentalDashboardProps> = (props) => {
+  const [retryKey, setRetryKey] = useState(0);
+  
   const handleRetry = () => {
-    // Reload data when retry is clicked
-    // This would be handled by the parent component in a real implementation
+    // Force re-render and reload data by updating key
+    setRetryKey(prev => prev + 1);
   };
   
   return (
     <EnvironmentalDashboardErrorBoundary onRetry={handleRetry}>
-      <EnvironmentalDashboard {...props} />
+      <EnvironmentalDashboard key={retryKey} {...props} />
     </EnvironmentalDashboardErrorBoundary>
   );
 };
