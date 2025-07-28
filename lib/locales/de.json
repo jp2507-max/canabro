@@ -754,12 +754,15 @@
       "phLevel": "pH-Wert",
       "temperature": "Temperatur",
       "humidity": "Luftfeuchtigkeit",
-      "vpd": "VPD"
+      "vpd": "VPD",
+      "nodeCount": "Knotenanzahl"
     },
     "dataPoint": {
       "title": "Datenpunkt",
       "message": "{{metric}}: {{value}}{{unit}} am {{date}}"
-    }
+    },
+    "chartError": "Diagramm-Rendering-Fehler",
+    "chartErrorDescription": "Bitte versuchen Sie es erneut oder wenden Sie sich an den Support"
   },
   "harvestRecorded": "Erntedaten wurden erfolgreich gespeichert!",
   "failedToSaveHarvest": "Speichern der Erntedaten fehlgeschlagen. Bitte versuchen Sie es erneut.",
@@ -1017,6 +1020,92 @@
       "monthly": "Monatlich"
     },
     "calendarWarning": "Erinnerung erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
+  },
+  "taskCompletion": {
+    "title": "Aufgabe abschließen",
+    "modeSelector": {
+      "title": "Abschlussmodus"
+    },
+    "quickMode": {
+      "title": "Schnell",
+      "description": "Einfacher Abschluss mit Notizen"
+    },
+    "comprehensiveMode": {
+      "title": "Umfassend",
+      "description": "Detaillierte Verfolgung mit Metriken"
+    },
+    "sections": {
+      "environmental": "Umweltbedingungen",
+      "supplies": "Verwendete Materialien",
+      "photos": "Fotos"
+    },
+    "fields": {
+      "notes": "Notizen",
+      "notesPlaceholder": "Abschlussnotizen hinzufügen...",
+      "duration": "Dauer (Minuten)",
+      "durationPlaceholder": "Wie lange hat diese Aufgabe gedauert?",
+      "temperature": "Temperatur",
+      "humidity": "Luftfeuchtigkeit",
+      "pH": "pH-Wert",
+      "vpd": "VPD",
+      "supplyPlaceholder": "Materialname eingeben",
+      "amount": "Menge"
+    },
+    "buttons": {
+      "complete": "Aufgabe abschließen",
+      "submitting": "Wird abgeschlossen...",
+      "cancel": "Abbrechen",
+      "takePhoto": "Foto aufnehmen",
+      "selectPhoto": "Foto auswählen"
+    },
+    "validation": {
+      "durationMin": "Dauer muss 0 oder größer sein",
+      "humidityMin": "Luftfeuchtigkeit muss 0 oder größer sein",
+      "humidityMax": "Luftfeuchtigkeit kann nicht über 100% liegen",
+      "phMin": "pH muss 0 oder größer sein",
+      "phMax": "pH kann nicht über 14 liegen"
+    },
+    "errors": {
+      "submitTitle": "Abschlussfehler",
+      "submitMessage": "Aufgabe konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut."
+    },
+    "vpdOptimal": "Optimaler VPD-Bereich für gesundes Wachstum",
+    "vpdSuboptimal": "VPD liegt außerhalb des optimalen Bereichs (0,8-1,5 kPa)"
+  },
+  "taskAnalytics": {
+    "title": "Aufgaben-Analytik",
+    "loading": "Analytik wird geladen...",
+    "error": "Fehler beim Laden der Analytik",
+    "retry": "Wiederholen",
+    "noData": "Keine Analytikdaten verfügbar",
+    "noDataDescription": "Schließen Sie einige Aufgaben ab, um Analytik und Einblicke zu sehen",
+    "timeRanges": {
+      "7d": "7 Tage",
+      "30d": "30 Tage",
+      "90d": "90 Tage",
+      "all": "Alle Zeit"
+    },
+    "chartTypes": {
+      "completion": "Abschlussraten",
+      "trends": "Trends",
+      "patterns": "Muster"
+    },
+    "overallStats": {
+      "completionRate": "Gesamte Abschlussrate",
+      "tasks": "Aufgaben",
+      "tasksPerDay": "Aufgaben/Tag"
+    },
+    "suggestions": {
+      "title": "Optimierungsvorschläge",
+      "impact": {
+        "low": "Geringe Auswirkung",
+        "medium": "Mittlere Auswirkung",
+        "high": "Hohe Auswirkung"
+      },
+      "actionable": "Umsetzbar"
+    },
+    "chartError": "Diagramm-Rendering-Fehler",
+    "chartErrorDescription": "Bitte versuchen Sie es erneut oder wenden Sie sich an den Support"
   }
 }
 

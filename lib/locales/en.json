@@ -976,7 +976,9 @@
     "dataPoint": {
       "title": "Data Point",
       "message": "{{metric}}: {{value}}{{unit}} on {{date}}"
-    }
+    },
+    "chartError": "Chart rendering error",
+    "chartErrorDescription": "Please try refreshing or contact support"
   },
   "harvestRecorded": "Harvest data has been successfully recorded!",
   "failedToSaveHarvest": "Failed to save harvest data. Please try again.",
@@ -1241,6 +1243,92 @@
       "monthly": "Monthly"
     },
     "calendarWarning": "Reminder created successfully, but failed to add to calendar. You can add it manually if needed."
+  },
+  "taskCompletion": {
+    "title": "Complete Task",
+    "modeSelector": {
+      "title": "Completion Mode"
+    },
+    "quickMode": {
+      "title": "Quick",
+      "description": "Simple completion with notes"
+    },
+    "comprehensiveMode": {
+      "title": "Comprehensive",
+      "description": "Detailed tracking with metrics"
+    },
+    "sections": {
+      "environmental": "Environmental Conditions",
+      "supplies": "Supplies Used",
+      "photos": "Photos"
+    },
+    "fields": {
+      "notes": "Notes",
+      "notesPlaceholder": "Add completion notes...",
+      "duration": "Duration (minutes)",
+      "durationPlaceholder": "How long did this task take?",
+      "temperature": "Temperature",
+      "humidity": "Humidity",
+      "pH": "pH Level",
+      "vpd": "VPD",
+      "supplyPlaceholder": "Enter supply name",
+      "amount": "Amount"
+    },
+    "buttons": {
+      "complete": "Complete Task",
+      "submitting": "Completing...",
+      "cancel": "Cancel",
+      "takePhoto": "Take Photo",
+      "selectPhoto": "Select Photo"
+    },
+    "validation": {
+      "durationMin": "Duration must be 0 or greater",
+      "humidityMin": "Humidity must be 0 or greater",
+      "humidityMax": "Humidity cannot exceed 100%",
+      "phMin": "pH must be 0 or greater",
+      "phMax": "pH cannot exceed 14"
+    },
+    "errors": {
+      "submitTitle": "Completion Error",
+      "submitMessage": "Failed to complete task. Please try again."
+    },
+    "vpdOptimal": "Optimal VPD range for healthy growth",
+    "vpdSuboptimal": "VPD is outside optimal range (0.8-1.5 kPa)"
+  },
+  "taskAnalytics": {
+    "title": "Task Analytics",
+    "loading": "Loading analytics...",
+    "error": "Failed to load analytics",
+    "retry": "Retry",
+    "noData": "No analytics data available",
+    "noDataDescription": "Complete some tasks to see analytics and insights",
+    "timeRanges": {
+      "7d": "7 Days",
+      "30d": "30 Days",
+      "90d": "90 Days",
+      "all": "All Time"
+    },
+    "chartTypes": {
+      "completion": "Completion Rates",
+      "trends": "Trends",
+      "patterns": "Patterns"
+    },
+    "overallStats": {
+      "completionRate": "Overall Completion Rate",
+      "tasks": "tasks",
+      "tasksPerDay": "tasks/day"
+    },
+    "suggestions": {
+      "title": "Optimization Suggestions",
+      "impact": {
+        "low": "Low Impact",
+        "medium": "Medium Impact",
+        "high": "High Impact"
+      },
+      "actionable": "Actionable"
+    },
+    "chartError": "Chart rendering error",
+    "chartErrorDescription": "Please try refreshing or contact support"
   }
 }
 

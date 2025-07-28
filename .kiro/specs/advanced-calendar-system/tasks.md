@@ -161,7 +161,12 @@
   - _Reuse Benefit: 70% of growth stage logic ready_
 
 - [ ] 5. Adapt existing task management components
-- [ ] 5.1 Adapt MetricsInputForm for task completion tracking
+- [x] 5.1 Adapt MetricsInputForm for task completion tracking
+
+
+
+
+
   - ✅ **REUSE**: MetricsInputForm component from plant management as base
   - ✅ **REUSE**: Photo capture and note-taking functionality
   - ✅ **REUSE**: Environmental condition recording patterns
@@ -170,7 +175,11 @@
   - _Requirements: R5-AC1, R5-AC4, R6-AC2, R6-AC4_
   - _Reuse Benefit: 75% of completion interface ready_
 
-- [ ] 5.2 Reuse bulk operations from plant management
+- [x] 5.2 Reuse bulk operations from plant management
+
+
+
+
   - ✅ **REUSE**: Batch operations logic from CareReminders component
   - ✅ **REUSE**: Multi-select interface patterns
   - ✅ **REUSE**: Confirmation dialogs and progress indicators
@@ -179,7 +188,11 @@
   - _Requirements: R5-AC5, R5-AC4_
   - _Reuse Benefit: 90% of bulk operations ready_
 
-- [ ] 5.3 Adapt metrics history for task analytics
+- [x] 5.3 Adapt metrics history for task analytics
+
+
+
+
   - ✅ **REUSE**: MetricsChart component from plant management
   - ✅ **REUSE**: Historical data visualization patterns
   - ✅ **REUSE**: Plant comparison features as base

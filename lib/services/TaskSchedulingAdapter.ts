@@ -2,7 +2,11 @@
  * Task Scheduling Adapter
  * 
  * Adapts existing CareReminder system for PlantTask automation
- * and integrates with the 5-day task management workflow.
+ * and integrate          if (existingReminder.length === 0) {
+            // Create new care reminder
+            await database.get<CareReminder>('care_reminders').create((reminder) => {
+              reminder.plantId = task.plantId;
+              reminder.type = TaskSchedulingAdapter.mapTaskTypeToCareReminderType(task.taskType);h the 5-day task management workflow.
  * 
  * This service bridges the gap between the existing CareReminder model
  * and the new PlantTask model for the advanced calendar system.
@@ -67,7 +71,7 @@ export class TaskSchedulingAdapter {
           tasks.push(task);
 
           // Mark the original reminder as migrated (don't delete to preserve history)
-          await reminder.update((r: any) => {
+          await reminder.update((r: CareReminder) => {
             r.description = `${r.description || ''} [MIGRATED TO TASK SYSTEM]`;
           });
         }
@@ -115,7 +119,7 @@ export class TaskSchedulingAdapter {
 
           if (existingReminder.length === 0) {
             // Create new care reminder
-            await database.get<CareReminder>('care_reminders').create((reminder: any) => {
+            await database.get<CareReminder>('care_reminders').create((reminder: CareReminder) => {
               reminder.plantId = task.plantId;
               reminder.type = TaskSchedulingAdapter.mapTaskTypeToCareReminderType(task.taskType);
               reminder.title = task.title;
