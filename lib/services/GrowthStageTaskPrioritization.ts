@@ -1,7 +1,17 @@
 /**
  * Growth Stage Task Prioritization Service
  * 
- * Adapts existing growth stage detection algorithms from plant management
+ * Adapts existing growth    [GROWTH_STAGES.SEEDLING]: {
+      watering: 0.9,
+      feeding: 0.6,
+      inspection: 0.9,
+      pruning: 0.2,
+      training: 0.2,
+      defoliation: 0.1,
+      flushing: 0.1,
+      harvest: 0.1,
+      transplant: 0.6,
+    },ction algorithms from plant management
  * for task priority calculation based on growth stage and plant health monitoring.
  * 
  * Reuse Benefits:
@@ -16,7 +26,7 @@ import { log } from '../utils/logger';
 import { Plant } from '../models/Plant';
 import { PlantTask } from '../models/PlantTask';
 import { PlantMetrics } from '../models/PlantMetrics';
-import { GrowthStage } from '../types/plant';
+import { GrowthStage, GROWTH_STAGES } from '../types/plant';
 import { TaskType } from '../types/taskTypes';
 import { database } from '../models';
 
@@ -55,19 +65,19 @@ export class GrowthStageTaskPrioritization {
   
   // ✅ REUSE: Growth stage configurations from TaskAutomationService
   private static readonly GROWTH_STAGE_DURATIONS: Record<GrowthStage, number> = {
-    [GrowthStage.GERMINATION]: 7,
-    [GrowthStage.SEEDLING]: 14,
-    [GrowthStage.VEGETATIVE]: 30,
-    [GrowthStage.PRE_FLOWER]: 14,
-    [GrowthStage.FLOWERING]: 56,
-    [GrowthStage.LATE_FLOWERING]: 14,
-    [GrowthStage.HARVEST]: 1,
-    [GrowthStage.CURING]: 21,
+    [GROWTH_STAGES.GERMINATION]: 7,
+    [GROWTH_STAGES.SEEDLING]: 14,
+    [GROWTH_STAGES.VEGETATIVE]: 30,
+    [GROWTH_STAGES.PRE_FLOWER]: 14,
+    [GROWTH_STAGES.FLOWERING]: 56,
+    [GROWTH_STAGES.LATE_FLOWERING]: 14,
+    [GROWTH_STAGES.HARVEST]: 1,
+    [GROWTH_STAGES.CURING]: 21,
   };
 
   // ✅ REUSE: Task priority matrix from TaskSchedulingAdapter
   private static readonly STAGE_TASK_PRIORITIES: Record<GrowthStage, Record<TaskType, number>> = {
-    [GrowthStage.GERMINATION]: {
+    [GROWTH_STAGES.GERMINATION]: {
       watering: 0.9,
       feeding: 0.2,
       inspection: 0.9,
@@ -78,7 +88,7 @@ export class GrowthStageTaskPrioritization {
       harvest: 0.1,
       transplant: 0.3,
     },
-    [GrowthStage.SEEDLING]: {
+    [GROWTH_STAGES.SEEDLING]: {
       watering: 0.9,
       feeding: 0.6,
       inspection: 0.9,
@@ -89,7 +99,7 @@ export class GrowthStageTaskPrioritization {
       harvest: 0.1,
       transplant: 0.7,
     },
-    [GrowthStage.VEGETATIVE]: {
+    [GROWTH_STAGES.VEGETATIVE]: {
       watering: 0.9,
       feeding: 0.9,
       inspection: 0.6,
@@ -100,7 +110,7 @@ export class GrowthStageTaskPrioritization {
       harvest: 0.1,
       transplant: 0.6,
     },
-    [GrowthStage.PRE_FLOWER]: {
+    [GROWTH_STAGES.PRE_FLOWER]: {
       watering: 0.9,
       feeding: 0.9,
       inspection: 0.9,
@@ -111,7 +121,7 @@ export class GrowthStageTaskPrioritization {
       harvest: 0.1,
       transplant: 0.2,
     },
-    [GrowthStage.FLOWERING]: {
+    [GROWTH_STAGES.FLOWERING]: {
       watering: 0.9,
       feeding: 0.9,
       inspection: 0.9,
@@ -122,7 +132,7 @@ export class GrowthStageTaskPrioritization {
       harvest: 0.1,
       transplant: 0.1,
     },
-    [GrowthStage.LATE_FLOWERING]: {
+    [GROWTH_STAGES.LATE_FLOWERING]: {
       watering: 0.6,
       feeding: 0.2,
       inspection: 1.0,
@@ -133,7 +143,7 @@ export class GrowthStageTaskPrioritization {
       harvest: 0.6,
       transplant: 0.1,
     },
-    [GrowthStage.HARVEST]: {
+    [GROWTH_STAGES.HARVEST]: {
       watering: 0.2,
       feeding: 0.1,
       inspection: 0.9,
@@ -144,7 +154,7 @@ export class GrowthStageTaskPrioritization {
       harvest: 1.0,
       transplant: 0.1,
     },
-    [GrowthStage.CURING]: {
+    [GROWTH_STAGES.CURING]: {
       watering: 0.1,
       feeding: 0.1,
       inspection: 0.6,
@@ -334,11 +344,11 @@ export class GrowthStageTaskPrioritization {
         milestoneReasons.push(`Ready to transition to ${nextStage} stage`);
       }
       
-      if (currentStage === GrowthStage.LATE_FLOWERING && progressPercentage >= 70) {
+      if (currentStage === GROWTH_STAGES.LATE_FLOWERING && progressPercentage >= 70) {
         milestoneReasons.push('Approaching harvest window - monitor trichomes closely');
       }
       
-      if (currentStage === GrowthStage.HARVEST) {
+      if (currentStage === GROWTH_STAGES.HARVEST) {
         milestoneReasons.push('Harvest milestone reached - celebrate your grow!');
       }
 
@@ -555,15 +565,15 @@ export class GrowthStageTaskPrioritization {
       }
       
       // Specific stage celebrations
-      if (milestoneProgress.currentStage === GrowthStage.FLOWERING && milestoneProgress.progressPercentage >= 50) {
+      if (milestoneProgress.currentStage === GROWTH_STAGES.FLOWERING && milestoneProgress.progressPercentage >= 50) {
         celebrations.push(`🌸 ${plant.name} is halfway through flowering - buds are developing!`);
       }
       
-      if (milestoneProgress.currentStage === GrowthStage.HARVEST) {
+      if (milestoneProgress.currentStage === GROWTH_STAGES.HARVEST) {
         celebrations.push(`🏆 Harvest time for ${plant.name} - congratulations on your successful grow!`);
       }
       
-      if (milestoneProgress.currentStage === GrowthStage.CURING && milestoneProgress.progressPercentage >= 75) {
+      if (milestoneProgress.currentStage === GROWTH_STAGES.CURING && milestoneProgress.progressPercentage >= 75) {
         celebrations.push(`✨ ${plant.name} is almost ready - curing is nearly complete!`);
       }
       
@@ -599,14 +609,14 @@ export class GrowthStageTaskPrioritization {
 
   private static getNextGrowthStage(currentStage: GrowthStage): GrowthStage | undefined {
     const stageOrder: GrowthStage[] = [
-      GrowthStage.GERMINATION,
-      GrowthStage.SEEDLING,
-      GrowthStage.VEGETATIVE,
-      GrowthStage.PRE_FLOWER,
-      GrowthStage.FLOWERING,
-      GrowthStage.LATE_FLOWERING,
-      GrowthStage.HARVEST,
-      GrowthStage.CURING,
+      GROWTH_STAGES.GERMINATION,
+      GROWTH_STAGES.SEEDLING,
+      GROWTH_STAGES.VEGETATIVE,
+      GROWTH_STAGES.PRE_FLOWER,
+      GROWTH_STAGES.FLOWERING,
+      GROWTH_STAGES.LATE_FLOWERING,
+      GROWTH_STAGES.HARVEST,
+      GROWTH_STAGES.CURING,
     ];
 
     const currentIndex = stageOrder.indexOf(currentStage);

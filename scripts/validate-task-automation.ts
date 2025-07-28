@@ -15,7 +15,7 @@ const mockPlant = {
   id: 'test-plant-id',
   name: 'Test Cannabis Plant',
   userId: 'test-user-id',
-  growthStage: GrowthStage.VEGETATIVE,
+  growthStage: 'vegetative',
   strainId: '123e4567-e89b-12d3-a456-426614174000', // OG Kush from strains.ts
   cannabisType: 'hybrid',
   plantedDate: new Date().toISOString(),

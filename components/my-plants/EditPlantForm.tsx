@@ -51,7 +51,9 @@ import { WeedDbService } from '@/lib/services/weed-db.service';
 import supabase from '@/lib/supabase';
 import { uploadPlantImage } from '@/lib/utils/upload-image';
 import {
-  GrowthStage as PlantGrowthStage,
+  GrowthStage,
+  GROWTH_STAGES,
+  GROWTH_STAGES_ARRAY,
   PlantGrowLocation,
   LightCondition,
   GrowMedium,
@@ -135,7 +137,7 @@ interface PlantUpdatePayload {
   strainNameDisplay: string;
   strainIdToSet: string | null;
   plantedDate: string;
-  growthStage: PlantGrowthStage;
+  growthStage: GrowthStage;
   notes: string;
   imageUrl: string | undefined;
   cannabisType: CannabisType;
@@ -215,7 +217,7 @@ const LocationOption = ({ location, onPress, accessibilityLabel, accessibilityHi
 
 // Import all enums from centralized type definitions
 // Using the already imported enums from @/lib/types/plant
-// GrowthStage is already imported as PlantGrowthStage
+// GrowthStage is imported directly
 
 // Zod Validation Schema builder with i18n support
 const buildPlantFormSchema = (t: TFunction<'editPlantForm' | 'common'>) =>
@@ -226,7 +228,7 @@ const buildPlantFormSchema = (t: TFunction<'editPlantForm' | 'common'>) =>
       .nonempty(t('editPlantForm:validation.nameRequired')),
     strain: z.string().nonempty(t('editPlantForm:validation.strainRequired')),
     planted_date: z.date({ required_error: t('editPlantForm:validation.plantedDateRequired') }),
-    growth_stage: z.nativeEnum(PlantGrowthStage, {
+    growth_stage: z.enum([GROWTH_STAGES.GERMINATION, GROWTH_STAGES.SEEDLING, GROWTH_STAGES.VEGETATIVE, GROWTH_STAGES.PRE_FLOWER, GROWTH_STAGES.FLOWERING, GROWTH_STAGES.LATE_FLOWERING, GROWTH_STAGES.HARVEST, GROWTH_STAGES.CURING], {
       required_error: t('editPlantForm:validation.growthStageRequired'),
     }),
     notes: z.string().optional(),
@@ -288,7 +290,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       name: plant.name || '',
       strain: plant.strain || '', // This is the strain NAME
       planted_date: plant.plantedDate ? parseISO(plant.plantedDate) : new Date(),
-      growth_stage: (plant.growthStage as PlantGrowthStage) || PlantGrowthStage.SEEDLING,
+      growth_stage: (plant.growthStage as GrowthStage) || GROWTH_STAGES.SEEDLING,
       cannabis_type: (plant.cannabisType as CannabisType) || CannabisType.Unknown,
       grow_medium: (plant.growMedium as GrowMedium) || GrowMedium.Soil,
       light_condition: (plant.lightCondition as LightCondition) || LightCondition.Artificial,
@@ -336,7 +338,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       name: plant.name || '',
       strain: plant.strain || '', // strain name
       planted_date: plant.plantedDate ? parseISO(plant.plantedDate) : new Date(),
-      growth_stage: (plant.growthStage as PlantGrowthStage) || PlantGrowthStage.SEEDLING,
+      growth_stage: (plant.growthStage as GrowthStage) || GROWTH_STAGES.SEEDLING,
       cannabis_type: (plant.cannabisType as CannabisType) || CannabisType.Unknown,
       grow_medium: (plant.growMedium as GrowMedium) || GrowMedium.Soil,
       light_condition: (plant.lightCondition as LightCondition) || LightCondition.Artificial,
@@ -754,12 +756,12 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         if (localStrain && localStrain.id) {
           finalStrainId = localStrain.id;
         }
-      } else if (data.strain && data.strain.trim().length > 0) {
+      } else if (data.strain && typeof data.strain === 'string' && data.strain.trim().length > 0) {
         // Try to find or create a local strain by searching API/local DB
         try {
           const apiResults = await WeedDbService.search(data.strain);
           const bestMatch = apiResults.data.find(
-            (strain) => strain.name.toLowerCase() === data.strain.toLowerCase()
+            (strain) => strain.name.toLowerCase() === (data.strain as string).toLowerCase()
           );
           if (bestMatch && typeof bestMatch.api_id === 'string') {
             // Ensure api_id is a string
@@ -787,7 +789,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             }
           } else {
             // Fallback to local DB
-            const localMatches = searchStrainsByName(data.strain);
+            const localMatches = searchStrainsByName(data.strain as string);
             if (localMatches.length > 0 && localMatches[0]) {
               const matchedLocalStrain = localMatches[0];
               const apiCompatibleStrain = {
@@ -813,7 +815,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         } catch (apiError) {
           console.error('[EditPlantForm] API search failed:', apiError);
           // Fallback to local DB
-          const localMatches = searchStrainsByName(data.strain);
+          const localMatches = searchStrainsByName(data.strain as string);
           if (localMatches.length > 0 && localMatches[0]) {
             const matchedLocalStrain = localMatches[0];
             const apiCompatibleStrain = {
@@ -848,7 +850,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         strainNameDisplay: data.strain as string,
         strainIdToSet: finalStrainId,
         plantedDate: plantedDateStr || format(new Date(), 'yyyy-MM-dd'), // Ensure we have a default date if undefined
-        growthStage: data.growth_stage as PlantGrowthStage,
+        growthStage: data.growth_stage as GrowthStage,
         notes: (data.notes as string) || '',
         imageUrl: finalImageUrl ?? undefined,
         cannabisType: (data.cannabis_type as CannabisType) || CannabisType.Unknown,
@@ -1237,7 +1239,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">
           {t('common.growthStage')}
         </ThemedText>
-        {renderEnumPicker('growth_stage', PlantGrowthStage, t('editPlantForm:labels.growthStage'))}
+        {renderEnumPicker('growth_stage', GROWTH_STAGES, t('editPlantForm:labels.growthStage'))}
 
         {/* Planted Date */}
         <ThemedText className="mb-2 mt-4 text-base font-medium text-neutral-700 dark:text-neutral-200">

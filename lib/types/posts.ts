@@ -19,4 +19,5 @@ export type {
   Follow
 } from './community';
 
-export { GrowthStage } from './plant';
+export type { GrowthStage } from './plant';
+export { GROWTH_STAGES, GROWTH_STAGES_ARRAY } from './plant';

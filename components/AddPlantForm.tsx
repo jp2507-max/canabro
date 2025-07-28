@@ -56,7 +56,7 @@ import {
 } from '../lib/services/sync/strain-sync.service';
 import supabase from '../lib/supabase';
 import { uploadPlantGalleryImage } from '../lib/utils/upload-image';
-import { GrowthStage, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
+import { GrowthStage, GROWTH_STAGES, GROWTH_STAGES_ARRAY, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
 
 interface PlantFormProps {
@@ -82,7 +82,7 @@ function getPlantFormSchema(t: TFunction) {
     strain: z.string().min(1, t('addPlantForm.validation.strainRequired')),
     strain_id: z.string().optional(),
     planted_date: z.date({ required_error: t('addPlantForm.validation.plantedDateRequired') }),
-    growth_stage: z.nativeEnum(GrowthStage, { required_error: t('addPlantForm.validation.growthStageRequired') }),
+    growth_stage: z.enum([GROWTH_STAGES.GERMINATION, GROWTH_STAGES.SEEDLING, GROWTH_STAGES.VEGETATIVE, GROWTH_STAGES.PRE_FLOWER, GROWTH_STAGES.FLOWERING, GROWTH_STAGES.LATE_FLOWERING, GROWTH_STAGES.HARVEST, GROWTH_STAGES.CURING], { required_error: t('addPlantForm.validation.growthStageRequired') }),
     cannabis_type: z.nativeEnum(CannabisType).optional(),
     grow_medium: z.nativeEnum(GrowMedium).optional(),
     light_condition: z.nativeEnum(LightCondition).optional(),
@@ -588,7 +588,7 @@ const BasicInfoStep: React.FC<
               {t('addPlantForm.fields.growthStage')}
             </ThemedText>
             <ThemedView className="flex-row flex-wrap gap-2">
-              {Object.values(GrowthStage).map((stage) => (
+              {GROWTH_STAGES_ARRAY.map((stage) => (
                 <AnimatedSelectionButton
                   key={stage}
                   onPress={() => onChange(stage)}
@@ -1155,12 +1155,12 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         strain: data.strain,
         plantedDate: data.planted_date.toISOString(),
         growthStage: data.growth_stage,
-        cannabisType: data.cannabis_type,
-        growMedium: data.grow_medium,
-        lightCondition: data.light_condition,
+        cannabisType: data.cannabis_type ?? undefined,
+        growMedium: data.grow_medium ?? undefined,
+        lightCondition: data.light_condition ?? undefined,
         locationDescription: data.location_description,
         imageUrl: imageUrl ?? undefined,
-        notes: data.notes,
+        notes: data.notes ?? undefined,
       };
 
       await database.write(async () => {

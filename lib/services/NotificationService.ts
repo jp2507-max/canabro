@@ -3,7 +3,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-import { GrowthStage } from '../types/plant';
+import { GrowthStage, GROWTH_STAGES } from '../types/plant';
 
 // Notification types
 export enum NotificationType {
@@ -417,29 +417,29 @@ export async function scheduleInitialPlantNotifications(
     const currentDate = new Date();
 
     switch (growthStage) {
-      case GrowthStage.SEEDLING:
+      case GROWTH_STAGES.SEEDLING:
         // Schedule transition to vegetative stage in 14 days
         await scheduleGrowthStageNotification(
           plantId,
           plantName,
-          GrowthStage.SEEDLING,
-          GrowthStage.VEGETATIVE,
+          GROWTH_STAGES.SEEDLING,
+          GROWTH_STAGES.VEGETATIVE,
           14
         );
         break;
 
-      case GrowthStage.VEGETATIVE:
+      case GROWTH_STAGES.VEGETATIVE:
         // Schedule transition to flowering stage in 30 days
         await scheduleGrowthStageNotification(
           plantId,
           plantName,
-          GrowthStage.VEGETATIVE,
-          GrowthStage.FLOWERING,
+          GROWTH_STAGES.VEGETATIVE,
+          GROWTH_STAGES.FLOWERING,
           30
         );
         break;
 
-      case GrowthStage.FLOWERING: {
+      case GROWTH_STAGES.FLOWERING: {
         // Schedule harvest notification in 60 days
         const harvestDate = new Date(currentDate);
         harvestDate.setDate(harvestDate.getDate() + 60);

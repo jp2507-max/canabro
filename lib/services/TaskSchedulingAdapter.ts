@@ -352,106 +352,105 @@ export class TaskSchedulingAdapter {
       transplant: `Transplant plant to appropriate container for ${growthStage} stage`,
     };
 
-    return descriptions[taskType] || `Perform ${taskType} task for plant in ${growthStage} stage`;
-  }
+return descriptions[taskType] || `Perform ${taskType} task for plant in ${growthStage} stage`;
+}
 
-  private static getTaskPriority(taskType: TaskType, growthStage: GrowthStage): 'low' | 'medium' | 'high' | 'critical' {
-    // Priority matrix based on task type and growth stage
-    const priorityMatrix: Record<TaskType, Record<GrowthStage, 'low' | 'medium' | 'high' | 'critical'>> = {
-      watering: {
-        [GrowthStage.GERMINATION]: 'high',
-        [GrowthStage.SEEDLING]: 'high',
-        [GrowthStage.VEGETATIVE]: 'high',
-        [GrowthStage.PRE_FLOWER]: 'high',
-        [GrowthStage.FLOWERING]: 'high',
-        [GrowthStage.LATE_FLOWERING]: 'medium',
-        [GrowthStage.HARVEST]: 'low',
-        [GrowthStage.CURING]: 'low',
-      },
-      feeding: {
-        [GrowthStage.GERMINATION]: 'low',
-        [GrowthStage.SEEDLING]: 'medium',
-        [GrowthStage.VEGETATIVE]: 'high',
-        [GrowthStage.PRE_FLOWER]: 'high',
-        [GrowthStage.FLOWERING]: 'high',
-        [GrowthStage.LATE_FLOWERING]: 'low',
-        [GrowthStage.HARVEST]: 'low',
-        [GrowthStage.CURING]: 'low',
-      },
-      inspection: {
-        [GrowthStage.GERMINATION]: 'high',
-        [GrowthStage.SEEDLING]: 'high',
-        [GrowthStage.VEGETATIVE]: 'medium',
-        [GrowthStage.PRE_FLOWER]: 'high',
-        [GrowthStage.FLOWERING]: 'high',
-        [GrowthStage.LATE_FLOWERING]: 'critical',
-        [GrowthStage.HARVEST]: 'high',
-        [GrowthStage.CURING]: 'medium',
-      },
-      // Add other task types with default medium priority
-      pruning: {
-        [GrowthStage.GERMINATION]: 'low',
-        [GrowthStage.SEEDLING]: 'low',
-        [GrowthStage.VEGETATIVE]: 'high',
-        [GrowthStage.PRE_FLOWER]: 'medium',
-        [GrowthStage.FLOWERING]: 'low',
-        [GrowthStage.LATE_FLOWERING]: 'low',
-        [GrowthStage.HARVEST]: 'low',
-        [GrowthStage.CURING]: 'low',
-      },
-      training: {
-        [GrowthStage.GERMINATION]: 'low',
-        [GrowthStage.SEEDLING]: 'low',
-        [GrowthStage.VEGETATIVE]: 'high',
-        [GrowthStage.PRE_FLOWER]: 'medium',
-        [GrowthStage.FLOWERING]: 'low',
-        [GrowthStage.LATE_FLOWERING]: 'low',
-        [GrowthStage.HARVEST]: 'low',
-        [GrowthStage.CURING]: 'low',
-      },
-      defoliation: {
-        [GrowthStage.GERMINATION]: 'low',
-        [GrowthStage.SEEDLING]: 'low',
-        [GrowthStage.VEGETATIVE]: 'medium',
-        [GrowthStage.PRE_FLOWER]: 'high',
-        [GrowthStage.FLOWERING]: 'medium',
-        [GrowthStage.LATE_FLOWERING]: 'low',
-        [GrowthStage.HARVEST]: 'low',
-        [GrowthStage.CURING]: 'low',
-      },
-      flushing: {
-        [GrowthStage.GERMINATION]: 'low',
-        [GrowthStage.SEEDLING]: 'low',
-        [GrowthStage.VEGETATIVE]: 'low',
-        [GrowthStage.PRE_FLOWER]: 'low',
-        [GrowthStage.FLOWERING]: 'low',
-        [GrowthStage.LATE_FLOWERING]: 'high',
-        [GrowthStage.HARVEST]: 'low',
-        [GrowthStage.CURING]: 'low',
-      },
-      harvest: {
-        [GrowthStage.GERMINATION]: 'low',
-        [GrowthStage.SEEDLING]: 'low',
-        [GrowthStage.VEGETATIVE]: 'low',
-        [GrowthStage.PRE_FLOWER]: 'low',
-        [GrowthStage.FLOWERING]: 'low',
-        [GrowthStage.LATE_FLOWERING]: 'medium',
-        [GrowthStage.HARVEST]: 'critical',
-        [GrowthStage.CURING]: 'low',
-      },
-      transplant: {
-        [GrowthStage.GERMINATION]: 'low',
-        [GrowthStage.SEEDLING]: 'medium',
-        [GrowthStage.VEGETATIVE]: 'medium',
-        [GrowthStage.PRE_FLOWER]: 'low',
-        [GrowthStage.FLOWERING]: 'low',
-        [GrowthStage.LATE_FLOWERING]: 'low',
-        [GrowthStage.HARVEST]: 'low',
-        [GrowthStage.CURING]: 'low',
-      },
-    };
+private static getTaskPriority(taskType: TaskType, growthStage: string): 'low' | 'medium' | 'high' | 'critical' {
+// Priority matrix based on task type and growth stage
+const priorityMatrix: Record<TaskType, Record<string, 'low' | 'medium' | 'high' | 'critical'>> = {
+watering: {
+'germination': 'high',
+'seedling': 'high',
+'vegetative': 'high',
+'pre_flower': 'high',
+'flowering': 'high',
+'late_flowering': 'medium',
+'harvest': 'low',
+'curing': 'low',
+},
+feeding: {
+'germination': 'low',
+'seedling': 'medium',
+'vegetative': 'high',
+'pre_flower': 'high',
+'flowering': 'high',
+'late_flowering': 'low',
+'harvest': 'low',
+'curing': 'low',
+},
+inspection: {
+'germination': 'high',
+'seedling': 'high',
+'vegetative': 'medium',
+'pre_flower': 'high',
+'flowering': 'high',
+'late_flowering': 'medium',
+'harvest': 'low',
+'curing': 'low',
+},
+pruning: {
+'germination': 'low',
+'seedling': 'low',
+'vegetative': 'medium',
+'pre_flower': 'high',
+'flowering': 'low',
+'late_flowering': 'low',
+'harvest': 'low',
+'curing': 'low',
+},
+training: {
+'germination': 'low',
+'seedling': 'medium',
+'vegetative': 'high',
+'pre_flower': 'high',
+'flowering': 'low',
+'late_flowering': 'low',
+'harvest': 'low',
+'curing': 'low',
+},
+defoliation: {
+'germination': 'low',
+'seedling': 'low',
+'vegetative': 'medium',
+'pre_flower': 'high',
+'flowering': 'medium',
+'late_flowering': 'low',
+'harvest': 'low',
+'curing': 'low',
+},
+flushing: {
+'germination': 'low',
+'seedling': 'low',
+'vegetative': 'low',
+'pre_flower': 'low',
+'flowering': 'low',
+'late_flowering': 'high',
+'harvest': 'critical',
+'curing': 'low',
+},
+harvest: {
+'germination': 'low',
+'seedling': 'low',
+'vegetative': 'low',
+'pre_flower': 'low',
+'flowering': 'low',
+'late_flowering': 'high',
+'harvest': 'critical',
+'curing': 'low',
+},
+transplant: {
+'germination': 'high',
+'seedling': 'high',
+'vegetative': 'medium',
+'pre_flower': 'low',
+'flowering': 'low',
+'late_flowering': 'low',
+'harvest': 'low',
+'curing': 'low',
+},
+};
 
-    return priorityMatrix[taskType]?.[growthStage] || 'medium';
+return priorityMatrix[taskType]?.[growthStage] || 'medium';
   }
 
   private static getEstimatedDuration(taskType: TaskType): number {

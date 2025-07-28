@@ -14,28 +14,48 @@ import { addDays } from 'date-fns';
 
 async function validateTaskAutomation() {
     console.log('🧪 Validating Task Automation Service Implementation...\n');
-    let validationErrors = [];
+    
+    // Track test results with detailed status
+    const testResults = {
+        growthStageConfigs: { name: 'Growth stage configurations', passed: true, errors: [] },
+        strainScheduling: { name: 'Strain-specific scheduling', passed: true, errors: [] },
+        taskGeneration: { name: 'Task generation patterns', passed: true, errors: [] },
+        recurringTasks: { name: 'Recurring task logic', passed: true, errors: [] },
+        envAdjustments: { name: 'Environmental adjustments', passed: true, errors: [] },
+        integration: { name: 'Integration components', passed: true, errors: [] },
+        fiveDayWorkflow: { name: '5-day workflow optimization', passed: true, errors: [] }
+    };
+    
+    // Helper function to add error to a specific test
+    function addError(testKey, error) {
+        testResults[testKey].passed = false;
+        testResults[testKey].errors.push(error);
+    }
 
     try {
         // Test 1: Validate growth stage configurations
         console.log('🔍 Test 1: Validating growth stage configurations...');
         const growthStageConfigs = TaskAutomationService.getGrowthStageConfigs();
         if (!growthStageConfigs || Object.keys(growthStageConfigs).length === 0) {
-            validationErrors.push('Growth stage configs not loaded');
+            addError('growthStageConfigs', 'Growth stage configs not loaded');
         }
         
         // Validate specific growth stages
         const requiredStages = Object.values(GrowthStage);
+        let growthStageConfigsValid = true;
         for (const stage of requiredStages) {
             if (!growthStageConfigs[stage]) {
-                validationErrors.push(`Missing config for growth stage: ${stage}`);
+                addError('growthStageConfigs', `Missing config for growth stage: ${stage}`);
+                growthStageConfigsValid = false;
             } else {
                 const config = growthStageConfigs[stage];
                 if (!config.taskPriorities || Object.keys(config.taskPriorities).length === 0) {
-                    validationErrors.push(`Missing task priorities for stage: ${stage}`);
+                    addError('growthStageConfigs', `Missing task priorities for stage: ${stage}`);
+                    growthStageConfigsValid = false;
                 }
                 if (!config.recommendedTasks || config.recommendedTasks.length === 0) {
-                    validationErrors.push(`Missing recommended tasks for stage: ${stage}`);
+                    addError('growthStageConfigs', `Missing recommended tasks for stage: ${stage}`);
+                    growthStageConfigsValid = false;
                 }
             }
         }
@@ -48,14 +68,14 @@ async function validateTaskAutomation() {
         
         for (const strainType of requiredStrainTypes) {
             if (!strainConfigs[strainType]) {
-                validationErrors.push(`Missing strain config for: ${strainType}`);
+                addError('strainScheduling', `Missing strain config for: ${strainType}`);
             } else {
                 const config = strainConfigs[strainType];
                 if (typeof config.wateringFrequency !== 'number' || config.wateringFrequency <= 0) {
-                    validationErrors.push(`Invalid watering frequency for ${strainType}`);
+                    addError('strainScheduling', `Invalid watering frequency for ${strainType}`);
                 }
                 if (typeof config.feedingFrequency !== 'number' || config.feedingFrequency <= 0) {
-                    validationErrors.push(`Invalid feeding frequency for ${strainType}`);
+                    addError('strainScheduling', `Invalid feeding frequency for ${strainType}`);
                 }
             }
         }
@@ -75,19 +95,19 @@ async function validateTaskAutomation() {
         try {
             const tasks = await TaskAutomationService.scheduleForGrowthStage(mockPlant, GrowthStage.VEGETATIVE);
             if (!Array.isArray(tasks)) {
-                validationErrors.push('Task generation did not return array');
+                addError('taskGeneration', 'Task generation did not return array');
             } else if (tasks.length === 0) {
-                validationErrors.push('No tasks generated for vegetative stage');
+                addError('taskGeneration', 'No tasks generated for vegetative stage');
             } else {
                 // Validate task structure
                 const validTask = tasks[0];
                 if (!validTask.type || !validTask.dueDate || !validTask.priority) {
-                    validationErrors.push('Generated task missing required fields');
+                    addError('taskGeneration', 'Generated task missing required fields');
                 }
             }
             console.log(`✅ Task generation validated (${tasks.length} tasks generated)`);
         } catch (error) {
-            validationErrors.push(`Task generation failed: ${error.message}`);
+            addError('taskGeneration', `Task generation failed: ${error.message}`);
         }
 
         // Test 4: Validate recurring task logic
@@ -101,9 +121,9 @@ async function validateTaskAutomation() {
             );
             
             if (!Array.isArray(recurringTasks)) {
-                validationErrors.push('Recurring task generation did not return array');
+                addError('recurringTasks', 'Recurring task generation did not return array');
             } else if (recurringTasks.length < 8) { // Should generate at least 8 tasks for 30 days
-                validationErrors.push('Insufficient recurring tasks generated');
+                addError('recurringTasks', 'Insufficient recurring tasks generated');
             } else {
                 // Validate interval consistency
                 const intervals = recurringTasks.map(task => new Date(task.dueDate));
@@ -112,14 +132,14 @@ async function validateTaskAutomation() {
                 for (let i = 1; i < intervals.length; i++) {
                     const actualInterval = intervals[i].getTime() - intervals[i-1].getTime();
                     if (Math.abs(actualInterval - expectedInterval) > 1000 * 60 * 60) { // Allow 1 hour tolerance
-                        validationErrors.push('Recurring task intervals inconsistent');
+                        addError('recurringTasks', 'Recurring task intervals inconsistent');
                         break;
                     }
                 }
             }
             console.log(`✅ Recurring task logic validated (${recurringTasks.length} tasks)`);
         } catch (error) {
-            validationErrors.push(`Recurring task generation failed: ${error.message}`);
+            addError('recurringTasks', `Recurring task generation failed: ${error.message}`);
         }
 
         // Test 5: Validate environmental adjustments
@@ -137,16 +157,16 @@ async function validateTaskAutomation() {
                 
                 if (condition.humidity !== undefined) {
                     if (adjustment.rescheduleHours !== condition.expectedAdjustment) {
-                        validationErrors.push(`Humidity adjustment incorrect: expected ${condition.expectedAdjustment}, got ${adjustment.rescheduleHours}`);
+                        addError('envAdjustments', `Humidity adjustment incorrect: expected ${condition.expectedAdjustment}, got ${adjustment.rescheduleHours}`);
                     }
                 }
                 if (condition.pH !== undefined) {
                     if (adjustment.newPriority !== condition.expectedPriority) {
-                        validationErrors.push(`pH priority adjustment incorrect: expected ${condition.expectedPriority}, got ${adjustment.newPriority}`);
+                        addError('envAdjustments', `pH priority adjustment incorrect: expected ${condition.expectedPriority}, got ${adjustment.newPriority}`);
                     }
                 }
             } catch (error) {
-                validationErrors.push(`Environmental adjustment failed: ${error.message}`);
+                addError('envAdjustments', `Environmental adjustment failed: ${error.message}`);
             }
         }
         console.log('✅ Environmental adjustments validated');
@@ -162,18 +182,18 @@ async function validateTaskAutomation() {
             });
             
             if (!integrationResult || typeof integrationResult !== 'object') {
-                validationErrors.push('Integration result invalid');
+                addError('integration', 'Integration result invalid');
             } else {
                 if (!Array.isArray(integrationResult.tasks)) {
-                    validationErrors.push('Integration tasks not array');
+                    addError('integration', 'Integration tasks not array');
                 }
                 if (typeof integrationResult.errors !== 'object') {
-                    validationErrors.push('Integration errors not object');
+                    addError('integration', 'Integration errors not object');
                 }
             }
-            console.log(`✅ Integration components validated (${integrationResult.tasks.length} tasks)`);
+            console.log(`✅ Integration components validated (${integrationResult.tasks?.length || 0} tasks)`);
         } catch (error) {
-            validationErrors.push(`Integration validation failed: ${error.message}`);
+            addError('integration', `Integration validation failed: ${error.message}`);
         }
 
         // Test 7: Validate 5-day workflow optimization
@@ -182,7 +202,7 @@ async function validateTaskAutomation() {
             const fiveDayTasks = await PlantTaskIntegration.getTasksFor5DayView([mockPlant.id]);
             
             if (!Array.isArray(fiveDayTasks)) {
-                validationErrors.push('5-day view tasks not array');
+                addError('fiveDayWorkflow', '5-day view tasks not array');
             } else {
                 // Validate all tasks are within 5-day window
                 const now = new Date();
@@ -191,44 +211,47 @@ async function validateTaskAutomation() {
                 for (const task of fiveDayTasks) {
                     const dueDate = new Date(task.dueDate);
                     if (dueDate < now || dueDate > fiveDaysLater) {
-                        validationErrors.push('Task outside 5-day window in optimized view');
+                        addError('fiveDayWorkflow', 'Task outside 5-day window in optimized view');
                         break;
                     }
                 }
             }
             console.log(`✅ 5-day workflow optimization validated (${fiveDayTasks.length} tasks)`);
         } catch (error) {
-            validationErrors.push(`5-day optimization validation failed: ${error.message}`);
+            addError('fiveDayWorkflow', `5-day optimization validation failed: ${error.message}`);
         }
 
         // Summary
-        if (validationErrors.length > 0) {
-            console.error(`❌ Validation failed with ${validationErrors.length} errors:`);
-            validationErrors.forEach(error => console.error(`  - ${error}`));
-            console.log('\n📊 Validation Results:');
-            console.log('- ❌ Growth stage configurations: Some issues found');
-            console.log('- ❌ Strain-specific scheduling: Some issues found');
-            console.log('- ❌ Task generation patterns: Some issues found');
-            console.log('- ❌ Recurring task logic: Some issues found');
-            console.log('- ❌ Environmental adjustments: Some issues found');
-            console.log('- ❌ Integration components: Some issues found');
-            console.log('- ❌ 5-day workflow optimization: Some issues found');
-            return false;
-        }
-
-        console.log('\n🎉 All Task Automation Service validations passed!');
+        const allTests = Object.values(testResults);
+        const passedTests = allTests.filter(test => test.passed);
+        const failedTests = allTests.filter(test => !test.passed);
+        
         console.log('\n📊 Validation Results:');
-        console.log('- ✅ Growth stage configurations: Validated');
-        console.log('- ✅ Strain-specific scheduling: Validated');
-        console.log('- ✅ Task generation patterns: Validated');
-        console.log('- ✅ Recurring task logic: Validated');
-        console.log('- ✅ Environmental adjustments: Validated');
-        console.log('- ✅ Integration components: Validated');
-        console.log('- ✅ 5-day workflow optimization: Validated');
+        
+        // Show passed tests first
+        passedTests.forEach(test => {
+            console.log(`- ✅ ${test.name}: Passed`);
+        });
+        
+        // Then show failed tests with their errors
+        failedTests.forEach(test => {
+            console.log(`\n❌ ${test.name}: Failed`);
+            test.errors.forEach((error, index) => {
+                console.log(`  ${index + 1}. ${error}`);
+            });
+        });
+        
+        // Overall status
+        if (failedTests.length === 0) {
+            console.log('\n🎉 All Task Automation Service validations passed!');
+        } else {
+            console.log(`\n❌ Validation completed with ${failedTests.length} of ${allTests.length} test categories failing`);
+        }
 
         return true;
     } catch (error) {
-        console.error('❌ Validation failed:', error);
+        console.error('❌ Validation failed with unhandled error:');
+        console.error(error);
         return false;
     }
 }

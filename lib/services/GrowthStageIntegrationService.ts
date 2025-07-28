@@ -80,40 +80,45 @@ export class GrowthStageIntegrationService {
         .fetch();
 
       for (const plant of activePlants) {
-        const currentStage = plant.growthStage as GrowthStage;
-        
-        // Check if plant is ready for stage transition
-        const nextStage = await TaskAutomationService.detectGrowthStageTransition(plant);
-        
-        if (nextStage && nextStage !== currentStage) {
-          log.info(`[GrowthStageIntegration] Plant ${plant.name} ready for transition: ${currentStage} → ${nextStage}`);
+        try {
+          const currentStage = plant.growthStage as GrowthStage;
           
-          // Update plant growth stage within a database transaction
-          await plant.database.write(async () => {
-            await plant.updateGrowthStage(nextStage);
-          });
+          // Check if plant is ready for stage transition
+          const nextStage = await TaskAutomationService.detectGrowthStageTransition(plant);
           
-          // Update existing task priorities for the new stage
-          await TaskSchedulingAdapter.updateTasksForGrowthStageChange(plant, currentStage, nextStage);
-          
-          // Generate new stage-appropriate tasks
-          const newTasks = await TaskAutomationService.scheduleForGrowthStage(plant, nextStage);
-          
-          // Get celebration message
-          const celebrations = await GrowthStageTaskPrioritization.getCelebrationMilestones(plant.id);
-          const celebrationMessage = celebrations.length > 0 && celebrations[0]
-            ? celebrations[0] 
-            : `🌱 ${plant.name} has progressed to ${nextStage} stage!`;
-          
-          transitions.push({
-            plantId: plant.id,
-            plantName: plant.name,
-            oldStage: currentStage,
-            newStage: nextStage,
-            transitionDate: new Date(),
-            triggeredTasks: newTasks,
-            celebrationMessage,
-          });
+          if (nextStage && nextStage !== currentStage) {
+            log.info(`[GrowthStageIntegration] Plant ${plant.name} ready for transition: ${currentStage} → ${nextStage}`);
+            
+            // Update plant growth stage within a database transaction
+            await plant.database.write(async () => {
+              await plant.updateGrowthStage(nextStage);
+            });
+            
+            // Update existing task priorities for the new stage
+            await TaskSchedulingAdapter.updateTasksForGrowthStageChange(plant, currentStage, nextStage);
+            
+            // Generate new stage-appropriate tasks
+            const newTasks = await TaskAutomationService.scheduleForGrowthStage(plant, nextStage);
+            
+            // Get celebration message
+            const celebrations = await GrowthStageTaskPrioritization.getCelebrationMilestones(plant.id);
+            const celebrationMessage = celebrations.length > 0 && celebrations[0]
+              ? celebrations[0] 
+              : `🌱 ${plant.name} has progressed to ${nextStage} stage!`;
+            
+            transitions.push({
+              plantId: plant.id,
+              plantName: plant.name,
+              oldStage: currentStage,
+              newStage: nextStage,
+              transitionDate: new Date(),
+              triggeredTasks: newTasks,
+              celebrationMessage,
+            });
+          }
+        } catch (error) {
+          log.error(`[GrowthStageIntegration] Error processing plant ${plant.name} (${plant.id}):`, error);
+          // Continue processing other plants - don't stop the loop
         }
       }
 
@@ -457,15 +462,15 @@ export class GrowthStageIntegrationService {
 
     // Specific stage celebrations
     switch (milestoneProgress.currentStage) {
-      case GrowthStage.FLOWERING:
+      case 'flowering':
         if (milestoneProgress.progressPercentage >= 50) {
           celebrations.push(`🌸 ${plant.name} is halfway through flowering - buds are developing nicely!`);
         }
         break;
-      case GrowthStage.HARVEST:
+      case 'harvest':
         celebrations.push(`🏆 Harvest time for ${plant.name} - congratulations on your successful grow!`);
         break;
-      case GrowthStage.CURING:
+      case 'curing':
         if (milestoneProgress.progressPercentage >= 75) {
           celebrations.push(`✨ ${plant.name} is almost ready - curing is nearly complete!`);
         }
