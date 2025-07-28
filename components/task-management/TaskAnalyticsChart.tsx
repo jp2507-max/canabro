@@ -22,10 +22,11 @@ import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import { useTaskAnalytics, TaskAnalyticsData, OptimizationSuggestion } from '@/lib/hooks/useTaskAnalytics';
-import { TaskType } from '@/lib/types/taskTypes';
+import { TaskType, isTaskType } from '@/lib/types/taskTypes';
 import { triggerLightHaptic } from '@/lib/utils/haptics';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { colors } from '@/lib/constants/colors';
+import { filterValidTaskTypes } from '@/lib/utils/task-type-validation';
 
 // Time range options
 type TimeRange = '7d' | '30d' | '90d' | 'all';
@@ -70,8 +71,8 @@ const CHART_TYPES: ChartTypeConfig[] = [
   },
 ];
 
-// Task type colors
-const TASK_TYPE_COLORS = {
+// Task type colors - keys must exactly match TaskType union
+const TASK_TYPE_COLORS: Record<TaskType, { light: string; dark: string }> = {
   watering: { light: colors.semantic.info[500], dark: colors.semantic.info[400] },
   feeding: { light: colors.semantic.success[500], dark: colors.semantic.success[400] },
   inspection: { light: colors.semantic.warning[500], dark: colors.semantic.warning[400] },
@@ -321,14 +322,14 @@ export const TaskAnalyticsChart: React.FC<TaskAnalyticsChartProps> = React.memo(
             showsHorizontalScrollIndicator={false}
             className="flex-row space-x-2"
           >
-            {Object.keys(TASK_TYPE_COLORS).map((taskType) => {
-              const isSelected = selectedTaskTypes.includes(taskType as TaskType);
-              const taskTypeColor = getTaskTypeColor(taskType as TaskType, isDark);
+            {filterValidTaskTypes(Object.keys(TASK_TYPE_COLORS)).map((taskType) => {
+              const isSelected = selectedTaskTypes.includes(taskType);
+              const taskTypeColor = getTaskTypeColor(taskType, isDark);
               
               return (
                 <TouchableOpacity
                   key={taskType}
-                  onPress={() => handleTaskTypeToggle(taskType as TaskType)}
+                  onPress={() => handleTaskTypeToggle(taskType)}
                   accessible={true}
                   accessibilityLabel={`Toggle ${taskType} filter`}
                   accessibilityRole="button"
@@ -647,10 +648,10 @@ function processPatternsChartData(data: TaskAnalyticsData, isDark: boolean) {
 }
 
 /**
- * Get task type color
+ * Get task type color with safe fallback
  */
 function getTaskTypeColor(taskType: TaskType, isDark: boolean): string {
-  const colors = TASK_TYPE_COLORS[taskType as keyof typeof TASK_TYPE_COLORS];
+  const colors = TASK_TYPE_COLORS[taskType];
   return colors ? (isDark ? colors.dark : colors.light) : (isDark ? '#60A5FA' : '#3B82F6');
 }
 

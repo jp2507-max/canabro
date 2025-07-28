@@ -7,3 +7,6 @@ export { HarvestIntegrationManager, HarvestIntegrationUtils } from './HarvestInt
 export { default as WeeklyTaskView } from './WeeklyTaskViewWithBulkActions';
 export { default as TaskCard } from './TaskCardWithSelection';
 export { default as DaySelector } from '../calendar/DaySelector';
+
+// Re-export EnvironmentalDashboardErrorBoundary for named import support
+export { EnvironmentalDashboardErrorBoundary } from './EnvironmentalDashboardErrorBoundary';
