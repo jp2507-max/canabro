@@ -1,15 +1,9 @@
-/**
- * Task Management Components
- * 
- * Exports for task completion and management components
- * adapted from the plant management system
- */
+// Harvest Planning and Timeline Integration Components
+export { HarvestTimelineView } from './HarvestTimelineView';
+export { HarvestPlanningDashboard } from './HarvestPlanningDashboard';
+export { HarvestIntegrationManager, HarvestIntegrationUtils } from './HarvestIntegrationManager';
 
-export { TaskCompletionForm } from './TaskCompletionForm';
-export { default as BulkTaskActions } from './BulkTaskActions';
-export { default as TaskCardWithSelection } from './TaskCardWithSelection';
-export { default as WeeklyTaskViewWithBulkActions } from './WeeklyTaskViewWithBulkActions';
-export { TaskAnalyticsChart } from './TaskAnalyticsChart';
-
-// Future exports for other task management components
-// export { TaskHistoryView } from './TaskHistoryView';
+// Re-export existing task management components with default exports
+export { default as WeeklyTaskView } from './WeeklyTaskViewWithBulkActions';
+export { default as TaskCard } from './TaskCardWithSelection';
+export { default as DaySelector } from '../calendar/DaySelector';

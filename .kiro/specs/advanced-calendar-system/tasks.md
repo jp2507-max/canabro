@@ -202,7 +202,12 @@
   - _Reuse Benefit: 80% of analytics components ready_
 
 - [ ] 6. Integrate calendar with plant data
-- [ ] 6.1 Connect calendar with plant strain characteristics
+- [x] 6.1 Connect calendar with plant strain characteristics
+
+
+
+
+
   - Implement strain-specific task scheduling
   - Create strain-based template recommendations
   - Add flowering time and harvest date predictions
@@ -210,7 +215,12 @@
   - Build strain comparison for scheduling optimization
   - _Requirements: R6-AC1, R6-AC5_
 
-- [ ] 6.2 Implement environmental data integration
+- [x] 6.2 Implement environmental data integration
+
+
+
+
+
   - Connect calendar with plant metrics and conditions
   - Create dynamic schedule adjustments based on environment
   - Implement weather-based task modifications
@@ -218,7 +228,11 @@
   - Build environmental trend analysis for planning
   - _Requirements: R6-AC3, R6-AC4_
 
-- [ ] 6.3 Create harvest planning and timeline integration
+- [x] 6.3 Create harvest planning and timeline integration
+
+
+
+
   - Build harvest date prediction and planning tools
   - Implement harvest preparation task automation
   - Create post-harvest task scheduling

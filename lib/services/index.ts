@@ -1,15 +1,30 @@
-// Export all service modules for easier imports
-export * from './profile-service';
-export * from './plant-service';
-export * from './community-service';
-export * from './diary-service';
-export * from './sync/strain-sync.service';
-export * from './strain-local.service';
+// Harvest Planning and Timeline Integration Services
+export { HarvestPredictionService } from './HarvestPredictionService';
+export { HarvestPreparationAutomator } from './HarvestPreparationAutomator';
+export { PostHarvestScheduler } from './PostHarvestScheduler';
+export { HarvestDataIntegrator } from './HarvestDataIntegrator';
 
-// Task management and reminder services
-export * from './TaskReminderEngine';
-export * from './TaskReminderIntegration';
-export * from './TaskAutomationService';
-export * from './TaskSchedulingAdapter';
-export * from './careReminderService';
-export * from './NotificationService';
+// Strain Services
+export { strainLocalService } from './strain-local.service';
+
+// Re-export types for external use
+export type { 
+  HarvestPrediction, 
+  HarvestWindow 
+} from './HarvestPredictionService';
+
+export type { 
+  HarvestPreparationTask, 
+  HarvestPreparationPlan 
+} from './HarvestPreparationAutomator';
+
+export type { 
+  PostHarvestTask, 
+  PostHarvestPlan 
+} from './PostHarvestScheduler';
+
+export type { 
+  HarvestAnalytics, 
+  HarvestComparison, 
+  FuturePlanningData 
+} from './HarvestDataIntegrator';

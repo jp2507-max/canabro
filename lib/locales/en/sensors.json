@@ -1,0 +1,33 @@
+{
+  "types": {
+    "environmental": "Environmental Sensor",
+    "soil": "Soil Sensor", 
+    "light": "Light Sensor",
+    "multi": "Multi-Sensor"
+  },
+  "disconnected": "Disconnected",
+  "inactive": "Inactive",
+  "active": "Active",
+  "connected": "Connected",
+  "latestReadings": "Latest Readings",
+  "temperature": "Temperature",
+  "humidity": "Humidity",
+  "soilMoisture": "Soil Moisture",
+  "lightIntensity": "Light Intensity",
+  "ph": "pH",
+  "ec": "EC",
+  "co2": "CO₂",
+  "lastUpdated": "Last updated",
+  "deactivate": "Deactivate",
+  "activate": "Activate",
+  "readingAge": "Reading age",
+  "newReading": "New Sensor Reading",
+  "sensorNetwork": "Sensor Network",
+  "lastSync": "Last sync",
+  "recentReadings": "Recent Readings",
+  "connectedSensors": "Connected Sensors",
+  "noPlants": "No Plants for Sensor Monitoring",
+  "noPlantsDescription": "Add plants to your collection to start monitoring with sensors.",
+  "automaticAdjustments": "Automatic Schedule Adjustments",
+  "automaticAdjustmentsMessage": "{{count}} task schedules have been automatically adjusted based on sensor data."
+}

@@ -72,15 +72,15 @@ const CHART_TYPES: ChartTypeConfig[] = [
 
 // Task type colors
 const TASK_TYPE_COLORS = {
-  watering: { light: '#3B82F6', dark: '#60A5FA' },
-  feeding: { light: '#10B981', dark: '#34D399' },
-  inspection: { light: '#F59E0B', dark: '#FBBF24' },
-  pruning: { light: '#EF4444', dark: '#F87171' },
-  harvest: { light: '#8B5CF6', dark: '#A78BFA' },
-  transplant: { light: '#F97316', dark: '#FB923C' },
-  training: { light: '#06B6D4', dark: '#22D3EE' },
-  defoliation: { light: '#84CC16', dark: '#A3E635' },
-  flushing: { light: '#EC4899', dark: '#F472B6' },
+  watering: { light: colors.semantic.info[500], dark: colors.semantic.info[400] },
+  feeding: { light: colors.semantic.success[500], dark: colors.semantic.success[400] },
+  inspection: { light: colors.semantic.warning[500], dark: colors.semantic.warning[400] },
+  pruning: { light: colors.semantic.danger[500], dark: colors.semantic.danger[400] },
+  harvest: { light: colors.primary[500], dark: colors.primary[400] },
+  transplant: { light: colors.semantic.warning[400], dark: colors.semantic.warning[300] },
+  training: { light: colors.semantic.info[400], dark: colors.semantic.info[300] },
+  defoliation: { light: colors.semantic.success[400], dark: colors.semantic.success[300] },
+  flushing: { light: colors.semantic.danger[400], dark: colors.semantic.danger[300] },
 } as const;
 
 interface TaskAnalyticsChartProps {
