@@ -417,6 +417,12 @@ export const SensorDataHandler: React.FC<SensorDataHandlerProps> = ({
       setRecentReadings(prev => [...readings, ...prev].slice(0, 10)); // Keep last 10 readings
     } catch (error) {
       log.error('[SensorDataHandler] Error processing sensor readings:', error);
+      // Notify user of the error
+      Alert.alert(
+        t('sensors.processingErrorTitle', 'Sensor Processing Error'),
+        t('sensors.processingErrorMessage', 'Failed to process sensor data. Please try again or check your connection.'),
+        [{ text: t('common.ok', 'OK') }]
+      );
     }
   };
 

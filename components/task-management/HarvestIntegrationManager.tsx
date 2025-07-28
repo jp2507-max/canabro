@@ -138,53 +138,37 @@ export const HarvestIntegrationManager: React.FC<HarvestIntegrationManagerProps>
         );
     };
 
+    let content: React.ReactNode;
     if (loading) {
-        return (
-            <>
-                <ThemedView className="flex-1 justify-center items-center p-4">
-                    <ThemedText className="text-gray-500 dark:text-gray-400">
-                        Processing harvest data...
-                    </ThemedText>
-                </ThemedView>
-                
-                <HarvestWeightInputModal
-                    visible={showHarvestModal}
-                    plantName={selectedPlant?.name || ''}
-                    onCancel={handleHarvestCancel}
-                    onConfirm={handleHarvestConfirm}
-                />
-            </>
+        content = (
+            <ThemedView className="flex-1 justify-center items-center p-4">
+                <ThemedText className="text-gray-500 dark:text-gray-400">
+                    Processing harvest data...
+                </ThemedText>
+            </ThemedView>
         );
-    }
-
-    if (mode === 'timeline') {
-        return (
-            <>
-                <HarvestTimelineView
-                    plants={plants}
-                    onPlantPress={onNavigateToPlant}
-                    onHarvestPress={handlePlantHarvest}
-                    showAnalytics={true}
-                />
-                
-                <HarvestWeightInputModal
-                    visible={showHarvestModal}
-                    plantName={selectedPlant?.name || ''}
-                    onCancel={handleHarvestCancel}
-                    onConfirm={handleHarvestConfirm}
-                />
-            </>
+    } else if (mode === 'timeline') {
+        content = (
+            <HarvestTimelineView
+                plants={plants}
+                onPlantPress={onNavigateToPlant}
+                onHarvestPress={handlePlantHarvest}
+                showAnalytics={true}
+            />
         );
-    }
-
-    return (
-        <>
+    } else {
+        content = (
             <HarvestPlanningDashboard
                 plants={plants}
                 onPlantSelect={onNavigateToPlant}
                 onTasksGenerated={handleTasksGenerated}
             />
-            
+        );
+    }
+
+    return (
+        <>
+            {content}
             <HarvestWeightInputModal
                 visible={showHarvestModal}
                 plantName={selectedPlant?.name || ''}

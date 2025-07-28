@@ -285,6 +285,8 @@ const TimelineItemCard: React.FC<TimelineItemCardProps> = ({
       <Pressable
         {...handlers}
         className={`rounded-xl border-2 p-4 mb-3 ${getStatusColor()}`}
+        accessibilityRole="button"
+        accessibilityLabel={`Timeline item card for ${item.plant.name}, ${getStatusText()}`}
       >
         <View className="flex-row items-center">
           {/* Plant Image */}
@@ -337,6 +339,8 @@ const TimelineItemCard: React.FC<TimelineItemCardProps> = ({
                 onHarvestPress();
               }}
               className="bg-primary-500 dark:bg-primary-400 px-4 py-2 rounded-lg"
+              accessibilityRole="button"
+              accessibilityLabel="Harvest button"
             >
               <ThemedText className="text-white dark:text-gray-900 font-medium text-sm">
                 Harvest

@@ -1,5 +1,5 @@
 ---
-applyTo: 'Animation, Theming'
+applyTo: '**'
 ---
 # 🎬 React Native Reanimated Production Cheatsheet (v3.19+)
 _Last updated July 2025 • ≈250 lines_

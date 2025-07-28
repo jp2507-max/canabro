@@ -11,13 +11,15 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { FlashListWrapper } from '@/components/ui/FlashListWrapper';
 import { log } from '@/lib/utils/logger';
+import { formatEnvironmentalValue } from '@/lib/utils/environmental-formatting';
+import { EnvironmentalDashboardErrorBoundary } from '@/components/task-management/EnvironmentalDashboardErrorBoundary';
 
 import { 
   EnvironmentalDataIntegrationService,
@@ -73,20 +75,7 @@ const TrendCard: React.FC<TrendCardProps> = React.memo(({ trend }) => {
   }, [trend.trend]);
 
   const formatMetricValue = (metric: string, value: number): string => {
-    switch (metric) {
-      case 'temperature':
-        return `${value.toFixed(1)}°C`;
-      case 'humidity':
-        return `${value.toFixed(1)}%`;
-      case 'ph':
-        return value.toFixed(2);
-      case 'vpd':
-        return `${value.toFixed(2)} kPa`;
-      case 'ec':
-        return `${value.toFixed(0)} ppm`;
-      default:
-        return value.toFixed(1);
-    }
+    return formatEnvironmentalValue(metric, value);
   };
 
   const currentValue = trend.values[trend.values.length - 1]?.value || 0;
@@ -186,18 +175,7 @@ const AlertCard: React.FC<AlertCardProps> = React.memo(({ alert }) => {
   }, [alert.alertType]);
 
   const formatValue = (metric: string, value: number): string => {
-    switch (metric) {
-      case 'temperature':
-        return `${value.toFixed(1)}°C`;
-      case 'humidity':
-        return `${value.toFixed(1)}%`;
-      case 'pH':
-        return value.toFixed(2);
-      case 'VPD':
-        return `${value.toFixed(2)} kPa`;
-      default:
-        return value.toFixed(1);
-    }
+    return formatEnvironmentalValue(metric, value);
   };
 
   return (
@@ -337,6 +315,7 @@ export const EnvironmentalDashboard: React.FC<EnvironmentalDashboardProps> = ({
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadEnvironmentalData = async (isRefresh = false) => {
     try {
@@ -355,54 +334,50 @@ export const EnvironmentalDashboard: React.FC<EnvironmentalDashboardProps> = ({
         return;
       }
 
-      // Only access firstPlantId if plantIds is non-empty
-      const firstPlantId = plantIds.length > 0 ? plantIds[0] : undefined;
+      // Since we've validated plantIds is a non-empty array, we can safely access the first plant ID
+      const firstPlantId = plantIds[0] as string;
 
-      // Prepare promises, only call services if plantIds is non-empty and firstPlantId is defined
-      const trendsPromise = firstPlantId
-        ? EnvironmentalDataIntegrationService.analyzeEnvironmentalTrends(firstPlantId, 7)
-        : Promise.resolve([]);
-
-      const alertsPromise = plantIds.length > 0
-        ? Promise.all(plantIds.map(plantId =>
-            EnvironmentalDataIntegrationService.generateEnvironmentalAlerts(plantId)
-          )).then(results => results.flat())
-        : Promise.resolve([]);
-
-      const adjustmentsPromise = plantIds.length > 0
-        ? EnvironmentalDataIntegrationService.integrateEnvironmentalDataWithCalendar(
-            plantIds,
-            {
-              start: selectedDate,
-              end: new Date(selectedDate.getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days
-            }
-          )
-        : Promise.resolve([]);
+      // Prepare all promises - no need for redundant length checks since we know plantIds is non-empty
+      const trendsPromise = EnvironmentalDataIntegrationService.analyzeEnvironmentalTrends(firstPlantId, 7);
+      const alertsPromise = Promise.all(plantIds.map(plantId =>
+        EnvironmentalDataIntegrationService.generateEnvironmentalAlerts(plantId)
+      )).then(results => results.flat());
+      const adjustmentsPromise = EnvironmentalDataIntegrationService.integrateEnvironmentalDataWithCalendar(
+        plantIds,
+        {
+          start: selectedDate,
+          end: new Date(selectedDate.getTime() + (5 * 24 * 60 * 60 * 1000)) // 5 days
+        }
+      );
 
       const [trendsData, alertsData, adjustmentsData] = await Promise.all([
         trendsPromise,
         alertsPromise,
         adjustmentsPromise,
       ]);
-
-      // Get planning recommendations for the first plant if available
-      const planningRecommendations = firstPlantId
-        ? await EnvironmentalDataIntegrationService.getEnvironmentalRecommendationsForPlanning(firstPlantId, 7)
-        : [];
+      
+      // Get planning recommendations for the first plant
+      const planningRecommendations = await EnvironmentalDataIntegrationService.getEnvironmentalRecommendationsForPlanning(firstPlantId, 7);
 
       setTrends(trendsData);
       setAlerts(alertsData);
       setAdjustments(adjustmentsData);
       setRecommendations(planningRecommendations);
-
+      setError(null);
+      
       // Notify parent component about schedule adjustments
       if (adjustmentsData.length > 0 && onScheduleAdjustment) {
         onScheduleAdjustment(adjustmentsData);
       }
-
+      
       log.info(`[EnvironmentalDashboard] Loaded environmental data: ${trendsData.length} trends, ${alertsData.length} alerts, ${adjustmentsData.length} adjustments`);
-    } catch (error) {
-      log.error('[EnvironmentalDashboard] Error loading environmental data:', error);
+    } catch (err) {
+      log.error('[EnvironmentalDashboard] Failed to load data:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      Alert.alert(
+        t('environmental.errorTitle'),
+        t('environmental.dataLoadErrorMessage')
+      );
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -584,8 +559,23 @@ export const EnvironmentalDashboard: React.FC<EnvironmentalDashboardProps> = ({
       }
       contentContainerStyle={{ padding: 16 }}
       showsVerticalScrollIndicator={false}
+      accessibilityLabel="Environmental data list"
+      accessibilityRole="list"
     />
   );
 };
 
-export default EnvironmentalDashboard;
+const EnvironmentalDashboardWithErrorBoundary: React.FC<EnvironmentalDashboardProps> = (props) => {
+  const handleRetry = () => {
+    // Reload data when retry is clicked
+    // This would be handled by the parent component in a real implementation
+  };
+  
+  return (
+    <EnvironmentalDashboardErrorBoundary onRetry={handleRetry}>
+      <EnvironmentalDashboard {...props} />
+    </EnvironmentalDashboardErrorBoundary>
+  );
+};
+
+export default EnvironmentalDashboardWithErrorBoundary;

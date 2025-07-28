@@ -53,28 +53,44 @@ export const HarvestWeightInputModal: React.FC<HarvestWeightInputModalProps> = (
 
   // Show/hide modal animations
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
     if (visible) {
       // Reset state when modal opens
       setWeightInput('');
       setError('');
-      
+
       // Entrance animation
       backdropOpacity.value = withTiming(1, { duration: 200 });
       modalTranslateY.value = withSpring(0, SPRING_CONFIG);
       contentScale.value = withSpring(1, SPRING_CONFIG);
 
       // Focus input after animation
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 300);
-
-      return () => clearTimeout(timer);
     } else {
       // Exit animation
       backdropOpacity.value = withTiming(0, { duration: 200 });
       modalTranslateY.value = withTiming(screenHeight, { duration: 200 });
       contentScale.value = withTiming(0.9, { duration: 200 });
     }
+
+    // Cleanup: clear timer, cancel animations, and reset shared values
+    return () => {
+      if (timer) clearTimeout(timer);
+      // Cancel ongoing animations and reset shared values on unmount
+      // Use runOnUI to ensure this runs on the UI thread
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { runOnUI, cancelAnimation } = require('react-native-reanimated');
+      runOnUI(() => {
+        cancelAnimation(backdropOpacity);
+        cancelAnimation(modalTranslateY);
+        cancelAnimation(contentScale);
+        backdropOpacity.value = 0;
+        modalTranslateY.value = screenHeight;
+        contentScale.value = 0.9;
+      })();
+    };
   }, [visible, screenHeight]);
 
   // Input validation

@@ -1337,6 +1337,15 @@
     },
     "chartError": "Chart rendering error",
     "chartErrorDescription": "Please try refreshing or contact support"
+  },
+  "environmental": {
+    "errorTitle": "Data Load Error",
+    "dataLoadErrorMessage": "Failed to load environmental data. Please check your connection and try again.",
+    "errorBoundary": {
+      "title": "Dashboard Error",
+      "description": "Something went wrong with the environmental dashboard.",
+      "retry": "Retry"
+    }
   }
 }
 

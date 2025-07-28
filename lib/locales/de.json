@@ -1114,6 +1114,15 @@
     },
     "chartError": "Diagramm-Rendering-Fehler",
     "chartErrorDescription": "Bitte versuchen Sie es erneut oder wenden Sie sich an den Support"
+  },
+  "environmental": {
+    "errorTitle": "Datenlade-Fehler",
+    "dataLoadErrorMessage": "Umweltdaten konnten nicht geladen werden. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "errorBoundary": {
+      "title": "Dashboard-Fehler",
+      "description": "Etwas ist mit dem Umwelt-Dashboard schiefgelaufen.",
+      "retry": "Wiederholen"
+    }
   }
 }
 
