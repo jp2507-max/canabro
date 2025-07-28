@@ -366,8 +366,7 @@ export class TaskReminderIntegration {
         .get<PlantTask>('plant_tasks')
         .query(
           Q.where('plant_id', plantId),
-          Q.where('status', 'pending'),
-          // ...existing code...
+          Q.where('status', 'pending')
         )
         .fetch();
 

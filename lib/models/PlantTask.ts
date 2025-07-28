@@ -59,6 +59,7 @@ export class PlantTask extends Model {
   @text('parent_task_id') parentTaskId?: string; // For recurring tasks
   @field('sequence_number') sequenceNumber?: number;
   @json('environmental_conditions', (json) => json) environmentalConditions?: EnvironmentalConditions;
+  @text('escalation_start_time') escalationStartTime?: string; // ISO string for escalation tracking
   
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
@@ -194,6 +195,12 @@ export class PlantTask extends Model {
         ...task.environmentalConditions,
         ...conditions,
       };
+    });
+  }
+
+  @writer async setEscalationStartTime(timestamp?: Date) {
+    await this.update((task) => {
+      task.escalationStartTime = timestamp ? timestamp.toISOString() : new Date().toISOString();
     });
   }
 

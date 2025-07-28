@@ -17,34 +17,6 @@ import { triggerLightHapticSync, triggerMediumHapticSync } from '@/lib/utils/hap
 import { PlantTask } from '@/lib/models/PlantTask';
 import type { TaskType } from '@/lib/types/taskTypes';
 
-// Helper to map priority to NativeWind class
-function getPriorityColorClass(priority: keyof typeof PRIORITY_COLORS): string {
-  switch (priority) {
-    case 'low':
-      return 'bg-priority-low';
-    case 'medium':
-      return 'bg-priority-medium';
-    case 'high':
-      return 'bg-priority-high';
-    case 'critical':
-      return 'bg-priority-critical';
-    default:
-      return 'bg-priority-low';
-  }
-}
-
-// Helper to map task type to NativeWind class, with optional opacity
-function getTaskColorClass(type: keyof typeof TASK_COLORS, opacity20 = false): string {
-  const base = `bg-task-${type}`;
-  return opacity20 ? `${base}/20` : base;
-}
-
-// Helper to map task type to text color class
-function getTaskTextColorClass(type: keyof typeof TASK_COLORS): string {
-  return `text-task-${type}`;
-}
-
-
 // Direct color values for Reanimated animations
 const TASK_COLORS_DIRECT = {
   watering: '#3b82f6',    // blue-500
@@ -78,6 +50,33 @@ const PRIORITY_COLORS = {
   high: 'var(--color-priority-high)',
   critical: 'var(--color-priority-critical)',
 } as const;
+
+// Helper to map priority to NativeWind class
+function getPriorityColorClass(priority: keyof typeof PRIORITY_COLORS): string {
+  switch (priority) {
+    case 'low':
+      return 'bg-priority-low';
+    case 'medium':
+      return 'bg-priority-medium';
+    case 'high':
+      return 'bg-priority-high';
+    case 'critical':
+      return 'bg-priority-critical';
+    default:
+      return 'bg-priority-low';
+  }
+}
+
+// Helper to map task type to NativeWind class, with optional opacity
+function getTaskColorClass(type: keyof typeof TASK_COLORS, opacity20 = false): string {
+  const base = `bg-task-${type}`;
+  return opacity20 ? `${base}/20` : base;
+}
+
+// Helper to map task type to text color class
+function getTaskTextColorClass(type: keyof typeof TASK_COLORS): string {
+  return `text-task-${type}`;
+}
 
 
 // Task type icons

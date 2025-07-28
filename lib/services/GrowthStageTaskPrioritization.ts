@@ -1,17 +1,7 @@
 /**
  * Growth Stage Task Prioritization Service
  * 
- * Adapts existing growth    [GROWTH_STAGES.SEEDLING]: {
-      watering: 0.9,
-      feeding: 0.6,
-      inspection: 0.9,
-      pruning: 0.2,
-      training: 0.2,
-      defoliation: 0.1,
-      flushing: 0.1,
-      harvest: 0.1,
-      transplant: 0.6,
-    },ction algorithms from plant management
+ * Adapts existing growth stage detection algorithms from plant management
  * for task priority calculation based on growth stage and plant health monitoring.
  * 
  * Reuse Benefits:

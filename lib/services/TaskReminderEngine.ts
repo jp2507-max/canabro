@@ -518,7 +518,7 @@ export class TaskReminderEngine {
 
     const now = new Date();
     // Use escalationStartTime if available, otherwise dueDate
-    const escalationStartTime = (task as any).escalationStartTime ? new Date((task as any).escalationStartTime) : new Date(task.dueDate);
+    const escalationStartTime = TaskReminderEngine.getEscalationStartTime(task);
     // Calculate hours overdue based on relevant timestamp
     const hoursOverdue = Math.floor((now.getTime() - escalationStartTime.getTime()) / (1000 * 60 * 60));
 
@@ -559,7 +559,7 @@ export class TaskReminderEngine {
     private async updateEscalationLevel(task: PlantTask, escalation: OverdueTaskEscalation): Promise<void> {
     const now = new Date();
     // Use escalationStartTime if available, otherwise dueDate
-    const escalationStartTime = (task as any).escalationStartTime ? new Date((task as any).escalationStartTime) : new Date(task.dueDate);
+    const escalationStartTime = TaskReminderEngine.getEscalationStartTime(task);
     // Calculate hours overdue based on relevant timestamp
     escalation.hasBeenEscalated = true;
     escalation.hoursOverdue = Math.floor((now.getTime() - escalationStartTime.getTime()) / (1000 * 60 * 60));
@@ -619,6 +619,24 @@ export class TaskReminderEngine {
     /**
      * Public API methods for integration with task management system
      */
+    
+    /**
+     * Initialize escalation tracking for a task
+     * Sets the escalation start time if not already set
+     */
+    static async initializeEscalationTracking(task: PlantTask): Promise<void> {
+        if (!task.escalationStartTime) {
+            await task.setEscalationStartTime();
+        }
+    }
+
+    /**
+     * Get the effective escalation start time for a task
+     * Returns escalationStartTime if set, otherwise dueDate
+     */
+    static getEscalationStartTime(task: PlantTask): Date {
+        return task.escalationStartTime ? new Date(task.escalationStartTime) : new Date(task.dueDate);
+    }
 
     /**
      * Schedule notifications for a single task
