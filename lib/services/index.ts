@@ -1,30 +1,88 @@
-// Harvest Planning and Timeline Integration Services
-export { HarvestPredictionService } from './HarvestPredictionService';
-export { HarvestPreparationAutomator } from './HarvestPreparationAutomator';
-export { PostHarvestScheduler } from './PostHarvestScheduler';
-export { HarvestDataIntegrator } from './HarvestDataIntegrator';
+/**
+ * Background Processing Services - Index
+ * 
+ * Exports all background processing services and utilities for easy import
+ * throughout the application. Provides a centralized access point for all
+ * background processing functionality.
+ */
 
-// Strain Services
-export { strainLocalService } from './strain-local.service';
-
-// Re-export types for external use
+// Core background processing services
+export { backgroundTaskProcessor, BackgroundTaskProcessor } from './BackgroundTaskProcessor';
 export type { 
-  HarvestPrediction, 
-  HarvestWindow 
-} from './HarvestPredictionService';
+    BackgroundTaskConfig, 
+    TaskProcessingResult, 
+    TaskUpdateBatch 
+} from './BackgroundTaskProcessor';
 
+export { batchNotificationProcessor, BatchNotificationProcessor } from './BatchNotificationProcessor';
 export type { 
-  HarvestPreparationTask, 
-  HarvestPreparationPlan 
-} from './HarvestPreparationAutomator';
+    NotificationBatchConfig, 
+    BatchNotificationRequest, 
+    NotificationBatch, 
+    BatchProcessingResult 
+} from './BatchNotificationProcessor';
 
+export { calendarDataSyncService, CalendarDataSyncService } from './CalendarDataSyncService';
 export type { 
-  PostHarvestTask, 
-  PostHarvestPlan 
-} from './PostHarvestScheduler';
+    SyncConfig, 
+    SyncWindow, 
+    SyncResult, 
+    ChangeTracker 
+} from './CalendarDataSyncService';
 
+export { dataCleanupService, DataCleanupService } from './DataCleanupService';
 export type { 
-  HarvestAnalytics, 
-  HarvestComparison, 
-  FuturePlanningData 
-} from './HarvestDataIntegrator';
+    CleanupConfig, 
+    CleanupResult, 
+    CleanupStats 
+} from './DataCleanupService';
+
+export { backgroundProcessingPerformanceTest, BackgroundProcessingPerformanceTest } from './BackgroundProcessingPerformanceTest';
+export type { 
+    PerformanceTestConfig, 
+    PerformanceTestResult, 
+    PerformanceReport 
+} from './BackgroundProcessingPerformanceTest';
+
+// Unified manager
+export { backgroundProcessingManager, BackgroundProcessingManager } from './BackgroundProcessingManager';
+export type { 
+    BackgroundProcessingConfig, 
+    BackgroundProcessingStatus, 
+    BackgroundProcessingMetrics 
+} from './BackgroundProcessingManager';
+
+// 5-Day workflow optimized services
+export { taskReminderEngine5Day, TaskReminderEngine5Day } from './TaskReminderEngine5Day';
+export type { 
+    FiveDayWorkflowConfig, 
+    DailyTaskBatch 
+} from './TaskReminderEngine5Day';
+
+export { taskReminderIntegration5Day, TaskReminderIntegration5Day } from './TaskReminderIntegration5Day';
+export type { 
+    FiveDayTaskScheduleOptions 
+} from './TaskReminderIntegration5Day';
+
+// Base services (reused from plant management)
+export { taskReminderEngine, TaskReminderEngine } from './TaskReminderEngine';
+export type { 
+    TaskNotificationConfig, 
+    NotificationBatch as BaseNotificationBatch, 
+    UserActivityPattern 
+} from './TaskReminderEngine';
+
+// Notification utilities
+export { 
+    scheduleNotification,
+    cancelTaskReminder,
+    rescheduleTaskReminder,
+    NotificationType
+} from './NotificationService';
+
+// Utility functions for background processing
+export { 
+    validateNotificationSchedule5Day,
+    optimizeForDailyPlantCare,
+    getPlantCareLeadTime
+} from '../utils/notification-scheduling';

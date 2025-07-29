@@ -29,245 +29,251 @@ export interface Use5DayTaskReminderOptions {
 }
 
 export interface Use5DayTaskReminderReturn {
-  // Focus window management
+  // 5-day focus data
   focusStartDate: Date;
   focusEndDate: Date;
-  updateFocus: (startDate: Date) => void;
+  dailyTaskBatches: DailyTaskBatch[];
   
-  // Notification scheduling
-  scheduleTasksFor5Day: (tasks: PlantTask[]) => Promise<void>;
-  processOverdueTasks: () => Promise<void>;
-  
-  // Performance optimization
-  cachedBatches: DailyTaskBatch[] | undefined;
-  refreshCache: () => void;
-  
-  // Statistics and monitoring
-  workflowStats: {
-    focusWindow: { start: Date; end: Date };
-    cachedBatches: number;
-    batchingStrategy: string;
-  } | null;
+  // Task management
+  tasks: PlantTask[];
+  overdueTasks: PlantTask[];
+  todayTasks: PlantTask[];
+  upcomingTasks: PlantTask[];
   
   // Loading states
-  isScheduling: boolean;
-  isProcessingOverdue: boolean;
-  error: string | null;
+  loading: boolean;
+  refreshing: boolean;
+  
+  // Actions
+  refreshTasks: () => Promise<void>;
+  markTaskComplete: (taskId: string) => Promise<void>;
+  snoozeTask: (taskId: string, minutes: number) => Promise<void>;
+  rescheduleTask: (taskId: string, newDate: Date) => Promise<void>;
+  
+  // Notification management
+  scheduleNotifications: () => Promise<void>;
+  clearNotifications: () => Promise<void>;
+  
+  // Focus management
+  setFocusDate: (date: Date) => void;
+  navigateToToday: () => void;
+  navigateToPrevious: () => void;
+  navigateToNext: () => void;
 }
 
 /**
- * Hook for managing 5-day workflow task reminders
- * 
- * @param options - Configuration options for the 5-day workflow
- * @returns Hook interface for 5-day task reminder management
+ * Hook for managing task reminders with 5-day workflow optimization
  */
 export function useTaskReminder5Day(
   options: Use5DayTaskReminderOptions = {}
 ): Use5DayTaskReminderReturn {
   const {
-    focusStartDate: initialFocusDate = startOfDay(new Date()),
+    focusStartDate: initialFocusDate = new Date(),
     enableAutoFocus = true,
     enableCaching = true,
-    userId = 'current_user'
+    userId = 'current-user',
   } = options;
 
   // State management
-  const [focusStartDate, setFocusStartDate] = useState<Date>(initialFocusDate);
-  const [cachedBatches, setCachedBatches] = useState<DailyTaskBatch[] | undefined>();
-  const [workflowStats, setWorkflowStats] = useState<any>(null);
-  const [isScheduling, setIsScheduling] = useState(false);
-  const [isProcessingOverdue, setIsProcessingOverdue] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [focusStartDate, setFocusStartDate] = useState(startOfDay(initialFocusDate));
+  const [tasks, setTasks] = useState<PlantTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Computed values
-  const focusEndDate = useMemo(() => addDays(focusStartDate, 4), [focusStartDate]);
+  // Computed focus window
+  const focusEndDate = useMemo(() => 
+    addDays(focusStartDate, 4), // 5-day window
+    [focusStartDate]
+  );
 
-  /**
-   * Update the 5-day focus window
-   */
-  const updateFocus = useCallback((startDate: Date) => {
+  // Load tasks for focus window
+  const loadTasks = useCallback(async () => {
     try {
-      const normalizedDate = startOfDay(startDate);
-      setFocusStartDate(normalizedDate);
+      setLoading(true);
       
-      // Update the integration service
-      taskReminderIntegration.update5DayFocus(normalizedDate);
+      const focusWindowTasks = await taskReminderIntegration5Day.getTasksForDateRange(
+        focusStartDate,
+        focusEndDate,
+        { enableCaching }
+      );
       
-      // Clear cached batches to force refresh
-      if (enableCaching) {
-        setCachedBatches(undefined);
-      }
+      setTasks(focusWindowTasks);
       
-      setError(null);
+    } catch (error) {
+      Logger.error('[useTaskReminder5Day] Error loading tasks', { error });
+    } finally {
+      setLoading(false);
+    }
+  }, [focusStartDate, focusEndDate, enableCaching]);
+
+  // Refresh tasks
+  const refreshTasks = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await loadTasks();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadTasks]);
+
+  // Task categorization
+  const { overdueTasks, todayTasks, upcomingTasks } = useMemo(() => {
+    const now = new Date();
+    const today = startOfDay(now);
+    
+    return {
+      overdueTasks: tasks.filter(task => 
+        !task.isCompleted && new Date(task.dueDate) < today
+      ),
+      todayTasks: tasks.filter(task => 
+        !task.isCompleted && startOfDay(new Date(task.dueDate)).getTime() === today.getTime()
+      ),
+      upcomingTasks: tasks.filter(task => 
+        !task.isCompleted && new Date(task.dueDate) > today
+      ),
+    };
+  }, [tasks]);
+
+  // Daily task batches for 5-day view
+  const dailyTaskBatches = useMemo(() => {
+    const batches: DailyTaskBatch[] = [];
+    
+    for (let i = 0; i < 5; i++) {
+      const date = addDays(focusStartDate, i);
+      const dayTasks = tasks.filter(task => 
+        startOfDay(new Date(task.dueDate)).getTime() === startOfDay(date).getTime()
+      );
       
-      Logger.info('[useTaskReminder5Day] Updated focus window', {
-        startDate: normalizedDate.toISOString(),
-        endDate: addDays(normalizedDate, 4).toISOString()
+      batches.push({
+        date,
+        tasks: dayTasks,
+        totalCount: dayTasks.length,
+        overdueCount: dayTasks.filter(task => task.isOverdue).length,
+        completedCount: dayTasks.filter(task => task.isCompleted).length,
       });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update focus window';
-      setError(errorMessage);
-      Logger.error('[useTaskReminder5Day] Error updating focus window', { error: err });
     }
-  }, [enableCaching]);
+    
+    return batches;
+  }, [tasks, focusStartDate]);
 
-  /**
-   * Schedule tasks with 5-day workflow optimization
-   */
-  const scheduleTasksFor5Day = useCallback(async (tasks: PlantTask[]) => {
+  // Task actions
+  const markTaskComplete = useCallback(async (taskId: string) => {
     try {
-      setIsScheduling(true);
-      setError(null);
-
-      await taskReminderIntegration.scheduleTasksFor5DayWorkflow(tasks, focusStartDate);
-      
-      // Refresh cached batches after scheduling
-      if (enableCaching) {
-        const newBatches = taskReminderIntegration5Day.getCachedDailyBatches(userId);
-        setCachedBatches(newBatches);
-      }
-
-      Logger.info('[useTaskReminder5Day] Successfully scheduled tasks', { taskCount: tasks.length });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to schedule tasks';
-      setError(errorMessage);
-      Logger.error('[useTaskReminder5Day] Error scheduling tasks', { error: err });
-      throw err;
-    } finally {
-      setIsScheduling(false);
+      await taskReminderIntegration.markTaskComplete(taskId);
+      await refreshTasks();
+    } catch (error) {
+      Logger.error('[useTaskReminder5Day] Error marking task complete', { taskId, error });
+      throw error;
     }
-  }, [focusStartDate, enableCaching, userId]);
+  }, [refreshTasks]);
 
-  /**
-   * Process overdue tasks with 5-day workflow optimization
-   */
-  const processOverdueTasks = useCallback(async () => {
+  const snoozeTask = useCallback(async (taskId: string, minutes: number) => {
     try {
-      setIsProcessingOverdue(true);
-      setError(null);
-
-      await taskReminderIntegration.processOverdueTasksFor5Day();
-
-      Logger.info('[useTaskReminder5Day] Successfully processed overdue tasks');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to process overdue tasks';
-      setError(errorMessage);
-      Logger.error('[useTaskReminder5Day] Error processing overdue tasks', { error: err });
-      throw err;
-    } finally {
-      setIsProcessingOverdue(false);
+      await taskReminderIntegration.snoozeTask(taskId, minutes);
+      await refreshTasks();
+    } catch (error) {
+      Logger.error('[useTaskReminder5Day] Error snoozing task', { taskId, minutes, error });
+      throw error;
     }
+  }, [refreshTasks]);
+
+  const rescheduleTask = useCallback(async (taskId: string, newDate: Date) => {
+    try {
+      await taskReminderIntegration.rescheduleTask(taskId, newDate);
+      await refreshTasks();
+    } catch (error) {
+      Logger.error('[useTaskReminder5Day] Error rescheduling task', { taskId, newDate, error });
+      throw error;
+    }
+  }, [refreshTasks]);
+
+  // Notification management
+  const scheduleNotifications = useCallback(async () => {
+    try {
+      await taskReminderIntegration5Day.scheduleNotificationsForFocusWindow(
+        focusStartDate,
+        focusEndDate,
+        userId
+      );
+    } catch (error) {
+      Logger.error('[useTaskReminder5Day] Error scheduling notifications', { error });
+      throw error;
+    }
+  }, [focusStartDate, focusEndDate, userId]);
+
+  const clearNotifications = useCallback(async () => {
+    try {
+      await taskReminderIntegration5Day.clearNotificationsForFocusWindow(
+        focusStartDate,
+        focusEndDate
+      );
+    } catch (error) {
+      Logger.error('[useTaskReminder5Day] Error clearing notifications', { error });
+      throw error;
+    }
+  }, [focusStartDate, focusEndDate]);
+
+  // Focus navigation
+  const setFocusDate = useCallback((date: Date) => {
+    setFocusStartDate(startOfDay(date));
   }, []);
 
-  /**
-   * Refresh cached data
-   */
-  const refreshCache = useCallback(() => {
-    try {
-      if (enableCaching) {
-        const newBatches = taskReminderIntegration5Day.getCachedDailyBatches(userId);
-        setCachedBatches(newBatches);
-      }
+  const navigateToToday = useCallback(() => {
+    setFocusStartDate(startOfDay(new Date()));
+  }, []);
 
-      // Update workflow stats
-      const stats = taskReminderIntegration5Day.get5DayWorkflowStats();
-      setWorkflowStats(stats);
+  const navigateToPrevious = useCallback(() => {
+    setFocusStartDate(prev => addDays(prev, -1));
+  }, []);
 
-      Logger.info('[useTaskReminder5Day] Refreshed cache and stats');
-    } catch (err) {
-      Logger.error('[useTaskReminder5Day] Error refreshing cache', { error: err });
-    }
-  }, [enableCaching, userId]);
+  const navigateToNext = useCallback(() => {
+    setFocusStartDate(prev => addDays(prev, 1));
+  }, []);
 
-  /**
-   * Initialize and update cached data
-   */
+  // Load tasks when focus window changes
   useEffect(() => {
-    if (enableCaching) {
-      refreshCache();
-    }
-  }, [refreshCache, enableCaching, focusStartDate]);
+    loadTasks();
+  }, [loadTasks]);
 
-  /**
-   * Auto-focus management (optional)
-   */
+  // Auto-schedule notifications when tasks change
   useEffect(() => {
-    if (enableAutoFocus) {
-      const interval = setInterval(() => {
-        const today = startOfDay(new Date());
-        if (focusStartDate.getTime() !== today.getTime()) {
-          updateFocus(today);
-        }
-      }, 60000); // Check every minute
-
-      return () => clearInterval(interval);
+    if (tasks.length > 0 && enableAutoFocus) {
+      scheduleNotifications().catch(error => {
+        Logger.warn('[useTaskReminder5Day] Auto-scheduling notifications failed', { error });
+      });
     }
-  }, [enableAutoFocus, focusStartDate, updateFocus]);
+  }, [tasks, scheduleNotifications, enableAutoFocus]);
 
   return {
-    // Focus window management
+    // 5-day focus data
     focusStartDate,
     focusEndDate,
-    updateFocus,
+    dailyTaskBatches,
     
-    // Notification scheduling
-    scheduleTasksFor5Day,
-    processOverdueTasks,
-    
-    // Performance optimization
-    cachedBatches,
-    refreshCache,
-    
-    // Statistics and monitoring
-    workflowStats,
+    // Task management
+    tasks,
+    overdueTasks,
+    todayTasks,
+    upcomingTasks,
     
     // Loading states
-    isScheduling,
-    isProcessingOverdue,
-    error,
+    loading,
+    refreshing,
+    
+    // Actions
+    refreshTasks,
+    markTaskComplete,
+    snoozeTask,
+    rescheduleTask,
+    
+    // Notification management
+    scheduleNotifications,
+    clearNotifications,
+    
+    // Focus management
+    setFocusDate,
+    navigateToToday,
+    navigateToPrevious,
+    navigateToNext,
   };
-}
-
-/**
- * Simplified hook for basic 5-day task reminder functionality
- * 
- * @param focusStartDate - Optional start date for 5-day focus
- * @returns Simplified interface for basic 5-day task management
- */
-export function useSimpleTaskReminder5Day(focusStartDate?: Date) {
-  const {
-    scheduleTasksFor5Day,
-    processOverdueTasks,
-    updateFocus,
-    isScheduling,
-    isProcessingOverdue,
-    error
-  } = useTaskReminder5Day({
-    focusStartDate,
-    enableAutoFocus: true,
-    enableCaching: false
-  });
-
-  return {
-    scheduleTasksFor5Day,
-    processOverdueTasks,
-    updateFocus,
-    isScheduling,
-    isProcessingOverdue,
-    error
-  };
-}
-
-/**
- * Hook for performance-optimized 5-day task reminder with caching
- * 
- * @param userId - User ID for cache management
- * @returns Performance-optimized interface with caching
- */
-export function useOptimizedTaskReminder5Day(userId?: string) {
-  return useTaskReminder5Day({
-    enableAutoFocus: true,
-    enableCaching: true,
-    userId
-  });
 }

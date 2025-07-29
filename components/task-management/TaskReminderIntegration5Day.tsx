@@ -8,7 +8,6 @@ import ThemedText from '../ui/ThemedText';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
 import TaskReminder5Day from './TaskReminder5Day';
 
-
 import { useTaskReminder5Day } from '@/lib/hooks/useTaskReminder5Day';
 import { PlantTask } from '@/lib/models/PlantTask';
 import { triggerLightHapticSync } from '@/lib/utils/haptics';
@@ -19,7 +18,6 @@ interface TaskReminderIntegration5DayProps {
   onTaskPress?: (task: PlantTask) => void;
   showCompleted?: boolean;
   layoutMode?: 'horizontal' | 'vertical';
-
 }
 
 /**
@@ -30,13 +28,12 @@ interface TaskReminderIntegration5DayProps {
  * for daily plant care workflows.
  * 
  * Features:
- * - 5-day focus window management
- * - Horizontal layout optimization
- * - Task-focused notification display
- * - Bulk operations integration
- * - Performance caching
+ * - 5-day focus window with horizontal navigation
+ * - Optimized notification scheduling for daily workflows
+ * - Task-specific quiet hours handling
+ * - Performance caching for smooth scrolling
  * 
- * Requirements: R2-AC2, R2-AC5
+ * Requirements: R2-AC2, R2-AC5, R5-AC2
  */
 const TaskReminderIntegration5Day: React.FC<TaskReminderIntegration5DayProps> = ({
   selectedDate = new Date(),
@@ -44,172 +41,219 @@ const TaskReminderIntegration5Day: React.FC<TaskReminderIntegration5DayProps> = 
   onTaskPress,
   showCompleted = false,
   layoutMode = 'horizontal',
-
 }) => {
   const { t } = useTranslation();
   
-  // 5-day workflow hook integration
+  // Use 5-day task reminder hook
   const {
     focusStartDate,
     focusEndDate,
-    updateFocus,
-    scheduleTasksFor5Day,
-    processOverdueTasks,
-    cachedBatches,
-    refreshCache,
-    workflowStats,
-    isScheduling,
-    isProcessingOverdue,
-    error: reminderError,
+    dailyTaskBatches,
+    tasks,
+    overdueTasks,
+    todayTasks,
+    loading,
+    refreshing,
+    refreshTasks,
+    markTaskComplete,
+    snoozeTask,
+    rescheduleTask,
+    scheduleNotifications,
+    setFocusDate,
+    navigateToToday,
+    navigateToPrevious,
+    navigateToNext,
   } = useTaskReminder5Day({
-    focusStartDate: startOfDay(selectedDate),
+    focusStartDate: selectedDate,
     enableAutoFocus: true,
     enableCaching: true,
   });
 
-  // Local state for UI management
-  const [showStats, setShowStats] = useState(false);
-
-  // Update focus when selected date changes
-  useEffect(() => {
-    const newFocusDate = startOfDay(selectedDate);
-    if (newFocusDate.getTime() !== focusStartDate.getTime()) {
-      updateFocus(newFocusDate);
-    }
-  }, [selectedDate, focusStartDate, updateFocus]);
-
-  // Handle refresh with 5-day optimization
-  const handleRefresh = useCallback(async () => {
+  // Handle task completion
+  const handleTaskComplete = useCallback(async (task: PlantTask) => {
     try {
-      // Process any overdue tasks first
-      await processOverdueTasks();
-      
-      // Refresh cached data
-      refreshCache();
-      
       triggerLightHapticSync();
+      await markTaskComplete(task.id);
     } catch (error) {
-      console.error('Error refreshing 5-day task reminders:', error);
       Alert.alert(
         t('taskReminders.error'),
-        t('taskReminders.errorRefreshing')
+        t('taskReminders.errorCompletingTask')
       );
     }
-  }, [processOverdueTasks, refreshCache, t]);
+  }, [markTaskComplete, t]);
 
+  // Handle task snooze
+  const handleTaskSnooze = useCallback(async (task: PlantTask, minutes: number) => {
+    try {
+      triggerLightHapticSync();
+      await snoozeTask(task.id, minutes);
+    } catch (error) {
+      Alert.alert(
+        t('taskReminders.error'),
+        t('taskReminders.errorSnoozingTask')
+      );
+    }
+  }, [snoozeTask, t]);
 
+  // Handle task reschedule
+  const handleTaskReschedule = useCallback(async (task: PlantTask) => {
+    // This would typically open a date picker
+    // For now, reschedule to tomorrow
+    try {
+      triggerLightHapticSync();
+      const tomorrow = addDays(new Date(), 1);
+      await rescheduleTask(task.id, tomorrow);
+    } catch (error) {
+      Alert.alert(
+        t('taskReminders.error'),
+        t('taskReminders.errorReschedulingTask')
+      );
+    }
+  }, [rescheduleTask, t]);
 
-  // Toggle workflow statistics display
-  const toggleStats = useCallback(() => {
-    setShowStats(!showStats);
+  // Handle task press
+  const handleTaskPress = useCallback((task: PlantTask) => {
     triggerLightHapticSync();
-  }, [showStats]);
+    onTaskPress?.(task);
+  }, [onTaskPress]);
 
+  // Navigation handlers
+  const handleNavigateToToday = useCallback(() => {
+    triggerLightHapticSync();
+    navigateToToday();
+  }, [navigateToToday]);
 
+  const handleNavigatePrevious = useCallback(() => {
+    triggerLightHapticSync();
+    navigateToPrevious();
+  }, [navigateToPrevious]);
 
-  // Error handling display
-  if (reminderError) {
-    return (
-      <ThemedView className="flex-1 items-center justify-center p-6">
-        <OptimizedIcon
-          name="alert-outline"
-          size={64}
-          className="mb-4 text-red-500"
-        />
-        <ThemedText variant="heading" className="mb-2 text-center text-xl">
-          {t('taskReminders.errorTitle')}
-        </ThemedText>
-        <ThemedText variant="muted" className="mb-4 text-center">
-          {reminderError}
-        </ThemedText>
-        <Pressable className="rounded-lg bg-primary-500 px-4 py-2" onPress={handleRefresh}>
-          <ThemedText className="font-medium text-white">
-            {t('common.retry')}
-          </ThemedText>
-        </Pressable>
-      </ThemedView>
-    );
-  }
+  const handleNavigateNext = useCallback(() => {
+    triggerLightHapticSync();
+    navigateToNext();
+  }, [navigateToNext]);
+
+  // Summary statistics
+  const summaryStats = useMemo(() => {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(task => task.isCompleted).length;
+    const overdueCount = overdueTasks.length;
+    const todayCount = todayTasks.length;
+    
+    return {
+      totalTasks,
+      completedTasks,
+      overdueCount,
+      todayCount,
+      completionRate: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
+    };
+  }, [tasks, overdueTasks, todayTasks]);
 
   return (
     <ThemedView className="flex-1">
-      {/* 5-Day Focus Header */}
-      <ThemedView className="border-b border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800">
-        <ThemedView className="mb-2 flex-row items-center justify-between">
-          <ThemedText variant="heading" className="text-lg">
-            {t('taskReminders.fiveDayFocus')}
-          </ThemedText>
-          
-          <ThemedView className="flex-row space-x-2">
-            {/* Workflow Stats Toggle */}
-            <Pressable
-              className={`rounded-lg px-3 py-1 ${
-                showStats ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-700'
-              }`}
-              onPress={toggleStats}
-            >
+      {/* Header with navigation and stats */}
+      <ThemedView className="border-b border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
+        {/* Navigation controls */}
+        <ThemedView className="mb-3 flex-row items-center justify-between">
+          <Pressable onPress={handleNavigatePrevious}>
+            <ThemedView className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-700">
               <OptimizedIcon
-                name="analytics-outline"
-                size={16}
-                className={showStats ? 'text-white' : 'text-neutral-600 dark:text-neutral-400'}
+                name="chevron-back"
+                size={20}
+                className="text-neutral-600 dark:text-neutral-400"
               />
-            </Pressable>
-            
-            {/* Loading indicators */}
-            {(isScheduling || isProcessingOverdue) && (
-              <ThemedView className="rounded-lg bg-blue-100 px-3 py-1 dark:bg-blue-900">
-                <OptimizedIcon
-                  name="refresh"
-                  size={16}
-                  className="text-blue-600 dark:text-blue-400"
-                />
-              </ThemedView>
-            )}
-          </ThemedView>
-        </ThemedView>
+            </ThemedView>
+          </Pressable>
 
-        {/* Date Range Display */}
-        <ThemedView className="flex-row items-center justify-between">
-          <ThemedText variant="muted" className="text-sm">
-            {format(focusStartDate, 'MMM d')} - {format(focusEndDate, 'MMM d, yyyy')}
-          </ThemedText>
-          
-          {cachedBatches && (
-            <ThemedText variant="muted" className="text-xs">
-              {t('taskReminders.cachedBatches', { count: cachedBatches.length })}
-            </ThemedText>
-          )}
-        </ThemedView>
-
-        {/* Workflow Statistics (collapsible) */}
-        {showStats && workflowStats && (
-          <ThemedView className="mt-3 rounded-lg bg-neutral-100 p-3 dark:bg-neutral-700">
-            <ThemedText variant="heading" className="mb-2 text-sm">
-              {t('taskReminders.workflowStats')}
-            </ThemedText>
-            <ThemedView className="space-y-1">
-              <ThemedText variant="muted" className="text-xs">
-                {t('taskReminders.batchingStrategy')}: {workflowStats.batchingStrategy}
-              </ThemedText>
-              <ThemedText variant="muted" className="text-xs">
-                {t('taskReminders.cachedBatches')}: {workflowStats.cachedBatches}
+          <Pressable onPress={handleNavigateToToday}>
+            <ThemedView className="rounded-lg bg-primary-500 px-4 py-2">
+              <ThemedText className="font-medium text-white">
+                {t('calendar.today')}
               </ThemedText>
             </ThemedView>
+          </Pressable>
+
+          <Pressable onPress={handleNavigateNext}>
+            <ThemedView className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-700">
+              <OptimizedIcon
+                name="chevron-forward"
+                size={20}
+                className="text-neutral-600 dark:text-neutral-400"
+              />
+            </ThemedView>
+          </Pressable>
+        </ThemedView>
+
+        {/* Date range display */}
+        <ThemedView className="mb-3 items-center">
+          <ThemedText variant="heading" className="text-lg font-semibold">
+            {format(focusStartDate, 'MMM d')} - {format(focusEndDate, 'MMM d, yyyy')}
+          </ThemedText>
+        </ThemedView>
+
+        {/* Summary statistics */}
+        <ThemedView className="flex-row items-center justify-between">
+          <ThemedView className="flex-row items-center">
+            <OptimizedIcon
+              name="checkmark-circle"
+              size={16}
+              className="mr-1 text-green-500"
+            />
+            <ThemedText variant="muted" className="text-sm">
+              {summaryStats.completedTasks}/{summaryStats.totalTasks} {t('taskReminders.completed')}
+            </ThemedText>
           </ThemedView>
-        )}
+
+          {summaryStats.overdueCount > 0 && (
+            <ThemedView className="flex-row items-center">
+              <OptimizedIcon
+                name="warning"
+                size={16}
+                className="mr-1 text-red-500"
+              />
+              <ThemedText className="text-sm font-medium text-red-500">
+                {summaryStats.overdueCount} {t('taskReminders.overdue')}
+              </ThemedText>
+            </ThemedView>
+          )}
+
+          {summaryStats.todayCount > 0 && (
+            <ThemedView className="flex-row items-center">
+              <OptimizedIcon
+                name="today"
+                size={16}
+                className="mr-1 text-blue-500"
+              />
+              <ThemedText className="text-sm font-medium text-blue-500">
+                {summaryStats.todayCount} {t('taskReminders.today')}
+              </ThemedText>
+            </ThemedView>
+          )}
+        </ThemedView>
       </ThemedView>
 
-      {/* Main Task Reminder Component */}
+      {/* Task reminder component */}
       <TaskReminder5Day
         plantId={plantId}
         selectedDate={selectedDate}
         showCompleted={showCompleted}
-        onTaskPress={onTaskPress}
+        onTaskPress={handleTaskPress}
         layoutMode={layoutMode}
       />
 
-      {/* Note: BulkTaskActions integration would be handled by the parent TaskReminder5Day component */}
-      {/* The bulk actions are already integrated within TaskReminder5Day.tsx */}
+      {/* Loading overlay */}
+      {loading && (
+        <ThemedView className="absolute inset-0 items-center justify-center bg-white/80 dark:bg-neutral-900/80">
+          <OptimizedIcon
+            name="refresh"
+            size={32}
+            className="mb-2 animate-spin text-primary-500"
+          />
+          <ThemedText variant="muted">
+            {t('taskReminders.loading')}
+          </ThemedText>
+        </ThemedView>
+      )}
     </ThemedView>
   );
 };
