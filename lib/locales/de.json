@@ -1026,6 +1026,67 @@
     },
     "calendarWarning": "Erinnerung erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
   },
+  "taskNotifications": {
+    "createTask": "Aufgabe erstellen",
+    "taskType": "Aufgabentyp",
+    "title": "Titel",
+    "titlePlaceholder": "Aufgabentitel eingeben",
+    "description": "Beschreibung (Optional)",
+    "descriptionPlaceholder": "Zusätzliche Details zu dieser Aufgabe hinzufügen",
+    "scheduledFor": "Geplant für",
+    "priority": "Priorität",
+    "estimatedDuration": "Dauer (Minuten)",
+    "repeatInterval": "Wiederholen alle (Tage)",
+    "repeatIntervalPlaceholder": "Leer lassen für einmalige Aufgabe",
+    "creating": "Erstelle...",
+    "types": {
+      "watering": "Gießen",
+      "feeding": "Düngen",
+      "inspection": "Inspektion",
+      "pruning": "Beschneiden",
+      "training": "Training",
+      "harvest": "Ernte",
+      "custom": "Benutzerdefiniert"
+    },
+    "priorities": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "critical": "Kritisch"
+    },
+    "defaultDescriptions": {
+      "watering": "Zeit, Ihre Pflanze zu gießen",
+      "feeding": "Zeit, Ihre Pflanze mit Nährstoffen zu versorgen",
+      "inspection": "Zeit, Ihre Pflanze zu überprüfen",
+      "pruning": "Zeit, Ihre Pflanze zu beschneiden",
+      "training": "Zeit, Ihre Pflanze zu trainieren",
+      "harvest": "Zeit, Ihre Pflanze zu ernten",
+      "custom": "Benutzerdefinierte Aufgabe für Ihre Pflanze"
+    },
+    "permissionRequired": "Benachrichtigungsberechtigung erforderlich",
+    "permissionRequiredDescription": "Um Aufgabenerinnerungen zu erhalten, aktivieren Sie bitte Benachrichtigungen in Ihren Geräteeinstellungen.",
+    "permissionsDisabled": "Benachrichtigungen deaktiviert",
+    "permissionsDisabledDescription": "Aktivieren Sie Benachrichtigungen in Ihren Geräteeinstellungen, um Aufgabenerinnerungen für Ihre Pflanzen zu erhalten.",
+    "openSettings": "Einstellungen öffnen",
+    "error": "Fehler",
+    "errorCreatingTask": "Aufgabe konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "errorBatchMarkingDone": "Einige Aufgaben konnten nicht als erledigt markiert werden",
+    "repeatOptions": "Wiederholungsoptionen",
+    "customRepeatInterval": "Benutzerdefiniertes Wiederholungsintervall (Tage)",
+    "customRepeatIntervalPlaceholder": "Benutzerdefiniertes Intervall in Tagen eingeben",
+    "addToDeviceCalendar": "Zum Gerätekalender hinzufügen",
+    "calendarEventDescription": "Kalenderereignis für diese Aufgabe erstellen",
+    "calendarAccessDenied": "Kalenderzugriff verweigert - in Einstellungen aktivieren",
+    "calendarPermissionRequired": "Kalenderberechtigung erforderlich",
+    "repeatIntervals": {
+      "daily": "Täglich",
+      "every3Days": "Alle 3 Tage",
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle zwei Wochen",
+      "monthly": "Monatlich"
+    },
+    "calendarWarning": "Aufgabe erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
+  },
   "taskCompletion": {
     "title": "Aufgabe abschließen",
     "modeSelector": {

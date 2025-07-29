@@ -181,6 +181,11 @@ export const IconSVG = {
   dna: '🧬',
   'thermometer-lines': '🌡️',
   'nutrition-outline': '🥗',
+  'eye-outline': '👁️',
+  'alert-outline': '⚠️',
+  'analytics-outline': '📊',
+  'fitness-outline': '💪',
+  'basket-outline': '🧺',
 
   // Tools and utilities
   'layers-outline': '⧉',
@@ -297,6 +302,11 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   dna: 'DNA',
   'thermometer-lines': 'Temperature',
   'nutrition-outline': 'Nutrition',
+  'eye-outline': 'View',
+  'alert-outline': 'Alert',
+  'analytics-outline': 'Analytics',
+  'fitness-outline': 'Fitness',
+  'basket-outline': 'Basket',
   'layers-outline': 'Layers',
   'location-outline': 'Location',
   'code-working': 'Coding',

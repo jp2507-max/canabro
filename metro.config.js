@@ -1,16 +1,9 @@
-/**
- * Metro configuration for React Native and Expo
- * Optimized for iOS production builds with bundle size reduction
- *
- * ⛔️ DO NOT DELETE - Enables ws compatibility in React Native
- * @environment node
- */
-
-/* eslint-env node */
-const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
+const {
+  getSentryExpoConfig
+} = require("@sentry/react-native/metro");
 
 // After header comments, set experimental tree-shaking env vars only for production
 if (process.env.NODE_ENV === 'production') {
@@ -20,7 +13,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Get the default configuration
  
-const config = getDefaultConfig(__dirname, {
+const config = getSentryExpoConfig(__dirname, {
   // Enable CSS support.
   isCSSEnabled: true,
 });

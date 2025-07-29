@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { isDevelopment, authConfig } from '../lib/config';
+import * as Sentry from '@sentry/react-native';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { resetDatabase } from '../lib/utils/database';
 import { triggerLightHapticSync, triggerMediumHapticSync } from '../lib/utils/haptics';
@@ -187,6 +188,21 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
               </View>
               <Pressable style={styles.actionButton} onPress={handleClearLanguageStorage}>
                 <Text style={styles.actionButtonText}>{t('common.clearLanguageStorage')}</Text>
+              </Pressable>
+            </View>
+
+            {/* Sentry test button for error reporting */}
+            <View style={styles.buttonSection}>
+              <Text style={styles.sectionTitle}>Sentry</Text>
+              <Pressable
+                accessibilityRole="button"
+                className="bg-red-500 rounded-lg px-4 py-3 mb-2"
+                onPress={() => {
+                  Sentry.captureException(new Error('First error'));
+                  Alert.alert('Sentry', 'Test error sent to Sentry!');
+                }}
+              >
+                <Text className="text-white font-bold">Try!</Text>
               </Pressable>
             </View>
 

@@ -1249,6 +1249,67 @@
     },
     "calendarWarning": "Reminder created successfully, but failed to add to calendar. You can add it manually if needed."
   },
+  "taskNotifications": {
+    "createTask": "Create Task",
+    "taskType": "Task Type",
+    "title": "Title",
+    "titlePlaceholder": "Enter task title",
+    "description": "Description (Optional)",
+    "descriptionPlaceholder": "Add additional details about this task",
+    "scheduledFor": "Scheduled For",
+    "priority": "Priority",
+    "estimatedDuration": "Duration (minutes)",
+    "repeatInterval": "Repeat Every (Days)",
+    "repeatIntervalPlaceholder": "Leave empty for one-time task",
+    "creating": "Creating...",
+    "types": {
+      "watering": "Watering",
+      "feeding": "Feeding",
+      "inspection": "Inspection",
+      "pruning": "Pruning",
+      "training": "Training",
+      "harvest": "Harvest",
+      "custom": "Custom"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "defaultDescriptions": {
+      "watering": "Time to water your plant",
+      "feeding": "Time to feed your plant with nutrients",
+      "inspection": "Time to check on your plant",
+      "pruning": "Time to prune your plant",
+      "training": "Time to train your plant",
+      "harvest": "Time to harvest your plant",
+      "custom": "Custom task for your plant"
+    },
+    "permissionRequired": "Notification Permission Required",
+    "permissionRequiredDescription": "To receive task reminders, please enable notifications in your device settings.",
+    "permissionsDisabled": "Notifications Disabled",
+    "permissionsDisabledDescription": "Enable notifications in your device settings to receive task reminders for your plants.",
+    "openSettings": "Open Settings",
+    "error": "Error",
+    "errorCreatingTask": "Failed to create task. Please try again.",
+    "errorBatchMarkingDone": "Failed to mark some tasks as completed",
+    "repeatOptions": "Repeat Options",
+    "customRepeatInterval": "Custom Repeat Interval (Days)",
+    "customRepeatIntervalPlaceholder": "Enter custom interval in days",
+    "addToDeviceCalendar": "Add to Device Calendar",
+    "calendarEventDescription": "Create a calendar event for this task",
+    "calendarAccessDenied": "Calendar access denied - enable in settings",
+    "calendarPermissionRequired": "Calendar permission required",
+    "repeatIntervals": {
+      "daily": "Daily",
+      "every3Days": "Every 3 days",
+      "weekly": "Weekly",
+      "biweekly": "Bi-weekly",
+      "monthly": "Monthly"
+    },
+    "calendarWarning": "Task created successfully, but failed to add to calendar. You can add it manually if needed."
+  },
   "taskCompletion": {
     "title": "Complete Task",
     "modeSelector": {

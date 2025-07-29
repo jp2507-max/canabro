@@ -9,6 +9,7 @@
 
 
 import React, { ReactNode, useCallback } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import ThemedView from '@/components/ui/ThemedView';
@@ -30,17 +31,24 @@ function FallbackComponent({ error, resetErrorBoundary, onRetry }: { error: Erro
 		resetErrorBoundary();
 	};
 	return (
-		<ThemedView className="flex-1 items-center justify-center p-6">
+		<ThemedView className="flex-1 items-center justify-center p-6 pt-safe h-screen-safe">
 			<ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}>
-				<OptimizedIcon name="warning" size={48} className="text-error mb-4" />
+				<OptimizedIcon
+					name="warning"
+					size={48}
+					className="text-error mb-4"
+					accessibilityLabel={t('environmentalDashboard.errorIconLabel', 'Warning icon: Something went wrong')}
+				/>
 				<ThemedText className="text-lg font-bold mb-2 text-center">
 					{t('environmentalDashboard.errorTitle', 'Something went wrong')}
 				</ThemedText>
 				<ThemedText className="mb-4 text-center opacity-80">
 					{t('environmentalDashboard.errorMessage', 'An unexpected error occurred while loading the dashboard.')}
 				</ThemedText>
+				{/* Do not display error.message directly to avoid exposing sensitive info */}
+				{/* <ThemedText className="mb-4 text-center text-xs opacity-60">{error.message}</ThemedText> */}
 				<ThemedText className="mb-4 text-center text-xs opacity-60">
-					{error.message}
+					{t('environmentalDashboard.errorGeneric', 'Please try again or contact support if the issue persists.')}
 				</ThemedText>
 				<TouchableOpacity
 					className="bg-primary px-6 py-2 rounded-lg"
@@ -63,6 +71,11 @@ export const EnvironmentalDashboardErrorBoundary = ({ children, onRetry }: Envir
 	const handleError = useCallback((error: Error, info: { componentStack?: string | null }) => {
 		log.error('EnvironmentalDashboardErrorBoundary', error, {
 			componentStack: info.componentStack ?? ''
+		});
+		Sentry.captureException(error, {
+			extra: {
+				componentStack: info.componentStack ?? ''
+			}
 		});
 	}, []);
 	// Wrap FallbackComponent to inject onRetry

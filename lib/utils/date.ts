@@ -51,6 +51,14 @@ export function isSameDay(date1: Date, date2: Date): boolean {
 }
 
 /**
+ * Check if a date is within an interval
+ */
+export function isWithinInterval(date: Date, start: Date, end: Date): boolean {
+  const target = dayjs(date);
+  return target.isAfter(dayjs(start)) && target.isBefore(dayjs(end));
+}
+
+/**
  * Check if date is today
  */
 export function isToday(date: Date): boolean {

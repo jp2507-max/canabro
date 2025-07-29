@@ -19,7 +19,7 @@ import ThemedText from '@/components/ui/ThemedText';
 import { FlashListWrapper } from '@/components/ui/FlashListWrapper';
 import { log } from '@/lib/utils/logger';
 import { formatEnvironmentalValue } from '@/lib/utils/environmental-formatting';
-import { EnvironmentalDashboardErrorBoundary } from '@/components/task-management';
+import { EnvironmentalDashboardErrorBoundary } from './EnvironmentalDashboardErrorBoundary';
 
 import { 
   EnvironmentalDataIntegrationService,

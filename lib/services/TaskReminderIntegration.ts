@@ -17,6 +17,7 @@ import { database } from '@/lib/models';
 import { PlantTask } from '@/lib/models/PlantTask';
 import { Plant } from '@/lib/models/Plant';
 import { taskReminderEngine, TaskNotificationConfig } from './TaskReminderEngine';
+import { taskReminderIntegration5Day } from './TaskReminderIntegration5Day';
 import { TaskAutomationService } from './TaskAutomationService';
 import { TaskSchedulingAdapter } from './TaskSchedulingAdapter';
 import { Logger } from '@/lib/utils/production-utils';
@@ -305,6 +306,74 @@ export class TaskReminderIntegration {
       Logger.info('[TaskReminderIntegration] Completed overdue task processing');
     } catch (error) {
       Logger.error('[TaskReminderIntegration] Error processing overdue tasks', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Schedule notifications with 5-day workflow optimization
+   * 
+   * Uses the enhanced 5-day workflow engine for tasks that benefit from
+   * daily plant care optimization and horizontal 5-day view integration.
+   * 
+   * @param tasks - Array of tasks to schedule notifications for
+   * @param focusStartDate - Optional start date for 5-day focus window
+   */
+  async scheduleTasksFor5DayWorkflow(tasks: PlantTask[], focusStartDate?: Date): Promise<void> {
+    try {
+      Logger.info('[TaskReminderIntegration] Scheduling tasks for 5-day workflow', { 
+        taskCount: tasks.length,
+        focusStartDate: focusStartDate?.toISOString()
+      });
+
+      await taskReminderIntegration5Day.scheduleTasksFor5DayWorkflow(tasks, {
+        focusStartDate,
+        optimizeForDailyWorkflow: true,
+        enableCriticalOverride: true,
+        batchingStrategy: '5day-optimized'
+      });
+
+      Logger.info('[TaskReminderIntegration] Successfully scheduled tasks for 5-day workflow');
+    } catch (error) {
+      Logger.error('[TaskReminderIntegration] Error scheduling tasks for 5-day workflow', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Update 5-day focus window for navigation
+   * 
+   * Updates the focus window when user navigates in the 5-day horizontal view.
+   * This optimizes notifications and caching for the visible date range.
+   * 
+   * @param startDate - New start date for 5-day focus
+   */
+  update5DayFocus(startDate: Date): void {
+    try {
+      taskReminderIntegration5Day.updateFiveDayFocus(startDate);
+      Logger.info('[TaskReminderIntegration] Updated 5-day focus window', { 
+        startDate: startDate.toISOString() 
+      });
+    } catch (error) {
+      Logger.error('[TaskReminderIntegration] Error updating 5-day focus', { error });
+    }
+  }
+
+  /**
+   * Process overdue tasks with 5-day workflow optimization
+   * 
+   * Focuses on overdue tasks within the 5-day window for immediate attention
+   * while maintaining awareness of all overdue tasks.
+   */
+  async processOverdueTasksFor5Day(): Promise<void> {
+    try {
+      Logger.info('[TaskReminderIntegration] Processing overdue tasks for 5-day workflow');
+
+      await taskReminderIntegration5Day.processOverdueTasksFor5Day();
+
+      Logger.info('[TaskReminderIntegration] Completed 5-day overdue task processing');
+    } catch (error) {
+      Logger.error('[TaskReminderIntegration] Error processing overdue tasks for 5-day workflow', { error });
       throw error;
     }
   }

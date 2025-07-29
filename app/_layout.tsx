@@ -22,6 +22,23 @@ import { SplashScreenController } from '../components/ui/SplashScreenController'
 // Import our react-query type declarations to avoid type errors
 import '../lib/types/react-query';
 import '../global.css';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://e83ceca3e6770669a2618f1c7a4d623c@o4509747259375616.ingest.de.sentry.io/4509747263438928',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 // Theme storage key
 const THEME_STORAGE_KEY = 'app-theme-preference';
@@ -157,5 +174,5 @@ function RootLayout() {
   );
 }
 
-export default RootLayout;
+export default Sentry.wrap(RootLayout);
 export { THEME_STORAGE_KEY };
