@@ -1,3 +1,22 @@
+// AllowedTaskType for notification form
+export type AllowedTaskType = 'watering' | 'feeding' | 'inspection' | 'pruning' | 'training' | 'harvest';
+export const allowedTaskTypes: AllowedTaskType[] = [
+  'watering',
+  'feeding',
+  'inspection',
+  'pruning',
+  'training',
+  'harvest',
+];
+
+/**
+ * Checks if a value is a valid AllowedTaskType.
+ * @param value - The value to check
+ * @returns boolean indicating if value is a valid AllowedTaskType
+ */
+export function isValidTaskType(value: unknown): value is AllowedTaskType {
+  return typeof value === 'string' && allowedTaskTypes.includes(value as AllowedTaskType);
+}
 /**
  * Task Type Validation Utilities
  * 

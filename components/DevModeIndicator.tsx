@@ -196,13 +196,17 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
               <Text style={styles.sectionTitle}>Sentry</Text>
               <Pressable
                 accessibilityRole="button"
-                className="bg-red-500 rounded-lg px-4 py-3 mb-2"
-                onPress={() => {
-                  Sentry.captureException(new Error('First error'));
-                  Alert.alert('Sentry', 'Test error sent to Sentry!');
+                style={styles.sentryButton}
+                onPress={async () => {
+                  try {
+                    await Sentry.captureException(new Error('First error'));
+                    Alert.alert('Sentry', 'Test error sent to Sentry!');
+                  } catch (err) {
+                    Alert.alert('Sentry', 'Failed to send test error.');
+                  }
                 }}
               >
-                <Text className="text-white font-bold">Try!</Text>
+                <Text style={styles.sentryButtonText}>Try!</Text>
               </Pressable>
             </View>
 
@@ -217,6 +221,19 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
 }
 
 const styles = StyleSheet.create({
+  sentryButton: {
+    backgroundColor: '#ef4444', // semantic: bg-red-500
+    borderRadius: 12, // rounded-lg
+    paddingHorizontal: 16, // px-4
+    paddingVertical: 12, // py-3
+    marginBottom: 8, // mb-2
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sentryButtonText: {
+    color: '#fff', // semantic: text-white
+    fontWeight: 'bold',
+  },
   actionButton: {
     alignItems: 'center',
     backgroundColor: '#ff3b30',

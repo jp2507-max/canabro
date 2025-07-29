@@ -22,17 +22,12 @@ import { Plant } from '@/lib/models/Plant';
 import { taskNotificationService } from '@/lib/services/taskNotificationService';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import type { TaskType } from '@/lib/types/taskTypes';
+import { isValidTaskType, AllowedTaskType, allowedTaskTypes } from '@/lib/utils/task-type-validation';
+
+import { logger } from '@/lib/config/production';
 
 // Only allow these types for the notification form
-type AllowedTaskType = 'watering' | 'feeding' | 'inspection' | 'pruning' | 'training' | 'harvest';
-const allowedTaskTypes: AllowedTaskType[] = [
-  'watering',
-  'feeding',
-  'inspection',
-  'pruning',
-  'training',
-  'harvest',
-];
+// (imported from utility)
 
 // Notification permission status
 type NotificationStatus = 'unknown' | 'granted' | 'denied' | 'undetermined';
@@ -72,9 +67,10 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
   selectedDate,
 }) => {
   // Fallback to 'watering' if initialTaskType is not allowed or undefined
-  const safeInitialTaskType: AllowedTaskType = initialTaskType && allowedTaskTypes.includes(initialTaskType as AllowedTaskType)
-    ? (initialTaskType as AllowedTaskType)
-    : 'watering';
+  const safeInitialTaskType: AllowedTaskType =
+    initialTaskType && isValidTaskType(initialTaskType) && allowedTaskTypes.includes(initialTaskType)
+      ? initialTaskType
+      : 'watering';
   const { t } = useTranslation();
   const [isCreating, setIsCreating] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -112,7 +108,7 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
         const { status, canAskAgain } = await Calendar.getCalendarPermissionsAsync();
         setCalendarPermission({ status, canAskAgain });
       } catch (error) {
-        console.error('Error checking calendar permissions:', error);
+        logger.error('Error checking calendar permissions:', error);
         setCalendarPermission({ status: 'denied', canAskAgain: false });
       }
     };
@@ -133,7 +129,7 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
       setCalendarPermission({ status, canAskAgain });
       return status === 'granted';
     } catch (error) {
-      console.error('Error requesting calendar permissions:', error);
+      logger.error('Error requesting calendar permissions:', error);
       setCalendarPermission({ status: 'denied', canAskAgain: false });
       return false;
     }
@@ -167,7 +163,7 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
 
       await Calendar.createEventAsync(defaultCalendar.id, eventDetails);
     } catch (error) {
-      console.error('Error adding task to calendar:', error);
+      logger.error('Error adding task to calendar:', error);
       throw error;
     }
   }, [calendarPermission.status, plant.name, plant.strain, requestCalendarPermissions]);
@@ -255,7 +251,7 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
     }
   };
 
-  const onSubmit = useCallback(async (data: TaskNotificationFormData) => {
+  const checkNotificationPermissions = useCallback((): boolean => {
     if (permissionStatus !== 'granted') {
       Alert.alert(
         t('taskNotifications.permissionRequired'),
@@ -271,59 +267,73 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
           }},
         ]
       );
+      return false;
+    }
+    return true;
+  }, [permissionStatus, t]);
+
+  const handleTaskCreation = useCallback(async (data: TaskNotificationFormData): Promise<PlantTask> => {
+    return await taskNotificationService.createTaskWithNotification({
+      plantId: plant.id,
+      taskType: data.taskType as TaskType,
+      title: data.title,
+      description: data.description,
+      dueDate: data.scheduledFor,
+      priority: data.priority || 'medium',
+      estimatedDuration: data.estimatedDuration,
+      repeatInterval: data.repeatInterval,
+    });
+  }, [plant.id]);
+
+  const handleNotificationScheduling = useCallback(async (data: TaskNotificationFormData, task: PlantTask): Promise<void> => {
+    await scheduleNotification({
+      identifier: task.id,
+      title: `🌱 ${plant.name} - ${task.title}`,
+      body: `${task.description || getTaskTypeDescription(task.taskType)} • Priority: ${task.priority}${task.estimatedDuration ? ` • ~${task.estimatedDuration}min` : ''}`,
+      data: {
+        taskId: task.id,
+        plantId: plant.id,
+        taskType: task.taskType,
+        priority: task.priority,
+        navigateTo: 'calendar',
+        selectedDate: data.scheduledFor.toISOString(),
+      },
+      scheduledFor: data.scheduledFor,
+      repeatInterval: data.repeatInterval,
+    });
+  }, [plant.id, plant.name, scheduleNotification]);
+
+  const handleCalendarIntegration = useCallback(async (task: PlantTask, shouldAddToCalendar: boolean): Promise<void> => {
+    if (!shouldAddToCalendar) return;
+
+    try {
+      await addToDeviceCalendar(task);
+    } catch (calendarError) {
+      console.warn('Failed to add task to calendar:', calendarError);
+      // Don't fail the entire operation if calendar fails
+      Alert.alert(
+        t('common.warning'),
+        t('taskNotifications.calendarWarning')
+      );
+    }
+  }, [addToDeviceCalendar, t]);
+
+  const onSubmit = useCallback(async (data: TaskNotificationFormData) => {
+    if (!checkNotificationPermissions()) {
       return;
     }
 
     setIsCreating(true);
     try {
-      // Create task using service
-      const task = await taskNotificationService.createTaskWithNotification({
-        plantId: plant.id,
-        taskType: data.taskType as TaskType,
-        title: data.title,
-        description: data.description,
-        dueDate: data.scheduledFor,
-        priority: data.priority || 'medium',
-        estimatedDuration: data.estimatedDuration,
-        repeatInterval: data.repeatInterval,
-      });
-
-      // Schedule notification with task-focused content
-      await scheduleNotification({
-        identifier: task.id,
-        title: `🌱 ${plant.name} - ${task.title}`,
-        body: `${task.description || getTaskTypeDescription(task.taskType)} • Priority: ${task.priority}${task.estimatedDuration ? ` • ~${task.estimatedDuration}min` : ''}`,
-        data: {
-          taskId: task.id,
-          plantId: plant.id,
-          taskType: task.taskType,
-          priority: task.priority,
-          navigateTo: 'calendar',
-          selectedDate: data.scheduledFor.toISOString(),
-        },
-        scheduledFor: data.scheduledFor,
-        repeatInterval: data.repeatInterval,
-      });
-
-      // Add to device calendar if requested
-      if (data.addToCalendar) {
-        try {
-          await addToDeviceCalendar(task);
-        } catch (calendarError) {
-          console.warn('Failed to add task to calendar:', calendarError);
-          // Don't fail the entire operation if calendar fails
-          Alert.alert(
-            t('common.warning'),
-            t('taskNotifications.calendarWarning')
-          );
-        }
-      }
+      const task = await handleTaskCreation(data);
+      await handleNotificationScheduling(data, task);
+      await handleCalendarIntegration(task, data.addToCalendar);
 
       triggerMediumHapticSync();
       onTaskCreated?.(task);
       onClose?.();
     } catch (error) {
-      console.error('Error creating task:', error);
+      logger.error('Error creating task:', error);
       Alert.alert(
         t('taskNotifications.error'),
         t('taskNotifications.errorCreatingTask')
@@ -331,7 +341,7 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
     } finally {
       setIsCreating(false);
     }
-  }, [permissionStatus, plant.id, plant.name, onTaskCreated, onClose, t, scheduleNotification, addToDeviceCalendar]);
+  }, [checkNotificationPermissions, handleTaskCreation, handleNotificationScheduling, handleCalendarIntegration, onTaskCreated, onClose, t]);
 
   const createTaskAnimation = useButtonAnimation({
     enableHaptics: true,
@@ -424,14 +434,14 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
         <ThemedText variant="heading" className="mb-3 text-base">
           {t('taskNotifications.taskType')}
         </ThemedText>
-        <ThemedView className="grid grid-cols-2 gap-2">
-          {(['watering', 'feeding', 'inspection', 'pruning', 'training', 'harvest'] as const).map((type) => (
+        <ThemedView className="flex-row flex-wrap -mx-1">
+          {(['watering', 'feeding', 'inspection', 'pruning', 'training', 'harvest'] as const).map((type, idx) => (
             <Controller
               key={type}
               control={control}
               name="taskType"
               render={({ field: { onChange, value } }) => (
-                <Animated.View style={typeSelectionAnimation.animatedStyle}>
+                <Animated.View style={typeSelectionAnimation.animatedStyle} className="w-1/2 px-1 mb-2">
                   <Pressable
                     {...typeSelectionAnimation.handlers}
                     onPress={() => {
@@ -565,7 +575,14 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
               <EnhancedTextInput
                 label={t('taskNotifications.estimatedDuration')}
                 value={value?.toString() || ''}
-                onChangeText={(text) => onChange(text ? parseInt(text, 10) : undefined)}
+                onChangeText={(text) => {
+                  const parsed = parseInt(text, 10);
+                  if (!isNaN(parsed)) {
+                    onChange(parsed);
+                  } else {
+                    onChange(undefined);
+                  }
+                }}
                 onBlur={onBlur}
                 placeholder="15"
                 error={errors.estimatedDuration?.message}
@@ -712,7 +729,14 @@ const TaskNotificationScheduler: React.FC<TaskNotificationSchedulerProps> = ({
             <EnhancedTextInput
               label={t('taskNotifications.customRepeatInterval')}
               value={value?.toString() || ''}
-              onChangeText={(text) => onChange(text ? parseInt(text, 10) : undefined)}
+              onChangeText={(text) => {
+                const parsed = parseInt(text, 10);
+                if (!isNaN(parsed)) {
+                  onChange(parsed);
+                } else {
+                  onChange(undefined);
+                }
+              }}
               onBlur={onBlur}
               placeholder={t('taskNotifications.customRepeatIntervalPlaceholder')}
               error={errors.repeatInterval?.message}
