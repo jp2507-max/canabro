@@ -53,6 +53,11 @@ class RealtimeService {
     private readonly BATCH_TIMEOUT = 100; // Batch timeout in ms
     private batchTimeouts: Map<string, NodeJS.Timeout> = new Map();
     private connectionPool: Map<string, { channel: RealtimeChannel; lastUsed: number }> = new Map();
+    
+    // Memory management constants
+    private readonly MAX_QUEUE_SIZE = 1000; // Maximum messages per channel queue
+    private readonly MAX_POOL_SIZE = 50; // Maximum connection pool entries
+    private readonly MAX_MESSAGES_PER_CHANNEL = 500; // Maximum messages per channel in queue
 
     /**
      * Subscribe to real-time updates for a specific table or channel
@@ -144,6 +149,10 @@ class RealtimeService {
             });
 
             this.channels.set(channelName, channel);
+            
+            // Add to connection pool for reuse
+            this.addToConnectionPool(channelName, channel);
+            
             log.info(`[RealtimeService] Successfully subscribed to ${channelName}`);
 
             return channel;
@@ -415,7 +424,23 @@ class RealtimeService {
         }
 
         const queue = this.messageQueue.get(channelName)!;
+        
+        // Implement queue size limit - drop oldest messages if limit exceeded
+        if (queue.length >= this.MAX_MESSAGES_PER_CHANNEL) {
+            const droppedCount = queue.length - this.MAX_MESSAGES_PER_CHANNEL + 1;
+            queue.splice(0, droppedCount); // Remove oldest messages
+            log.warn(`[RealtimeService] Queue limit reached for ${channelName}, dropped ${droppedCount} oldest messages`);
+        }
+        
         queue.push(message);
+
+        // Check total queue size across all channels
+        const totalQueueSize = Array.from(this.messageQueue.values())
+            .reduce((total, channelQueue) => total + channelQueue.length, 0);
+            
+        if (totalQueueSize > this.MAX_QUEUE_SIZE) {
+            this.pruneMessageQueues();
+        }
 
         // Clear existing timeout
         const existingTimeout = this.batchTimeouts.get(channelName);
@@ -468,6 +493,84 @@ class RealtimeService {
             clearTimeout(timeout);
             this.batchTimeouts.delete(channelName);
         }
+    }
+
+    /**
+     * Prune message queues when total size exceeds limit (2025 Memory Management)
+     */
+    private pruneMessageQueues(): void {
+        log.warn('[RealtimeService] Total queue size exceeded, pruning oldest messages');
+        
+        // Sort channels by queue size (largest first) and remove messages from largest queues
+        const channelQueueSizes = Array.from(this.messageQueue.entries())
+            .map(([channelName, queue]) => ({ channelName, size: queue.length }))
+            .sort((a, b) => b.size - a.size);
+
+        let totalMessages = channelQueueSizes.reduce((total, { size }) => total + size, 0);
+        let pruned = 0;
+
+        for (const { channelName } of channelQueueSizes) {
+            if (totalMessages <= this.MAX_QUEUE_SIZE) break;
+
+            const queue = this.messageQueue.get(channelName)!;
+            const removeCount = Math.min(queue.length, totalMessages - this.MAX_QUEUE_SIZE);
+            
+            if (removeCount > 0) {
+                queue.splice(0, removeCount); // Remove oldest messages
+                totalMessages -= removeCount;
+                pruned += removeCount;
+            }
+        }
+
+        log.info(`[RealtimeService] Pruned ${pruned} messages from queues`);
+    }
+
+    /**
+     * Manage connection pool size (2025 Memory Management)
+     */
+    private pruneConnectionPool(): void {
+        if (this.connectionPool.size <= this.MAX_POOL_SIZE) return;
+
+        log.warn('[RealtimeService] Connection pool size exceeded, removing oldest connections');
+
+        // Sort by last used time (oldest first)
+        const poolEntries = Array.from(this.connectionPool.entries())
+            .sort(([, a], [, b]) => a.lastUsed - b.lastUsed);
+
+        const removeCount = this.connectionPool.size - this.MAX_POOL_SIZE;
+        
+        for (let i = 0; i < removeCount && i < poolEntries.length; i++) {
+            const entry = poolEntries[i];
+            if (!entry) continue;
+            
+            const [channelName, { channel }] = entry;
+            
+            try {
+                // Clean up the old connection
+                channel.unsubscribe();
+            } catch (error) {
+                log.debug(`[RealtimeService] Error cleaning up pooled connection ${channelName}:`, error);
+            }
+            
+            this.connectionPool.delete(channelName);
+        }
+
+        log.info(`[RealtimeService] Removed ${removeCount} connections from pool`);
+    }
+
+    /**
+     * Add connection to pool with size management (2025 Memory Management)
+     */
+    private addToConnectionPool(channelName: string, channel: RealtimeChannel): void {
+        // Check if we need to prune before adding
+        if (this.connectionPool.size >= this.MAX_POOL_SIZE) {
+            this.pruneConnectionPool();
+        }
+
+        this.connectionPool.set(channelName, {
+            channel,
+            lastUsed: Date.now()
+        });
     }
 
     /**
@@ -562,17 +665,34 @@ class RealtimeService {
         }
         this.batchTimeouts.clear();
 
-        // Process any remaining batched messages
-        const batchPromises = Array.from(this.messageQueue.keys()).map(channelName =>
-            this.processBatch(channelName)
-        );
-        await Promise.allSettled(batchPromises);
+        // Process any remaining batched messages, catching errors individually
+        const batchChannelNames = Array.from(this.messageQueue.keys());
+        for (const channelName of batchChannelNames) {
+            try {
+                await this.processBatch(channelName);
+            } catch (error) {
+                log.error(`[RealtimeService] Error processing batch for ${channelName}:`, error);
+            }
+        }
 
-        // Unsubscribe from all channels
-        const unsubscribePromises = Array.from(this.channels.keys()).map(channelName =>
-            this.unsubscribe(channelName)
-        );
-        await Promise.allSettled(unsubscribePromises);
+        // Clean up connection pool, catching errors individually
+        for (const [channelName, { channel }] of this.connectionPool.entries()) {
+            try {
+                await channel.unsubscribe();
+            } catch (error) {
+                log.debug(`[RealtimeService] Error cleaning up pooled connection ${channelName}:`, error);
+            }
+        }
+
+        // Unsubscribe from all channels, catching errors individually
+        const unsubscribeChannelNames = Array.from(this.channels.keys());
+        for (const channelName of unsubscribeChannelNames) {
+            try {
+                await this.unsubscribe(channelName);
+            } catch (error) {
+                log.error(`[RealtimeService] Error unsubscribing from ${channelName}:`, error);
+            }
+        }
 
         // Clear all state
         this.channels.clear();
@@ -593,6 +713,12 @@ class RealtimeService {
         queuedMessages: number;
         rateLimitedChannels: string[];
         connectionRetries: number;
+        poolSize: number;
+        memoryUsage: {
+            queueUtilization: number;
+            poolUtilization: number;
+            isMemoryPressure: boolean;
+        };
     } {
         const rateLimitedChannels = Array.from(this.rateLimiters.entries())
             .filter(([_, limiter]) => limiter.count >= this.MAX_MESSAGES_PER_SECOND)
@@ -601,11 +727,21 @@ class RealtimeService {
         const queuedMessages = Array.from(this.messageQueue.values())
             .reduce((total, queue) => total + queue.length, 0);
 
+        const queueUtilization = (queuedMessages / this.MAX_QUEUE_SIZE) * 100;
+        const poolUtilization = (this.connectionPool.size / this.MAX_POOL_SIZE) * 100;
+        const isMemoryPressure = queueUtilization > 80 || poolUtilization > 80;
+
         return {
             activeChannels: this.channels.size,
             queuedMessages,
             rateLimitedChannels,
-            connectionRetries: this.connectionRetryCount
+            connectionRetries: this.connectionRetryCount,
+            poolSize: this.connectionPool.size,
+            memoryUsage: {
+                queueUtilization,
+                poolUtilization,
+                isMemoryPressure
+            }
         };
     }
 
@@ -641,6 +777,33 @@ class RealtimeService {
      */
     isChannelActive(channelName: string): boolean {
         return this.channels.has(channelName);
+    }
+
+    /**
+     * Manual memory management trigger (2025 Feature)
+     */
+    triggerMemoryCleanup(): void {
+        log.info('[RealtimeService] Manual memory cleanup triggered');
+        
+        const beforeStats = {
+            queueSize: Array.from(this.messageQueue.values()).reduce((total, queue) => total + queue.length, 0),
+            poolSize: this.connectionPool.size
+        };
+
+        this.pruneMessageQueues();
+        this.pruneConnectionPool();
+
+        const afterStats = {
+            queueSize: Array.from(this.messageQueue.values()).reduce((total, queue) => total + queue.length, 0),
+            poolSize: this.connectionPool.size
+        };
+
+        log.info('[RealtimeService] Memory cleanup completed:', {
+            before: beforeStats,
+            after: afterStats,
+            messagesCleared: beforeStats.queueSize - afterStats.queueSize,
+            connectionsCleared: beforeStats.poolSize - afterStats.poolSize
+        });
     }
 }
 

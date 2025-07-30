@@ -8,10 +8,12 @@ import {
   writer,
 } from '@nozbe/watermelondb/decorators';
 
+import { User } from '@/lib/types/user';
+
 export interface NotificationData {
   sourceId: string;
   sourceType: 'post' | 'comment' | 'message' | 'follow' | 'mention' | 'event';
-  sourceUser?: any; // User object
+  sourceUser?: User;
   additionalData?: Record<string, any>;
   deepLink: string;
 }
@@ -30,6 +32,31 @@ export type NotificationType =
   | 'message_received' | 'plant_milestone' | 'expert_response';
 
 /**
+ * Priority levels for notifications
+ */
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+/**
+ * Constants for notification priority levels
+ */
+export const NOTIFICATION_PRIORITIES = {
+  LOW: 'low' as const,
+  NORMAL: 'normal' as const,
+  HIGH: 'high' as const,
+  URGENT: 'urgent' as const,
+} as const;
+
+/**
+ * Array of all valid priority values for validation
+ */
+export const VALID_PRIORITIES: readonly NotificationPriority[] = [
+  NOTIFICATION_PRIORITIES.LOW,
+  NOTIFICATION_PRIORITIES.NORMAL,
+  NOTIFICATION_PRIORITIES.HIGH,
+  NOTIFICATION_PRIORITIES.URGENT,
+] as const;
+
+/**
  * LiveNotification model for real-time community alerts
  */
 export class LiveNotification extends Model {
@@ -40,7 +67,7 @@ export class LiveNotification extends Model {
   @text('title') title!: string;
   @text('message') message!: string;
   @json('data', (json) => json) data!: NotificationData;
-  @text('priority') priority!: string; // 'low' | 'normal' | 'high' | 'urgent'
+  @text('priority') priority!: NotificationPriority;
   @field('is_read') isRead!: boolean;
   @field('is_actionable') isActionable!: boolean;
   @json('actions', (json) => json) actions?: NotificationAction[];
@@ -56,7 +83,8 @@ export class LiveNotification extends Model {
   }
 
   get isHighPriority(): boolean {
-    return this.priority === 'high' || this.priority === 'urgent';
+    return this.priority === NOTIFICATION_PRIORITIES.HIGH || 
+           this.priority === NOTIFICATION_PRIORITIES.URGENT;
   }
 
   get hasActions(): boolean {
@@ -65,6 +93,43 @@ export class LiveNotification extends Model {
 
   get actionCount(): number {
     return this.actions?.length || 0;
+  }
+
+  /**
+   * Get priority display information
+   */
+  get priorityInfo(): { level: NotificationPriority; displayName: string; color: string } {
+    const priorityMap = {
+      [NOTIFICATION_PRIORITIES.LOW]: { 
+        level: NOTIFICATION_PRIORITIES.LOW, 
+        displayName: 'Low', 
+        color: 'text-gray-500' 
+      },
+      [NOTIFICATION_PRIORITIES.NORMAL]: { 
+        level: NOTIFICATION_PRIORITIES.NORMAL, 
+        displayName: 'Normal', 
+        color: 'text-blue-500' 
+      },
+      [NOTIFICATION_PRIORITIES.HIGH]: { 
+        level: NOTIFICATION_PRIORITIES.HIGH, 
+        displayName: 'High', 
+        color: 'text-orange-500' 
+      },
+      [NOTIFICATION_PRIORITIES.URGENT]: { 
+        level: NOTIFICATION_PRIORITIES.URGENT, 
+        displayName: 'Urgent', 
+        color: 'text-red-500' 
+      },
+    };
+    
+    return priorityMap[this.priority];
+  }
+
+  /**
+   * Validates if a priority value is valid
+   */
+  static isValidPriority(priority: string): priority is NotificationPriority {
+    return VALID_PRIORITIES.includes(priority as NotificationPriority);
   }
 
   // Writer methods
@@ -80,7 +145,11 @@ export class LiveNotification extends Model {
     });
   }
 
-  @writer async updatePriority(priority: string) {
+  @writer async updatePriority(priority: NotificationPriority) {
+    if (!LiveNotification.isValidPriority(priority)) {
+      throw new Error(`Invalid priority: ${priority}. Must be one of: ${VALID_PRIORITIES.join(', ')}`);
+    }
+    
     await this.update((notification) => {
       notification.priority = priority;
     });

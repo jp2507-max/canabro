@@ -37,6 +37,25 @@ export type GroupCategory =
  * SocialGroup model for interest-based communities
  */
 export class SocialGroup extends Model {
+  /**
+   * Centralized default values for stats and settings to avoid duplication in writer methods.
+   */
+  static readonly DEFAULT_STATS: GroupStats = {
+    memberCount: 0,
+    postCount: 0,
+    activeMembers: 0,
+    engagementRate: 0,
+    growthRate: 0,
+  };
+
+  static readonly DEFAULT_SETTINGS: GroupSettings = {
+    isPublic: true,
+    allowInvites: true,
+    requireApproval: false,
+    maxMembers: 1000,
+    allowFileSharing: true,
+    moderationLevel: 'medium',
+  };
   static table = 'social_groups';
   static associations: Associations = {
     group_members: { type: 'has_many' as const, foreignKey: 'group_id' },
@@ -138,7 +157,7 @@ export class SocialGroup extends Model {
 
   @writer async incrementMemberCount() {
     await this.update((group) => {
-      const currentStats = group.stats || { memberCount: 0, postCount: 0, activeMembers: 0, engagementRate: 0, growthRate: 0 };
+      const currentStats = group.stats || SocialGroup.DEFAULT_STATS;
       group.stats = {
         ...currentStats,
         memberCount: currentStats.memberCount + 1
@@ -148,7 +167,7 @@ export class SocialGroup extends Model {
 
   @writer async decrementMemberCount() {
     await this.update((group) => {
-      const currentStats = group.stats || { memberCount: 0, postCount: 0, activeMembers: 0, engagementRate: 0, growthRate: 0 };
+      const currentStats = group.stats || SocialGroup.DEFAULT_STATS;
       group.stats = {
         ...currentStats,
         memberCount: Math.max(0, currentStats.memberCount - 1)
@@ -158,7 +177,7 @@ export class SocialGroup extends Model {
 
   @writer async updateModerationLevel(level: 'low' | 'medium' | 'high') {
     await this.update((group) => {
-      const currentSettings = group.settings || { isPublic: true, allowInvites: true, requireApproval: false, maxMembers: 1000, allowFileSharing: true, moderationLevel: 'medium' };
+      const currentSettings = group.settings || SocialGroup.DEFAULT_SETTINGS;
       group.settings = {
         ...currentSettings,
         moderationLevel: level
@@ -168,7 +187,7 @@ export class SocialGroup extends Model {
 
   @writer async setPrivate() {
     await this.update((group) => {
-      const currentSettings = group.settings || { isPublic: true, allowInvites: true, requireApproval: false, maxMembers: 1000, allowFileSharing: true, moderationLevel: 'medium' };
+      const currentSettings = group.settings || SocialGroup.DEFAULT_SETTINGS;
       group.settings = {
         ...currentSettings,
         isPublic: false,
@@ -179,7 +198,7 @@ export class SocialGroup extends Model {
 
   @writer async setPublic() {
     await this.update((group) => {
-      const currentSettings = group.settings || { isPublic: true, allowInvites: true, requireApproval: false, maxMembers: 1000, allowFileSharing: true, moderationLevel: 'medium' };
+      const currentSettings = group.settings || SocialGroup.DEFAULT_SETTINGS;
       group.settings = {
         ...currentSettings,
         isPublic: true,

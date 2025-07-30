@@ -284,7 +284,7 @@ class RealtimeConfigService {
     } {
         return {
             metricsEnabled: true,
-            logLevel: __DEV__ ? 'debug' : 'info',
+            logLevel: (typeof __DEV__ !== 'undefined' && __DEV__) ? 'debug' : 'info',
             performanceTracking: true,
             errorReporting: true
         };

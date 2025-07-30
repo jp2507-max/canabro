@@ -44,6 +44,20 @@ export interface PollResults {
 }
 
 /**
+ * Default poll results structure
+ */
+const DEFAULT_POLL_RESULTS: PollResults = {
+  totalVotes: 0,
+  participantCount: 0,
+  demographics: {
+    experienceLevels: {},
+    growingMethods: {},
+    locations: {}
+  },
+  trends: []
+};
+
+/**
  * CommunityPoll model for live polling
  */
 export class CommunityPoll extends Model {
@@ -156,7 +170,7 @@ export class CommunityPoll extends Model {
   @writer async vote(userId: string, optionIds: string[]) {
     await this.update((poll) => {
       const currentOptions = poll.options || [];
-      const currentResults = poll.results || { totalVotes: 0, participantCount: 0, demographics: { experienceLevels: {}, growingMethods: {}, locations: {} }, trends: [] };
+      const currentResults = poll.results || DEFAULT_POLL_RESULTS;
       
       // Remove previous votes from this user if not allowing multiple choices
       if (!poll.settings?.allowMultipleChoices) {
@@ -192,7 +206,7 @@ export class CommunityPoll extends Model {
   @writer async removeVote(userId: string) {
     await this.update((poll) => {
       const currentOptions = poll.options || [];
-      const currentResults = poll.results || { totalVotes: 0, participantCount: 0, demographics: { experienceLevels: {}, growingMethods: {}, locations: {} }, trends: [] };
+      const currentResults = poll.results || DEFAULT_POLL_RESULTS;
 
       // Remove user's votes from all options
       currentOptions.forEach(option => {
@@ -258,7 +272,7 @@ export class CommunityPoll extends Model {
 
   @writer async addVotingTrend(optionId: string, voteCount: number) {
     await this.update((poll) => {
-      const currentResults = poll.results || { totalVotes: 0, participantCount: 0, demographics: { experienceLevels: {}, growingMethods: {}, locations: {} }, trends: [] };
+      const currentResults = poll.results || DEFAULT_POLL_RESULTS;
       const newTrend: VotingTrend = {
         timestamp: new Date(),
         optionId,

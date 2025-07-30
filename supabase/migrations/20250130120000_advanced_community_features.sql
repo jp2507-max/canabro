@@ -4,6 +4,10 @@
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "postgis";
+
+-- Drop existing tables to ensure a clean slate
+DROP TABLE IF EXISTS community_polls, event_participants, live_events, group_members, social_groups, follow_relationships, user_presence, messages, conversation_threads, live_notifications CASCADE;
 
 -- Create live_notifications table
 CREATE TABLE IF NOT EXISTS live_notifications (
@@ -22,6 +26,7 @@ CREATE TABLE IF NOT EXISTS live_notifications (
     is_actionable BOOLEAN NOT NULL DEFAULT FALSE,
     actions JSONB DEFAULT NULL,
     expires_at TIMESTAMPTZ DEFAULT NULL,
+    last_message_id UUID DEFAULT NULL,
     is_deleted BOOLEAN DEFAULT FALSE,
     last_synced_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -66,6 +71,11 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add foreign key constraint for live_notifications.last_message_id
+ALTER TABLE live_notifications 
+ADD CONSTRAINT fk_live_notifications_last_message 
+FOREIGN KEY (last_message_id) REFERENCES messages(id) ON DELETE SET NULL;
 
 -- Create user_presence table
 CREATE TABLE IF NOT EXISTS user_presence (
@@ -281,8 +291,6 @@ CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_role ON group_members(role);
 
 CREATE INDEX IF NOT EXISTS idx_live_events_host_id ON live_events(host_id);
-CREATE INDEX IF NOT EXISTS idx_live_events_status ON live_events(status);
-CREATE INDEX IF NOT EXISTS idx_live_events_scheduled_start ON live_events(scheduled_start);
 CREATE INDEX IF NOT EXISTS idx_live_events_event_type ON live_events(event_type);
 
 CREATE INDEX IF NOT EXISTS idx_event_participants_event_id ON event_participants(event_id);
@@ -290,8 +298,10 @@ CREATE INDEX IF NOT EXISTS idx_event_participants_user_id ON event_participants(
 CREATE INDEX IF NOT EXISTS idx_event_participants_role ON event_participants(role);
 
 CREATE INDEX IF NOT EXISTS idx_community_polls_created_by ON community_polls(created_by);
-CREATE INDEX IF NOT EXISTS idx_community_polls_status ON community_polls(status);
-CREATE INDEX IF NOT EXISTS idx_community_polls_ends_at ON community_polls(ends_at);
+CREATE INDEX IF NOT EXISTS idx_community_polls_end_time ON community_polls(end_time DESC);
+
+CREATE INDEX IF NOT EXISTS idx_live_events_start_time ON live_events(start_time DESC);
+CREATE INDEX IF NOT EXISTS idx_live_events_end_time ON live_events(end_time DESC);
 
 -- Create updated_at triggers
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -334,7 +344,7 @@ CREATE POLICY "System can insert notifications" ON live_notifications FOR INSERT
 
 -- Conversation threads policies
 CREATE POLICY "Users can view threads they participate in" ON conversation_threads FOR SELECT USING (
-    auth.uid()::text = ANY(SELECT jsonb_array_elements_text(participants))
+    participants @> to_jsonb(auth.uid()::text)
 );
 CREATE POLICY "Users can update threads they created" ON conversation_threads FOR UPDATE USING (auth.uid() = created_by);
 CREATE POLICY "Users can create threads" ON conversation_threads FOR INSERT WITH CHECK (auth.uid() = created_by);
@@ -344,14 +354,14 @@ CREATE POLICY "Users can view messages in their threads" ON messages FOR SELECT 
     EXISTS (
         SELECT 1 FROM conversation_threads 
         WHERE id = thread_id 
-        AND auth.uid()::text = ANY(SELECT jsonb_array_elements_text(participants))
+        AND participants @> to_jsonb(auth.uid()::text)
     )
 );
 CREATE POLICY "Users can send messages to their threads" ON messages FOR INSERT WITH CHECK (
     EXISTS (
         SELECT 1 FROM conversation_threads 
         WHERE id = thread_id 
-        AND auth.uid()::text = ANY(SELECT jsonb_array_elements_text(participants))
+        AND participants @> to_jsonb(auth.uid()::text)
     )
 );
 CREATE POLICY "Users can update their own messages" ON messages FOR UPDATE USING (auth.uid() = sender_id);

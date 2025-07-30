@@ -123,7 +123,6 @@ export class FollowRelationship extends Model {
     await this.update((relationship) => {
       relationship.isActive = true;
       relationship.isDeleted = false;
-      relationship.followedAt = new Date();
     });
   }
 

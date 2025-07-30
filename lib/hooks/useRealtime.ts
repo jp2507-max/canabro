@@ -316,7 +316,7 @@ export function useRealtime(
         return () => {
             unsubscribe();
         };
-    }, [enabled]); // Only depend on enabled to avoid unnecessary re-subscriptions
+    }, [enabled, subscribe, unsubscribe]); // Depend on enabled, subscribe, and unsubscribe to avoid stale closures
 
     // App state listener
     useEffect(() => {

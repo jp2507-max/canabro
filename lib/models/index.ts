@@ -29,7 +29,17 @@ export { FavoriteStrain } from './FavoriteStrain';
 // Advanced Community Features models
 export { ConversationThread } from './ConversationThread';
 export { Message } from './Message';
-export { LiveNotification } from './LiveNotification';
+export { 
+  LiveNotification,
+  NOTIFICATION_PRIORITIES,
+  VALID_PRIORITIES
+} from './LiveNotification';
+export type { 
+  NotificationPriority,
+  NotificationData,
+  NotificationAction,
+  NotificationType
+} from './LiveNotification';
 export { UserPresence } from './UserPresence';
 export { FollowRelationship } from './FollowRelationship';
 export { SocialGroup } from './SocialGroup';

@@ -1,4 +1,11 @@
 import { Model } from '@nozbe/watermelondb';
+// Allowed group member roles
+export type GroupRole = 'member' | 'moderator' | 'admin';
+
+export const GROUP_ROLE_MEMBER: GroupRole = 'member';
+export const GROUP_ROLE_MODERATOR: GroupRole = 'moderator';
+export const GROUP_ROLE_ADMIN: GroupRole = 'admin';
+
 import { Associations } from '@nozbe/watermelondb/Model';
 import {
   field,
@@ -32,7 +39,7 @@ export class GroupMember extends Model {
 
   @text('group_id') groupId!: string;
   @text('user_id') userId!: string;
-  @text('role') role!: string; // 'member' | 'moderator' | 'admin'
+  @text('role') role!: GroupRole;
   @json('permissions', (json) => json) permissions!: GroupPermissions;
   @field('is_active') isActive!: boolean;
   @field('is_deleted') isDeleted?: boolean;
@@ -46,15 +53,15 @@ export class GroupMember extends Model {
 
   // Computed properties
   get isMember(): boolean {
-    return this.role === 'member';
+    return this.role === GROUP_ROLE_MEMBER;
   }
 
   get isModerator(): boolean {
-    return this.role === 'moderator';
+    return this.role === GROUP_ROLE_MODERATOR;
   }
 
   get isAdmin(): boolean {
-    return this.role === 'admin';
+    return this.role === GROUP_ROLE_ADMIN;
   }
 
   get canModerate(): boolean {
@@ -72,7 +79,15 @@ export class GroupMember extends Model {
   }
 
   // Writer methods
-  @writer async updateRole(role: string) {
+  @writer async updateRole(role: GroupRole) {
+    const allowedRoles: GroupRole[] = [
+      GROUP_ROLE_MEMBER,
+      GROUP_ROLE_MODERATOR,
+      GROUP_ROLE_ADMIN
+    ];
+    if (!allowedRoles.includes(role)) {
+      throw new Error(`Invalid group role: ${role}`);
+    }
     await this.update((member) => {
       member.role = role;
       // Update permissions based on role
@@ -82,22 +97,22 @@ export class GroupMember extends Model {
 
   @writer async promoteToModerator() {
     await this.update((member) => {
-      member.role = 'moderator';
-      member.permissions = this.getDefaultPermissionsForRole('moderator');
+      member.role = GROUP_ROLE_MODERATOR;
+      member.permissions = this.getDefaultPermissionsForRole(GROUP_ROLE_MODERATOR);
     });
   }
 
   @writer async promoteToAdmin() {
     await this.update((member) => {
-      member.role = 'admin';
-      member.permissions = this.getDefaultPermissionsForRole('admin');
+      member.role = GROUP_ROLE_ADMIN;
+      member.permissions = this.getDefaultPermissionsForRole(GROUP_ROLE_ADMIN);
     });
   }
 
   @writer async demoteToMember() {
     await this.update((member) => {
-      member.role = 'member';
-      member.permissions = this.getDefaultPermissionsForRole('member');
+      member.role = GROUP_ROLE_MEMBER;
+      member.permissions = this.getDefaultPermissionsForRole(GROUP_ROLE_MEMBER);
     });
   }
 
@@ -146,9 +161,9 @@ export class GroupMember extends Model {
   }
 
   // Helper method to get default permissions for a role
-  private getDefaultPermissionsForRole(role: string): GroupPermissions {
+  private getDefaultPermissionsForRole(role: GroupRole): GroupPermissions {
     switch (role) {
-      case 'admin':
+      case GROUP_ROLE_ADMIN:
         return {
           canPost: true,
           canComment: true,
@@ -157,7 +172,7 @@ export class GroupMember extends Model {
           canManageMembers: true,
           canEditGroup: true,
         };
-      case 'moderator':
+      case GROUP_ROLE_MODERATOR:
         return {
           canPost: true,
           canComment: true,
@@ -166,7 +181,7 @@ export class GroupMember extends Model {
           canManageMembers: false,
           canEditGroup: false,
         };
-      case 'member':
+      case GROUP_ROLE_MEMBER:
       default:
         return {
           canPost: true,

@@ -199,9 +199,21 @@ export class LiveEvent extends Model {
     });
   }
 
+
+  private static getDefaultSettings(): EventSettings {
+    return {
+      requiresApproval: false,
+      allowQuestions: true,
+      allowScreenSharing: false,
+      recordEvent: false,
+      isPublic: true,
+      tags: []
+    };
+  }
+
   @writer async addTag(tag: string) {
     await this.update((event) => {
-      const currentSettings = event.settings || { requiresApproval: false, allowQuestions: true, allowScreenSharing: false, recordEvent: false, isPublic: true, tags: [] };
+      const currentSettings = event.settings || LiveEvent.getDefaultSettings();
       const currentTags = currentSettings.tags || [];
       if (!currentTags.includes(tag)) {
         event.settings = {
@@ -214,7 +226,7 @@ export class LiveEvent extends Model {
 
   @writer async removeTag(tag: string) {
     await this.update((event) => {
-      const currentSettings = event.settings || { requiresApproval: false, allowQuestions: true, allowScreenSharing: false, recordEvent: false, isPublic: true, tags: [] };
+      const currentSettings = event.settings || LiveEvent.getDefaultSettings();
       const currentTags = currentSettings.tags || [];
       event.settings = {
         ...currentSettings,

@@ -10,6 +10,7 @@ import {
   ConversationThread, 
   Message, 
   LiveNotification, 
+  NOTIFICATION_PRIORITIES,
   UserPresence, 
   FollowRelationship, 
   SocialGroup, 
@@ -18,9 +19,21 @@ import {
   EventParticipant, 
   CommunityPoll 
 } from '../models';
+// Import GroupCategory type from models
+import type { GroupCategory } from '../models/SocialGroup';
+import type { NotificationPriority } from '../models';
 import { realtimeService } from './realtimeService';
 import { log } from '../utils/logger';
+
 import { Q } from '@nozbe/watermelondb';
+
+// --- Strict types: use model interfaces for type safety ---
+import type { MessageAttachment } from '../models/Message';
+import type { NotificationData } from '../models/LiveNotification';
+import type { GroupSettings } from '../models/SocialGroup';
+
+import type { EventType } from '../models/LiveEvent';
+import type { EventSettings } from '../models/LiveEvent';
 
 export interface CreateConversationParams {
   threadType: 'direct' | 'group';
@@ -35,7 +48,7 @@ export interface SendMessageParams {
   senderId: string;
   content: string;
   messageType?: string;
-  attachments?: any[];
+  attachments?: MessageAttachment[];
   replyTo?: string;
 }
 
@@ -44,28 +57,28 @@ export interface CreateNotificationParams {
   notificationType: string;
   title: string;
   message: string;
-  data: any;
-  priority?: string;
+  data: NotificationData;
+  priority?: NotificationPriority;
   actions?: any[];
 }
 
 export interface CreateSocialGroupParams {
   name: string;
   description: string;
-  category: string;
+  category: GroupCategory;
   tags: string[];
   createdBy: string;
-  settings?: any;
+  settings?: GroupSettings;
 }
 
 export interface CreateLiveEventParams {
   title: string;
   description: string;
-  eventType: string;
+  eventType: EventType;
   hostId: string;
   scheduledStart: Date;
   scheduledEnd: Date;
-  settings?: any;
+  settings?: EventSettings;
 }
 
 class CommunityService {
@@ -179,7 +192,7 @@ class CommunityService {
           notif.title = params.title;
           notif.message = params.message;
           notif.data = params.data;
-          notif.priority = params.priority || 'normal';
+          notif.priority = params.priority || NOTIFICATION_PRIORITIES.NORMAL;
           notif.isRead = false;
           notif.isActionable = (params.actions?.length || 0) > 0;
           
@@ -226,18 +239,11 @@ class CommunityService {
   async updateUserPresence(userId: string, status: string, presenceData?: any): Promise<UserPresence> {
     try {
       // Try to find existing presence record
-      let presence: UserPresence;
-      
-      try {
-        const existingPresences = await database.get<UserPresence>('user_presence')
-          .query(Q.where('user_id', userId))
-          .fetch();
-        
-        presence = existingPresences[0]!;
-      } catch (error) {
-        // No existing presence found, will create new one
-        presence = null as any;
-      }
+      let presence: UserPresence | undefined;
+      const existingPresences = await database.get<UserPresence>('user_presence')
+        .query(Q.where('user_id', userId))
+        .fetch();
+      presence = existingPresences.length > 0 ? existingPresences[0] : undefined;
 
       if (presence) {
         // Update existing presence
@@ -253,7 +259,6 @@ class CommunityService {
             pres.status = status;
             pres.lastSeen = new Date();
             pres.isOnline = status !== 'offline';
-            
             if (presenceData) pres.presenceData = presenceData;
           });
         });
@@ -309,7 +314,7 @@ class CommunityService {
         return await database.get<SocialGroup>('social_groups').create((grp) => {
           grp.name = params.name;
           grp.description = params.description;
-          grp.category = params.category as any;
+          grp.category = params.category;
           grp.tags = params.tags;
           grp.createdBy = params.createdBy;
           grp.isActive = true;
@@ -336,7 +341,10 @@ class CommunityService {
         await database.get<GroupMember>('group_members').create((member) => {
           member.groupId = group.id;
           member.userId = params.createdBy;
-          member.role = 'admin';
+          // Import GROUP_ROLE_ADMIN from GroupMember
+          // @ts-ignore
+          import { GROUP_ROLE_ADMIN } from '../models/GroupMember';
+          member.role = GROUP_ROLE_ADMIN;
           member.isActive = true;
           member.permissions = {
             canPost: true,
@@ -370,7 +378,7 @@ class CommunityService {
         return await database.get<LiveEvent>('live_events').create((evt) => {
           evt.title = params.title;
           evt.description = params.description;
-          evt.eventType = params.eventType as any;
+          evt.eventType = params.eventType;
           evt.hostId = params.hostId;
           evt.scheduledStart = params.scheduledStart;
           evt.scheduledEnd = params.scheduledEnd;

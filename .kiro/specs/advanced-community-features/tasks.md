@@ -25,40 +25,44 @@
 
 - [ ] **ACF-T02**: Implement real-time messaging system
 - [ ] **ACF-T02.1**: Create DirectMessaging component for private conversations
-  - Build messaging interface using FlashList for message virtualization (`estimatedItemSize: 80`)
+  - Build messaging interface using existing `FlashListWrapper` for message virtualization (`estimatedItemSize: 80`)
   - Implement real-time message delivery with Supabase Realtime v2 and Broadcast API
-  - Add message status indicators with automatic workletization (Reanimated v3.19.0+)
+  - Add error handling using existing `lib/utils/errorHandler` and logging with custom logger
+  - Add message status indicators using existing animation utilities from `lib/animations/useButtonAnimation`
+  - Integrate haptic feedback using existing `lib/utils/haptics` for message interactions
   - Create typing indicators and online presence with Presence v2
-  - Integrate react-native-keyboard-controller for enhanced keyboard handling
-  - Use react-native-fast-image for optimized message media loading
+  - Use existing `EnhancedKeyboardWrapper` for enhanced keyboard handling
+  - Use existing `NetworkResilientImage` for optimized message media loading
   - _Requirements: 1_
 
 - [ ] **ACF-T02.2**: Create GroupChat component for community discussions
-  - Build group conversation interface with FlashList virtualization for member lists
+  - Build group conversation interface using existing `FlashListWrapper` for member lists virtualization
   - Implement real-time group message synchronization with message batching
-  - Add group admin controls with automatic workletization for smooth animations
+  - Add comprehensive error handling using existing error utilities and logging
+  - Add group admin controls using existing `useButtonAnimation` and haptic feedback for smooth interactions
   - Create group invitation system with rate limiting protection (100 msgs/sec)
-  - Use existing ThemedView and EnhancedTextInput with keyboard controller integration
-  - Implement offline-first architecture with WatermelonDB sync
+  - Use existing `ThemedView`, `EnhancedTextInput`, and `EnhancedKeyboardWrapper` components
+  - Implement offline-first architecture with existing WatermelonDB patterns from `lib/hooks/useWatermelon`
   - _Requirements: 1_
 
 - [ ] **ACF-T02.3**: Implement MessageComposer with rich content support
-  - Build enhanced message input with react-native-keyboard-controller integration
-  - Add photo/file attachments using optimized upload-image.ts utility
-  - Implement emoji picker with automatic workletization for smooth animations
+  - Build enhanced message input using existing `EnhancedKeyboardWrapper` and `EnhancedTextInput`
+  - Add photo/file attachments using existing `upload-image.ts` and `image-picker.ts` utilities
+  - Implement emoji picker using existing animation utilities from `lib/animations/useCardAnimation`
   - Create message formatting with real-time preview (bold, italic, mentions)
-  - Add voice message recording with proper cleanup on component unmount
-  - Use MMKV for draft message persistence and offline support
+  - Add internationalization support using existing `useTranslation` and i18n patterns
+  - Add voice message recording with proper cleanup using `useAnimationCleanup`
+  - Use existing storage patterns for draft message persistence and offline support
   - _Requirements: 1_
 
 - [ ] **ACF-T03**: Build live notification system
 - [ ] **ACF-T03.1**: Create LiveNotificationCenter for real-time alerts
-  - Build notification center with FlashList for large notification histories
+  - Build notification center using existing `FlashListWrapper` for large notification histories
   - Implement real-time delivery via Supabase Realtime v2 with automatic reconnection
   - Add notification batching and rate limiting protection (100 msgs/sec)
-  - Create notification history with automatic workletization for smooth scrolling
-  - Integrate with Expo Notifications v2 for enhanced push notifications
-  - Use MMKV for notification persistence and offline queuing
+  - Create notification history using existing `useScrollAnimation` for smooth scrolling
+  - Integrate with existing notification system from `lib/hooks/useNotifications`
+  - Use existing storage patterns for notification persistence and offline queuing
   - _Requirements: 2_
 
 - [ ] **ACF-T03.2**: Implement NotificationPreferences for user control
@@ -70,71 +74,71 @@
   - _Requirements: 2_
 
 - [ ] **ACF-T03.3**: Create ActivityFeed for community engagement tracking
-  - Build real-time activity feed with FlashList virtualization (`estimatedItemSize: 120`)
-  - Implement activity filtering with intelligent prefetching and caching
-  - Add engagement metrics with automatic workletization for smooth interactions
-  - Create activity notification triggers with background processing optimization
-  - Integrate with existing community systems using WatermelonDB for offline-first
-  - Use react-native-fast-image for optimized activity media loading
+  - Build real-time activity feed using existing `FlashListWrapper` (`estimatedItemSize: 120`)
+  - Implement activity filtering with intelligent prefetching using existing `useDebounce` and `useDebouncedCallback`
+  - Add engagement metrics using existing `useButtonAnimation` and haptic feedback for smooth interactions
+  - Create activity notification triggers with existing notification system patterns
+  - Integrate with existing community systems using `useWatermelon` for offline-first
+  - Use existing `NetworkResilientImage` for optimized activity media loading
   - _Requirements: 2_
 
 - [ ] **ACF-T04**: Enhance existing content filtering with advanced moderation
 - [ ] **ACF-T04.1**: Extend existing community service with content moderation
   - Add automated content filtering to existing CommunityService
-  - Implement keyword filtering and spam detection for questions and plant shares
-  - Add image content moderation using AI analysis
-  - Create automated action system (flag, hide, remove) for existing content types
-  - Integrate with existing community posting and content systems
+  - Implement keyword filtering and spam detection for existing `QuestionPostItem` and `PlantSharePostItem`
+  - Add image content moderation using AI analysis with existing image utilities
+  - Create automated action system extending existing `PostActionButtons` and `DeletePostModal`
+  - Integrate with existing `PostItem`, `CommentItem`, and community posting systems
   - _Requirements: 3_
 
 - [ ] **ACF-T04.2**: Create ModerationDashboard for community management
-  - Build moderation interface for community managers
-  - Implement flagged content review and action system for existing content types
-  - Add user management tools (warnings, suspensions, bans)
-  - Create moderation analytics and reporting
-  - Use existing admin interface patterns and permissions
+  - Build moderation interface using existing `ThemedView` and `SegmentedControl` components
+  - Implement flagged content review using existing `FlashListWrapper` for content lists
+  - Add user management tools using existing `AnimatedButton` and confirmation patterns
+  - Create moderation analytics using existing chart patterns from task management
+  - Use existing admin interface patterns and `ProtectedRoute` for permissions
   - _Requirements: 3_
 
 - [ ] **ACF-T04.3**: Implement UserReporting system for community policing
-  - Build user reporting interface for inappropriate content
-  - Create report categorization and priority system
-  - Implement community-based content review
-  - Add appeal system for moderation actions
-  - Integrate with existing user profiles and community features
+  - Build user reporting interface using existing modal patterns and `EnhancedTextInput`
+  - Create report categorization using existing `SegmentedControl` and `TagPill` components
+  - Implement community-based content review using existing community components
+  - Add appeal system using existing form patterns with `EnhancedKeyboardWrapper`
+  - Integrate with existing `UserAvatar` and community features
   - _Requirements: 3_
 
 - [ ] **ACF-T05**: Build enhanced social features
 - [ ] **ACF-T05.1**: Create UserFollowing system for social connections
-  - Build user following and follower management
-  - Implement follower feed with personalized content
-  - Add follow notifications and activity updates
-  - Create follower discovery and recommendation system
-  - Integrate with existing user profiles and community interactions
+  - Build user following management using existing `UserAvatar` and `AnimatedButton` components
+  - Implement follower feed using existing `FlashListWrapper` with personalized content
+  - Add follow notifications using existing `useNotifications` and `NotificationBadge`
+  - Create follower discovery using existing search patterns and `FlashListWrapper`
+  - Integrate with existing `ProfileDetail` and community interaction patterns
   - _Requirements: 4_
 
 - [ ] **ACF-T05.2**: Implement SocialGroups for interest-based communities
-  - Build group creation and management interface
-  - Create group discovery and joining system
-  - Implement group-specific content and discussions
-  - Add group moderation and admin controls
-  - Use existing community patterns and group management
+  - Build group creation using existing form patterns with `EnhancedKeyboardWrapper` and `EnhancedTextInput`
+  - Create group discovery using existing `FlashListWrapper` and search components
+  - Implement group-specific content using existing `PostItem` and community components
+  - Add group moderation using existing `SegmentedControl` and admin patterns
+  - Use existing `TopicTag` and `TagPill` components for group categorization
   - _Requirements: 4_
 
 - [ ] **ACF-T05.3**: Create UserAchievements and gamification system
-  - Build achievement system for community participation
-  - Implement point scoring and leaderboards
-  - Add badges and recognition for helpful contributions
-  - Create achievement notifications and celebrations
-  - Integrate with existing user profiles and activity tracking
+  - Build achievement system using existing `AnimatedCard` and badge components
+  - Implement point scoring and leaderboards using existing `FlashListWrapper` and `StatItem`
+  - Add badges using existing `TagPill` and `NotificationBadge` components
+  - Create achievement notifications using existing `useNotifications` and celebration animations
+  - Integrate with existing `ProfileDetail` and activity tracking patterns
   - _Requirements: 4_
 
 - [ ] **ACF-T06**: Implement live community events and features
 - [ ] **ACF-T06.1**: Create LiveEvents system for community gatherings
-  - Build live event creation and management interface
-  - Implement event scheduling and calendar integration
-  - Add event notifications and reminder system
-  - Create event participation tracking and analytics
-  - Integrate with existing calendar and notification systems
+  - Build live event creation using existing form patterns with `EnhancedKeyboardWrapper`
+  - Implement event scheduling using existing calendar components from `components/calendar`
+  - Add event notifications using existing `useNotifications` and `CareReminders` patterns
+  - Create event participation tracking using existing analytics patterns
+  - Integrate with existing `DateSelector` and notification scheduling systems
   - _Requirements: 5_
 
 - [ ] **ACF-T06.2**: Implement LiveDiscussions for real-time conversations
@@ -146,36 +150,36 @@
   - _Requirements: 5_
 
 - [ ] **ACF-T06.3**: Create CommunityPolls for collective decision making
-  - Build poll creation and voting interface
-  - Implement real-time vote counting and results display
-  - Add poll analytics and participation tracking
-  - Create poll notifications and engagement features
-  - Integrate with existing community posting and interaction systems
+  - Build poll creation using existing form patterns and `SegmentedControl` for options
+  - Implement real-time vote counting using existing realtime patterns and `AnimatedSpinner`
+  - Add poll analytics using existing chart components and `StatItem` displays
+  - Create poll notifications using existing `useNotifications` and engagement patterns
+  - Integrate with existing `PostItem` and community interaction systems
   - _Requirements: 5_
 
 - [ ] **ACF-T07**: Build advanced search and discovery features
 - [ ] **ACF-T07.1**: Create AdvancedSearch for comprehensive content discovery
-  - Build advanced search interface with multiple filters
-  - Implement full-text search across all community content
-  - Add search result ranking and relevance scoring
-  - Create saved searches and search alerts
-  - Integrate with existing search patterns and knowledge base
+  - Build advanced search using existing `PlantSearchBar` and filter patterns
+  - Implement full-text search extending existing search components
+  - Add search result ranking using existing `FlashListWrapper` and result components
+  - Create saved searches using existing storage patterns and `TagPill` displays
+  - Integrate with existing `SearchResults` and `PlantFilters` components
   - _Requirements: 6_
 
 - [ ] **ACF-T07.2**: Implement ContentRecommendations for personalized discovery
-  - Build recommendation engine based on user interests and activity
-  - Create personalized content feeds and suggestions
-  - Implement trending content detection and promotion
-  - Add recommendation explanation and feedback system
-  - Use existing user behavior tracking and analytics
+  - Build recommendation engine using existing analytics and user tracking patterns
+  - Create personalized content feeds using existing `FlashListWrapper` and `PostItem` components
+  - Implement trending content using existing `TopicList` and `TopicTag` components
+  - Add recommendation explanation using existing `TagPill` and feedback patterns
+  - Use existing user behavior tracking from community hooks and analytics
   - _Requirements: 6_
 
 - [ ] **ACF-T07.3**: Create TopicTrending for community interest tracking
-  - Build trending topic detection and display system
-  - Implement topic-based content organization
-  - Add topic following and notification system
-  - Create topic analytics and engagement metrics
-  - Integrate with existing tagging and categorization systems
+  - Build trending topic detection extending existing `TopicList` and `TopicTag` components
+  - Implement topic-based content organization using existing categorization patterns
+  - Add topic following using existing follow patterns and `NotificationBadge`
+  - Create topic analytics using existing analytics components and `StatItem` displays
+  - Integrate with existing `TagPill` and community tagging systems
   - _Requirements: 6_
 
 - [ ] **ACF-T08**: Performance optimization and testing
@@ -184,17 +188,17 @@
   - Create intelligent message batching with rate limiting (100 msgs/sec per user)
   - Add exponential backoff reconnection logic with connection pooling
   - Optimize database queries with proper indexing and connection pooling
-  - Test performance with FlashList virtualization for 10k+ message histories
-  - Implement memory management with proper animation cleanup (cancelAnimation)
+  - Test performance with existing `FlashListWrapper` for 10k+ message histories
+  - Implement memory management using existing `useAnimationCleanup` and `useResourceCleanup`
   - _Requirements: 1, 2_
 
 - [ ] **ACF-T08.2**: Implement caching and data synchronization (2025 Optimizations)
-  - Create intelligent caching with MMKV for high-performance storage
-  - Implement offline-first messaging with WatermelonDB sync and conflict resolution
+  - Create intelligent caching using existing storage patterns and utilities
+  - Implement offline-first messaging using existing `useWatermelon` and sync patterns
   - Add message compression and deduplication for network optimization
-  - Create data consistency checks with automatic repair mechanisms
-  - Test synchronization with background app refresh optimization
-  - Implement smart prefetching based on user behavior patterns
+  - Create data consistency checks using existing database utilities
+  - Test synchronization using existing `useSyncHealth` and app state management
+  - Implement smart prefetching using existing `useDebounce` and behavior patterns
   - _Requirements: 1, 2_
 
 - [ ] **ACF-T08.3**: Test community features integration and user experience
