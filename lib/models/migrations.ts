@@ -650,6 +650,7 @@ const migrations = schemaMigrations({
             { name: 'parent_task_id', type: 'string', isOptional: true },
             { name: 'sequence_number', type: 'number', isOptional: true },
             { name: 'environmental_conditions', type: 'string', isOptional: true }, // JSON string
+            { name: 'escalation_start_time', type: 'string', isOptional: true }, // ISO string for escalation tracking
           ],
         }),
       ],

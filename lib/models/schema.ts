@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 32, // Bumped to 32 to add schedule_templates table and extend plant_tasks
+  version: 33, // Bumped to 33 to add indexes for due_date and priority columns in plant_tasks
   tables: [
     tableSchema({
       name: 'profiles',
@@ -181,12 +181,12 @@ export default appSchema({
         { name: 'title', type: 'string' },
         { name: 'description', type: 'string', isOptional: true },
         { name: 'task_type', type: 'string' },
-        { name: 'due_date', type: 'string' }, // Storing date as string based on model
+        { name: 'due_date', type: 'string', isIndexed: true }, // Added index for performance optimization
         { name: 'status', type: 'string' },
         { name: 'notification_id', type: 'string', isOptional: true },
         { name: 'user_id', type: 'string', isIndexed: true },
         // New task management fields for advanced calendar system
-        { name: 'priority', type: 'string', isOptional: true },
+        { name: 'priority', type: 'string', isOptional: true, isIndexed: true }, // Added index for performance optimization
         { name: 'estimated_duration', type: 'number', isOptional: true },
         { name: 'template_id', type: 'string', isOptional: true },
         { name: 'week_number', type: 'number', isOptional: true },

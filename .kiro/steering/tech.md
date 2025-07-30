@@ -12,6 +12,8 @@
 - **Styling**: NativeWind v4 (Tailwind CSS for React Native)
 - **Forms**: React Hook Form with Zod validation
 - **Animations**: React Native Reanimated v3.19.0+ with automatic workletization
+- **Translations**: i18n for translations is a must
+- **Logs**: use our customlogger component
 
 ## Key Libraries
 - **Authentication**: Supabase Auth

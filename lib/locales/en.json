@@ -416,6 +416,161 @@
       "missingInfoSubtitle": "No Plant ID was provided to view details."
     }
   },
+  "templates": {
+    "searchPlaceholder": "Search templates...",
+    "resultsCount_one": "{{count}} template found",
+    "resultsCount_other": "{{count}} templates found",
+    "categories": {
+      "all": "All",
+      "indoor": "Indoor",
+      "outdoor": "Outdoor", 
+      "hydroponic": "Hydroponic",
+      "soil": "Soil",
+      "beginner": "Beginner",
+      "advanced": "Advanced"
+    },
+    "sortOptions": {
+      "popular": "Popular",
+      "newest": "Newest",
+      "rating": "Rating",
+      "duration": "Duration"
+    },
+    "templateCard": {
+      "weeks": "weeks",
+      "tasks": "tasks",
+      "more": "more",
+      "avgTask": "avg/task"
+    },
+    "emptyState": {
+      "noResults": "No templates found",
+      "noTemplates": "No templates available",
+      "tryDifferentSearch": "Try a different search term",
+      "createFirst": "Create your first template to get started"
+    },
+    "noDescription": "No description available",
+    "demo": {
+      "title": "Template Library",
+      "description": "Browse and select schedule templates for your plants",
+      "selected": "Selected",
+      "weeks": "weeks",
+      "tasks": "tasks",
+      "previewTitle": "Template Preview",
+      "saveSuccess": "Template Saved",
+      "templateName": "Template Name",
+      "duration": "Duration",
+      "category": "Category",
+      "public": "Public",
+      "createNew": "Create New Template",
+      "editSample": "Edit Sample Template",
+      "features": "Features",
+      "feature1": "Week-by-week task planning",
+      "feature2": "Drag-and-drop task scheduling",
+      "feature3": "Task template library",
+      "feature4": "Template validation",
+      "feature5": "Preview functionality"
+    },
+    "editor": {
+      "createTemplate": "Create Template",
+      "editTemplate": "Edit Template",
+      "preview": "Preview",
+      "basicInfo": "Basic Information",
+      "templateName": "Template Name",
+      "templateNamePlaceholder": "Enter template name",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your growing schedule",
+      "category": "Category",
+      "durationWeeks": "Duration (Weeks)",
+      "makePublic": "Make Public",
+      "weeklyPlanning": "Weekly Planning",
+      "taskLibrary": "Task Library",
+      "week": "Week",
+      "tasks": "tasks",
+      "addTask": "Add Task",
+      "dropHere": "Drop here",
+      "validation": {
+        "nameRequired": "Template name is required",
+        "durationRange": "Duration must be between 1 and 52 weeks",
+        "tasksRequired": "At least one task is required"
+      }
+    },
+    "sharing": {
+      "shareTemplate": "Share Template",
+      "share": "Share",
+      "versions": "Versions",
+      "shareLink": "Share Link",
+      "shareLinkDescription": "Share a link to this public template",
+      "exportTemplate": "Export Template",
+      "exportDescription": "Export template as JSON for sharing",
+      "importTemplate": "Import Template",
+      "importDescription": "Import a template from JSON data",
+      "makePublic": "Make Public",
+      "makePublicDescription": "Share this template with the community",
+      "makePrivate": "Make Private",
+      "makePrivateDescription": "Remove this template from public sharing",
+      "templateInfo": "Template Information",
+      "category": "Category",
+      "duration": "Duration",
+      "weeks": "weeks",
+      "tasks": "Tasks",
+      "usageCount": "Times Used",
+      "pasteTemplateData": "Paste the template JSON data below:",
+      "pasteHere": "Paste template data here...",
+      "import": "Import",
+      "importing": "Importing...",
+      "exportError": "Failed to export template",
+      "shareError": "Failed to share template",
+      "importError": "Import Error",
+      "emptyImportData": "Please paste template data to import",
+      "invalidImportData": "Invalid template data format",
+      "importSuccess": "Import Successful",
+      "importSuccessMessage": "Template has been imported successfully",
+      "visibilityChanged": "Visibility Changed",
+      "nowPublic": "Template is now public and visible to the community",
+      "nowPrivate": "Template is now private and only visible to you",
+      "visibilityError": "Failed to change template visibility",
+      "versionHistory": "Version History",
+      "current": "Current",
+      "restore": "Restore",
+      "restoreVersion": "Restore Version",
+      "restoreVersionConfirm": "Are you sure you want to restore version {{version}}? This will create a new version with the restored data.",
+      "restoreSuccess": "Version Restored",
+      "restoreSuccessMessage": "Successfully restored version {{version}}",
+      "restoreError": "Failed to restore version",
+      "noVersionHistory": "No version history available",
+      "applicationError": "Failed to apply template to plants",
+      "quickShare": "Quick Share",
+      "publicTemplate": "This template is public",
+      "privateTemplate": "This template is private"
+    },
+    "applicator": {
+  "applyTemplate": "Apply Template",
+  "applicationSettings": "Application Settings",
+  "startDate": "Start Date",
+  "replaceExisting": "Replace Existing Tasks",
+  "replaceExistingDescription": "Replace conflicting tasks with template tasks",
+  "adjustForGrowthStage": "Adjust for Growth Stage",
+  "adjustForGrowthStageDescription": "Modify tasks based on plant's current growth stage",
+  "skipWeekends": "Skip Weekends",
+  "skipWeekendsDescription": "Don't schedule tasks on weekends",
+  "selectPlants": "Select Plants",
+  "tasksToCreate": "Tasks to Create",
+  "estimatedDuration": "Estimated Duration",
+  "conflicts": "Conflicts",
+  "moreWarnings": "more warnings",
+  "taskConflict": "{{taskType}} task on {{date}} conflicts with existing task",
+  "growthStageWarning": "Some tasks may not be suitable for {{stage}} stage",
+  "noPlants": "No Plants Selected",
+  "noPlantsDescription": "Please select at least one plant to apply the template",
+  "applyToPlants_one": "Apply to {{count}} Plant",
+  "applyToPlants_other": "Apply to {{count}} Plants",
+  "applying": "Applying",
+  "plantedOn": "Planted on {{date}}",
+  "successMessage": "Successfully applied template to {{count}} plant with {{tasks}} tasks created",
+  "successMessage_other": "Successfully applied template to {{count}} plants with {{tasks}} tasks created",
+  "failureMessage": "Failed to apply template to {{count}} plant",
+  "failureMessage_other": "Failed to apply template to {{count}} plants"
+    }
+  },
   "tasks": {
     "taskType": "Task Type",
     "selectPlant": "Select Plant",
@@ -439,8 +594,13 @@
     "types": {
       "watering": "Watering",
       "feeding": "Feeding",
+      "inspection": "Inspection",
       "pruning": "Pruning",
-      "harvesting": "Harvesting"
+      "harvest": "Harvest",
+      "transplant": "Transplant",
+      "training": "Training",
+      "defoliation": "Defoliation",
+      "flushing": "Flushing"
     },
     "addTask": "Add Task",
     "addTaskToPlant": "Add Task to Plant",
@@ -821,7 +981,9 @@
     "dataPoint": {
       "title": "Data Point",
       "message": "{{metric}}: {{value}}{{unit}} on {{date}}"
-    }
+    },
+    "chartError": "Chart rendering error",
+    "chartErrorDescription": "Please try refreshing or contact support"
   },
   "harvestRecorded": "Harvest data has been successfully recorded!",
   "failedToSaveHarvest": "Failed to save harvest data. Please try again.",
@@ -1086,6 +1248,165 @@
       "monthly": "Monthly"
     },
     "calendarWarning": "Reminder created successfully, but failed to add to calendar. You can add it manually if needed."
+  },
+  "taskNotifications": {
+    "createTask": "Create Task",
+    "taskType": "Task Type",
+    "title": "Title",
+    "titlePlaceholder": "Enter task title",
+    "description": "Description (Optional)",
+    "descriptionPlaceholder": "Add additional details about this task",
+    "scheduledFor": "Scheduled For",
+    "priority": "Priority",
+    "estimatedDuration": "Duration (minutes)",
+    "repeatInterval": "Repeat Every (Days)",
+    "repeatIntervalPlaceholder": "Leave empty for one-time task",
+    "creating": "Creating...",
+    "types": {
+      "watering": "Watering",
+      "feeding": "Feeding",
+      "inspection": "Inspection",
+      "pruning": "Pruning",
+      "training": "Training",
+      "harvest": "Harvest",
+      "custom": "Custom"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "defaultDescriptions": {
+      "watering": "Time to water your plant",
+      "feeding": "Time to feed your plant with nutrients",
+      "inspection": "Time to check on your plant",
+      "pruning": "Time to prune your plant",
+      "training": "Time to train your plant",
+      "harvest": "Time to harvest your plant",
+      "custom": "Custom task for your plant"
+    },
+    "permissionRequired": "Notification Permission Required",
+    "permissionRequiredDescription": "To receive task reminders, please enable notifications in your device settings.",
+    "permissionsDisabled": "Notifications Disabled",
+    "permissionsDisabledDescription": "Enable notifications in your device settings to receive task reminders for your plants.",
+    "openSettings": "Open Settings",
+    "error": "Error",
+    "errorCreatingTask": "Failed to create task. Please try again.",
+    "errorBatchMarkingDone": "Failed to mark some tasks as completed",
+    "repeatOptions": "Repeat Options",
+    "customRepeatInterval": "Custom Repeat Interval (Days)",
+    "customRepeatIntervalPlaceholder": "Enter custom interval in days",
+    "addToDeviceCalendar": "Add to Device Calendar",
+    "calendarEventDescription": "Create a calendar event for this task",
+    "calendarAccessDenied": "Calendar access denied - enable in settings",
+    "calendarPermissionRequired": "Calendar permission required",
+    "repeatIntervals": {
+      "daily": "Daily",
+      "every3Days": "Every 3 days",
+      "weekly": "Weekly",
+      "biweekly": "Bi-weekly",
+      "monthly": "Monthly"
+    },
+    "calendarWarning": "Task created successfully, but failed to add to calendar. You can add it manually if needed."
+  },
+  "taskCompletion": {
+    "title": "Complete Task",
+    "modeSelector": {
+      "title": "Completion Mode"
+    },
+    "quickMode": {
+      "title": "Quick",
+      "description": "Simple completion with notes"
+    },
+    "comprehensiveMode": {
+      "title": "Comprehensive",
+      "description": "Detailed tracking with metrics"
+    },
+    "sections": {
+      "environmental": "Environmental Conditions",
+      "supplies": "Supplies Used",
+      "photos": "Photos"
+    },
+    "fields": {
+      "notes": "Notes",
+      "notesPlaceholder": "Add completion notes...",
+      "duration": "Duration (minutes)",
+      "durationPlaceholder": "How long did this task take?",
+      "temperature": "Temperature",
+      "humidity": "Humidity",
+      "pH": "pH Level",
+      "vpd": "VPD",
+      "supplyPlaceholder": "Enter supply name",
+      "amount": "Amount"
+    },
+    "buttons": {
+      "complete": "Complete Task",
+      "submitting": "Completing...",
+      "cancel": "Cancel",
+      "takePhoto": "Take Photo",
+      "selectPhoto": "Select Photo"
+    },
+    "validation": {
+      "durationMin": "Duration must be 0 or greater",
+      "humidityMin": "Humidity must be 0 or greater",
+      "humidityMax": "Humidity cannot exceed 100%",
+      "phMin": "pH must be 0 or greater",
+      "phMax": "pH cannot exceed 14"
+    },
+    "errors": {
+      "submitTitle": "Completion Error",
+      "submitMessage": "Failed to complete task. Please try again."
+    },
+    "vpdOptimal": "Optimal VPD range for healthy growth",
+    "vpdSuboptimal": "VPD is outside optimal range (0.8-1.5 kPa)"
+  },
+  "taskAnalytics": {
+    "title": "Task Analytics",
+    "loading": "Loading analytics...",
+    "error": "Failed to load analytics",
+    "retry": "Retry",
+    "noData": "No analytics data available",
+    "noDataDescription": "Complete some tasks to see analytics and insights",
+    "filters": {
+      "taskTypes": "Filter by Task Type"
+    },
+    "timeRanges": {
+      "7d": "7 Days",
+      "30d": "30 Days",
+      "90d": "90 Days",
+      "all": "All Time"
+    },
+    "chartTypes": {
+      "completion": "Completion Rates",
+      "trends": "Trends",
+      "patterns": "Patterns"
+    },
+    "overallStats": {
+      "completionRate": "Overall Completion Rate",
+      "tasks": "tasks",
+      "tasksPerDay": "tasks/day"
+    },
+    "suggestions": {
+      "title": "Optimization Suggestions",
+      "impact": {
+        "low": "Low Impact",
+        "medium": "Medium Impact",
+        "high": "High Impact"
+      },
+      "actionable": "Actionable"
+    },
+    "chartError": "Chart rendering error",
+    "chartErrorDescription": "Please try refreshing or contact support"
+  },
+  "environmental": {
+    "errorTitle": "Data Load Error",
+    "dataLoadErrorMessage": "Failed to load environmental data. Please check your connection and try again.",
+    "errorBoundary": {
+      "title": "Dashboard Error",
+      "description": "Something went wrong with the environmental dashboard.",
+      "retry": "Retry"
+    }
   }
 }
 

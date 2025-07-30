@@ -26,3 +26,9 @@ export * from './diary';
 
 // Community hooks
 export * from './community';
+
+// Task reminder hooks
+export * from './useTaskReminders';
+
+// Task analytics hooks
+export * from './useTaskAnalytics';

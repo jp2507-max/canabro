@@ -163,4 +163,7 @@ console.log('[DB Init] Database instance created.');
 // Export the initialized database instance
 export default database;
 
+// Export getDatabase function for compatibility
+export const getDatabase = () => database;
+
 // Removed the redundant synchronizeWithSupabase function

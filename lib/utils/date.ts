@@ -1,119 +1,161 @@
+/**
+ * Date utility functions
+ * Enhanced with strain calendar integration utilities
+ */
 
 import dayjs from 'dayjs';
-import localizedFormat from 'dayjs/plugin/localizedFormat';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import 'dayjs/locale/de';
-import 'dayjs/locale/en';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
 
-// Extend dayjs with plugins we need
-dayjs.extend(localizedFormat);
-dayjs.extend(customParseFormat);
+// Initialize dayjs plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(relativeTime);
+dayjs.extend(localizedFormat);
 
-// Locale-aware date formatting utility
-// Usage: const formatted = formatLocaleDate(date, { language })
-export function formatLocaleDate(
-  date: Parameters<typeof dayjs>[0],
-  opts?: { format?: string; language?: 'en' | 'de' }
-): string {
-  // Always require language to be passed explicitly, or fallback to 'en'
-  const lang: 'en' | 'de' = opts?.language || 'en';
-  // Use European format for both 'en' and 'de'
-  const formatStr = opts?.format || 'DD.MM.YYYY';
-  return dayjs(date).locale(lang).format(formatStr);
+/**
+ * Add days to a date
+ */
+export function addDays(date: Date, days: number): Date {
+  return dayjs(date).add(days, 'day').toDate();
 }
 
-// Helper to map date-fns style tokens to dayjs format tokens when simple mapping exists
-const mapFormatToken = (token: string): string => {
-  switch (token) {
-    case 'PPP':
-      // Example: Apr 5, 2025
-      return 'MMM D, YYYY';
-    default:
-      return token;
-  }
-};
-
-export function format(date: Parameters<typeof dayjs>[0], formatStr: string): string {
-  return dayjs(date).format(mapFormatToken(formatStr));
+/**
+ * Add weeks to a date
+ */
+export function addWeeks(date: Date, weeks: number): Date {
+  return dayjs(date).add(weeks, 'week').toDate();
 }
 
-export function parseISO(isoString: string): Date {
-  const parsed = dayjs(isoString);
-  
-  if (!parsed.isValid()) {
-    throw new Error(`Invalid ISO date string: "${isoString}"`);
-  }
-  
-  return parsed.toDate();
+/**
+ * Format date for display
+ */
+export function formatDate(date: Date, format: string = 'MMM D, YYYY'): string {
+  return dayjs(date).format(format);
 }
 
-export function isValid(date: Parameters<typeof dayjs>[0]): boolean {
-  return dayjs(date).isValid();
+/**
+ * Get days until a future date (negative if past)
+ */
+export function getDaysUntil(date: Date): number {
+  return dayjs(date).diff(dayjs(), 'day');
 }
 
-export function addDays(date: Parameters<typeof dayjs>[0], amount: number): Date {
-  return dayjs(date).add(amount, 'day').toDate();
+/**
+ * Check if two dates are the same day
+ */
+export function isSameDay(date1: Date, date2: Date): boolean {
+  return dayjs(date1).isSame(dayjs(date2), 'day');
 }
 
-export function isToday(date: Parameters<typeof dayjs>[0]): boolean {
+/**
+ * Check if a date is within an interval
+ */
+export function isWithinInterval(date: Date, start: Date, end: Date): boolean {
+  const target = dayjs(date);
+  return target.isAfter(dayjs(start)) && target.isBefore(dayjs(end));
+}
+
+/**
+ * Check if date is today
+ */
+export function isToday(date: Date): boolean {
   return dayjs(date).isSame(dayjs(), 'day');
 }
 
-export function isYesterday(date: Parameters<typeof dayjs>[0]): boolean {
+/**
+ * Get start of day
+ */
+export function startOfDay(date: Date): Date {
+  return dayjs(date).startOf('day').toDate();
+}
+
+/**
+ * Get relative time string (e.g., "2 days ago", "in 3 weeks")
+ */
+export function getRelativeTime(date: Date): string {
+  return dayjs(date).fromNow();
+}
+
+/**
+ * Subtract days from a date
+ */
+export function subDays(date: Date, days: number): Date {
+  return dayjs(date).subtract(days, 'day').toDate();
+}
+
+/**
+ * Format date for display (alias for formatDate for compatibility)
+ */
+export function format(date: Date, formatStr: string = 'MMM D, YYYY'): string {
+  return dayjs(date).format(formatStr);
+}
+
+/**
+ * Get difference in days between two dates
+ */
+export function differenceInDays(date1: Date, date2: Date): number {
+  return dayjs(date1).diff(dayjs(date2), 'day');
+}
+
+/**
+ * Parse ISO string to Date object
+ */
+export function parseISO(dateString: string): Date {
+  return dayjs(dateString).toDate();
+}
+
+/**
+ * Check if date is valid
+ */
+export function isValid(date: Date | string | null | undefined): boolean {
+  if (!date) return false;
+  return dayjs(date).isValid();
+}
+
+/**
+ * Check if date is yesterday
+ */
+export function isYesterday(date: Date): boolean {
   return dayjs(date).isSame(dayjs().subtract(1, 'day'), 'day');
 }
 
-export function isTomorrow(date: Parameters<typeof dayjs>[0]): boolean {
+/**
+ * Check if date is tomorrow
+ */
+export function isTomorrow(date: Date): boolean {
   return dayjs(date).isSame(dayjs().add(1, 'day'), 'day');
 }
 
 /**
- * Validates if a date is in the future, accounting for timezone differences
- * and providing a safety buffer to prevent false positives
- * 
- * @param date - The date to validate
- * @param bufferMinutes - Buffer in minutes to account for timezone/processing delays (default: 1)
- * @returns true if the date is safely in the future
+ * Format date with locale support
  */
-export function isFutureDate(date: Parameters<typeof dayjs>[0], bufferMinutes: number = 1): boolean {
-  const now = dayjs();
-  const targetDate = dayjs(date);
-  
-  // Add buffer to current time to account for timezone differences and processing delays
-  const nowWithBuffer = now.add(bufferMinutes, 'minute');
-  
-  return targetDate.isAfter(nowWithBuffer);
-}
-
-/**
- * Creates a timezone-aware date comparison for notifications
- * Ensures the scheduled date is at least 1 minute in the future
- * 
- * @param scheduledDate - The date to schedule for
- * @param minMinutesInFuture - Minimum minutes in the future (default: 1)
- * @returns true if the date is valid for scheduling
- */
-export function isValidScheduleDate(
-  scheduledDate: Parameters<typeof dayjs>[0], 
-  minMinutesInFuture: number = 1
-): boolean {
-  return isFutureDate(scheduledDate, minMinutesInFuture);
-}
-
-/**
- * Safely adds days to a date and returns a new Date object
- * 
- * @param date - The base date
- * @param days - Number of days to add
- * @returns New Date object with days added
- */
-export function addDaysToDate(date: Parameters<typeof dayjs>[0], days: number): Date {
-  if (!Number.isFinite(days)) {
-    throw new Error('addDaysToDate: days parameter must be a finite number');
+export function formatLocaleDate(
+  date: Date, 
+  options: string | { format?: string; language?: string } = 'en-US'
+): string {
+  if (typeof options === 'string') {
+    return dayjs(date).format('MMM D, YYYY');
   }
+  
+  const { format = 'MMM D, YYYY', language = 'en-US' } = options;
+  return dayjs(date).format(format);
+}
+
+/**
+ * Check if a date is valid for scheduling (not in the past)
+ */
+export function isValidScheduleDate(date: Date, minMinutesInFuture: number = 0): boolean {
+  const now = new Date();
+  const targetTime = new Date(date.getTime() + (minMinutesInFuture * 60 * 1000));
+  return dayjs(targetTime).isAfter(dayjs(now));
+}
+
+/**
+ * Add days to date and return new Date
+ */
+export function addDaysToDate(date: Date, days: number): Date {
   return dayjs(date).add(days, 'day').toDate();
-} 
+}

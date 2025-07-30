@@ -9,7 +9,7 @@
  * - Dark mode support
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, Dimensions, Alert, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
@@ -22,6 +22,7 @@ import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import { usePlantMetricsWatermelon } from '@/lib/hooks/plants/usePlantMetricsWatermelon';
 import { PlantMetrics } from '@/lib/models/PlantMetrics';
 import { triggerLightHaptic } from '@/lib/utils/haptics';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // (Removed static screenWidth; will use responsive state inside component)
 
@@ -93,7 +94,30 @@ interface MetricsChartProps {
   className?: string;
 }
 
-export const MetricsChart: React.FC<MetricsChartProps> = ({
+/**
+ * Chart Error Fallback Component
+ */
+const ChartErrorFallback: React.FC = () => {
+  const { t } = useTranslation();
+
+  return (
+    <ThemedView className="items-center py-8 space-y-3">
+      <OptimizedIcon
+        name="warning"
+        size={32}
+        className="text-red-500 dark:text-red-400"
+      />
+      <ThemedText className="text-center text-neutral-600 dark:text-neutral-400">
+        {t('metricsChart.chartError', 'Chart rendering error')}
+      </ThemedText>
+      <ThemedText className="text-center text-sm text-neutral-500 dark:text-neutral-500">
+        {t('metricsChart.chartErrorDescription', 'Please try refreshing or contact support')}
+      </ThemedText>
+    </ThemedView>
+  );
+};
+
+export const MetricsChart: React.FC<MetricsChartProps> = React.memo(({
   plantId,
   metricType = 'height',
   timeRange: initialTimeRange = '30d',
@@ -152,66 +176,36 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
   // Get current metric configuration
   const currentMetricConfig = METRIC_CONFIGS.find(config => config.key === selectedMetric);
 
-  // Process data for chart
-  const chartData = useMemo(() => {
-    if (!metricsData || !currentMetricConfig) {
-      return null;
+  // Memoized date format function
+  const getDateFormat = useMemo(() => (timeRange: TimeRange): string => {
+    switch (timeRange) {
+      case '7d':
+        return 'MM/DD';
+      case '30d':
+        return 'MM/DD';
+      case '90d':
+        return 'MMM';
+      case 'all':
+        return 'MMM YY';
+      default:
+        return 'MM/DD';
     }
-
-    // Filter and sort data - use recordedAt (camelCase)
-    const filteredData = metricsData 
-      .filter(metric => metric[selectedMetric] != null) 
-      .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime()); 
-
-    if (filteredData.length === 0) {
-      return null;
-    }
-
-    // Prepare chart data for react-native-gifted-charts
-    const getDateFormat = (timeRange: TimeRange): string => {
-      switch (timeRange) {
-        case '7d':
-          return 'MM/DD';
-        case '30d':
-          return 'MM/DD';
-        case '90d':
-          return 'MMM';
-        case 'all':
-          return 'MMM YY';
-        default:
-          return 'MM/DD';
-      }
-    };
-
-    const chartPoints = filteredData.map((metric, index) => {
-      const value = metric[selectedMetric] as number;
-      const label = dayjs(metric.recordedAt).format(getDateFormat(selectedTimeRange));
-      
-      return {
-        value: value || 0,
-        label: index % Math.ceil(filteredData.length / 6) === 0 ? label : '', // Show only some labels to avoid crowding
-        dataPointText: `${(value || 0).toFixed(currentMetricConfig.key === 'phLevel' ? 1 : 0)}`,
-        onFocus: () => handleDataPointClick(metric, value, dayjs(metric.recordedAt).format('MMM DD, YYYY')),
-      };
-    });
-
-    return chartPoints;
-  }, [metricsData, selectedMetric, selectedTimeRange, currentMetricConfig]);
+  }, []);
 
   // Handle time range selection
-  const handleTimeRangeChange = (range: TimeRange) => {
+  const handleTimeRangeChange = useCallback((range: TimeRange) => {
     setSelectedTimeRange(range);
     triggerLightHaptic();
-  };
+  }, []);
 
   // Handle metric selection
-  const handleMetricChange = (metric: keyof PlantMetrics) => {
+  const handleMetricChange = useCallback((metric: keyof PlantMetrics) => {
     setSelectedMetric(metric);
     triggerLightHaptic();
-  };
+  }, []);
 
   // Handle chart data point press
-  const handleDataPointClick = (metric: PlantMetrics, value: number, date: string) => {
+  const handleDataPointClick = useCallback((value: number, date: string) => {
     Alert.alert(
       t('metricsChart.dataPoint.title'),
       t('metricsChart.dataPoint.message', {
@@ -222,16 +216,46 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       })
     );
     triggerLightHaptic();
-  };
+  }, [t, currentMetricConfig]);
+
+  // Process data for chart
+  const chartData = useMemo(() => {
+    if (!metricsData || !currentMetricConfig) {
+      return null;
+    }
+
+    // Filter and sort data - use recordedAt (camelCase)
+    const filteredData = metricsData
+      .filter(metric => metric[selectedMetric] != null)
+      .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+
+    if (filteredData.length === 0) {
+      return null;
+    }
+
+    const chartPoints = filteredData.map((metric, index) => {
+      const value = metric[selectedMetric] as number;
+      const label = dayjs(metric.recordedAt).format(getDateFormat(selectedTimeRange));
+
+      return {
+        value: value || 0,
+        label: index % Math.ceil(filteredData.length / 6) === 0 ? label : '', // Show only some labels to avoid crowding
+        dataPointText: `${(value || 0).toFixed(currentMetricConfig.key === 'phLevel' ? 1 : 0)}`,
+        onFocus: () => handleDataPointClick(value, dayjs(metric.recordedAt).format('MMM DD, YYYY')),
+      };
+    });
+
+    return chartPoints;
+  }, [metricsData, selectedMetric, selectedTimeRange, currentMetricConfig, getDateFormat, handleDataPointClick]);
 
   if (loading) {
     return (
       <ThemedView className={`p-6 ${className}`}>
         <ThemedView className="flex-row items-center justify-center space-x-2">
-          <OptimizedIcon 
-            name="loading1" 
-            size={20} 
-            className="text-neutral-500 dark:text-neutral-400" 
+          <OptimizedIcon
+            name="loading1"
+            size={20}
+            className="text-neutral-500 dark:text-neutral-400"
           />
           <ThemedText className="text-neutral-600 dark:text-neutral-400">
             {t('metricsChart.loading')}
@@ -245,10 +269,10 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
     return (
       <ThemedView className={`p-6 ${className}`}>
         <ThemedView className="items-center space-y-3">
-          <OptimizedIcon 
-            name="warning" 
-            size={24} 
-            className="text-red-500 dark:text-red-400" 
+          <OptimizedIcon
+            name="warning"
+            size={24}
+            className="text-red-500 dark:text-red-400"
           />
           <ThemedText className="text-center text-neutral-600 dark:text-neutral-400">
             {t('metricsChart.error')}
@@ -273,10 +297,10 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
         <ThemedText className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
           {t('metricsChart.title')}
         </ThemedText>
-        
+
         {/* Metric Selector */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           className="mb-3"
         >
@@ -287,18 +311,16 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
                 onPress={() => handleMetricChange(config.key)}
               >
                 <ThemedView
-                  className={`px-3 py-2 rounded-lg border ${
-                    selectedMetric === config.key
-                      ? 'bg-blue-500 dark:bg-blue-600 border-blue-500 dark:border-blue-600'
-                      : 'bg-neutral-100 dark:bg-neutral-700 border-neutral-200 dark:border-neutral-600'
-                  }`}
-                >
-                  <ThemedText 
-                    className={`text-sm font-medium ${
-                      selectedMetric === config.key
-                        ? 'text-white'
-                        : 'text-neutral-700 dark:text-neutral-300'
+                  className={`px-3 py-2 rounded-lg border ${selectedMetric === config.key
+                    ? 'bg-blue-500 dark:bg-blue-600 border-blue-500 dark:border-blue-600'
+                    : 'bg-neutral-100 dark:bg-neutral-700 border-neutral-200 dark:border-neutral-600'
                     }`}
+                >
+                  <ThemedText
+                    className={`text-sm font-medium ${selectedMetric === config.key
+                      ? 'text-white'
+                      : 'text-neutral-700 dark:text-neutral-300'
+                      }`}
                   >
                     {t(config.label)}
                   </ThemedText>
@@ -316,18 +338,16 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
               onPress={() => handleTimeRangeChange(option.value)}
             >
               <ThemedView
-                className={`px-3 py-1 rounded-md ${
-                  selectedTimeRange === option.value
-                    ? 'bg-neutral-200 dark:bg-neutral-600'
-                    : 'bg-transparent'
-                }`}
-              >
-                <ThemedText 
-                  className={`text-sm ${
-                    selectedTimeRange === option.value
-                      ? 'text-neutral-900 dark:text-neutral-100 font-medium'
-                      : 'text-neutral-600 dark:text-neutral-400'
+                className={`px-3 py-1 rounded-md ${selectedTimeRange === option.value
+                  ? 'bg-neutral-200 dark:bg-neutral-600'
+                  : 'bg-transparent'
                   }`}
+              >
+                <ThemedText
+                  className={`text-sm ${selectedTimeRange === option.value
+                    ? 'text-neutral-900 dark:text-neutral-100 font-medium'
+                    : 'text-neutral-600 dark:text-neutral-400'
+                    }`}
                 >
                   {option.label}
                 </ThemedText>
@@ -341,10 +361,10 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       <ThemedView className="p-4">
         {!chartData ? (
           <ThemedView className="items-center py-12 space-y-3">
-            <OptimizedIcon 
-              name="stats-chart-outline" 
-              size={48} 
-              className="text-neutral-400 dark:text-neutral-500" 
+            <OptimizedIcon
+              name="stats-chart-outline"
+              size={48}
+              className="text-neutral-400 dark:text-neutral-500"
             />
             <ThemedText className="text-center text-neutral-600 dark:text-neutral-400">
               {t('metricsChart.noData')}
@@ -359,10 +379,10 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
             {showOptimalRange && currentMetricConfig?.optimalRange && (
               <ThemedView className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                 <ThemedView className="flex-row items-center space-x-2">
-                  <OptimizedIcon 
-                    name="checkmark-circle" 
-                    size={16} 
-                    className="text-green-600 dark:text-green-400" 
+                  <OptimizedIcon
+                    name="checkmark-circle"
+                    size={16}
+                    className="text-green-600 dark:text-green-400"
                   />
                   <ThemedText className="text-sm font-medium text-green-800 dark:text-green-200">
                     {t('metricsChart.optimalRange')}: {currentMetricConfig.optimalRange[0]} - {currentMetricConfig.optimalRange[1]} {currentMetricConfig.unit}
@@ -377,27 +397,42 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
               accessibilityLabel="Plant metrics line chart"
               accessibilityHint="Displays trends in plant metrics over time"
             >
-              <LineChart
-                data={chartData}
-                width={screenWidth - 64}
-                height={220}
-                curved
-                color={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
-                thickness={2}
-                dataPointsColor={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
-                dataPointsRadius={4}
-                isAnimated
-                animationDuration={800}
-              />
+              <ErrorBoundary fallback={<ChartErrorFallback />}>
+                <LineChart
+                  data={chartData}
+                  width={screenWidth - 64}
+                  height={220}
+                  curved
+                  color={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
+                  thickness={3}
+                  dataPointsColor={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
+                  dataPointsRadius={5}
+                  isAnimated
+                  animationDuration={800}
+                  // Enhanced styling
+                  areaChart
+                  startFillColor={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
+                  endFillColor={currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'}
+                  startOpacity={0.3}
+                  endOpacity={0.1}
+                  // Better grid
+                  showVerticalLines
+                  verticalLinesColor="#F3F4F6"
+                  verticalLinesThickness={1}
+                  // Better spacing
+                  initialSpacing={0}
+                  endSpacing={20}
+                />
+              </ErrorBoundary>
             </ThemedView>
 
             {/* Chart Legend */}
             <ThemedView className="mt-4 flex-row items-center justify-center space-x-4">
               <ThemedView className="flex-row items-center space-x-2">
-                <ThemedView 
+                <ThemedView
                   className="w-3 h-3 rounded-full"
-                  style={{ 
-                    backgroundColor: currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6' 
+                  style={{
+                    backgroundColor: currentMetricConfig ? (isDark ? currentMetricConfig.darkColor : currentMetricConfig.color) : '#3b82f6'
                   }}
                 />
                 <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -410,4 +445,4 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({
       </ThemedView>
     </ThemedView>
   );
-};
+});

@@ -1,0 +1,33 @@
+{
+  "metrics": {
+    "temperature": "Temperature",
+    "humidity": "Humidity", 
+    "ph": "pH Level",
+    "vpd": "VPD",
+    "ec": "EC/PPM"
+  },
+  "optimal": "Optimal",
+  "suboptimal": "Suboptimal",
+  "current": "Current",
+  "prediction": "Prediction",
+  "trend": "Trend",
+  "trends": {
+    "increasing": "Increasing",
+    "decreasing": "Decreasing",
+    "stable": "Stable"
+  },
+  "recommendations": "Recommendations",
+  "criticalAlerts": "Critical Alerts",
+  "scheduleAdjustments": "Schedule Adjustments",
+  "alerts": "Environmental Alerts",
+  "planningRecommendations": "Planning Recommendations",
+  "loadingData": "Loading environmental data...",
+  "noPlants": "No plants selected for environmental monitoring",
+  "allGood": "All Environmental Conditions Optimal",
+  "noIssues": "No environmental issues detected. Your plants are in good condition!",
+  "actions": "Recommended Actions",
+  "scheduleAdjusted": "Schedule Adjusted",
+  "originalTime": "Original",
+  "adjustedTime": "Adjusted",
+  "factors": "Environmental Factors"
+}

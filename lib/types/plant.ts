@@ -3,18 +3,28 @@
  */
 
 /**
- * Plant growth stages
+ * Plant growth stages - runtime constants
  */
-export enum GrowthStage {
-  GERMINATION = 'germination',
-  SEEDLING = 'seedling',
-  VEGETATIVE = 'vegetative',
-  PRE_FLOWER = 'pre_flower',
-  FLOWERING = 'flowering',
-  LATE_FLOWERING = 'late_flowering',
-  HARVEST = 'harvest',
-  CURING = 'curing',
-}
+export const GROWTH_STAGES = {
+  GERMINATION: 'germination',
+  SEEDLING: 'seedling', 
+  VEGETATIVE: 'vegetative',
+  PRE_FLOWER: 'pre_flower',
+  FLOWERING: 'flowering',
+  LATE_FLOWERING: 'late_flowering',
+  HARVEST: 'harvest',
+  CURING: 'curing'
+} as const;
+
+/**
+ * Plant growth stages - type union
+ */
+export type GrowthStage = typeof GROWTH_STAGES[keyof typeof GROWTH_STAGES];
+
+/**
+ * Array of all growth stages for iteration
+ */
+export const GROWTH_STAGES_ARRAY: GrowthStage[] = Object.values(GROWTH_STAGES);
 
 // Added Enums (moved from AddPlantForm.tsx)
 export enum PlantGrowLocation {

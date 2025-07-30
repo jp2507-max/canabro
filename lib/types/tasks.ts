@@ -38,6 +38,7 @@ export interface PlantTask {
   completed_at?: string | null; // ISO string
   created_at: string; // ISO string
   updated_at: string; // ISO string
+  escalation_start_time?: string | null; // ISO string for escalation tracking
 }
 
 /**

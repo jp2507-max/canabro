@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { isDevelopment, authConfig } from '../lib/config';
+import * as Sentry from '@sentry/react-native';
 import { useAuth } from '../lib/contexts/AuthProvider';
 import { resetDatabase } from '../lib/utils/database';
 import { triggerLightHapticSync, triggerMediumHapticSync } from '../lib/utils/haptics';
@@ -190,6 +191,25 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
               </Pressable>
             </View>
 
+            {/* Sentry test button for error reporting */}
+            <View style={styles.buttonSection}>
+              <Text style={styles.sectionTitle}>Sentry</Text>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.sentryButton}
+                onPress={async () => {
+                  try {
+                    await Sentry.captureException(new Error('First error'));
+                    Alert.alert('Sentry', 'Test error sent to Sentry!');
+                  } catch (err) {
+                    Alert.alert('Sentry', 'Failed to send test error.');
+                  }
+                }}
+              >
+                <Text style={styles.sentryButtonText}>Try!</Text>
+              </Pressable>
+            </View>
+
             <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.closeButtonText}>{tDebug('close')}</Text>
             </Pressable>
@@ -201,6 +221,19 @@ export function DevModeIndicator({ showFullDetails = false }: DevModeIndicatorPr
 }
 
 const styles = StyleSheet.create({
+  sentryButton: {
+    backgroundColor: '#ef4444', // semantic: bg-red-500
+    borderRadius: 12, // rounded-lg
+    paddingHorizontal: 16, // px-4
+    paddingVertical: 12, // py-3
+    marginBottom: 8, // mb-2
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sentryButtonText: {
+    color: '#fff', // semantic: text-white
+    fontWeight: 'bold',
+  },
   actionButton: {
     alignItems: 'center',
     backgroundColor: '#ff3b30',

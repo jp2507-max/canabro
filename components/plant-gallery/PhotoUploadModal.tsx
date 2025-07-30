@@ -30,7 +30,8 @@ import ThemedView from '../ui/ThemedView';
 import ThemedText from '../ui/ThemedText';
 import { takePhoto, selectFromGallery, ImageResult } from '../../lib/utils/image-picker';
 import { uploadPlantGalleryImage } from '../../lib/utils/upload-image';
-import { GrowthStage } from '../../lib/types/plant';
+import { GrowthStage, GROWTH_STAGES, GROWTH_STAGES_ARRAY } from '../../lib/types/plant';
+import { createGrowthStageValidator } from '../../lib/validation';
 import {
   triggerLightHaptic,
   triggerMediumHaptic,
@@ -55,7 +56,7 @@ interface PhotoUploadModalProps {
 // Form schema
 const photoUploadSchema = z.object({
   caption: z.string().max(200).optional(),
-  growthStage: z.nativeEnum(GrowthStage),
+  growthStage: createGrowthStageValidator(),
 });
 
 type PhotoUploadFormData = z.infer<typeof photoUploadSchema>;
@@ -150,7 +151,7 @@ const GrowthStageSelection = memo(function GrowthStageSelection({
         {t('photoUpload.growthStage')}
       </ThemedText>
       <ThemedView className="flex-row flex-wrap gap-2">
-        {Object.values(GrowthStage).map((stage) => (
+        {GROWTH_STAGES_ARRAY.map((stage) => (
           <AnimatedButton
             key={stage}
             onPress={() => onStageSelect(stage)}
@@ -193,7 +194,7 @@ export const PhotoUploadModal = memo(function PhotoUploadModal({
     resolver: zodResolver(photoUploadSchema),
     defaultValues: {
       caption: '',
-      growthStage: GrowthStage.VEGETATIVE,
+      growthStage: GROWTH_STAGES.VEGETATIVE,
     },
   });
 

@@ -1,4 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
+import type { TaskType } from '../types/taskTypes';
 import { Associations } from '@nozbe/watermelondb/Model';
 import { date, readonly, text, relation, writer, field, json } from '@nozbe/watermelondb/decorators';
 import { log } from '../utils/logger';
@@ -42,7 +43,7 @@ export class PlantTask extends Model {
   @text('plant_id') plantId!: string;
   @text('title') title!: string;
   @text('description') description?: string;
-  @text('task_type') taskType!: string;
+  @text('task_type') taskType!: TaskType;
   @text('due_date') dueDate!: string;
   @text('status') status!: string;
   @text('notification_id') notificationId?: string;
@@ -58,6 +59,7 @@ export class PlantTask extends Model {
   @text('parent_task_id') parentTaskId?: string; // For recurring tasks
   @field('sequence_number') sequenceNumber?: number;
   @json('environmental_conditions', (json) => json) environmentalConditions?: EnvironmentalConditions;
+  @text('escalation_start_time') escalationStartTime?: string; // ISO string for escalation tracking
   
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
@@ -193,6 +195,12 @@ export class PlantTask extends Model {
         ...task.environmentalConditions,
         ...conditions,
       };
+    });
+  }
+
+  @writer async setEscalationStartTime(timestamp?: Date) {
+    await this.update((task) => {
+      task.escalationStartTime = timestamp ? timestamp.toISOString() : new Date().toISOString();
     });
   }
 

@@ -167,6 +167,16 @@ export const triggerSelectionHaptic = async (options: HapticOptions = {}): Promi
   }
 };
 
+
+// Semantic aliases for easier usage: haptics.medium(), haptics.light(), etc.
+export const light = triggerLightHaptic;
+export const medium = triggerMediumHaptic;
+export const heavy = triggerHeavyHaptic;
+export const success = triggerSuccessHaptic;
+export const warning = triggerWarningHaptic;
+export const error = triggerErrorHaptic;
+export const selection = triggerSelectionHaptic;
+
 // Expose all underlying Expo Haptics exports so that other modules can simply
 // `import * as Haptics from "lib/utils/haptics"` and keep the same API while
 // benefiting from the centralized wrapper and global enable flag. This allows

@@ -23,7 +23,7 @@ import type { PanGestureHandlerEventPayload as _PanGestureHandlerEventPayload } 
 import { BlurView } from 'expo-blur';
 import { useTranslation } from 'react-i18next';
 import { triggerLightHaptic, triggerMediumHaptic } from '@/lib/utils/haptics';
-import { GrowthStage, CannabisType } from '@/lib/types/plant';
+import { GrowthStage, CannabisType, GROWTH_STAGES } from '@/lib/types/plant';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon, IconName } from '@/components/ui/OptimizedIcon';
@@ -61,14 +61,14 @@ const ENTRANCE_CONFIG = {
 
 // Filter options
 const GROWTH_STAGE_OPTIONS = [
-  { key: GrowthStage.GERMINATION, label: 'Germination' },
-  { key: GrowthStage.SEEDLING, label: 'Seedling' },
-  { key: GrowthStage.VEGETATIVE, label: 'Vegetative' },
-  { key: GrowthStage.PRE_FLOWER, label: 'Pre-Flower' },
-  { key: GrowthStage.FLOWERING, label: 'Flowering' },
-  { key: GrowthStage.LATE_FLOWERING, label: 'Late Flowering' },
-  { key: GrowthStage.HARVEST, label: 'Harvest' },
-  { key: GrowthStage.CURING, label: 'Curing' },
+  { key: GROWTH_STAGES.GERMINATION, label: 'Germination' },
+  { key: GROWTH_STAGES.SEEDLING, label: 'Seedling' },
+  { key: GROWTH_STAGES.VEGETATIVE, label: 'Vegetative' },
+  { key: GROWTH_STAGES.PRE_FLOWER, label: 'Pre-Flower' },
+  { key: GROWTH_STAGES.FLOWERING, label: 'Flowering' },
+  { key: GROWTH_STAGES.LATE_FLOWERING, label: 'Late Flowering' },
+  { key: GROWTH_STAGES.HARVEST, label: 'Harvest' },
+  { key: GROWTH_STAGES.CURING, label: 'Curing' },
 ];
 
 const STRAIN_TYPE_OPTIONS = [
@@ -280,7 +280,7 @@ export const PlantFilters = React.memo(({
       case 'floweringPlants':
         onFiltersChange({
           ...filters,
-          growthStages: [GrowthStage.FLOWERING],
+          growthStages: [GROWTH_STAGES.FLOWERING],
         });
         break;
       case 'healthyPlants':

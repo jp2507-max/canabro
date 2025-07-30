@@ -280,6 +280,83 @@
     "comingSoon": "Demnächst verfügbar",
     "deletePlant": "Pflanze löschen"
   },
+  "templates": {
+    "searchPlaceholder": "Vorlagen suchen...",
+    "resultsCount_one": "{{count}} Vorlage gefunden",
+    "resultsCount_other": "{{count}} Vorlagen gefunden",
+    "categories": {
+      "all": "Alle",
+      "indoor": "Indoor",
+      "outdoor": "Outdoor", 
+      "hydroponic": "Hydroponisch",
+      "soil": "Erde",
+      "beginner": "Anfänger",
+      "advanced": "Fortgeschritten"
+    },
+    "sortOptions": {
+      "popular": "Beliebt",
+      "newest": "Neueste",
+      "rating": "Bewertung",
+      "duration": "Dauer"
+    },
+    "templateCard": {
+      "weeks": "Wochen",
+      "tasks": "Aufgaben",
+      "more": "mehr",
+      "avgTask": "Ø/Aufgabe"
+    },
+    "emptyState": {
+      "noResults": "Keine Vorlagen gefunden",
+      "noTemplates": "Keine Vorlagen verfügbar",
+      "tryDifferentSearch": "Versuchen Sie einen anderen Suchbegriff",
+      "createFirst": "Erstellen Sie Ihre erste Vorlage, um zu beginnen"
+    },
+    "demo": {
+      "title": "Vorlagenbibliothek",
+      "description": "Durchsuchen und wählen Sie Zeitplanvorlagen für Ihre Pflanzen",
+      "selected": "Ausgewählt",
+      "weeks": "Wochen",
+      "tasks": "Aufgaben",
+      "previewTitle": "Vorlagenvorschau",
+      "saveSuccess": "Vorlage gespeichert",
+      "templateName": "Vorlagenname",
+      "duration": "Dauer",
+      "category": "Kategorie",
+      "public": "Öffentlich",
+      "createNew": "Neue Vorlage erstellen",
+      "editSample": "Beispielvorlage bearbeiten",
+      "features": "Funktionen",
+      "feature1": "Wochenweise Aufgabenplanung",
+      "feature2": "Drag-and-Drop Aufgabenplanung",
+      "feature3": "Aufgabenvorlagenbibliothek",
+      "feature4": "Vorlagenvalidierung",
+      "feature5": "Vorschaufunktion"
+    },
+    "editor": {
+      "createTemplate": "Vorlage erstellen",
+      "editTemplate": "Vorlage bearbeiten",
+      "preview": "Vorschau",
+      "basicInfo": "Grundinformationen",
+      "templateName": "Vorlagenname",
+      "templateNamePlaceholder": "Vorlagenname eingeben",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Beschreiben Sie Ihren Anbauplan",
+      "category": "Kategorie",
+      "durationWeeks": "Dauer (Wochen)",
+      "makePublic": "Öffentlich machen",
+      "weeklyPlanning": "Wochenplanung",
+      "taskLibrary": "Aufgabenbibliothek",
+      "week": "Woche",
+      "tasks": "Aufgaben",
+      "addTask": "Aufgabe hinzufügen",
+      "dropHere": "Hier ablegen",
+      "validation": {
+        "nameRequired": "Vorlagenname ist erforderlich",
+        "durationRange": "Dauer muss zwischen 1 und 52 Wochen liegen",
+        "tasksRequired": "Mindestens eine Aufgabe ist erforderlich"
+      }
+    }
+  },
   "tasks": {
     "taskType": "Aufgabentyp",
     "selectPlant": "Pflanze auswählen",
@@ -303,8 +380,13 @@
     "types": {
       "watering": "Bewässerung",
       "feeding": "Düngung",
+      "inspection": "Inspektion",
       "pruning": "Beschneidung",
-      "harvesting": "Ernte"
+      "harvest": "Ernte",
+      "transplant": "Umtopfen",
+      "training": "Training",
+      "defoliation": "Entblätterung",
+      "flushing": "Spülung"
     }
   },
   "forms": {
@@ -677,12 +759,15 @@
       "phLevel": "pH-Wert",
       "temperature": "Temperatur",
       "humidity": "Luftfeuchtigkeit",
-      "vpd": "VPD"
+      "vpd": "VPD",
+      "nodeCount": "Knotenanzahl"
     },
     "dataPoint": {
       "title": "Datenpunkt",
       "message": "{{metric}}: {{value}}{{unit}} am {{date}}"
-    }
+    },
+    "chartError": "Diagramm-Rendering-Fehler",
+    "chartErrorDescription": "Bitte versuchen Sie es erneut oder wenden Sie sich an den Support"
   },
   "harvestRecorded": "Erntedaten wurden erfolgreich gespeichert!",
   "failedToSaveHarvest": "Speichern der Erntedaten fehlgeschlagen. Bitte versuchen Sie es erneut.",
@@ -940,6 +1025,165 @@
       "monthly": "Monatlich"
     },
     "calendarWarning": "Erinnerung erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
+  },
+  "taskNotifications": {
+    "createTask": "Aufgabe erstellen",
+    "taskType": "Aufgabentyp",
+    "title": "Titel",
+    "titlePlaceholder": "Aufgabentitel eingeben",
+    "description": "Beschreibung (Optional)",
+    "descriptionPlaceholder": "Zusätzliche Details zu dieser Aufgabe hinzufügen",
+    "scheduledFor": "Geplant für",
+    "priority": "Priorität",
+    "estimatedDuration": "Dauer (Minuten)",
+    "repeatInterval": "Wiederholen alle (Tage)",
+    "repeatIntervalPlaceholder": "Leer lassen für einmalige Aufgabe",
+    "creating": "Erstelle...",
+    "types": {
+      "watering": "Gießen",
+      "feeding": "Düngen",
+      "inspection": "Inspektion",
+      "pruning": "Beschneiden",
+      "training": "Training",
+      "harvest": "Ernte",
+      "custom": "Benutzerdefiniert"
+    },
+    "priorities": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "critical": "Kritisch"
+    },
+    "defaultDescriptions": {
+      "watering": "Zeit, Ihre Pflanze zu gießen",
+      "feeding": "Zeit, Ihre Pflanze mit Nährstoffen zu versorgen",
+      "inspection": "Zeit, Ihre Pflanze zu überprüfen",
+      "pruning": "Zeit, Ihre Pflanze zu beschneiden",
+      "training": "Zeit, Ihre Pflanze zu trainieren",
+      "harvest": "Zeit, Ihre Pflanze zu ernten",
+      "custom": "Benutzerdefinierte Aufgabe für Ihre Pflanze"
+    },
+    "permissionRequired": "Benachrichtigungsberechtigung erforderlich",
+    "permissionRequiredDescription": "Um Aufgabenerinnerungen zu erhalten, aktivieren Sie bitte Benachrichtigungen in Ihren Geräteeinstellungen.",
+    "permissionsDisabled": "Benachrichtigungen deaktiviert",
+    "permissionsDisabledDescription": "Aktivieren Sie Benachrichtigungen in Ihren Geräteeinstellungen, um Aufgabenerinnerungen für Ihre Pflanzen zu erhalten.",
+    "openSettings": "Einstellungen öffnen",
+    "error": "Fehler",
+    "errorCreatingTask": "Aufgabe konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "errorBatchMarkingDone": "Einige Aufgaben konnten nicht als erledigt markiert werden",
+    "repeatOptions": "Wiederholungsoptionen",
+    "customRepeatInterval": "Benutzerdefiniertes Wiederholungsintervall (Tage)",
+    "customRepeatIntervalPlaceholder": "Benutzerdefiniertes Intervall in Tagen eingeben",
+    "addToDeviceCalendar": "Zum Gerätekalender hinzufügen",
+    "calendarEventDescription": "Kalenderereignis für diese Aufgabe erstellen",
+    "calendarAccessDenied": "Kalenderzugriff verweigert - in Einstellungen aktivieren",
+    "calendarPermissionRequired": "Kalenderberechtigung erforderlich",
+    "repeatIntervals": {
+      "daily": "Täglich",
+      "every3Days": "Alle 3 Tage",
+      "weekly": "Wöchentlich",
+      "biweekly": "Alle zwei Wochen",
+      "monthly": "Monatlich"
+    },
+    "calendarWarning": "Aufgabe erfolgreich erstellt, aber Hinzufügung zum Kalender fehlgeschlagen. Sie können es manuell hinzufügen."
+  },
+  "taskCompletion": {
+    "title": "Aufgabe abschließen",
+    "modeSelector": {
+      "title": "Abschlussmodus"
+    },
+    "quickMode": {
+      "title": "Schnell",
+      "description": "Einfacher Abschluss mit Notizen"
+    },
+    "comprehensiveMode": {
+      "title": "Umfassend",
+      "description": "Detaillierte Verfolgung mit Metriken"
+    },
+    "sections": {
+      "environmental": "Umweltbedingungen",
+      "supplies": "Verwendete Materialien",
+      "photos": "Fotos"
+    },
+    "fields": {
+      "notes": "Notizen",
+      "notesPlaceholder": "Abschlussnotizen hinzufügen...",
+      "duration": "Dauer (Minuten)",
+      "durationPlaceholder": "Wie lange hat diese Aufgabe gedauert?",
+      "temperature": "Temperatur",
+      "humidity": "Luftfeuchtigkeit",
+      "pH": "pH-Wert",
+      "vpd": "VPD",
+      "supplyPlaceholder": "Materialname eingeben",
+      "amount": "Menge"
+    },
+    "buttons": {
+      "complete": "Aufgabe abschließen",
+      "submitting": "Wird abgeschlossen...",
+      "cancel": "Abbrechen",
+      "takePhoto": "Foto aufnehmen",
+      "selectPhoto": "Foto auswählen"
+    },
+    "validation": {
+      "durationMin": "Dauer muss 0 oder größer sein",
+      "humidityMin": "Luftfeuchtigkeit muss 0 oder größer sein",
+      "humidityMax": "Luftfeuchtigkeit kann nicht über 100% liegen",
+      "phMin": "pH muss 0 oder größer sein",
+      "phMax": "pH kann nicht über 14 liegen"
+    },
+    "errors": {
+      "submitTitle": "Abschlussfehler",
+      "submitMessage": "Aufgabe konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut."
+    },
+    "vpdOptimal": "Optimaler VPD-Bereich für gesundes Wachstum",
+    "vpdSuboptimal": "VPD liegt außerhalb des optimalen Bereichs (0,8-1,5 kPa)"
+  },
+  "taskAnalytics": {
+    "title": "Aufgaben-Analytik",
+    "loading": "Analytik wird geladen...",
+    "error": "Fehler beim Laden der Analytik",
+    "retry": "Wiederholen",
+    "noData": "Keine Analytikdaten verfügbar",
+    "noDataDescription": "Schließen Sie einige Aufgaben ab, um Analytik und Einblicke zu sehen",
+    "filters": {
+      "taskTypes": "Nach Aufgabentyp filtern"
+    },
+    "timeRanges": {
+      "7d": "7 Tage",
+      "30d": "30 Tage",
+      "90d": "90 Tage",
+      "all": "Alle Zeit"
+    },
+    "chartTypes": {
+      "completion": "Abschlussraten",
+      "trends": "Trends",
+      "patterns": "Muster"
+    },
+    "overallStats": {
+      "completionRate": "Gesamte Abschlussrate",
+      "tasks": "Aufgaben",
+      "tasksPerDay": "Aufgaben/Tag"
+    },
+    "suggestions": {
+      "title": "Optimierungsvorschläge",
+      "impact": {
+        "low": "Geringe Auswirkung",
+        "medium": "Mittlere Auswirkung",
+        "high": "Hohe Auswirkung"
+      },
+      "actionable": "Umsetzbar"
+    },
+    "chartError": "Diagramm-Rendering-Fehler",
+    "chartErrorDescription": "Bitte versuchen Sie es erneut oder wenden Sie sich an den Support"
+  },
+  "environmental": {
+    "errorTitle": "Datenlade-Fehler",
+    "dataLoadErrorMessage": "Umweltdaten konnten nicht geladen werden. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "errorBoundary": {
+      "title": "Dashboard-Fehler",
+      "description": "Etwas ist mit dem Umwelt-Dashboard schiefgelaufen.",
+      "retry": "Wiederholen"
+    }
   }
 }
 

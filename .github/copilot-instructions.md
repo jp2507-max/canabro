@@ -21,7 +21,7 @@ applyTo: "**"
 
 ## 📦 Project-Specific Patterns & Conventions
 - **Styling**: Only use NativeWind v4. All theming/dark mode via semantic tokens and `dark:` prefixes. Use `ThemedView`/`ThemedText` for all custom UI. Reference `.github/instructions/Nativewind Theming Best Practices.instructions.md` for safe area and advanced patterns.
-- **Animations**: React Native Reanimated v3.19.0+ uses automatic workletization - no manual `'worklet'` directives needed. Never access `.value` outside worklets. Cancel animations on unmount. Reference `.github/instructions/React Native Reanimated Best Practices.instructions.md` for all animation code.
+- **Animations**: React Native Reanimated v3.19.0+ uses automatic workletization for most hooks, but you must still add the `'worklet'` directive as the first line inside animation callback functions (such as the third argument to withSpring/withTiming), imported/external functions, conditional expressions, and runOnUI bodies. Never access `.value` outside worklets. Cancel animations on unmount. Reference `.github/instructions/React Native Reanimated Best Practices.instructions.md` for all animation code.
 - **Data**: Use TanStack Query for all server state. Use proper query keys and cache strategies. Use WatermelonDB for local relationships. Use Supabase for all backend (auth, DB, storage, real-time). Implement optimistic updates and error boundaries.
 - **Navigation**: File-based routing only. Use dynamic routes and params. Handle navigation state and deep links. See `app/` for structure.
 - **Accessibility**: All components must have a11y props, semantic roles, and support screen readers. See `scripts/ui-refinement-plan.md` for patterns.
