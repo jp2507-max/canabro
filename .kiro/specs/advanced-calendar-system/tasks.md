@@ -323,7 +323,9 @@
   - Test background processing performance
   - _Requirements: R2-AC1, R2-AC3, R4-AC1_
 
-- [x] 8.3 Test calendar system integration
+- [ ] 8.3 Test calendar system integration
+
+
 
 
 
