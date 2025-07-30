@@ -45,6 +45,18 @@ export interface RealtimeQuotas {
     maxBytesPerSecond: number;
 }
 
+export interface SupabaseClientConfig {
+  realtime: {
+    params: {
+      eventsPerSecond: number;
+    };
+    heartbeatIntervalMs: number;
+    reconnectAfterMs: (tries: number) => number;
+    encode?: (payload: any) => string;
+    decode?: (payload: string) => any;
+  };
+}
+
 class RealtimeConfigService {
     private config: RealtimeConfig;
     private quotas: RealtimeQuotas;
@@ -119,7 +131,7 @@ class RealtimeConfigService {
     /**
      * Get optimized client configuration for Supabase
      */
-    getSupabaseClientConfig(): any {
+    getSupabaseClientConfig(): SupabaseClientConfig {
         return {
             realtime: {
                 params: {

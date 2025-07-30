@@ -171,35 +171,59 @@ export class CommunityPoll extends Model {
     await this.update((poll) => {
       const currentOptions = poll.options || [];
       const currentResults = poll.results || DEFAULT_POLL_RESULTS;
-      
-      // Remove previous votes from this user if not allowing multiple choices
-      if (!poll.settings?.allowMultipleChoices) {
-        currentOptions.forEach(option => {
-          option.voters = option.voters.filter(voterId => voterId !== userId);
-        });
-      }
+      const isAnonymous = poll.settings?.isAnonymous;
 
-      // Add new votes
-      let newVotes = 0;
-      optionIds.forEach(optionId => {
-        const option = currentOptions.find(opt => opt.optionId === optionId);
-        if (option && !option.voters.includes(userId)) {
-          option.voters.push(userId);
-          option.votes = option.voters.length;
-          newVotes++;
+      if (isAnonymous) {
+        // Anonymous: Only update vote counts, do not store voter IDs
+        // Remove all voter IDs for this user (if any) if not allowing multiple choices
+        if (!poll.settings?.allowMultipleChoices) {
+          // No-op: we do not track voter IDs, so nothing to remove
         }
-      });
-
-      // Update results
-      const totalVotes = currentOptions.reduce((sum, option) => sum + option.votes, 0);
-      const participantCount = new Set(currentOptions.flatMap(option => option.voters)).size;
-
-      poll.options = currentOptions;
-      poll.results = {
-        ...currentResults,
-        totalVotes,
-        participantCount
-      };
+        // Add new votes: increment vote count for each selected option
+        optionIds.forEach(optionId => {
+          const option = currentOptions.find(opt => opt.optionId === optionId);
+          if (option) {
+            option.votes = (option.votes || 0) + 1;
+          }
+        });
+        // Update results
+        const totalVotes = currentOptions.reduce((sum, option) => sum + (option.votes || 0), 0);
+        // For anonymous polls, participantCount is not tracked by userId, so just increment by 1 per vote call
+        const participantCount = (currentResults.participantCount || 0) + 1;
+        // Remove all voter IDs for privacy
+        currentOptions.forEach(option => { option.voters = []; });
+        poll.options = currentOptions;
+        poll.results = {
+          ...currentResults,
+          totalVotes,
+          participantCount
+        };
+      } else {
+        // Not anonymous: track voter IDs as before
+        // Remove previous votes from this user if not allowing multiple choices
+        if (!poll.settings?.allowMultipleChoices) {
+          currentOptions.forEach(option => {
+            option.voters = option.voters.filter(voterId => voterId !== userId);
+          });
+        }
+        // Add new votes
+        optionIds.forEach(optionId => {
+          const option = currentOptions.find(opt => opt.optionId === optionId);
+          if (option && !option.voters.includes(userId)) {
+            option.voters.push(userId);
+            option.votes = option.voters.length;
+          }
+        });
+        // Update results
+        const totalVotes = currentOptions.reduce((sum, option) => sum + option.votes, 0);
+        const participantCount = new Set(currentOptions.flatMap(option => option.voters)).size;
+        poll.options = currentOptions;
+        poll.results = {
+          ...currentResults,
+          totalVotes,
+          participantCount
+        };
+      }
     });
   }
 
@@ -240,6 +264,14 @@ export class CommunityPoll extends Model {
   }
 
   @writer async extendDeadline(additionalMinutes: number) {
+    if (
+      typeof additionalMinutes !== 'number' ||
+      !Number.isFinite(additionalMinutes) ||
+      additionalMinutes < 1 ||
+      additionalMinutes > 1440
+    ) {
+      throw new Error('additionalMinutes must be a positive number between 1 and 1440.');
+    }
     await this.update((poll) => {
       const currentEndTime = poll.endsAt || new Date();
       poll.endsAt = new Date(currentEndTime.getTime() + (additionalMinutes * 60 * 1000));

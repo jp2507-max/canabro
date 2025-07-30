@@ -7,7 +7,34 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis";
 
 -- Drop existing tables to ensure a clean slate
-DROP TABLE IF EXISTS community_polls, event_participants, live_events, group_members, social_groups, follow_relationships, user_presence, messages, conversation_threads, live_notifications CASCADE;
+-- DO $$
+-- DECLARE
+--     dependency_record RECORD;
+--     table_name TEXT;
+--     has_dependencies BOOLEAN := FALSE;
+-- BEGIN
+--     FOR table_name IN
+--         SELECT unnest(ARRAY['community_polls', 'event_participants', 'live_events', 'group_members', 'social_groups', 'follow_relationships', 'user_presence', 'messages', 'conversation_threads', 'live_notifications'])
+--     LOOP
+--         FOR dependency_record IN 
+--             SELECT pg_describe_object(classid, objid, objsubid) AS dependency
+--             FROM pg_depend
+--             WHERE refobjid = ('public.' || table_name)::regclass
+--               AND deptype = 'n' -- Normal dependency
+--               AND objid <> refobjid
+--         LOOP
+--             RAISE WARNING 'Dependency found for table %: %', table_name, dependency_record.dependency;
+--             has_dependencies := TRUE;
+--         END LOOP;
+--     END LOOP;
+-- 
+--     IF has_dependencies THEN
+--         RAISE EXCEPTION 'Cannot drop tables due to existing dependencies. Please resolve them first.';
+--     END IF;
+-- END;
+-- $$;
+
+-- DROP TABLE IF EXISTS community_polls, event_participants, live_events, group_members, social_groups, follow_relationships, user_presence, messages, conversation_threads, live_notifications;
 
 -- Create live_notifications table
 CREATE TABLE IF NOT EXISTS live_notifications (
@@ -298,10 +325,10 @@ CREATE INDEX IF NOT EXISTS idx_event_participants_user_id ON event_participants(
 CREATE INDEX IF NOT EXISTS idx_event_participants_role ON event_participants(role);
 
 CREATE INDEX IF NOT EXISTS idx_community_polls_created_by ON community_polls(created_by);
-CREATE INDEX IF NOT EXISTS idx_community_polls_end_time ON community_polls(end_time DESC);
+CREATE INDEX IF NOT EXISTS idx_community_polls_ends_at ON community_polls(ends_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_live_events_start_time ON live_events(start_time DESC);
-CREATE INDEX IF NOT EXISTS idx_live_events_end_time ON live_events(end_time DESC);
+CREATE INDEX IF NOT EXISTS idx_live_events_scheduled_start ON live_events(scheduled_start DESC);
+CREATE INDEX IF NOT EXISTS idx_live_events_scheduled_end ON live_events(scheduled_end DESC);
 
 -- Create updated_at triggers
 CREATE OR REPLACE FUNCTION update_updated_at_column()

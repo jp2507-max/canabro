@@ -6,6 +6,7 @@
  */
 
 import { database } from '../models';
+import { GROUP_ROLE_ADMIN } from '../models/GroupMember';
 import { 
   ConversationThread, 
   Message, 
@@ -30,10 +31,20 @@ import { Q } from '@nozbe/watermelondb';
 // --- Strict types: use model interfaces for type safety ---
 import type { MessageAttachment } from '../models/Message';
 import type { NotificationData } from '../models/LiveNotification';
+
 import type { GroupSettings } from '../models/SocialGroup';
 
 import type { EventType } from '../models/LiveEvent';
 import type { EventSettings } from '../models/LiveEvent';
+
+// --- Community Poll Settings Interface ---
+export interface CommunityPollSettings {
+  allowMultipleChoices: boolean;
+  requiresAuthentication: boolean;
+  showResultsBeforeVoting: boolean;
+  allowAddOptions: boolean;
+  isAnonymous: boolean;
+}
 
 export interface CreateConversationParams {
   threadType: 'direct' | 'group';
@@ -341,9 +352,6 @@ class CommunityService {
         await database.get<GroupMember>('group_members').create((member) => {
           member.groupId = group.id;
           member.userId = params.createdBy;
-          // Import GROUP_ROLE_ADMIN from GroupMember
-          // @ts-ignore
-          import { GROUP_ROLE_ADMIN } from '../models/GroupMember';
           member.role = GROUP_ROLE_ADMIN;
           member.isActive = true;
           member.permissions = {
@@ -426,7 +434,7 @@ class CommunityService {
     question: string,
     options: string[],
     createdBy: string,
-    settings?: any
+    settings?: CommunityPollSettings
   ): Promise<CommunityPoll> {
     try {
       const poll = await database.write(async () => {

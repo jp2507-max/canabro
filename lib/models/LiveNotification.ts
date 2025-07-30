@@ -100,25 +100,25 @@ export class LiveNotification extends Model {
    */
   get priorityInfo(): { level: NotificationPriority; displayName: string; color: string } {
     const priorityMap = {
-      [NOTIFICATION_PRIORITIES.LOW]: { 
-        level: NOTIFICATION_PRIORITIES.LOW, 
-        displayName: 'Low', 
-        color: 'text-gray-500' 
+      [NOTIFICATION_PRIORITIES.LOW]: {
+        level: NOTIFICATION_PRIORITIES.LOW,
+        displayName: 'Low',
+        color: 'text-fg-muted', // semantic: foreground muted
       },
-      [NOTIFICATION_PRIORITIES.NORMAL]: { 
-        level: NOTIFICATION_PRIORITIES.NORMAL, 
-        displayName: 'Normal', 
-        color: 'text-blue-500' 
+      [NOTIFICATION_PRIORITIES.NORMAL]: {
+        level: NOTIFICATION_PRIORITIES.NORMAL,
+        displayName: 'Normal',
+        color: 'text-primary-foreground', // semantic: primary foreground
       },
-      [NOTIFICATION_PRIORITIES.HIGH]: { 
-        level: NOTIFICATION_PRIORITIES.HIGH, 
-        displayName: 'High', 
-        color: 'text-orange-500' 
+      [NOTIFICATION_PRIORITIES.HIGH]: {
+        level: NOTIFICATION_PRIORITIES.HIGH,
+        displayName: 'High',
+        color: 'text-attention-foreground', // semantic: attention foreground
       },
-      [NOTIFICATION_PRIORITIES.URGENT]: { 
-        level: NOTIFICATION_PRIORITIES.URGENT, 
-        displayName: 'Urgent', 
-        color: 'text-red-500' 
+      [NOTIFICATION_PRIORITIES.URGENT]: {
+        level: NOTIFICATION_PRIORITIES.URGENT,
+        displayName: 'Urgent',
+        color: 'text-danger-foreground', // semantic: danger foreground
       },
     };
     

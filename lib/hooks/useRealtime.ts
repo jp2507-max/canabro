@@ -25,33 +25,40 @@ export interface UseRealtimeOptions {
     onError?: (error: Error) => void;
 }
 
+export interface ConnectionHealth {
+    lastPing?: number;
+    connectionRetries: number;
+    isHealthy: boolean;
+    latency?: number;
+}
+
 export interface RealtimeHookReturn {
     // Connection status
     isConnected: boolean;
     isReconnecting: boolean;
-    connectionHealth: any;
-    
+    connectionHealth: ConnectionHealth;
+
     // Actions
     broadcast: (message: MessageBroadcast) => Promise<void>;
     trackPresence: (state: PresenceState) => Promise<void>;
     untrackPresence: () => Promise<void>;
     reconnect: () => Promise<void>;
-    
+
     // State
-    presenceState: any;
+    presenceState: PresenceState;
     lastError: Error | null;
 }
 
 export function useRealtime(
     config: RealtimeSubscriptionConfig,
     callbacks: {
-        onInsert?: (payload: any) => void;
-        onUpdate?: (payload: any) => void;
-        onDelete?: (payload: any) => void;
-        onBroadcast?: (payload: any) => void;
-        onPresenceSync?: (state: any) => void;
-        onPresenceJoin?: (key: string, currentPresences: any, newPresences: any) => void;
-        onPresenceLeave?: (key: string, currentPresences: any, leftPresences: any) => void;
+        onInsert?: (payload: unknown) => void;
+        onUpdate?: (payload: unknown) => void;
+        onDelete?: (payload: unknown) => void;
+        onBroadcast?: (payload: unknown) => void;
+        onPresenceSync?: (state: PresenceState) => void;
+        onPresenceJoin?: (key: string, currentPresences: PresenceState, newPresences: PresenceState) => void;
+        onPresenceLeave?: (key: string, currentPresences: PresenceState, leftPresences: PresenceState) => void;
     },
     options: UseRealtimeOptions = {}
 ): RealtimeHookReturn {
@@ -68,9 +75,16 @@ export function useRealtime(
     // State
     const [isConnected, setIsConnected] = useState(false);
     const [isReconnecting, setIsReconnecting] = useState(false);
-    const [presenceState, setPresenceState] = useState({});
+    const [presenceState, setPresenceState] = useState<PresenceState>({
+        userId: '',
+        status: 'offline',
+        lastSeen: '',
+    });
     const [lastError, setLastError] = useState<Error | null>(null);
-    const [connectionHealth, setConnectionHealth] = useState({});
+    const [connectionHealth, setConnectionHealth] = useState<ConnectionHealth>({
+        connectionRetries: 0,
+        isHealthy: false,
+    });
 
     // Refs
     const channelRef = useRef<RealtimeChannel | null>(null);
@@ -78,7 +92,6 @@ export function useRealtime(
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const healthCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const configRef = useRef(config);
-
     // Update config ref when config changes
     useEffect(() => {
         configRef.current = config;
@@ -298,9 +311,15 @@ export function useRealtime(
      * Connection health monitoring
      */
     const updateConnectionHealth = useCallback(() => {
-        const health = realtimeService.getConnectionHealth();
+
+        const rawHealth = realtimeService.getConnectionHealth();
+        // Map to ConnectionHealth interface (only connectionRetries is available)
+        const health: ConnectionHealth = {
+            connectionRetries: rawHealth.connectionRetries ?? 0,
+            isHealthy: rawHealth.connectionRetries === 0,
+        };
         setConnectionHealth(health);
-        
+
         // Auto-reconnect if connection is unhealthy
         if (autoReconnect && health.connectionRetries > 0 && !isReconnecting) {
             log.warn('[useRealtime] Connection unhealthy, attempting reconnect...');
