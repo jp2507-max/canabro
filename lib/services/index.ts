@@ -89,3 +89,16 @@ export {
 
 // Strain services
 export { strainLocalService, default as StrainLocalService } from './strain-local.service';
+
+// Realtime services (2025 Enhanced)
+export { realtimeService } from './realtimeService';
+export { realtimeConfig } from './realtimeConfig';
+export type { 
+    RealtimeSubscriptionConfig, 
+    MessageBroadcast, 
+    PresenceState 
+} from './realtimeService';
+export type { 
+    RealtimeConfig, 
+    RealtimeQuotas 
+} from './realtimeConfig';

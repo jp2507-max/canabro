@@ -2,14 +2,26 @@
 
 ## Development Phase
 
-- [ ] **ACF-T01**: Set up real-time infrastructure and data models
+- [x] **ACF-T01**: Set up real-time infrastructure and data models
+
+
+
+
+
+
+
+
   - Create ConversationThread model for direct messaging
-  - Create LiveNotification model for real-time alerts
+  - Create Message model for chat messages
+  - Create LiveNotification model for real-time community alerts
   - Create UserPresence model for online status tracking
-  - Create CommunityEvent model for live community activities
+  - Create FollowRelationship model for user following
+  - Create SocialGroup model for interest-based communities
+  - Create LiveEvent model for community events
+  - Create CommunityPoll model for live polling
   - Write database migration scripts for new tables and relationships
   - Set up Supabase Realtime subscriptions for live updates
-  - _Requirements: 1, 2, 3, 4, 5, 6_
+  - _Requirements: 1, 2, 4, 5, 6_
 
 - [ ] **ACF-T02**: Implement real-time messaging system
 - [ ] **ACF-T02.1**: Create DirectMessaging component for private conversations
@@ -66,18 +78,18 @@
   - Use react-native-fast-image for optimized activity media loading
   - _Requirements: 2_
 
-- [ ] **ACF-T04**: Implement advanced content filtering and moderation
-- [ ] **ACF-T04.1**: Create ContentModerationSystem for automated filtering
-  - Build content analysis system for inappropriate content detection
-  - Implement keyword filtering and spam detection
+- [ ] **ACF-T04**: Enhance existing content filtering with advanced moderation
+- [ ] **ACF-T04.1**: Extend existing community service with content moderation
+  - Add automated content filtering to existing CommunityService
+  - Implement keyword filtering and spam detection for questions and plant shares
   - Add image content moderation using AI analysis
-  - Create automated action system (flag, hide, remove)
+  - Create automated action system (flag, hide, remove) for existing content types
   - Integrate with existing community posting and content systems
   - _Requirements: 3_
 
 - [ ] **ACF-T04.2**: Create ModerationDashboard for community management
   - Build moderation interface for community managers
-  - Implement flagged content review and action system
+  - Implement flagged content review and action system for existing content types
   - Add user management tools (warnings, suspensions, bans)
   - Create moderation analytics and reporting
   - Use existing admin interface patterns and permissions
