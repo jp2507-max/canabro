@@ -6,7 +6,15 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { addDays, addWeeks, format } from '@/lib/utils/date';
+import { addDays, addWeeks, format } from '../lib/utils/date';
+import { createPlant } from '../lib/services/plant-service';
+import { scheduleTasksForPlant, TaskGenerationResult } from '../lib/services/PlantTaskIntegration';
+import { getTemplatesByCategory } from '../lib/services/template-service';
+import { database } from '../lib/models';
+import { Plant as PlantModel } from '../lib/models/Plant';
+import { PlantTask } from '../lib/models/PlantTask';
+import { Plant } from '../lib/types/plant';
+import { Q } from '@nozbe/watermelondb';
 
 // Mock complete workflow scenarios
 const completeWorkflowScenarios = {
@@ -201,62 +209,100 @@ describe('End-to-End Calendar Workflow Tests', () => {
     it('should complete full beginner workflow successfully', async () => {
       const scenario = completeWorkflowScenarios.beginnerIndoorGrow;
       const user = scenario.user;
-      const plant = scenario.plant;
+      const plantInput = scenario.plant;
       const template = scenario.template;
       const expected = scenario.expectedOutcome;
+
+      // Step 1: Plant Creation (real service)
+
+
+      const createdPlant = await createPlant({
+        user_id: user.id,
+        name: plantInput.name,
+        strain: plantInput.strain,
+        growth_stage: 'seedling',
+        planted_date: plantInput.plantedDate.toISOString(),
+        location_id: undefined,
+        journal_id: undefined,
+      });
+      expect(createdPlant).toBeTruthy();
+      if (!createdPlant) throw new Error('Plant creation failed');
+      expect(createdPlant.strain).toBe('Northern Lights');
+      expect(createdPlant.growth_stage).toBe('seedling');
+      expect(createdPlant.user_id).toBe(user.id);
+
+      // Fetch WatermelonDB Plant model instance for integration
+      const plantModel = await database.get<PlantModel>('plants').find(createdPlant.id);
+      expect(plantModel).toBeTruthy();
+
+      // Step 2: Get or create a suitable template for the plant
+      const templates = await getTemplatesByCategory('indoor');
+      let templateToUse;
+      if (templates.length > 0) {
+        templateToUse = templates.find(t => 
+          t.category === 'indoor' && 
+          t.name.toLowerCase().includes('beginner')
+        ) || templates[0];
+      }
+
+      // Step 3: Template Application & Task Generation (real integration)
+      const taskGenResult = await scheduleTasksForPlant(plantModel as PlantModel, {
+        useTemplate: !!templateToUse,
+        templateId: templateToUse?.id,
+        scheduleNotifications: true,
+        generateRecurring: true,
+        recurringInterval: 7,
+        syncWithCareReminders: true,
+      });
+      expect(taskGenResult).toBeTruthy();
+      expect(Array.isArray(taskGenResult.tasks)).toBe(true);
+      expect(taskGenResult.tasks.length).toBeGreaterThan(0);
+
+      // Step 4: Fetch all tasks for the plant to validate generation
+      const allPlantTasks = await database
+        .get<PlantTask>('plant_tasks')
+        .query(Q.where('plant_id', createdPlant.id))
+        .fetch();
+      expect(allPlantTasks.length).toBeGreaterThan(0);
+      expect(allPlantTasks.length).toBe(taskGenResult.tasks.length);
+
+      // Step 5: Assert on generated tasks content and types
+      const taskTypes = taskGenResult.tasks.map(task => task.taskType);
+      expect(taskTypes).toContain('watering');
+      expect(taskTypes).toContain('feeding');
+      expect(taskTypes).toContain('inspection');
+
+      // Step 6: Assert on scheduled notifications
+      expect(taskGenResult.scheduledNotifications).toBeGreaterThan(0);
+      expect(taskGenResult.errors).toEqual([]);
+
+      // Step 7: Validate actual task workflow by completing some tasks
+      const pendingTasks = allPlantTasks.filter(task => task.status === 'pending');
+      expect(pendingTasks.length).toBeGreaterThan(0);
       
-      // Step 1: Plant Creation
-      const plantRecord = {
-        id: 'plant-beginner-1',
-        ...plant,
-        userId: user.id,
-        createdAt: new Date(),
-        currentStage: 'seedling',
-      };
-      
-      expect(plantRecord.strain).toBe('Northern Lights');
-      expect(plantRecord.growMethod).toBe('indoor');
-      
-      // Step 2: Template Application
-      const appliedTemplate = {
-        ...template,
-        appliedTo: plantRecord.id,
-        appliedAt: new Date(),
-      };
-      
-      expect(appliedTemplate.difficulty).toBe('beginner');
-      expect(appliedTemplate.durationWeeks).toBe(16);
-      
-      // Step 3: Task Generation
-      const generatedTasks = Array.from({ length: expected.totalTasks }, (_, i) => ({
-        id: `task-${i}`,
-        plantId: plantRecord.id,
-        taskType: ['watering', 'feeding', 'monitoring'][i % 3],
-        scheduledDate: addDays(plant.plantedDate, Math.floor(i / 3)),
-        priority: 'medium',
-        isCompleted: false,
-      }));
-      
-      expect(generatedTasks).toHaveLength(expected.totalTasks);
-      
-      // Step 4: Notification Scheduling
-      const scheduledNotifications = Array.from({ length: expected.notifications }, (_, i) => ({
-        id: `notification-${i}`,
-        taskId: generatedTasks[i % generatedTasks.length].id,
-        scheduledFor: addDays(new Date(), i),
-        status: 'scheduled',
-      }));
-      
-      expect(scheduledNotifications).toHaveLength(expected.notifications);
-      
-      // Step 5: Workflow Completion Simulation
-      const completedTasks = Math.floor(generatedTasks.length * expected.completionRate);
-      expect(completedTasks).toBe(Math.floor(48 * 0.85)); // 40 tasks
-      
-      // Step 6: Harvest Date Validation
-      const actualHarvestDate = expected.harvestDate;
-      const expectedHarvestDate = addWeeks(plant.plantedDate, template.durationWeeks);
-      expect(actualHarvestDate.getTime()).toBe(expectedHarvestDate.getTime());
+      // Complete a few tasks to test workflow progression
+      const tasksToComplete = pendingTasks.slice(0, 3);
+      await database.write(async () => {
+        for (const task of tasksToComplete) {
+          await task.update((taskRecord) => {
+            taskRecord.status = 'completed';
+          });
+        }
+      });
+
+      // Verify tasks were actually completed
+      const updatedTasks = await database
+        .get<PlantTask>('plant_tasks')
+        .query(Q.where('plant_id', createdPlant.id), Q.where('status', 'completed'))
+        .fetch();
+      expect(updatedTasks.length).toBe(tasksToComplete.length);
+
+      // Step 8: Harvest Date Validation with actual template data
+      if (templateToUse) {
+        const expectedHarvestDate = addWeeks(plantInput.plantedDate, templateToUse.durationWeeks);
+        const calculatedHarvestDate = addWeeks(plantInput.plantedDate, template.durationWeeks);
+        expect(expectedHarvestDate.getTime()).toBe(calculatedHarvestDate.getTime());
+      }
     });
 
     it('should handle beginner user guidance throughout workflow', () => {
@@ -287,22 +333,77 @@ describe('End-to-End Calendar Workflow Tests', () => {
     it('should complete advanced hydroponic workflow successfully', async () => {
       const scenario = completeWorkflowScenarios.advancedHydroponicGrow;
       const user = scenario.user;
-      const plant = scenario.plant;
+      const plantInput = scenario.plant;
       const template = scenario.template;
       const expected = scenario.expectedOutcome;
       
-      // Advanced users get more complex tasks
-      const complexTasks = [
-        { type: 'nutrient_monitoring', frequency: 'daily', complexity: 'high' },
-        { type: 'ph_adjustment', frequency: 'daily', complexity: 'high' },
-        { type: 'ec_monitoring', frequency: 'daily', complexity: 'medium' },
-        { type: 'reservoir_change', frequency: 'weekly', complexity: 'high' },
-        { type: 'root_inspection', frequency: 'weekly', complexity: 'medium' },
-      ];
+      // Step 1: Create plant for advanced hydroponic grow
+      const createdPlant = await createPlant({
+        user_id: user.id,
+        name: plantInput.name,
+        strain: plantInput.strain,
+        growth_stage: 'seedling',
+        planted_date: plantInput.plantedDate.toISOString(),
+        location_id: undefined,
+        journal_id: undefined,
+      });
+      expect(createdPlant).toBeTruthy();
+      if (!createdPlant) throw new Error('Advanced plant creation failed');
       
-      expect(complexTasks.filter(t => t.complexity === 'high')).toHaveLength(3);
-      expect(expected.totalTasks).toBe(80);
-      expect(expected.completionRate).toBe(0.92);
+      // Fetch WatermelonDB Plant model instance
+      const plantModel = await database.get<PlantModel>('plants').find(createdPlant.id);
+      expect(plantModel).toBeTruthy();
+
+      // Step 2: Get advanced hydroponic template
+      const hydroponicTemplates = await getTemplatesByCategory('hydroponic');
+      const advancedTemplate = hydroponicTemplates.find(t => 
+        t.name.toLowerCase().includes('advanced') || t.name.toLowerCase().includes('hydroponic')
+      ) || hydroponicTemplates[0];
+
+      // Step 3: Generate advanced tasks with hydroponic-specific options
+      const taskGenResult = await scheduleTasksForPlant(plantModel as PlantModel, {
+        useTemplate: !!advancedTemplate,
+        templateId: advancedTemplate?.id,
+        scheduleNotifications: true,
+        generateRecurring: true,
+        recurringInterval: 1, // Daily for advanced grows
+        syncWithCareReminders: true,
+        optimizeFor5DayView: true,
+      });
+      expect(taskGenResult).toBeTruthy();
+      expect(taskGenResult.tasks.length).toBeGreaterThan(0);
+
+      // Step 4: Fetch and validate advanced hydroponic tasks
+      const allPlantTasks = await database
+        .get<PlantTask>('plant_tasks')
+        .query(Q.where('plant_id', createdPlant.id))
+        .fetch();
+
+      // Step 5: Verify advanced task types are present
+      const taskTypes = allPlantTasks.map(task => task.taskType);
+      const expectedTaskTypes: string[] = ['watering', 'feeding', 'inspection', 'pruning'];
+      const presentTasks = expectedTaskTypes.filter(type => taskTypes.includes(type as any));
+      expect(presentTasks.length).toBeGreaterThan(2); // Should have at least basic task types
+
+      // Step 6: Verify task complexity and frequency
+      const dailyTasks = allPlantTasks.filter(task => {
+        // Check if task is scheduled within the next 7 days (indicating daily/frequent scheduling)
+        const taskDate = new Date(task.dueDate);
+        const weekFromNow = new Date();
+        weekFromNow.setDate(weekFromNow.getDate() + 7);
+        return taskDate <= weekFromNow;
+      });
+      expect(dailyTasks.length).toBeGreaterThan(5); // Advanced grows should have many frequent tasks
+
+      // Step 7: Verify error handling and completion rate
+      expect(taskGenResult.errors).toEqual([]);
+      expect(taskGenResult.scheduledNotifications).toBeGreaterThan(0);
+      
+      // Step 8: Test advanced task completion workflow
+      const highPriorityTasks = allPlantTasks.filter(task => 
+        task.priority === 'high' || task.priority === 'critical'
+      );
+      expect(highPriorityTasks.length).toBeGreaterThan(0);
     });
 
     it('should handle advanced automation preferences', () => {
@@ -320,24 +421,78 @@ describe('End-to-End Calendar Workflow Tests', () => {
   });
 
   describe('Multi-Plant Operation Workflow', () => {
-    it('should handle multiple plants with staggered schedules', () => {
+    it('should handle multiple plants with staggered schedules', async () => {
       const scenario = completeWorkflowScenarios.multiPlantOperation;
-      const plants = scenario.plants;
+      const plantBatches = scenario.plants;
       const expected = scenario.expectedOutcome;
       
-      // Calculate total plants
-      const totalPlants = plants.reduce((sum, batch) => sum + batch.count, 0);
-      expect(totalPlants).toBe(expected.totalPlants);
+      // Step 1: Create multiple plants with staggered planting dates
+      const createdPlants: Plant[] = [];
+      for (const batch of plantBatches) {
+        for (let i = 0; i < batch.count; i++) {
+          const plant = await createPlant({
+            user_id: 'user-multi-plant',
+            name: `${batch.strain} Plant ${i + 1}`,
+            strain: batch.strain,
+            growth_stage: 'seedling',
+            planted_date: batch.plantedDate.toISOString(),
+            location_id: undefined,
+            journal_id: undefined,
+          });
+          if (plant) {
+            createdPlants.push(plant);
+          }
+        }
+      }
       
-      // Staggered planting dates
-      const plantingDates = plants.map(batch => batch.plantedDate);
+      // Step 2: Validate all plants were created
+      const totalPlants = createdPlants.length;
+      expect(totalPlants).toBe(expected.totalPlants);
+      expect(totalPlants).toBeGreaterThan(0);
+
+      // Step 3: Generate tasks for all plants
+      const allTaskResults: TaskGenerationResult[] = [];
+      for (const plant of createdPlants) {
+        const plantModel = await database.get<PlantModel>('plants').find(plant.id);
+        const taskResult = await scheduleTasksForPlant(plantModel as PlantModel, {
+          useTemplate: true,
+          scheduleNotifications: true,
+          generateRecurring: true,
+          recurringInterval: 7,
+        });
+        allTaskResults.push(taskResult);
+      }
+
+      // Step 4: Validate task generation across all plants
+      const totalTasksGenerated = allTaskResults.reduce((sum, result) => sum + result.tasks.length, 0);
+      expect(totalTasksGenerated).toBeGreaterThan(0);
+      expect(allTaskResults.every(result => result.errors.length === 0)).toBe(true);
+
+      // Step 5: Verify staggered planting dates
+      const plantingDates = plantBatches.map(batch => batch.plantedDate);
       expect(plantingDates).toHaveLength(3);
       
-      // Different harvest dates due to staggering
-      const harvestDates = plants.map(batch => 
+      // Verify dates are actually different (staggered)
+      const uniqueDates = new Set(plantingDates.map(date => date.getTime()));
+      expect(uniqueDates.size).toBe(plantingDates.length);
+
+      // Step 6: Calculate and verify different harvest dates due to staggering
+      const harvestDates = plantBatches.map(batch => 
         addWeeks(batch.plantedDate, 16) // Assuming 16-week cycle
       );
       expect(harvestDates).toHaveLength(expected.staggeredHarvests);
+      
+      // Step 7: Verify tasks are distributed across different time periods
+      const allTasks = await database
+        .get<PlantTask>('plant_tasks')
+        .query(Q.where('plant_id', Q.oneOf(createdPlants.map(p => p.id))))
+        .fetch();
+      
+      const taskDateRange = allTasks.map(task => new Date(task.dueDate).getTime());
+      const minDate = Math.min(...taskDateRange);
+      const maxDate = Math.max(...taskDateRange);
+      const dateRangeWeeks = (maxDate - minDate) / (1000 * 60 * 60 * 24 * 7);
+      expect(dateRangeWeeks).toBeGreaterThan(10); // Should span multiple weeks due to staggering
     });
 
     it('should optimize task scheduling across multiple plants', () => {

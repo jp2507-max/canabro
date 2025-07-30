@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { addDays, addWeeks } from '@/lib/utils/date';
+import { addDays } from '@/lib/utils/date';
 
 // Mock real growth scenarios
 const growthScenarios = {

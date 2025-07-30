@@ -19,6 +19,7 @@
  */
 
 import React, { useCallback, useMemo, useRef } from 'react';
+import { Logger } from '@/lib/utils/production-utils';
 import { RefreshControl, ViewStyle } from 'react-native';
 import { FlashList, FlashListProps } from '@shopify/flash-list';
 import Animated from 'react-native-reanimated';
@@ -29,6 +30,7 @@ import TaskReminderCard from './TaskReminderCard';
 import ThemedView from '../ui/ThemedView';
 import ThemedText from '../ui/ThemedText';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { refreshControlColors } from '@/lib/constants/colors';
 import { useTranslation } from 'react-i18next';
 
 // Performance constants
@@ -268,8 +270,8 @@ export default function OptimizedTaskList({
       <RefreshControl
         refreshing={refreshing}
         onRefresh={handleRefresh}
-        tintColor="#16a34a"
-        colors={["#16a34a"]}
+        tintColor={refreshControlColors.tintColor}
+        colors={refreshControlColors.colors}
       />
     ) : undefined,
   }), [
@@ -364,7 +366,7 @@ export const TaskListPerformanceUtils = {
         const endTime = performance.now();
         const renderTime = endTime - startTime;
         
-        console.log(`[TaskList Performance] Rendered ${taskCount} tasks in ${renderTime.toFixed(2)}ms`);
+  Logger.info(`[TaskList Performance] Rendered ${taskCount} tasks in ${renderTime.toFixed(2)}ms`);
         
         return {
           taskCount,

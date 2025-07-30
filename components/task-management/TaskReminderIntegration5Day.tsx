@@ -220,7 +220,7 @@ const TaskReminderIntegration5Day: React.FC<TaskReminderIntegration5DayProps> = 
           {summaryStats.todayCount > 0 && (
             <ThemedView className="flex-row items-center">
               <OptimizedIcon
-                name="today"
+                name="calendar"
                 size={16}
                 className="mr-1 text-blue-500"
               />

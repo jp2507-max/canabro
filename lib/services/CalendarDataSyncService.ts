@@ -391,7 +391,7 @@ export class CalendarDataSyncService {
     }
 
     private async syncTasks(): Promise<{ processed: number; conflicts: number; errors: string[] }> {
-        const result = { processed: 0, conflicts: 0, errors: [] };
+        const result = { processed: 0, conflicts: 0, errors: [] as string[] };
 
         try {
             // Get changed tasks
@@ -432,7 +432,7 @@ export class CalendarDataSyncService {
     }
 
     private async syncReminders(): Promise<{ processed: number; conflicts: number; errors: string[] }> {
-        const result = { processed: 0, conflicts: 0, errors: [] };
+        const result = { processed: 0, conflicts: 0, errors: [] as string[] };
 
         try {
             // Get changed reminders
@@ -470,7 +470,7 @@ export class CalendarDataSyncService {
     }
 
     private async syncPlants(): Promise<{ processed: number; conflicts: number; errors: string[] }> {
-        const result = { processed: 0, conflicts: 0, errors: [] };
+        const result = { processed: 0, conflicts: 0, errors: [] as string[] };
 
         try {
             // Get changed plants
@@ -557,7 +557,7 @@ export class CalendarDataSyncService {
         return await database.collections
             .get<PlantTask>('plant_tasks')
             .query(
-                Q.where('due_date', Q.between(startDate.toISOString(), endDate.toISOString())),
+                Q.where('due_date', Q.between(startDate.getTime(), endDate.getTime())),
                 Q.sortBy('due_date', Q.asc)
             )
             .fetch();
@@ -569,7 +569,7 @@ export class CalendarDataSyncService {
         return await database.collections
             .get<CareReminder>('care_reminders')
             .query(
-                Q.where('scheduled_for', Q.between(startDate.toISOString(), endDate.toISOString())),
+                Q.where('scheduled_for', Q.between(startDate.getTime(), endDate.getTime())),
                 Q.sortBy('scheduled_for', Q.asc)
             )
             .fetch();

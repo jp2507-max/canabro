@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { addDays } from '@/lib/utils/date';
+import { addDays } from '../lib/utils/date';
 
 // Mock template data for different scenarios
 const templateScenarios = {
@@ -344,7 +344,15 @@ describe('Template System Integration Tests', () => {
     });
 
     it('should handle template conflicts and dependencies', () => {
-      const conflictingTasks = [
+      type TaskType = {
+        weekNumber: number;
+        dayOfWeek: number;
+        taskType: string;
+        title: string;
+        estimatedDuration: number;
+      };
+
+      const conflictingTasks: TaskType[] = [
         {
           weekNumber: 1,
           dayOfWeek: 1,
@@ -359,11 +367,60 @@ describe('Template System Integration Tests', () => {
           title: 'Nutrient feeding',
           estimatedDuration: 45,
         },
+        {
+          weekNumber: 1,
+          dayOfWeek: 1,
+          taskType: 'watering',
+          title: 'Evening watering',
+          estimatedDuration: 20,
+        },
       ];
-      
-      // Total duration should be considered for scheduling
-      const totalDuration = conflictingTasks.reduce((sum, task) => sum + task.estimatedDuration, 0);
-      expect(totalDuration).toBe(75); // 30 + 45 minutes
+
+      // Check for overlapping/conflicting tasks (same day/week)
+      const conflicts: Array<{ a: TaskType; b: TaskType }> = [];
+      for (let i = 0; i < conflictingTasks.length; i++) {
+        for (let j = i + 1; j < conflictingTasks.length; j++) {
+          const a = conflictingTasks[i]!;
+          const b = conflictingTasks[j]!;
+          if (a.weekNumber === b.weekNumber && a.dayOfWeek === b.dayOfWeek) {
+            // Conflict if same type or different type on same slot
+            conflicts.push({ a, b });
+          }
+        }
+      }
+      // Assert that conflicts are detected
+      expect(conflicts.length).toBeGreaterThan(0);
+
+      // Example: system should identify both watering/feeding and watering/watering as conflicts
+      const conflictTypes = conflicts.map(({ a, b }) => [a.taskType, b.taskType].sort().join('+'));
+      expect(conflictTypes).toContain('feeding+watering');
+      expect(conflictTypes).toContain('watering+watering');
+
+      // Simulate system conflict resolution: e.g., merge watering tasks, flag feeding+watering as warning
+      const resolvedTasks: TaskType[] = [];
+      const seen = new Set<string>();
+      for (const task of conflictingTasks) {
+        const key = `${task.weekNumber}-${task.dayOfWeek}-${task.taskType}`;
+        if (!seen.has(key)) {
+          // Merge durations for same type
+          const mergedDuration = conflictingTasks
+            .filter(t => t.weekNumber === task.weekNumber && t.dayOfWeek === task.dayOfWeek && t.taskType === task.taskType)
+            .reduce((sum, t) => sum + t.estimatedDuration, 0);
+          resolvedTasks.push({ ...task, estimatedDuration: mergedDuration });
+          seen.add(key);
+        }
+      }
+      // Should merge watering tasks into one with combined duration
+      const wateringTask = resolvedTasks.find(t => t.taskType === 'watering');
+      expect(wateringTask?.estimatedDuration).toBe(50); // 30 + 20
+      // Feeding should remain as a separate task
+      const feedingTask = resolvedTasks.find(t => t.taskType === 'feeding');
+      expect(feedingTask?.estimatedDuration).toBe(45);
+      // Total resolved tasks should be 2 (watering, feeding)
+      expect(resolvedTasks.length).toBe(2);
+      // Optionally, assert that a warning is flagged for feeding+watering conflict
+      const hasFeedingWateringConflict = conflictTypes.includes('feeding+watering');
+      expect(hasFeedingWateringConflict).toBe(true);
     });
 
     it('should optimize template for different growing environments', () => {

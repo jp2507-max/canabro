@@ -416,7 +416,7 @@ export const WeeklyTaskViewPerformanceUtils = {
         const endTime = performance.now();
         const renderTime = endTime - startTime;
         
-        console.log(`[WeeklyTaskView Performance] Rendered ${taskCount} tasks in ${renderTime.toFixed(2)}ms`);
+  Logger.info(`[WeeklyTaskView Performance] Rendered ${taskCount} tasks in ${renderTime.toFixed(2)}ms`);
         
         return {
           taskCount,
@@ -481,7 +481,7 @@ export const WeeklyTaskViewPerformanceUtils = {
         requestAnimationFrame(measureFrame);
       } else {
         const fps = (frameCount / duration) * 1000;
-        console.log(`[WeeklyTaskView Scrolling] Average FPS: ${fps.toFixed(1)}`);
+  Logger.info(`[WeeklyTaskView Scrolling] Average FPS: ${fps.toFixed(1)}`);
         
         return {
           fps,

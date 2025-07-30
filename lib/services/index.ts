@@ -86,3 +86,6 @@ export {
     optimizeForDailyPlantCare,
     getPlantCareLeadTime
 } from '../utils/notification-scheduling';
+
+// Strain services
+export { strainLocalService, default as StrainLocalService } from './strain-local.service';

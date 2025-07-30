@@ -239,6 +239,21 @@ export const IconSVG = {
   'at-outline': '@',
   'people-outline': '👥',
   'lock-closed-outline': '🔒',
+  
+  // Media controls
+  'play': '▶️',
+  'pause': '⏸️',
+  'stop': '⏹️',
+  
+  // Time/Date
+  'today': '📅',
+  'calendar-today': '📅',
+  
+  // Performance/System
+  'speedometer': '🏁',
+  'hardware-chip': '🔧',
+  'finger-print': '👆',
+  'archive': '📦',
 } as const;
 
 // Icon labels for accessibility - cleaned up to match IconSVG
@@ -354,6 +369,21 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   'at-outline': 'At',
   'people-outline': 'People',
   'lock-closed-outline': 'Lock closed',
+  
+  // Media controls
+  'play': 'Play',
+  'pause': 'Pause',
+  'stop': 'Stop',
+  
+  // Time/Date
+  'today': 'Today',
+  'calendar-today': 'Today',
+  
+  // Performance/System
+  'speedometer': 'Performance',
+  'hardware-chip': 'Hardware',
+  'finger-print': 'Fingerprint',
+  'archive': 'Archive',
 } as const;
 
 type IconName = keyof typeof IconSVG;

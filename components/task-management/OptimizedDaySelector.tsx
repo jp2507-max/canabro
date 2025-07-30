@@ -74,17 +74,29 @@ const OptimizedDayItem = React.memo<{
     const selectionAnimatedStyle = useAnimatedStyle(() => {
         return {
             backgroundColor: withSpring(
-                day.isSelected ? '#16a34a' : day.isToday ? '#f3f4f6' : 'transparent'
+                day.isSelected
+                    ? 'rgb(var(--color-primary-500))'
+                    : day.isToday
+                        ? 'rgb(var(--color-neutral-100))'
+                        : 'transparent'
             ),
             borderColor: withSpring(
-                day.isSelected ? '#16a34a' : day.isToday ? '#16a34a' : '#e5e7eb'
+                day.isSelected
+                    ? 'rgb(var(--color-primary-500))'
+                    : day.isToday
+                        ? 'rgb(var(--color-primary-500))'
+                        : 'rgb(var(--color-neutral-200))'
             ),
         };
     });
 
     return (
         <Animated.View style={[animatedStyle, { marginHorizontal: 4 }]}>
-            <Pressable {...handlers}>
+                        <Pressable
+                            {...handlers}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Select ${day.dayName} ${day.dayNumber}. ${day.taskCount} task${day.taskCount === 1 ? '' : 's'}`}
+                        >
                 <Animated.View
                     style={[
                         selectionAnimatedStyle,
@@ -248,7 +260,10 @@ export default function OptimizedDaySelector({
             {/* Navigation controls */}
             <ThemedView className="flex-row items-center justify-between px-4 py-2">
                 <Animated.View style={prevButtonAnimation.animatedStyle}>
-                    <Pressable {...prevButtonAnimation.handlers}>
+                    <Pressable
+                        {...prevButtonAnimation.handlers}
+                        accessibilityLabel="Previous day"
+                    >
                         <ThemedView className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800">
                             <OptimizedIcon
                                 name="chevron-back"
@@ -260,7 +275,10 @@ export default function OptimizedDaySelector({
                 </Animated.View>
 
                 <Animated.View style={todayButtonAnimation.animatedStyle}>
-                    <Pressable {...todayButtonAnimation.handlers}>
+                    <Pressable
+                        {...todayButtonAnimation.handlers}
+                        accessibilityLabel="Today"
+                    >
                         <ThemedView className="rounded-lg bg-primary-500 px-4 py-2">
                             <ThemedText className="font-medium text-white">
                                 {t('calendar.today')}
@@ -270,7 +288,10 @@ export default function OptimizedDaySelector({
                 </Animated.View>
 
                 <Animated.View style={nextButtonAnimation.animatedStyle}>
-                    <Pressable {...nextButtonAnimation.handlers}>
+                    <Pressable
+                        {...nextButtonAnimation.handlers}
+                        accessibilityLabel="Next day"
+                    >
                         <ThemedView className="rounded-full bg-neutral-100 p-2 dark:bg-neutral-800">
                             <OptimizedIcon
                                 name="chevron-forward"

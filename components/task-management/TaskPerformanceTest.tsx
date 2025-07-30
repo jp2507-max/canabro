@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 
 import ThemedView from '../ui/ThemedView';
 import ThemedText from '../ui/ThemedText';
-import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { OptimizedIcon, type IconName } from '../ui/OptimizedIcon';
 import OptimizedWeeklyTaskView from './OptimizedWeeklyTaskView';
 import { TaskListPerformanceUtils } from './OptimizedTaskList';
 import { WeeklyTaskViewPerformanceUtils } from './OptimizedWeeklyTaskView';
@@ -306,7 +306,7 @@ export default function TaskPerformanceTest() {
   const renderTestSection = useCallback((
     title: string,
     results: PerformanceTestResult[],
-    icon: string
+    icon: IconName
   ) => (
     <ThemedView className="mb-6">
       <ThemedView className="mb-3 flex-row items-center">
@@ -359,7 +359,7 @@ export default function TaskPerformanceTest() {
               </>
             ) : (
               <>
-                <OptimizedIcon name="play" size={20} className="mr-2 text-white" />
+                <OptimizedIcon name="chevron-forward" size={20} className="mr-2 text-white" />
                 <ThemedText className="font-medium text-white">
                   Run Performance Tests
                 </ThemedText>
@@ -401,25 +401,25 @@ export default function TaskPerformanceTest() {
             {renderTestSection(
               'Render Performance',
               testResults.renderPerformance,
-              'speedometer'
+              'analytics-outline'
             )}
             
             {renderTestSection(
               'Memory Usage',
               testResults.memoryUsage,
-              'hardware-chip'
+              'layers-outline'
             )}
             
             {renderTestSection(
               'Scrolling Performance',
               testResults.scrollingPerformance,
-              'finger-print'
+              'refresh'
             )}
             
             {renderTestSection(
               'Cache Efficiency',
               testResults.cacheEfficiency,
-              'archive'
+              'flash'
             )}
           </>
         )}

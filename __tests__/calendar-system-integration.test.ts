@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { addDays, format, startOfDay } from '@/lib/utils/date';
+import { addDays, format } from '@/lib/utils/date';
 
 // Mock dependencies
 jest.mock('@/lib/database', () => ({

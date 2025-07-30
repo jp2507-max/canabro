@@ -91,11 +91,19 @@ export function useTaskReminder5Day(
     try {
       setLoading(true);
       
-      const focusWindowTasks = await taskReminderIntegration5Day.getTasksForDateRange(
-        focusStartDate,
-        focusEndDate,
-        { enableCaching }
-      );
+      // Use database query to get tasks in date range since the method doesn't exist
+      const database = require('@/lib/models').database;
+      const { Q } = require('@nozbe/watermelondb');
+      
+      const focusWindowTasks = await database.collections
+        .get('plant_tasks')
+        .query(
+          Q.where('due_date', Q.between(
+            focusStartDate.getTime(),
+            focusEndDate.getTime()
+          ))
+        )
+        .fetch();
       
       setTasks(focusWindowTasks);
       
@@ -144,12 +152,28 @@ export function useTaskReminder5Day(
         startOfDay(new Date(task.dueDate)).getTime() === startOfDay(date).getTime()
       );
       
+      // Convert PlantTasks to TaskNotificationConfigs
+      const taskNotificationConfigs = dayTasks.map(task => ({
+        id: task.id,
+        taskId: task.id,
+        plantId: task.plantId,
+        plantName: task.plant?.name || 'Unknown Plant',
+        taskType: task.taskType,
+        taskTitle: task.title || task.taskType,
+        dueDate: new Date(task.dueDate),
+        priority: task.priority || 'medium' as const,
+        userId: task.userId || '',
+      }));
+      
       batches.push({
-        date,
-        tasks: dayTasks,
-        totalCount: dayTasks.length,
-        overdueCount: dayTasks.filter(task => task.isOverdue).length,
-        completedCount: dayTasks.filter(task => task.isCompleted).length,
+        scheduledTime: date,
+        tasks: taskNotificationConfigs,
+        batchId: `daily-batch-${i}-${date.toISOString().split('T')[0]}`,
+        userId: userId || '',
+        dayIndex: i,
+        isToday: startOfDay(date).getTime() === startOfDay(new Date()).getTime(),
+        taskDensity: dayTasks.length > 10 ? 'heavy' : dayTasks.length > 5 ? 'moderate' : 'light',
+        plantCount: new Set(dayTasks.map(task => task.plantId)).size,
       });
     }
     
@@ -159,59 +183,79 @@ export function useTaskReminder5Day(
   // Task actions
   const markTaskComplete = useCallback(async (taskId: string) => {
     try {
-      await taskReminderIntegration.markTaskComplete(taskId);
-      await refreshTasks();
+      // Find the task and call handleTaskCompletion
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        await taskReminderIntegration.handleTaskCompletion(task);
+        await refreshTasks();
+      }
     } catch (error) {
       Logger.error('[useTaskReminder5Day] Error marking task complete', { taskId, error });
       throw error;
     }
-  }, [refreshTasks]);
+  }, [tasks, refreshTasks]);
 
   const snoozeTask = useCallback(async (taskId: string, minutes: number) => {
     try {
-      await taskReminderIntegration.snoozeTask(taskId, minutes);
-      await refreshTasks();
+      // Find the task and reschedule it
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        const newDate = new Date(Date.now() + minutes * 60 * 1000);
+        await taskReminderIntegration.handleTaskReschedule(task, newDate);
+        await refreshTasks();
+      }
     } catch (error) {
       Logger.error('[useTaskReminder5Day] Error snoozing task', { taskId, minutes, error });
       throw error;
     }
-  }, [refreshTasks]);
+  }, [tasks, refreshTasks]);
 
   const rescheduleTask = useCallback(async (taskId: string, newDate: Date) => {
     try {
-      await taskReminderIntegration.rescheduleTask(taskId, newDate);
-      await refreshTasks();
+      // Find the task and reschedule it
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        await taskReminderIntegration.handleTaskReschedule(task, newDate);
+        await refreshTasks();
+      }
     } catch (error) {
       Logger.error('[useTaskReminder5Day] Error rescheduling task', { taskId, newDate, error });
       throw error;
     }
-  }, [refreshTasks]);
+  }, [tasks, refreshTasks]);
 
   // Notification management
   const scheduleNotifications = useCallback(async () => {
     try {
-      await taskReminderIntegration5Day.scheduleNotificationsForFocusWindow(
-        focusStartDate,
-        focusEndDate,
-        userId
+      // Use the 5-day workflow scheduling method that exists
+      const focusWindowTasks = tasks.filter(task => 
+        new Date(task.dueDate) >= focusStartDate && 
+        new Date(task.dueDate) <= focusEndDate
       );
+      
+      await taskReminderIntegration.scheduleTasksFor5DayWorkflow(focusWindowTasks, focusStartDate);
     } catch (error) {
       Logger.error('[useTaskReminder5Day] Error scheduling notifications', { error });
       throw error;
     }
-  }, [focusStartDate, focusEndDate, userId]);
+  }, [tasks, focusStartDate, focusEndDate]);
 
   const clearNotifications = useCallback(async () => {
     try {
-      await taskReminderIntegration5Day.clearNotificationsForFocusWindow(
-        focusStartDate,
-        focusEndDate
+      // Use the existing notification cancellation for the focus window tasks
+      const focusWindowTasks = tasks.filter(task => 
+        new Date(task.dueDate) >= focusStartDate && 
+        new Date(task.dueDate) <= focusEndDate
       );
+      
+      for (const task of focusWindowTasks) {
+        await taskReminderIntegration.handleTaskDeletion(task.id);
+      }
     } catch (error) {
       Logger.error('[useTaskReminder5Day] Error clearing notifications', { error });
       throw error;
     }
-  }, [focusStartDate, focusEndDate]);
+  }, [tasks, focusStartDate, focusEndDate]);
 
   // Focus navigation
   const setFocusDate = useCallback((date: Date) => {

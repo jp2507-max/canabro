@@ -214,7 +214,7 @@ export class DataCleanupService {
      * Clean up old completed tasks
      */
     async cleanupCompletedTasks(): Promise<{ deleted: number; errors: string[] }> {
-        const result = { deleted: 0, errors: [] };
+        const result = { deleted: 0, errors: [] as string[] };
 
         try {
             const cutoffDate = subDays(new Date(), this.config.retentionPolicies.completedTasks);
@@ -280,7 +280,7 @@ export class DataCleanupService {
      * Clean up old cancelled/failed tasks
      */
     async cleanupCancelledTasks(): Promise<{ deleted: number; errors: string[] }> {
-        const result = { deleted: 0, errors: [] };
+        const result = { deleted: 0, errors: [] as string[] };
 
         try {
             const cutoffDate = subDays(new Date(), this.config.retentionPolicies.cancelledTasks);
@@ -326,7 +326,7 @@ export class DataCleanupService {
      * Clean up old overdue tasks (with grace period)
      */
     async cleanupOverdueTasks(): Promise<{ deleted: number; errors: string[] }> {
-        const result = { deleted: 0, errors: [] };
+        const result = { deleted: 0, errors: [] as string[] };
 
         try {
             const gracePeriodDate = subDays(new Date(), this.config.retentionPolicies.overdueTasksGracePeriod);
@@ -372,7 +372,7 @@ export class DataCleanupService {
      * Clean up old care reminders
      */
     async cleanupOldReminders(): Promise<{ deleted: number; errors: string[] }> {
-        const result = { deleted: 0, errors: [] };
+        const result = { deleted: 0, errors: [] as string[] };
 
         try {
             const cutoffDate = subDays(new Date(), this.config.retentionPolicies.oldReminders);
@@ -417,7 +417,7 @@ export class DataCleanupService {
      * Clean up orphaned data (tasks without plants, etc.)
      */
     async cleanupOrphanedData(): Promise<{ deleted: number; errors: string[] }> {
-        const result = { deleted: 0, errors: [] };
+        const result = { deleted: 0, errors: [] as string[] };
 
         try {
             // Find tasks with non-existent plants
@@ -465,7 +465,7 @@ export class DataCleanupService {
      * Optimize database performance (vacuum, reindex, etc.)
      */
     async optimizeDatabase(): Promise<{ success: boolean; errors: string[] }> {
-        const result = { success: false, errors: [] };
+        const result = { success: false, errors: [] as string[] };
 
         try {
             // In a real implementation, this would:

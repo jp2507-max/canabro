@@ -6,7 +6,16 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { addMinutes, addHours, addDays, format } from '@/lib/utils/date';
+import { addDays, format } from '../lib/utils/date';
+// Local date helpers for test
+// Local addMinutes and addHours helpers
+function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.getTime() + minutes * 60000);
+}
+
+function addHours(date: Date, hours: number): Date {
+  return new Date(date.getTime() + hours * 3600000);
+}
 
 // Mock notification scenarios
 const notificationScenarios = {
@@ -42,7 +51,12 @@ const notificationScenarios = {
         plantId: 'plant-1',
         plantName: 'Blue Dream #1',
         taskType: 'feeding',
-        scheduledDate: addMinutes(new Date(), 30),
+          scheduledDate: (() => {
+            const now = new Date();
+            const scheduledDate = new Date(now);
+            scheduledDate.setMinutes(now.getMinutes() + 30);
+            return scheduledDate;
+          })(),
         priority: 'medium',
       },
     ],
@@ -451,7 +465,7 @@ describe('Notification System Integration Tests', () => {
         id: `notification-${i}`,
         taskId: `task-${i}`,
         plantId: `plant-${i % 100}`, // 100 plants
-        scheduledDate: addMinutes(new Date(), i),
+    scheduledDate: new Date(Date.now() + i * 60 * 1000),
       }));
       
       expect(largeNotificationBatch).toHaveLength(1000);

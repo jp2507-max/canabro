@@ -262,7 +262,7 @@ export class BackgroundTaskProcessor {
                 await this.processTaskCreation(task);
                 break;
             case 'update':
-                await this.processTaskUpdate(task);
+                await this.processTaskModification(task);
                 break;
             case 'complete':
                 await this.processTaskCompletion(task);
@@ -298,7 +298,7 @@ export class BackgroundTaskProcessor {
     /**
      * Process task updates with notification rescheduling
      */
-    private async processTaskUpdate(task: PlantTask): Promise<void> {
+    private async processTaskModification(task: PlantTask): Promise<void> {
         // Reschedule notifications for updated task
         await taskReminderIntegration5Day.rescheduleTaskFor5Day(task, new Date(task.dueDate));
 

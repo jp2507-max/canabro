@@ -955,7 +955,7 @@ export class BackgroundProcessingPerformanceTest {
                     taskId: `test_task_${i}`,
                     plantId: plant.id,
                     plantName: plant.name,
-                    taskType,
+                    taskType: taskType as TaskType, // Ensure it's not undefined
                     taskTitle: `${taskType} ${plant.name}`,
                     dueDate: addDays(new Date(), Math.floor(i / 20)), // Spread across days
                     priority,
