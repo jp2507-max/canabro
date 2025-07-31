@@ -146,7 +146,7 @@ function validateDirectMessaging(): ValidationResult[] {
     results.push({
       requirement: 'Component file exists and is readable',
       status: 'FAIL',
-      details: `Error reading component file: ${error}`
+      details: `Error reading component file: ${(error as Error).message}`
     });
   }
   
@@ -176,7 +176,7 @@ function validateIndexFile(): ValidationResult[] {
     results.push({
       requirement: 'Index file exists and is readable',
       status: 'FAIL',
-      details: `Error reading index file: ${error}`
+      details: `Error reading index file: ${(error as Error).message}`
     });
   }
   

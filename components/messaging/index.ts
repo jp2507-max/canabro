@@ -5,6 +5,8 @@
  */
 
 export { DirectMessaging } from './DirectMessaging';
+export { MessageComposer } from './MessageComposer';
+export { MessageComposerDemo } from './MessageComposerDemo';
 
 // Export types for external use
 export type {
@@ -14,3 +16,12 @@ export type {
   OnlineStatusProps,
   MessageInputProps,
 } from './DirectMessaging';
+
+export type {
+  MessageComposerProps,
+  ComposerMessage,
+  MessageAttachment,
+  MessageMention,
+  MessageFormatting,
+  VoiceMessage,
+} from './MessageComposer';

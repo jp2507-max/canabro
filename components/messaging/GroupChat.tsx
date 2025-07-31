@@ -704,7 +704,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({
 
     try {
       switch (action) {
-        case 'promote':
+        case 'promote': {
           // Promote member to moderator
           await database.write(async () => {
             const member = members.find(m => m.userId === memberId);
@@ -720,8 +720,9 @@ export const GroupChat: React.FC<GroupChatProps> = ({
           setMembers(promotedMembers);
           haptics.success();
           break;
+        }
 
-        case 'demote':
+        case 'demote': {
           // Demote moderator to member
           await database.write(async () => {
             const member = members.find(m => m.userId === memberId);
@@ -737,8 +738,9 @@ export const GroupChat: React.FC<GroupChatProps> = ({
           setMembers(demotedMembers);
           haptics.success();
           break;
+        }
 
-        case 'remove':
+        case 'remove': {
           // Remove member from group
           await database.write(async () => {
             const member = members.find(m => m.userId === memberId);
@@ -751,11 +753,13 @@ export const GroupChat: React.FC<GroupChatProps> = ({
           setMembers(prev => prev.filter(m => m.userId !== memberId));
           haptics.success();
           break;
+        }
 
-        case 'mute':
+        case 'mute': {
           // Mute member (implement muting logic)
           Alert.alert('Feature Coming Soon', 'Member muting will be available in a future update.');
           break;
+        }
       }
     } catch (error) {
       log.error(`Failed to ${action} member:`, error);
