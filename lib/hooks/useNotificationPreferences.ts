@@ -14,8 +14,18 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
     liveEventNotifications: true,
     achievementNotifications: true,
     quietHoursEnabled: true,
-    quietHoursStart: new Date(2024, 0, 1, 22, 0), // 10 PM
-    quietHoursEnd: new Date(2024, 0, 1, 8, 0), // 8 AM
+    quietHoursStart: (() => {
+        const now = new Date();
+        const start = new Date(now);
+        start.setHours(22, 0, 0, 0); // Today at 22:00
+        return start;
+    })(),
+    quietHoursEnd: (() => {
+        const now = new Date();
+        const end = new Date(now);
+        end.setHours(8, 0, 0, 0); // Today at 08:00
+        return end;
+    })(),
     batchingEnabled: true,
     batchingWindow: 15,
     maxBatchSize: 5,

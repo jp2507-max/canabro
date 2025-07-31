@@ -10,15 +10,15 @@
  * - Intelligent notification grouping and batching
  */
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Alert, RefreshControl, Pressable, Dimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Q } from '@nozbe/watermelondb';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withSpring,
     withTiming,
+    withSpring,
 } from 'react-native-reanimated';
 
 // Core UI Components
@@ -41,10 +41,17 @@ import { triggerLightHapticSync, triggerMediumHapticSync, triggerHeavyHapticSync
 import { log } from '@/lib/utils/logger';
 import { format } from '@/lib/utils/date';
 
+/* Server state via TanStack Query */
+import { useQueryClient } from '@tanstack/react-query';
+import { useNotificationQueries } from '@/lib/hooks/useNotificationQueries';
+import { useGroupedNotifications } from '@/lib/hooks/useGroupedNotifications';
+import { useRealtimeNotifications } from '@/lib/hooks/useRealtimeNotifications';
+
 // Models and Services
 import { LiveNotification, NotificationPriority, NOTIFICATION_PRIORITIES } from '@/lib/models/LiveNotification';
 import { database } from '@/lib/models';
 import supabase from '@/lib/supabase';
+import BatchActionControls from './BatchActionControls';
 
 const { height: WINDOW_HEIGHT } = Dimensions.get('window');
 
@@ -105,14 +112,14 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     useEffect(() => {
         opacity.value = withTiming(1, { duration: 300 });
         scale.value = withSpring(1, { damping: 15, stiffness: 150 });
-    }, []);
+    }, [opacity, scale]);
 
     // Animate item removal
     const animateRemoval = useCallback(() => {
         opacity.value = withTiming(0, { duration: 200 });
         translateX.value = withTiming(-WINDOW_HEIGHT, { duration: 300 });
         scale.value = withTiming(0.8, { duration: 200 });
-    }, []);
+    }, [opacity, translateX, scale]);
 
     // Item container animated style
     const itemAnimatedStyle = useAnimatedStyle(() => ({
@@ -224,7 +231,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                                 </ThemedText>
 
                                 {/* Source user info if available */}
-                                {notification.data.sourceUser && (
+{notification.data?.sourceUser && (
                                     <ThemedView className="mt-2 flex-row items-center">
                                         <NetworkResilientImage
                                             url={notification.data.sourceUser.user_metadata?.avatar_url || null}
@@ -233,7 +240,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                                             borderRadius={10}
                                         />
                                         <ThemedText variant="muted" className="text-xs ml-2">
-                                            {notification.data.sourceUser.user_metadata?.display_name || notification.data.sourceUser.email}
+{notification.data.sourceUser.user_metadata?.display_name || notification.data.sourceUser?.email}
                                         </ThemedText>
                                     </ThemedView>
                                 )}
@@ -336,6 +343,7 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
     maxItems = 100,
 }) => {
     const { t } = useTranslation();
+    // Replaced hand-managed server state with TanStack Query
     const [notifications, setNotifications] = useState<LiveNotification[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -343,11 +351,35 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
     const [showBatchActions, setShowBatchActions] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
 
-    // Real-time subscription ref
-    const realtimeChannelRef = useRef<any>(null);
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const reconnectAttempts = useRef(0);
-    const maxReconnectAttempts = 5;
+    // React Query client and notification queries
+    const queryClient = useQueryClient();
+    const { list, infinite, markRead, markAllRead } = useNotificationQueries({
+        userId: userId ?? '',
+        pageSize: maxItems,
+        read: showUnreadOnly ? true : undefined,
+        enabled: Boolean(userId),
+    });
+
+    // Mirror query data into local view-model state for rendering/animations/grouping
+    useEffect(() => {
+        if (infinite.data?.items) {
+            // Prefer infinite for larger sets when available
+            setNotifications(infinite.data.items as unknown as LiveNotification[]);
+            setLoading(infinite.isLoading || infinite.isFetching);
+        } else if (list.data) {
+            setNotifications(list.data as unknown as LiveNotification[]);
+            setLoading(list.isLoading || list.isFetching);
+        } else {
+            setNotifications([]);
+            setLoading(infinite.isLoading || list.isLoading || false);
+        }
+        // animate when we have data
+        if ((infinite.data?.items?.length ?? list.data?.length ?? 0) > 0) {
+            listOpacity.value = withTiming(1, { duration: 300 });
+        }
+    }, [infinite.data, infinite.isLoading, infinite.isFetching, list.data, list.isLoading, list.isFetching]);
+
+    // Real-time moved into hook (useRealtimeNotifications)
 
     // Animation values
     const headerOpacity = useSharedValue(1);
@@ -364,57 +396,21 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
         sharedValues: [headerOpacity, listOpacity],
     });
 
-    // Grouped notifications by priority and read status
-    const groupedNotifications = useMemo(() => {
-        const groups = {
-            unread: {
-                urgent: [] as LiveNotification[],
-                high: [] as LiveNotification[],
-                normal: [] as LiveNotification[],
-                low: [] as LiveNotification[],
-            },
-            read: {
-                urgent: [] as LiveNotification[],
-                high: [] as LiveNotification[],
-                normal: [] as LiveNotification[],
-                low: [] as LiveNotification[],
-            },
-        };
+    // Grouping moved into hook
+    const { groupedNotifications, unreadCount, buildFlatData } = useGroupedNotifications(notifications);
 
-        notifications.forEach((notification) => {
-            const readStatus = notification.isRead ? 'read' : 'unread';
-            groups[readStatus][notification.priority].push(notification);
-        });
-
-        return groups;
-    }, [notifications]);
-
-    // Unread count
-    const unreadCount = useMemo(() => {
-        return notifications.filter(n => !n.isRead).length;
-    }, [notifications]);
-
-    // Load notifications from database
+    // Load notifications - now uses TanStack Query refetch instead of direct DB fetch
     const loadNotifications = useCallback(async () => {
         try {
             setLoading(true);
-
-            const query = database.collections
-                .get<LiveNotification>('live_notifications')
-                .query(
-                    Q.where('is_deleted', Q.notEq(true)),
-                    ...(userId ? [Q.where('user_id', userId)] : []),
-                    ...(showUnreadOnly ? [Q.where('is_read', false)] : []),
-                    Q.sortBy('created_at', Q.desc),
-                    Q.take(maxItems)
-                );
-
-            const results = await query.fetch();
-            setNotifications(results);
-
-            // Animate list appearance
+            if (infinite.hasNextPage) {
+                // refetch from first page for infinite
+                await queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+                await infinite.refetch();
+            } else {
+                await list.refetch();
+            }
             listOpacity.value = withTiming(1, { duration: 300 });
-
         } catch (error) {
             log.error('Error loading notifications:', error);
             Alert.alert(
@@ -424,164 +420,31 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
         } finally {
             setLoading(false);
         }
-    }, [userId, showUnreadOnly, maxItems, t]);
+    }, [userId, infinite, list, queryClient, t]);
 
-    // Set up real-time subscription
-    const setupRealtimeSubscription = useCallback(() => {
-        try {
-            setConnectionStatus('connecting');
+    // Realtime subscription moved into hook
+    const notificationsQueryKey = useMemo(
+        () => ['notifications', userId, showUnreadOnly, maxItems],
+        [userId, showUnreadOnly, maxItems]
+    );
+    const { status: rtStatus } = useRealtimeNotifications({
+        userId,
+        maxItems,
+        queryClient,
+        notificationsQueryKey,
+    });
+    useEffect(() => {
+        setConnectionStatus(rtStatus);
+    }, [rtStatus]);
 
-            // Clean up existing subscription
-            if (realtimeChannelRef.current) {
-                realtimeChannelRef.current.unsubscribe();
-            }
+    // Realtime new/update/delete/batch handled in useRealtimeNotifications
 
-            // Create new channel for live notifications
-            const channel = supabase
-                .channel(`live_notifications:${userId || 'all'}`)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'live_notifications',
-                        ...(userId ? { filter: `user_id=eq.${userId}` } : {}),
-                    },
-                    (payload) => {
-                        log.info('Real-time notification update:', payload);
-
-                        // Handle different event types
-                        switch (payload.eventType) {
-                            case 'INSERT':
-                                handleNewNotification(payload.new as any);
-                                break;
-                            case 'UPDATE':
-                                handleNotificationUpdate(payload.new as any);
-                                break;
-                            case 'DELETE':
-                                handleNotificationDelete(payload.old as any);
-                                break;
-                        }
-                    }
-                )
-                .on('broadcast', { event: 'notification_batch' }, (payload) => {
-                    // Handle batched notifications for performance
-                    log.info('Received notification batch:', payload);
-                    handleNotificationBatch(payload.notifications);
-                })
-                .on('presence', { event: 'sync' }, () => {
-                    // Handle presence updates for connection status
-                    setConnectionStatus('connected');
-                    reconnectAttempts.current = 0;
-                })
-                .subscribe((status) => {
-                    log.info('Realtime subscription status:', status);
-
-                    if (status === 'SUBSCRIBED') {
-                        setConnectionStatus('connected');
-                        reconnectAttempts.current = 0;
-                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        setConnectionStatus('disconnected');
-                        handleReconnection();
-                    }
-                });
-
-            realtimeChannelRef.current = channel;
-
-        } catch (error) {
-            log.error('Error setting up realtime subscription:', error);
-            setConnectionStatus('disconnected');
-            handleReconnection();
-        }
-    }, [userId]);
-
-    // Handle new notification
-    const handleNewNotification = useCallback((newNotification: any) => {
-        try {
-            // Trigger haptic feedback for new notifications
-            if (newNotification.priority === NOTIFICATION_PRIORITIES.URGENT) {
-                triggerHeavyHapticSync();
-            } else if (newNotification.priority === NOTIFICATION_PRIORITIES.HIGH) {
-                triggerMediumHapticSync();
-            } else {
-                triggerLightHapticSync();
-            }
-
-            // Update local state optimistically
-            setNotifications(prev => [newNotification, ...prev.slice(0, maxItems - 1)]);
-
-        } catch (error) {
-            log.error('Error handling new notification:', error);
-        }
-    }, [maxItems]);
-
-    // Handle notification update
-    const handleNotificationUpdate = useCallback((updatedNotification: any) => {
-        setNotifications(prev =>
-            prev.map(n =>
-                n.id === updatedNotification.id ? updatedNotification : n
-            )
-        );
-    }, []);
-
-    // Handle notification deletion
-    const handleNotificationDelete = useCallback((deletedNotification: any) => {
-        setNotifications(prev =>
-            prev.filter(n => n.id !== deletedNotification.id)
-        );
-    }, []);
-
-    // Handle batched notifications
-    const handleNotificationBatch = useCallback((batchNotifications: any[]) => {
-        if (!batchNotifications?.length) return;
-
-        // Process batch with rate limiting
-        const processedNotifications = batchNotifications.slice(0, 10); // Limit batch size
-
-        setNotifications(prev => {
-            const newNotifications = [...processedNotifications, ...prev];
-            return newNotifications.slice(0, maxItems);
-        });
-
-        // Trigger appropriate haptic feedback
-        triggerLightHapticSync();
-    }, [maxItems]);
-
-    // Handle reconnection with exponential backoff
-    const handleReconnection = useCallback(() => {
-        if (reconnectAttempts.current >= maxReconnectAttempts) {
-            log.warn('Max reconnection attempts reached');
-            return;
-        }
-
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-        reconnectAttempts.current += 1;
-
-        if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-        }
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-            log.info(`Attempting reconnection (attempt ${reconnectAttempts.current})`);
-            setupRealtimeSubscription();
-        }, delay);
-    }, [setupRealtimeSubscription]);
+    // Reconnection is handled inside useRealtimeNotifications; removed legacy handler
 
     // Initialize component
     useEffect(() => {
         loadNotifications();
-        setupRealtimeSubscription();
-
-        return () => {
-            // Cleanup
-            if (realtimeChannelRef.current) {
-                realtimeChannelRef.current.unsubscribe();
-            }
-            if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current);
-            }
-        };
-    }, [loadNotifications, setupRealtimeSubscription]);
+    }, [loadNotifications]);
 
     // Refresh notifications
     const handleRefresh = useCallback(async () => {
@@ -613,27 +476,23 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
             const action = notification.actions?.find(a => a.actionId === actionId);
             if (!action) return;
 
-            // Mark as read when action is taken
-            if (!notification.isRead) {
-                await notification.markAsRead();
+            // Mark as read when action is taken (via mutation)
+            if (!notification.isRead && userId) {
+                markRead.mutate({ id: notification.id, is_read: true });
             }
 
             // Handle different action types
             switch (action.type) {
                 case 'like':
-                    // Handle like action
                     triggerMediumHapticSync();
                     break;
                 case 'reply':
-                    // Handle reply action
                     triggerLightHapticSync();
                     break;
                 case 'follow':
-                    // Handle follow action
                     triggerMediumHapticSync();
                     break;
                 case 'join':
-                    // Handle join action
                     triggerMediumHapticSync();
                     break;
                 case 'dismiss':
@@ -641,7 +500,7 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
                     break;
             }
 
-            // Remove action from notification
+            // Remove action from notification (local model method retained for UI-only cleanup)
             await notification.removeAction(actionId);
 
         } catch (error) {
@@ -651,21 +510,25 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
                 t('notifications.errorHandlingAction')
             );
         }
-    }, [t]);
+    }, [t, userId, markRead]);
 
     // Mark notification as read
     const handleMarkAsRead = useCallback(async (notification: LiveNotification) => {
         try {
-            await notification.markAsRead();
+            if (userId) {
+                // Use TanStack Query mutation for server state
+                markRead.mutate({ id: notification.id, is_read: true });
+            }
             triggerLightHapticSync();
         } catch (error) {
             log.error('Error marking notification as read:', error);
         }
-    }, []);
+    }, [userId, markRead]);
 
     // Dismiss notification
     const handleNotificationDismiss = useCallback(async (notification: LiveNotification) => {
         try {
+            // No per-item animateRemoval available here; rely on UI button animation and refresh state
             await notification.markAsDeleted();
             triggerLightHapticSync();
         } catch (error) {
@@ -676,12 +539,18 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
     // Batch actions
     const handleBatchMarkRead = useCallback(async () => {
         try {
-            const selectedIds = Array.from(selectedNotifications);
-            const selectedNotifs = notifications.filter(n => selectedIds.includes(n.id));
-
-            await Promise.all(
-                selectedNotifs.map(notification => notification.markAsRead())
-            );
+            if (userId) {
+                // Prefer server-side bulk where available
+                await markAllRead.mutateAsync();
+                await queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+            } else {
+                // Fallback: individual updates
+                const selectedIds = Array.from(selectedNotifications);
+                const selectedNotifs = notifications.filter(n => selectedIds.includes(n.id));
+                await Promise.all(
+                    selectedNotifs.map(n => markRead.mutateAsync({ id: n.id, is_read: true }))
+                );
+            }
 
             setSelectedNotifications(new Set());
             setShowBatchActions(false);
@@ -694,7 +563,7 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
                 t('notifications.errorBatchMarkRead')
             );
         }
-    }, [selectedNotifications, notifications, t]);
+    }, [selectedNotifications, notifications, userId, markRead, markAllRead, queryClient, t]);
 
     const handleBatchDismiss = useCallback(async () => {
         try {
@@ -768,44 +637,76 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
         opacity: listOpacity.value,
     }));
 
-    // Render notification section
-    const renderNotificationSection = (
-        title: string,
-        notifications: LiveNotification[],
-        priority: NotificationPriority
-    ) => {
-        if (notifications.length === 0) return null;
+    // Flatten groups into a single virtualized data array (sections + items)
+    type SectionItem =
+        | { type: 'section'; key: string; title: string; priority: NotificationPriority; count: number }
+        | { type: 'notification'; key: string; notification: LiveNotification };
 
-        return (
-            <ThemedView className="mb-4">
-                <ThemedView className="mb-3 flex-row items-center justify-between">
-                    <ThemedText
-                        className={`text-sm font-bold uppercase ${priority === NOTIFICATION_PRIORITIES.URGENT ? 'text-status-danger' :
-                            priority === NOTIFICATION_PRIORITIES.HIGH ? 'text-status-warning' :
-                                priority === NOTIFICATION_PRIORITIES.NORMAL ? 'text-primary-500' :
-                                    'text-neutral-600 dark:text-neutral-400'
-                            }`}
-                    >
-                        {title}
-                    </ThemedText>
-                    <NotificationBadge count={notifications.length} />
-                </ThemedView>
+    const flatData: SectionItem[] = useMemo(() => {
+        // Use hook-provided flattener so LiveNotificationCenter stays lean
+        return buildFlatData(
+            {
+                unread: {
+                    urgent: t('notifications.urgent'),
+                    high: t('notifications.high'),
+                    normal: t('notifications.normal'),
+                    low: t('notifications.low'),
+                },
+                read: {
+                    urgent: t('notifications.readUrgent'),
+                    high: t('notifications.readHigh'),
+                    normal: t('notifications.readNormal'),
+                    low: t('notifications.readLow'),
+                },
+            },
+            showUnreadOnly
+        );
+    }, [buildFlatData, showUnreadOnly, t]);
 
-                {notifications.map((notification) => (
+    const getItemType = useCallback((item: SectionItem) => item.type, []);
+
+    const keyExtractor = useCallback((item: SectionItem) => item.key, []);
+
+    const renderItem = useCallback(
+        ({ item }: { item: SectionItem }) => {
+            if (item.type === 'section') {
+                const { title, priority, count } = item;
+                return (
+                    <ThemedView className="px-4 mb-4">
+                        <ThemedView className="mb-3 flex-row items-center justify-between">
+                            <ThemedText
+                                className={`text-sm font-bold uppercase ${priority === NOTIFICATION_PRIORITIES.URGENT ? 'text-status-danger' :
+                                    priority === NOTIFICATION_PRIORITIES.HIGH ? 'text-status-warning' :
+                                        priority === NOTIFICATION_PRIORITIES.NORMAL ? 'text-primary-500' :
+                                            'text-neutral-600 dark:text-neutral-400'
+                                    }`}
+                            >
+                                {title}
+                            </ThemedText>
+                            <NotificationBadge count={count} />
+                        </ThemedView>
+                    </ThemedView>
+                );
+            }
+
+            // notification row
+            const n = item.notification;
+            return (
+                <ThemedView className="px-4">
                     <NotificationItem
-                        key={notification.id}
-                        notification={notification}
+                        notification={n}
                         onPress={handleNotificationPress}
                         onAction={handleNotificationAction}
                         onMarkRead={handleMarkAsRead}
                         onDismiss={handleNotificationDismiss}
-                        isSelected={selectedNotifications.has(notification.id)}
+                        isSelected={selectedNotifications.has(n.id)}
                         showSelection={showBatchActions}
                     />
-                ))}
-            </ThemedView>
-        );
-    };
+                </ThemedView>
+            );
+        },
+        [handleNotificationPress, handleNotificationAction, handleMarkAsRead, handleNotificationDismiss, selectedNotifications, showBatchActions]
+    );
 
     // Loading state
     if (loading) {
@@ -849,184 +750,38 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
 
     return (
         <ThemedView className="flex-1">
-            {/* Header with connection status and batch actions */}
+            {/* Header with connection status and batch actions (extracted component) */}
             <Animated.View style={headerAnimatedStyle}>
-                <ThemedView className="flex-row items-center justify-between p-4 pb-2">
-                    <ThemedView className="flex-row items-center">
-                        <ThemedText variant="heading" className="mr-3 text-xl">
-                            {t('notifications.title')}
-                        </ThemedText>
-
-                        {/* Connection status indicator */}
-                        <ThemedView className="flex-row items-center">
-                            <ThemedView
-                                className={`mr-2 h-2 w-2 rounded-full ${connectionStatus === 'connected' ? 'bg-status-success' :
-                                    connectionStatus === 'connecting' ? 'bg-status-warning' :
-                                        'bg-status-danger'
-                                    }`}
-                            />
-                            <ThemedText variant="muted" className="text-xs">
-                                {t(`notifications.connectionStatus.${connectionStatus}`)}
-                            </ThemedText>
-                        </ThemedView>
-
-                        {/* Unread count badge */}
-                        {unreadCount > 0 && (
-                            <NotificationBadge count={unreadCount} className="ml-2" />
-                        )}
-                    </ThemedView>
-
-                    {/* Batch action buttons */}
-                    <ThemedView className="flex-row space-x-2">
-                        {selectedNotifications.size > 0 && (
-                            <>
-                                <Animated.View style={batchMarkReadStyle}>
-                                    <Pressable {...batchMarkReadHandlers}>
-                                        <ThemedView className="flex-row items-center rounded-lg bg-primary-500 px-3 py-2">
-                                            <OptimizedIcon name="checkmark" size={16} className="mr-1 text-white" />
-                                            <ThemedText className="text-sm font-medium text-white">
-                                                {t('notifications.markRead')} ({selectedNotifications.size})
-                                            </ThemedText>
-                                        </ThemedView>
-                                    </Pressable>
-                                </Animated.View>
-
-                                <Animated.View style={batchDismissStyle}>
-                                    <Pressable {...batchDismissHandlers}>
-                                        <ThemedView className="flex-row items-center rounded-lg bg-neutral-200 px-3 py-2 dark:bg-neutral-700">
-                                            <OptimizedIcon
-                                                name="trash"
-                                                size={16}
-                                                className="mr-1 text-neutral-700 dark:text-neutral-300"
-                                            />
-                                            <ThemedText className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                                {t('notifications.dismiss')}
-                                            </ThemedText>
-                                        </ThemedView>
-                                    </Pressable>
-                                </Animated.View>
-                            </>
-                        )}
-
-                        <Animated.View style={batchToggleStyle}>
-                            <Pressable {...batchToggleHandlers}>
-                                <ThemedView
-                                    className={`rounded-lg px-3 py-2 ${showBatchActions
-                                        ? 'bg-primary-500'
-                                        : 'bg-neutral-200 dark:bg-neutral-700'
-                                        }`}
-                                >
-                                    <OptimizedIcon
-                                        name="checkmark-circle"
-                                        size={16}
-                                        className={
-                                            showBatchActions
-                                                ? 'text-white'
-                                                : 'text-neutral-700 dark:text-neutral-300'
-                                        }
-                                    />
-                                </ThemedView>
-                            </Pressable>
-                        </Animated.View>
-                    </ThemedView>
-                </ThemedView>
+                <BatchActionControls
+                    showBatchActions={showBatchActions}
+                    selectedCount={selectedNotifications.size}
+                    unreadCount={unreadCount}
+                    connectionStatus={connectionStatus}
+                    onToggleBatchMode={toggleBatchMode}
+                    onBatchMarkRead={handleBatchMarkRead}
+                    onBatchDismiss={handleBatchDismiss}
+                    title={t('notifications.title')}
+                    connectionLabel={t(`notifications.connectionStatus.${connectionStatus}`)}
+                />
             </Animated.View>
 
             {/* Notifications list */}
             <Animated.View style={listAnimatedStyle} className="flex-1">
                 <FlashListWrapper
-                    data={[]} // We'll use sections instead
-                    renderItem={() => null}
+                    data={flatData}
+                    renderItem={renderItem}
                     estimatedItemSize={120}
+                    keyExtractor={keyExtractor}
+                    getItemType={getItemType}
                     onScroll={scrollHandler}
                     scrollEventThrottle={16}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                        <RefreshControl
+                            refreshing={refreshing || infinite.isRefetching || list.isRefetching}
+                            onRefresh={handleRefresh}
+                        />
                     }
-                    ListHeaderComponent={
-                        <ThemedView className="px-4">
-                            {/* Unread notifications */}
-                            {!showUnreadOnly && (
-                                <>
-                                    {renderNotificationSection(
-                                        t('notifications.urgent'),
-                                        groupedNotifications.unread.urgent,
-                                        NOTIFICATION_PRIORITIES.URGENT
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.high'),
-                                        groupedNotifications.unread.high,
-                                        NOTIFICATION_PRIORITIES.HIGH
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.normal'),
-                                        groupedNotifications.unread.normal,
-                                        NOTIFICATION_PRIORITIES.NORMAL
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.low'),
-                                        groupedNotifications.unread.low,
-                                        NOTIFICATION_PRIORITIES.LOW
-                                    )}
-                                </>
-                            )}
-
-                            {/* Read notifications (if not showing unread only) */}
-                            {!showUnreadOnly && (
-                                <>
-                                    {renderNotificationSection(
-                                        t('notifications.readUrgent'),
-                                        groupedNotifications.read.urgent,
-                                        NOTIFICATION_PRIORITIES.URGENT
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.readHigh'),
-                                        groupedNotifications.read.high,
-                                        NOTIFICATION_PRIORITIES.HIGH
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.readNormal'),
-                                        groupedNotifications.read.normal,
-                                        NOTIFICATION_PRIORITIES.NORMAL
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.readLow'),
-                                        groupedNotifications.read.low,
-                                        NOTIFICATION_PRIORITIES.LOW
-                                    )}
-                                </>
-                            )}
-
-                            {/* Show unread only */}
-                            {showUnreadOnly && (
-                                <>
-                                    {renderNotificationSection(
-                                        t('notifications.urgent'),
-                                        groupedNotifications.unread.urgent,
-                                        NOTIFICATION_PRIORITIES.URGENT
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.high'),
-                                        groupedNotifications.unread.high,
-                                        NOTIFICATION_PRIORITIES.HIGH
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.normal'),
-                                        groupedNotifications.unread.normal,
-                                        NOTIFICATION_PRIORITIES.NORMAL
-                                    )}
-                                    {renderNotificationSection(
-                                        t('notifications.low'),
-                                        groupedNotifications.unread.low,
-                                        NOTIFICATION_PRIORITIES.LOW
-                                    )}
-                                </>
-                            )}
-
-                            {/* Bottom padding for safe area */}
-                            <ThemedView className="h-20" />
-                        </ThemedView>
-                    }
+                    ListFooterComponent={<ThemedView className="h-20" />}
                     showsVerticalScrollIndicator={false}
                 />
             </Animated.View>

@@ -16,7 +16,7 @@ import ThemedText from '../ui/ThemedText';
 import SegmentedControl, { SegmentedControlOption } from '../ui/SegmentedControl';
 import TagPill from '../ui/TagPill';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
-import { triggerLightHapticSync, triggerSelectionHaptic } from '@/lib/utils/haptics';
+import { triggerLightHaptic, triggerSelectionHaptic, triggerLightHapticSync } from '@/lib/utils/haptics';
 import { Logger } from '@/lib/utils/production-utils';
 
 // Types for notification preferences
@@ -67,8 +67,18 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
     liveEventNotifications: true,
     achievementNotifications: true,
     quietHoursEnabled: true,
-    quietHoursStart: new Date(2024, 0, 1, 22, 0), // 10 PM
-    quietHoursEnd: new Date(2024, 0, 1, 8, 0), // 8 AM
+    quietHoursStart: (() => {
+        const now = new Date();
+        const start = new Date(now);
+        start.setHours(22, 0, 0, 0); // Today at 22:00
+        return start;
+    })(),
+    quietHoursEnd: (() => {
+        const now = new Date();
+        const end = new Date(now);
+        end.setHours(8, 0, 0, 0); // Today at 08:00
+        return end;
+    })(),
     batchingEnabled: true,
     batchingWindow: 15,
     maxBatchSize: 5,
@@ -131,7 +141,7 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
         {
             key: 'batched',
             label: t('notifications.preferences.batched', 'Batched'),
-            icon: 'list',
+            icon: 'archive',
             color: 'text-green-500',
         },
         {
@@ -223,7 +233,7 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
             try {
                 await onSave();
                 setHasUnsavedChanges(false);
-                triggerLightHapticSync();
+                await triggerLightHaptic();
 
                 Alert.alert(
                     t('notifications.preferences.saved_title', 'Preferences Saved'),
@@ -273,6 +283,7 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
                                     onValueChange={(value) => updatePreference('enabled', value)}
                                     trackColor={{ false: '#d1d5db', true: '#10b981' }}
                                     thumbColor={preferences.enabled ? '#ffffff' : '#f3f4f6'}
+                                    accessibilityLabel={t('notifications.preferences.enable_notifications', 'Enable Notifications')}
                                 />
                             </View>
                         </ThemedView>
@@ -325,32 +336,40 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
                                     description: t('notifications.types.achievements_desc', 'Badges and milestones'),
                                     icon: 'trophy',
                                 },
-                            ].map((item) => (
-                                <View key={item.key} className="flex-row items-center justify-between py-3">
-                                    <View className="flex-row items-center flex-1 mr-4">
-                                        <OptimizedIcon
-                                            name={item.icon as any}
-                                            size={20}
-                                            className="text-primary-500 mr-3"
-                                        />
-                                        <View className="flex-1">
-                                            <ThemedText className="font-medium mb-1">
-                                                {item.title}
-                                            </ThemedText>
-                                            <ThemedText variant="muted" className="text-xs">
-                                                {item.description}
-                                            </ThemedText>
+                            ].map((item) => {
+                                const prefValue = preferences[item.key as keyof NotificationPreferences];
+                                const isEnabled = typeof prefValue === 'boolean' ? prefValue : false;
+
+                                return (
+                                    <View key={item.key} className="flex-row items-center justify-between py-3">
+                                        <View className="flex-row items-center flex-1 mr-4">
+                                            <OptimizedIcon
+                                                name={item.icon as any}
+                                                size={20}
+                                                className="text-primary-500 mr-3"
+                                            />
+                                            <View className="flex-1">
+                                                <ThemedText className="font-medium mb-1">
+                                                    {item.title}
+                                                </ThemedText>
+                                                <ThemedText variant="muted" className="text-xs">
+                                                    {item.description}
+                                                </ThemedText>
+                                            </View>
                                         </View>
+                                        <Switch
+                                            value={isEnabled}
+                                            onValueChange={(value) => updatePreference(item.key as keyof NotificationPreferences, value)}
+                                            trackColor={{ false: '#d1d5db', true: '#10b981' }}
+                                            thumbColor={isEnabled ? '#ffffff' : '#f3f4f6'}
+                                            disabled={!preferences.enabled}
+                                            accessibilityRole="switch"
+                                            accessibilityLabel={`${t('notifications.preferences.toggle', 'Toggle')} ${item.title}`}
+                                            accessibilityHint={t('notifications.preferences.switch_hint', 'Double tap to toggle this notification type')}
+                                        />
                                     </View>
-                                    <Switch
-                                        value={preferences[item.key as keyof NotificationPreferences] as boolean}
-                                        onValueChange={(value) => updatePreference(item.key as keyof NotificationPreferences, value)}
-                                        trackColor={{ false: '#d1d5db', true: '#10b981' }}
-                                        thumbColor={preferences[item.key as keyof NotificationPreferences] ? '#ffffff' : '#f3f4f6'}
-                                        disabled={!preferences.enabled}
-                                    />
-                                </View>
-                            ))}
+                                );
+                            })}
                         </ThemedView>
                     </Animated.View>
 
@@ -421,12 +440,13 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
                                     trackColor={{ false: '#d1d5db', true: '#10b981' }}
                                     thumbColor={preferences.quietHoursEnabled ? '#ffffff' : '#f3f4f6'}
                                     disabled={!preferences.enabled}
+                                    accessibilityLabel={t('notifications.preferences.quiet_hours_toggle', 'Enable Quiet Hours')}
                                 />
                             </View>
 
-                            {preferences.quietHoursEnabled && (
-                                <View className="space-y-3">
-                                    <View className="flex-row items-center justify-between">
+{preferences.quietHoursEnabled && (
+                                <View>
+                                    <View className="flex-row items-center justify-between mb-3">
                                         <ThemedText className="font-medium">
                                             {t('notifications.preferences.start_time', 'Start Time')}
                                         </ThemedText>
@@ -479,6 +499,7 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
                                     trackColor={{ false: '#d1d5db', true: '#10b981' }}
                                     thumbColor={preferences.doNotDisturbEnabled ? '#ffffff' : '#f3f4f6'}
                                     disabled={!preferences.enabled}
+                                    accessibilityLabel={t('notifications.preferences.dnd_toggle', 'Enable Do Not Disturb')}
                                 />
                             </View>
 
@@ -530,6 +551,7 @@ const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
                                     trackColor={{ false: '#d1d5db', true: '#10b981' }}
                                     thumbColor={preferences.allowCriticalOverride ? '#ffffff' : '#f3f4f6'}
                                     disabled={!preferences.enabled}
+                                    accessibilityLabel={t('notifications.preferences.critical_override_toggle', 'Allow Critical Override')}
                                 />
                             </View>
                         </ThemedView>

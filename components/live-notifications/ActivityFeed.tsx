@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Pressable, RefreshControl } from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNotificationQueries } from '@/lib/hooks/useNotificationQueries';
+import { View, Pressable, RefreshControl, TextInput } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -293,10 +295,20 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Debounced search for performance (removed unused searchQuery)
-  const debouncedSearchQuery = useDebounce('', 300);
+  // Search input state and debounced value
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  // Initialize mock data (replace with real data fetching)
+  // TODO(canaBro): Temporary mock data for development only.
+  // Replace this entire effect with a real data fetching implementation before production.
+  // Implementation notes:
+  // - Use TanStack Query (@tanstack/react-query) for server state with proper keys, caching and pagination.
+  // - Source of truth should be Supabase (auth-aware) and/or WatermelonDB for offline-first sync.
+  // - Respect selectedFilter and debouncedSearchQuery with server-side filtering where possible.
+  // - Implement infinite scroll or pagination instead of loading maxItems at once.
+  // - Add error boundaries and user-facing error states using existing error utilities/components.
+  // - Emit haptics via '@/lib/utils/haptics' on meaningful interactions only, not during data load.
+  // - Remove artificial delay and mock generator below once real API is wired.
   useEffect(() => {
     const loadActivities = async () => {
       setIsLoading(true);
@@ -315,6 +327,19 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
     loadActivities();
   }, [maxItems]);
 
+  // Deterministic hash (stable across renders) based on activity/user identifiers
+  const stableHash = useCallback((input: string): number => {
+    // djb2-like hash
+    let hash = 5381;
+    for (let i = 0; i < input.length; i++) {
+      // hash * 33 + charCode
+      hash = ((hash << 5) + hash) + input.charCodeAt(i);
+      hash |= 0; // force 32-bit
+    }
+    // Ensure non-negative
+    return Math.abs(hash);
+  }, []);
+
   // Filter activities based on selected filter and search query
   const filteredActivities = useMemo(() => {
     let filtered = activities;
@@ -323,9 +348,16 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
     if (selectedFilter !== 'all') {
       filtered = filtered.filter(activity => {
         switch (selectedFilter) {
-          case 'following':
-            // In real implementation, check if user follows the activity creator
-            return Math.random() > 0.5; // Mock following logic
+          case 'following': {
+            // Deterministic mock: include ~50% of items based on stable properties
+            // Priority for stability: userId -> activityId -> createdAt ISO
+            const basis =
+              activity.userId ||
+              activity.activityId ||
+              (activity.createdAt ? new Date(activity.createdAt).toISOString() : '');
+            // Keep roughly half deterministically
+            return (stableHash(basis) % 2) === 0;
+          }
           case 'plants':
             return ['plant_updated', 'harvest_completed', 'milestone_reached'].includes(activity.activityType);
           case 'achievements':
@@ -350,7 +382,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
     }
 
     return filtered;
-  }, [activities, selectedFilter, debouncedSearchQuery]);
+  }, [activities, selectedFilter, debouncedSearchQuery, stableHash]);
 
   // Debounced filter change handler
   const handleFilterChange = useDebouncedCallback(
@@ -412,25 +444,27 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
     onPlantPress?.(plantId);
   }, [onPlantPress]);
 
-  // Render filter button
-  const renderFilterButton = useCallback(({ item: filter }: { item: ActivityFilterConfig }) => {
-    const isSelected = selectedFilter === filter.key;
-
+  // Extracted FilterButton component to satisfy Rules of Hooks
+  const FilterButton: React.FC<{
+    filter: ActivityFilterConfig;
+    isSelected: boolean;
+    onPress: () => void;
+  }> = ({ filter, isSelected, onPress }) => {
+    const { t } = useTranslation('community');
     const { animatedStyle, handlers } = useButtonAnimation({
       pressedScale: COMMUNITY_SCALE_VALUES.buttonPress,
       enableHaptics: true,
       hapticStyle: 'light',
-      onPress: () => handleFilterChange(filter.key),
+      onPress,
     });
 
     return (
       <Animated.View style={animatedStyle}>
         <Pressable
           {...handlers}
-          className={`mr-3 rounded-full px-4 py-2 ${isSelected
-              ? 'bg-primary-500'
-              : 'bg-neutral-100 dark:bg-neutral-800'
-            }`}
+          className={`mr-3 rounded-full px-4 py-2 ${
+            isSelected ? 'bg-primary-500' : 'bg-neutral-100 dark:bg-neutral-800'
+          }`}
           accessibilityRole="button"
           accessibilityLabel={`Filter by ${filter.label}`}
           accessibilityState={{ selected: isSelected }}
@@ -442,10 +476,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
               className={isSelected ? 'text-white' : 'text-neutral-600 dark:text-neutral-400'}
             />
             <ThemedText
-              className={`ml-2 text-sm font-medium ${isSelected
-                  ? 'text-white'
-                  : 'text-neutral-600 dark:text-neutral-400'
-                }`}
+              className={`ml-2 text-sm font-medium ${
+                isSelected ? 'text-white' : 'text-neutral-600 dark:text-neutral-400'
+              }`}
             >
               {t(`activityFeed.filters.${filter.key}`, filter.label)}
             </ThemedText>
@@ -453,15 +486,35 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         </Pressable>
       </Animated.View>
     );
-  }, [selectedFilter, handleFilterChange, t]);
+  };
 
-  // Render activity item
-  const renderActivityItem = useCallback(({ item: activity }: { item: ActivityItem }) => {
+  // Render filter button using the new component
+  const renderFilterButton = useCallback(
+    ({ item: filter }: { item: ActivityFilterConfig }) => {
+      const isSelected = selectedFilter === filter.key;
+      return (
+        <FilterButton
+          filter={filter}
+          isSelected={isSelected}
+          onPress={() => handleFilterChange(filter.key)}
+        />
+      );
+    },
+    [selectedFilter, handleFilterChange]
+  );
+
+  // Activity item component extracted to satisfy Rules of Hooks
+  const ActivityItem: React.FC<{
+    activity: ActivityItem;
+    onPress: (activity: ActivityItem) => void;
+    onUserPress: (userId: string) => void;
+    onPlantPress: (plantId: string) => void;
+  }> = ({ activity, onPress, onUserPress, onPlantPress }) => {
     const { animatedStyle, handlers } = useButtonAnimation({
       pressedScale: COMMUNITY_SCALE_VALUES.cardPress,
       enableHaptics: true,
       hapticStyle: 'light',
-      onPress: () => handleActivityPress(activity),
+      onPress: () => onPress(activity),
     });
 
     const timeAgo = dayjs(activity.createdAt).fromNow();
@@ -479,7 +532,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           <View className="flex-row">
             {/* User Avatar */}
             <Pressable
-              onPress={() => handleUserPress(activity.userId)}
+              onPress={() => onUserPress(activity.userId)}
               className="mr-3"
               accessibilityRole="button"
               accessibilityLabel={`View ${activity.user?.username}'s profile`}
@@ -515,7 +568,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
               {/* Plant Data */}
               {activity.metadata.plantData && (
                 <Pressable
-                  onPress={() => handlePlantPress(activity.metadata.plantData!.plantId)}
+                  onPress={() => onPlantPress(activity.metadata.plantData!.plantId)}
                   className="mb-3 rounded-lg bg-green-50 p-3 dark:bg-green-900/20"
                   accessibilityRole="button"
                   accessibilityLabel={`View plant ${activity.metadata.plantData.plantName}`}
@@ -608,7 +661,20 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         </Pressable>
       </Animated.View>
     );
-  }, [handleActivityPress, handleUserPress, handlePlantPress]);
+  };
+
+  // Render activity item callback now simply renders ActivityItem
+  const renderActivityItem = useCallback(
+    ({ item }: { item: ActivityItem }) => (
+      <ActivityItem
+        activity={item}
+        onPress={handleActivityPress}
+        onUserPress={handleUserPress}
+        onPlantPress={handlePlantPress}
+      />
+    ),
+    [handleActivityPress, handleUserPress, handlePlantPress]
+  );
 
   // Loading state
   if (isLoading) {
@@ -628,6 +694,33 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
   return (
     <ThemedView className="flex-1">
+      {/* Search Bar */}
+      <View className="border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900">
+        <View className="flex-row items-center rounded-xl bg-neutral-100 px-3 py-2 dark:bg-neutral-800">
+          <OptimizedIcon name="search" size={16} className="text-neutral-500 dark:text-neutral-400" />
+          {/* Use a basic RN TextInput to avoid introducing new dependencies; EnhancedTextInput could be swapped in later */}
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t('activityFeed.search.placeholder', 'Search activities, users, tags...')}
+            placeholderTextColor="#9CA3AF"
+            className="ml-2 flex-1 text-sm text-neutral-900 dark:text-neutral-100"
+            accessibilityLabel="Search activity feed"
+            accessibilityHint="Type to filter activities by title, description, user, or tags"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable
+              onPress={() => setSearchQuery('')}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+              className="ml-2 rounded-full p-1"
+            >
+              <OptimizedIcon name="close" size={14} className="text-neutral-500 dark:text-neutral-400" />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
       {/* Filter Bar */}
       {showFilters && (
         <View className="border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900">

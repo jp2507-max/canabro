@@ -190,41 +190,45 @@ const EmojiPicker: React.FC<{
                             className="border-b border-neutral-200 dark:border-neutral-700"
                         >
                             <View className="flex-row px-4 py-2">
-                                {Object.keys(EMOJI_CATEGORIES).map((category) => (
-                                    <Pressable
-                                        key={category}
-                                        onPress={() => handleCategoryPress(category as keyof typeof EMOJI_CATEGORIES)}
-                                        className={`px-4 py-2 rounded-full mr-2 ${selectedCategory === category
-                                            ? 'bg-primary-500'
-                                            : 'bg-neutral-100 dark:bg-neutral-800'
-                                            }`}
-                                    >
-                                        <ThemedText
-                                            variant="caption"
-                                            className={`font-medium ${selectedCategory === category
-                                                ? 'text-white'
-                                                : 'text-neutral-600 dark:text-neutral-400'
-                                                }`}
-                                        >
-                                            {category.charAt(0).toUpperCase() + category.slice(1)}
-                                        </ThemedText>
-                                    </Pressable>
-                                ))}
+{Object.keys(EMOJI_CATEGORIES).map((category) => (
+    <Pressable
+        key={category}
+        onPress={() => handleCategoryPress(category as keyof typeof EMOJI_CATEGORIES)}
+        accessibilityRole="button"
+        accessibilityLabel={`${category.charAt(0).toUpperCase() + category.slice(1)} category tab`}
+        className={`px-4 py-2 rounded-full mr-2 ${selectedCategory === category
+            ? 'bg-primary-500'
+            : 'bg-neutral-100 dark:bg-neutral-800'
+            }`}
+    >
+        <ThemedText
+            variant="caption"
+            className={`font-medium ${selectedCategory === category
+                ? 'text-white'
+                : 'text-neutral-600 dark:text-neutral-400'
+                }`}
+        >
+            {category.charAt(0).toUpperCase() + category.slice(1)}
+        </ThemedText>
+    </Pressable>
+))}
                             </View>
                         </ScrollView>
 
                         {/* Emoji Grid */}
                         <ScrollView className="max-h-64 p-4">
                             <View className="flex-row flex-wrap">
-                                {EMOJI_CATEGORIES[selectedCategory].map((emoji, index) => (
-                                    <Pressable
-                                        key={`${emoji}-${index}`}
-                                        onPress={() => handleEmojiPress(emoji)}
-                                        className="w-12 h-12 items-center justify-center m-1 rounded-lg active:bg-neutral-100 dark:active:bg-neutral-800"
-                                    >
-                                        <ThemedText className="text-2xl">{emoji}</ThemedText>
-                                    </Pressable>
-                                ))}
+{EMOJI_CATEGORIES[selectedCategory].map((emoji, index) => (
+    <Pressable
+        key={`${emoji}-${index}`}
+        onPress={() => handleEmojiPress(emoji)}
+        accessibilityRole="button"
+        accessibilityLabel={`Emoji ${emoji}`}
+        className="w-12 h-12 items-center justify-center m-1 rounded-lg active:bg-neutral-100 dark:active:bg-neutral-800"
+    >
+        <ThemedText className="text-2xl">{emoji}</ThemedText>
+    </Pressable>
+))}
                             </View>
                         </ScrollView>
                     </Pressable>
