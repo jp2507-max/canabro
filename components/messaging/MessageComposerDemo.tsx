@@ -9,13 +9,14 @@ import { View, ScrollView } from 'react-native';
 import { MessageComposer, ComposerMessage } from './MessageComposer';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
+import { Logger } from '@/lib/utils/production-utils';
 
 export const MessageComposerDemo: React.FC = () => {
   const [messages, setMessages] = useState<ComposerMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
 
   const handleSendMessage = (message: ComposerMessage) => {
-    console.log('Message sent:', message);
+    Logger.info('Message sent', { message });
     setMessages(prev => [...prev, message]);
   };
 

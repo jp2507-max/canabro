@@ -1407,6 +1407,58 @@
       "description": "Something went wrong with the environmental dashboard.",
       "retry": "Retry"
     }
+  },
+  "activityFeed": {
+    "title": "Activity Feed",
+    "subtitle": "{{count}} activities",
+    "loading": "Loading activities...",
+    "filters": {
+      "all": "All",
+      "following": "Following",
+      "plants": "Plants",
+      "achievements": "Achievements",
+      "community": "Community"
+    },
+    "empty": {
+      "title": "No Activities Yet",
+      "description": "Follow other growers and join the community to see activities here."
+    },
+    "error": {
+      "title": "Error Loading Activities",
+      "description": "Something went wrong while loading activities."
+    },
+    "activities": {
+      "post_created": "{{username}} shared a new post",
+      "comment_added": "{{username}} commented on a post",
+      "plant_updated": "{{username}} updated their plant",
+      "harvest_completed": "{{username}} completed a harvest",
+      "strain_reviewed": "{{username}} reviewed a strain",
+      "achievement_earned": "{{username}} earned an achievement",
+      "group_joined": "{{username}} joined a group",
+      "expert_verified": "{{username}} became a verified expert",
+      "user_followed": "{{username}} followed someone new",
+      "post_liked": "{{username}} liked a post",
+      "milestone_reached": "{{username}} reached a milestone"
+    },
+    "descriptions": {
+      "post_created": "Check out their latest growing update",
+      "comment_added": "Join the conversation",
+      "plant_updated": "See the latest progress photos",
+      "harvest_completed": "Congratulations on the successful harvest!",
+      "strain_reviewed": "Read their detailed strain review",
+      "achievement_earned": "Well deserved recognition!",
+      "group_joined": "Welcome to the community",
+      "expert_verified": "Now offering expert advice",
+      "user_followed": "Growing their network",
+      "post_liked": "Showing appreciation for great content",
+      "milestone_reached": "Another step in their growing journey"
+    }
+  },
+  "notifications": {
+    "activityEngagement": {
+      "title": "Activity Engagement",
+      "body": "{{username}} {{action}}"
+    }
   }
 }
 

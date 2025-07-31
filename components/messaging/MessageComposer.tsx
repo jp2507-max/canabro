@@ -7,7 +7,9 @@
  * - Emoji picker using existing animation utilities from useCardAnimation
  * - Message formatting with real-time preview (bold, italic, mentions)
  * - Internationalization support using existing translation patterns
- * - Voice message recording with proper cleanup using useAnimationCleanup
+ * - Voice message recording: NOT IMPLEMENTED (mock removed).
+ *   This component deliberately disables voice recording to avoid misleading UX.
+ *   See docs/messaging-voice-recording.md for implementation guidance using expo-av.
  * - Existing storage patterns for draft message persistence and offline support
  */
 
@@ -116,75 +118,7 @@ export interface VoiceMessage {
     waveform?: number[];
 }
 
-// Translation keys (following existing pattern)
-const translations = {
-    en: {
-        placeholder: 'Type a message...',
-        send: 'Send',
-        attachPhoto: 'Attach Photo',
-        attachFile: 'Attach File',
-        recordVoice: 'Record Voice Message',
-        emoji: 'Add Emoji',
-        formatting: 'Text Formatting',
-        takePhoto: 'Take Photo',
-        selectFromGallery: 'Select from Gallery',
-        cancel: 'Cancel',
-        recording: 'Recording...',
-        tapToStop: 'Tap to stop recording',
-        bold: 'Bold',
-        italic: 'Italic',
-        code: 'Code',
-        mention: 'Mention someone',
-        draftSaved: 'Draft saved',
-        uploadingAttachment: 'Uploading attachment...',
-        attachmentError: 'Failed to attach file',
-        voiceRecordingError: 'Failed to record voice message',
-        permissionRequired: 'Permission Required',
-        microphonePermission: 'Microphone permission is needed to record voice messages.',
-    },
-    de: {
-        placeholder: 'Nachricht eingeben...',
-        send: 'Senden',
-        attachPhoto: 'Foto anhängen',
-        attachFile: 'Datei anhängen',
-        recordVoice: 'Sprachnachricht aufnehmen',
-        emoji: 'Emoji hinzufügen',
-        formatting: 'Textformatierung',
-        takePhoto: 'Foto aufnehmen',
-        selectFromGallery: 'Aus Galerie auswählen',
-        cancel: 'Abbrechen',
-        recording: 'Aufnahme läuft...',
-        tapToStop: 'Zum Stoppen tippen',
-        bold: 'Fett',
-        italic: 'Kursiv',
-        code: 'Code',
-        mention: 'Jemanden erwähnen',
-        draftSaved: 'Entwurf gespeichert',
-        uploadingAttachment: 'Anhang wird hochgeladen...',
-        attachmentError: 'Fehler beim Anhängen der Datei',
-        voiceRecordingError: 'Fehler beim Aufnehmen der Sprachnachricht',
-        permissionRequired: 'Berechtigung erforderlich',
-        microphonePermission: 'Mikrofon-Berechtigung ist erforderlich, um Sprachnachrichten aufzunehmen.',
-    },
-};
 
-// Simple translation hook (following existing pattern)
-const useTranslation = () => {
-    const [language] = useState<'en' | 'de'>('en'); // Default to English, could be from context
-
-    const t = useCallback((key: string) => {
-        const keys = key.split('.');
-        let value: any = translations[language];
-
-        for (const k of keys) {
-            value = value?.[k];
-        }
-
-        return value || key;
-    }, [language]);
-
-    return { t, language };
-};
 
 // Emoji data
 const EMOJI_CATEGORIES = {
@@ -202,7 +136,7 @@ const EmojiPicker: React.FC<{
     onClose: () => void;
     onEmojiSelect: (emoji: string) => void;
 }> = React.memo(({ isVisible, onClose, onEmojiSelect }) => {
-    const { t } = useTranslation();
+    const { t } = useCommonTranslations();
     const [selectedCategory, setSelectedCategory] = useState<keyof typeof EMOJI_CATEGORIES>('recent');
 
     const { animatedStyle: modalStyle } = useCardAnimation({
@@ -261,15 +195,15 @@ const EmojiPicker: React.FC<{
                                         key={category}
                                         onPress={() => handleCategoryPress(category as keyof typeof EMOJI_CATEGORIES)}
                                         className={`px-4 py-2 rounded-full mr-2 ${selectedCategory === category
-                                                ? 'bg-primary-500'
-                                                : 'bg-neutral-100 dark:bg-neutral-800'
+                                            ? 'bg-primary-500'
+                                            : 'bg-neutral-100 dark:bg-neutral-800'
                                             }`}
                                     >
                                         <ThemedText
                                             variant="caption"
                                             className={`font-medium ${selectedCategory === category
-                                                    ? 'text-white'
-                                                    : 'text-neutral-600 dark:text-neutral-400'
+                                                ? 'text-white'
+                                                : 'text-neutral-600 dark:text-neutral-400'
                                                 }`}
                                         >
                                             {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -348,81 +282,22 @@ const AttachmentPreview: React.FC<{
 });
 
 /**
- * Voice Recording Component
+ * Voice Recording UI Placeholder (disabled)
+ * NOTE: Voice recording is not implemented. The previous mock that simulated
+ * recording has been removed to prevent misleading behavior. See
+ * docs/messaging-voice-recording.md for expo-av implementation guidance.
  */
-const VoiceRecorder: React.FC<{
-    isRecording: boolean;
-    onStartRecording: () => void;
-    onStopRecording: () => void;
-    onCancelRecording: () => void;
-    duration: number;
-}> = React.memo(({ isRecording, onStartRecording, onStopRecording, onCancelRecording, duration }) => {
-    const scale = useSharedValue(1);
-    const opacity = useSharedValue(1);
-
-    useEffect(() => {
-        if (isRecording) {
-            scale.value = withSpring(1.2, { damping: 10 });
-            // Pulsing animation
-            const pulse = () => {
-                opacity.value = withTiming(0.6, { duration: 800 }, () => {
-                    opacity.value = withTiming(1, { duration: 800 }, () => {
-                        if (isRecording) {
-                            runOnJS(pulse)();
-                        }
-                    });
-                });
-            };
-            pulse();
-        } else {
-            scale.value = withSpring(1);
-            opacity.value = withTiming(1);
-        }
-    }, [isRecording, scale, opacity]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: scale.value }],
-        opacity: opacity.value,
-    }));
-
-    useAnimationCleanup({
-        sharedValues: [scale, opacity],
-        autoCleanup: true,
-    });
-
-    const formatDuration = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    if (!isRecording) {
-        return (
-            <Pressable
-                onPress={onStartRecording}
-                className="w-10 h-10 items-center justify-center"
-            >
-                <OptimizedIcon name="mic-outline" size={20} className="text-neutral-500" />
-            </Pressable>
-        );
-    }
-
+const VoiceRecordingPlaceholder: React.FC = React.memo(() => {
     return (
-        <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 rounded-full px-4 py-2">
-            <Animated.View style={animatedStyle}>
-                <View className="w-3 h-3 bg-red-500 rounded-full mr-3" />
-            </Animated.View>
-
-            <ThemedText variant="caption" className="text-red-500 font-medium mr-3">
-                {formatDuration(duration)}
-            </ThemedText>
-
-            <Pressable onPress={onCancelRecording} className="mr-2">
-                <OptimizedIcon name="close" size={16} className="text-red-500" />
-            </Pressable>
-
-            <Pressable onPress={onStopRecording}>
-                <OptimizedIcon name="stop" size={16} className="text-red-500" />
+        <View className="items-center justify-center">
+            <Pressable
+                disabled
+                accessibilityRole="button"
+                accessibilityState={{ disabled: true }}
+                className="w-10 h-10 items-center justify-center opacity-40"
+            >
+                {/* Use a supported icon to avoid type errors; visual cue remains muted mic */}
+                <OptimizedIcon name="mic-outline" size={20} className="text-neutral-400" />
             </Pressable>
         </View>
     );
@@ -431,6 +306,8 @@ const VoiceRecorder: React.FC<{
 /**
  * Main MessageComposer Component
  */
+import { useI18n, useCommonTranslations } from '@/lib/hooks/useI18n';
+
 export const MessageComposer: React.FC<MessageComposerProps> = ({
     placeholder,
     value = '',
@@ -448,7 +325,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     conversationId,
     className = '',
 }) => {
-    const { t } = useTranslation();
+    const { t, currentLanguage: language, switchLanguage, isReady } = useI18n();
 
     // State management
     const [inputText, setInputText] = useState(value);
@@ -456,14 +333,14 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     const [mentions, setMentions] = useState<MessageMention[]>([]);
     const [formatting, setFormatting] = useState<MessageFormatting[]>([]);
     const [isEmojiPickerVisible, setIsEmojiPickerVisible] = useState(false);
-    const [isRecording, setIsRecording] = useState(false);
-    const [recordingDuration, setRecordingDuration] = useState(0);
+    // Voice recording is intentionally disabled. The previous mock implementation
+    // has been removed. To implement real recording, see docs/messaging-voice-recording.md.
     const [voiceMessage, setVoiceMessage] = useState<VoiceMessage | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
     // Refs
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    // Removed: mock recording interval ref
     const draftTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Animation values
@@ -479,7 +356,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     useEffect(() => {
         return () => {
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-            if (recordingIntervalRef.current) clearTimeout(recordingIntervalRef.current);
+            // No mock recording timers to clear
             if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
         };
     }, []);
@@ -638,46 +515,9 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         handleTextChange(newText);
     }, [inputText, handleTextChange]);
 
-    // Handle voice recording
-    const handleStartRecording = useCallback(async () => {
-        // Note: Voice recording would require expo-av or similar
-        // This is a placeholder implementation
-        haptics.medium();
-        setIsRecording(true);
-        setRecordingDuration(0);
-
-        recordingIntervalRef.current = setInterval(() => {
-            setRecordingDuration(prev => prev + 1);
-        }, 1000);
-    }, []);
-
-    const handleStopRecording = useCallback(() => {
-        haptics.medium();
-        setIsRecording(false);
-
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-        }
-
-        // Create mock voice message
-        const mockVoiceMessage: VoiceMessage = {
-            uri: 'mock://voice-message.m4a',
-            duration: recordingDuration,
-        };
-
-        setVoiceMessage(mockVoiceMessage);
-        setRecordingDuration(0);
-    }, [recordingDuration]);
-
-    const handleCancelRecording = useCallback(() => {
-        haptics.light();
-        setIsRecording(false);
-        setRecordingDuration(0);
-
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-        }
-    }, []);
+    // Voice recording handlers removed: feature not implemented.
+    // To add real recording, see docs/messaging-voice-recording.md for expo-av setup
+    // and provide start/stop/cancel handlers that manage permissions and audio mode.
 
     // Handle send message
     const handleSend = useCallback(async () => {
@@ -785,34 +625,38 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                     {/* Action Buttons */}
                     <View className="flex-row space-x-2">
                         {/* Photo Attachment */}
-                        {enableAttachments && (
-                            <Pressable
-                                onPress={handlePhotoAttachment}
-                                disabled={disabled || isUploading}
-                                className="w-10 h-10 items-center justify-center"
-                            >
-                                <OptimizedIcon
-                                    name="camera-outline"
-                                    size={20}
-                                    className={`${disabled || isUploading ? 'text-neutral-300' : 'text-neutral-500'}`}
-                                />
-                            </Pressable>
-                        )}
+{enableAttachments && (
+    <Pressable
+        onPress={handlePhotoAttachment}
+        disabled={disabled || isUploading}
+        accessibilityRole="button"
+        accessibilityLabel="Attach photo"
+        className="w-10 h-10 items-center justify-center"
+    >
+        <OptimizedIcon
+            name="camera-outline"
+            size={20}
+            className={`${disabled || isUploading ? 'text-neutral-300' : 'text-neutral-500'}`}
+        />
+    </Pressable>
+)}
 
                         {/* Emoji Picker */}
-                        {enableEmojis && (
-                            <Pressable
-                                onPress={() => setIsEmojiPickerVisible(true)}
-                                disabled={disabled}
-                                className="w-10 h-10 items-center justify-center"
-                            >
-                                <OptimizedIcon
-                                    name="happy-outline"
-                                    size={20}
-                                    className={`${disabled ? 'text-neutral-300' : 'text-neutral-500'}`}
-                                />
-                            </Pressable>
-                        )}
+{enableEmojis && (
+    <Pressable
+        onPress={() => setIsEmojiPickerVisible(true)}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel="Open emoji picker"
+        className="w-10 h-10 items-center justify-center"
+    >
+        <OptimizedIcon
+            name="happy-outline"
+            size={20}
+            className={`${disabled ? 'text-neutral-300' : 'text-neutral-500'}`}
+        />
+    </Pressable>
+)}
                     </View>
 
                     {/* Text Input */}
@@ -825,7 +669,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                             multiline
                             maxLength={maxLength}
                             showCharacterCount={maxLength ? inputText.length > maxLength * 0.8 : false}
-                            editable={!disabled && !isRecording}
+                            editable={!disabled}
                             className="min-h-[40px] max-h-32"
                         />
                     </View>
@@ -833,13 +677,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                     {/* Voice Recording / Send Button */}
                     <View className="items-center justify-end">
                         {enableVoiceMessages && !canSend ? (
-                            <VoiceRecorder
-                                isRecording={isRecording}
-                                onStartRecording={handleStartRecording}
-                                onStopRecording={handleStopRecording}
-                                onCancelRecording={handleCancelRecording}
-                                duration={recordingDuration}
-                            />
+                            <VoiceRecordingPlaceholder />
                         ) : (
                             <Animated.View style={sendButtonAnimatedStyle}>
                                 <Pressable
