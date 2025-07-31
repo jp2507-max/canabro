@@ -36,6 +36,90 @@ const notificationKeys = {
 };
 
 /**
+ * Cache update helper
+ * Handles arrays, { items }, and { pages } (where each page may be array or { items }).
+ * Applies a partial update to any notification with the matching id and returns
+ * a new structure while preserving references when unchanged.
+ */
+type NotificationLike = { id: string } & Record<string, unknown>;
+type ItemsContainer<T extends NotificationLike> = { items: T[] };
+type PageContainer<T> = { pages: T[] };
+
+type UpdatableCache =
+  | NotificationLike[]
+  | ItemsContainer<NotificationLike>
+  | PageContainer<NotificationLike[] | ItemsContainer<NotificationLike>>;
+
+function updateNotificationCache<T extends UpdatableCache>(
+  cached: T | undefined,
+  notificationId: string,
+  update: Partial<NotificationLike>
+): T | undefined {
+  if (!cached) return cached;
+
+  const updateArray = <I extends NotificationLike>(arr: I[]): I[] => {
+    let changed = false;
+    const next = arr.map((item) => {
+      if (item?.id === notificationId) {
+        changed = true;
+        return { ...item, ...update } as I;
+      }
+      return item;
+    });
+    return changed ? next : arr;
+  };
+
+  // Case A: flat array
+  if (Array.isArray(cached)) {
+    const next = updateArray(cached as NotificationLike[]);
+    return (next === cached ? cached : (next as unknown)) as T;
+  }
+
+  // Case B: object with items
+  if ('items' in cached && Array.isArray((cached as ItemsContainer<NotificationLike>).items)) {
+    const container = cached as ItemsContainer<NotificationLike>;
+    const nextItems = updateArray(container.items);
+    if (nextItems === container.items) return cached;
+    return { ...cached, items: nextItems } as T;
+  }
+
+  // Case C: paginated with pages
+  if ('pages' in cached && Array.isArray((cached as PageContainer<unknown>).pages)) {
+    const pageContainer = cached as PageContainer<unknown>;
+    let anyPageChanged = false;
+
+    const nextPages = pageContainer.pages.map((page) => {
+      // Page as array
+      if (Array.isArray(page)) {
+        const updated = updateArray(page as NotificationLike[]);
+        if (updated !== page) anyPageChanged = true;
+        return updated;
+      }
+
+      // Page as object with items
+      if (page && typeof page === 'object' && 'items' in (page as ItemsContainer<NotificationLike>)) {
+        const pageObj = page as ItemsContainer<NotificationLike>;
+        const nextItems = updateArray(pageObj.items);
+        if (nextItems !== pageObj.items) {
+          anyPageChanged = true;
+          return { ...pageObj, items: nextItems };
+        }
+        return pageObj;
+      }
+
+      // Unknown page shape
+      return page;
+    });
+
+    if (!anyPageChanged) return cached;
+    return { ...cached, pages: nextPages } as T;
+  }
+
+  // Unknown shape
+  return cached;
+}
+
+/**
  * Low-level data fetchers
  */
 async function fetchNotificationsPage(params: {
@@ -125,11 +209,12 @@ export function useInfiniteNotifications(options: {
         pageSize,
         read,
       }),
-    getNextPageParam: (lastPage) => lastPage?.nextCursor ?? null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? null,
     select: (data) => {
       // Flatten items and keep pagination cursors
       const items = data.pages.flatMap((p) => p.items);
-      const nextCursor = data.pages.length ? data.pages[data.pages.length - 1].nextCursor : null;
+      const lastPage = data.pages[data.pages.length - 1];
+      const nextCursor = lastPage ? lastPage.nextCursor : null;
       return { items, nextCursor, pages: data.pages, pageParams: data.pageParams };
     },
   });
@@ -204,60 +289,25 @@ export function useMarkNotificationRead(options: { userId: string }) {
         type: 'active',
       });
 
-      // Optimistically update any cached lists
-      const updateItem = (n: NotificationItem) =>
-        n.id === id ? { ...n, is_read } : n;
+      // Optimistically update any cached lists using unified helper
+      const updateFields = { is_read };
 
-      // Update infinite queries
-      const infiniteQueries = qc
-        .getQueryCache()
+      // Update all queries under notifications/userId uniformly
+      qc.getQueryCache()
         .findAll({ queryKey: notificationKeys.all(userId) })
-        .filter((q) => {
-          const k = q.queryKey;
-          return Array.isArray(k) && k.includes('infinite');
+        .forEach((q) => {
+          qc.setQueryData(q.queryKey, (oldData: UpdatableCache | NotificationItem | undefined) => {
+            // Nothing cached
+            if (!oldData) return oldData;
+
+            // Keep single detail objects intact unless matching id
+            if (!Array.isArray(oldData) && typeof oldData === 'object' && 'id' in oldData) {
+              const detail = oldData as NotificationItem;
+              return detail.id === id ? { ...detail, ...updateFields } : detail;
+            }
+            return updateNotificationCache(oldData as UpdatableCache | undefined, id, updateFields) as any;
+          });
         });
-
-      infiniteQueries.forEach((q) => {
-        qc.setQueryData(q.queryKey, (oldData: any) => {
-          if (!oldData) return oldData;
-          if (oldData.items) {
-            // selected shape
-            return { ...oldData, items: oldData.items.map(updateItem) };
-          }
-          if (Array.isArray(oldData.pages)) {
-            // raw shape
-            return {
-              ...oldData,
-              pages: oldData.pages.map((p: any) => ({
-                ...p,
-                items: Array.isArray(p.items) ? p.items.map(updateItem) : p.items,
-              })),
-            };
-          }
-          return oldData;
-        });
-      });
-
-      // Update simple list queries
-      const listQueries = qc
-        .getQueryCache()
-        .findAll({ queryKey: notificationKeys.all(userId) })
-        .filter((q) => {
-          const k = q.queryKey;
-          return Array.isArray(k) && k.includes('list');
-        });
-
-      listQueries.forEach((q) => {
-        qc.setQueryData(q.queryKey, (old: NotificationItem[] | undefined) =>
-          Array.isArray(old) ? old.map(updateItem) : old
-        );
-      });
-
-      // Update detail cache if present
-      qc.setQueriesData(
-        { queryKey: notificationKeys.byId(userId, id) },
-        (old: NotificationItem | undefined) => (old ? { ...old, is_read } : old)
-      );
 
       return { prevInfinite, prevLists };
     },
@@ -306,15 +356,29 @@ export function useMarkAllNotificationsRead(options: { userId: string }) {
         .forEach((q) => {
           qc.setQueryData(q.queryKey, (old: any) => {
             if (!old) return old;
-            if (Array.isArray(old)) return setAllRead(old);
-            if (old.items) return { ...old, items: setAllRead(old.items) };
-            if (Array.isArray(old.pages)) {
+
+            // For single detail objects, force is_read: true if it's a NotificationItem
+            if (!Array.isArray(old) && typeof old === 'object' && 'id' in old && 'is_read' in old) {
+              return { ...old, is_read: true };
+            }
+
+            // Reuse helper by mapping: update all ids found to is_read: true
+            // Since helper targets one id, we fall back to shape-based mapping once here
+            const setAllReadArr = (arr: NotificationItem[]) => arr.map((n) => ({ ...n, is_read: true }));
+            if (Array.isArray(old)) return setAllReadArr(old);
+            if (old && typeof old === 'object' && 'items' in old && Array.isArray((old as any).items)) {
+              return { ...old, items: setAllReadArr((old as any).items) };
+            }
+            if (old && typeof old === 'object' && 'pages' in old && Array.isArray((old as any).pages)) {
               return {
                 ...old,
-                pages: old.pages.map((p: any) => ({
-                  ...p,
-                  items: Array.isArray(p.items) ? setAllRead(p.items) : p.items,
-                })),
+                pages: (old as any).pages.map((p: any) =>
+                  Array.isArray(p)
+                    ? setAllReadArr(p)
+                    : p && typeof p === 'object' && 'items' in p && Array.isArray(p.items)
+                    ? { ...p, items: setAllReadArr(p.items) }
+                    : p
+                ),
               };
             }
             return old;

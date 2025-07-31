@@ -98,17 +98,23 @@ describe('ActivityFeed Integration', () => {
           activityId: '1',
           title: 'Blue Dream harvest completed',
           description: 'Amazing harvest results',
-          user: { username: 'GrowMaster' },
-          metadata: { tags: ['blue-dream', 'harvest'] },
+          user: { username: 'GrowMaster' } as { username: string },
+          metadata: { tags: ['blue-dream', 'harvest'] as string[] },
         },
         {
           activityId: '2',
           title: 'OG Kush plant update',
           description: 'Weekly progress check',
-          user: { username: 'PlantExpert' },
-          metadata: { tags: ['og-kush', 'update'] },
+          user: { username: 'PlantExpert' } as { username: string },
+          metadata: { tags: ['og-kush', 'update'] as string[] },
         },
-      ];
+      ] as Array<{
+        activityId: string;
+        title: string;
+        description: string;
+        user?: { username?: string } | null;
+        metadata: { tags: string[] };
+      }>;
 
       // Test search by title
       const searchQuery = 'blue dream';
@@ -129,7 +135,7 @@ describe('ActivityFeed Integration', () => {
       // Test search by tags
       const tagQuery = 'harvest';
       const filteredByTags = mockActivities.filter(activity =>
-        activity.metadata.tags.some(tag => tag.toLowerCase().includes(tagQuery.toLowerCase()))
+        activity.metadata.tags.some((tag: string) => tag.toLowerCase().includes(tagQuery.toLowerCase()))
       );
       expect(filteredByTags).toHaveLength(1);
       expect(filteredByTags[0].activityId).toBe('1');
@@ -313,7 +319,7 @@ describe('ActivityFeed Integration', () => {
         activityId: '1',
         userId: 'user1',
         title: 'Activity without user data',
-        user: null,
+        user: null as { username?: string } | null,
       };
 
       // Should not throw error when user is null

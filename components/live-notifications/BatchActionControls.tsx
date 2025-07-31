@@ -60,7 +60,18 @@ const BatchActionControls: React.FC<BatchActionControlsProps> = ({
         </ThemedText>
 
         {/* Connection status indicator */}
-        <ThemedView className="flex-row items-center">
+        <ThemedView
+          className="flex-row items-center"
+          // Accessibility: announce connection status changes politely
+          // React Native (native): accessibilityLiveRegion (Android)
+          accessibilityLiveRegion="polite"
+          // Web (react-native-web): ensure proper ARIA for live region
+          aria-live="polite"
+          role="status"
+          // Provide a clear, descriptive label for screen readers
+          accessibilityLabel={`Connection status: ${connectionLabel}`}
+          accessibilityHint="Updates automatically when the connection state changes"
+        >
           <ThemedView
             className={`mr-2 h-2 w-2 rounded-full ${
               connectionStatus === 'connected'
@@ -84,7 +95,12 @@ const BatchActionControls: React.FC<BatchActionControlsProps> = ({
         {selectedCount > 0 && (
           <>
             <Animated.View style={batchMarkReadStyle}>
-              <Pressable {...batchMarkReadHandlers}>
+              <Pressable
+                {...batchMarkReadHandlers}
+                accessibilityRole="button"
+                accessibilityLabel={`Mark ${selectedCount} selected notification${selectedCount === 1 ? '' : 's'} as read`}
+                accessibilityHint="Marks the selected notifications as read and removes their unread status"
+              >
                 <ThemedView className="flex-row items-center rounded-lg bg-primary-500 px-3 py-2">
                   <OptimizedIcon name="checkmark" size={16} className="mr-1 text-white" />
                   <ThemedText className="text-sm font-medium text-white">
@@ -96,7 +112,12 @@ const BatchActionControls: React.FC<BatchActionControlsProps> = ({
             </Animated.View>
 
             <Animated.View style={batchDismissStyle}>
-              <Pressable {...batchDismissHandlers}>
+              <Pressable
+                {...batchDismissHandlers}
+                accessibilityRole="button"
+                accessibilityLabel={`Dismiss ${selectedCount} selected notification${selectedCount === 1 ? '' : 's'}`}
+                accessibilityHint="Hides the selected notifications from the list. This action cannot be undone."
+              >
                 <ThemedView className="flex-row items-center rounded-lg bg-neutral-200 px-3 py-2 dark:bg-neutral-700">
                   <OptimizedIcon name="trash" size={16} className="mr-1 text-neutral-700 dark:text-neutral-300" />
                   <ThemedText className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -109,7 +130,13 @@ const BatchActionControls: React.FC<BatchActionControlsProps> = ({
         )}
 
         <Animated.View style={batchToggleStyle}>
-          <Pressable {...batchToggleHandlers}>
+          <Pressable
+            {...batchToggleHandlers}
+            accessibilityRole="button"
+            accessibilityState={{ selected: showBatchActions }}
+            accessibilityLabel={`${showBatchActions ? 'Exit selection mode' : 'Enter selection mode for batch actions'}`}
+            accessibilityHint={`${showBatchActions ? 'Disables batch selection and hides batch action buttons' : 'Enables selecting multiple notifications and shows batch action buttons'}`}
+          >
             <ThemedView
               className={`rounded-lg px-3 py-2 ${
                 showBatchActions ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-700'

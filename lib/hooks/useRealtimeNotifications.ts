@@ -3,15 +3,21 @@ import { triggerLightHapticSync, triggerMediumHapticSync, triggerHeavyHapticSync
 import { log } from '@/lib/utils/logger';
 import supabase from '@/lib/supabase';
 import type { LiveNotification } from '@/lib/models/LiveNotification';
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
+
+type NotificationCache = LiveNotification[] | { items: LiveNotification[] };
+
+function isItemsObject(value: unknown): value is { items: LiveNotification[] } {
+  return !!value && typeof value === 'object' && Array.isArray((value as { items?: unknown }).items);
+}
 
 interface UseRealtimeNotificationsParams {
   userId?: string;
   maxItems?: number;
   queryClient: QueryClient;
-  notificationsQueryKey: readonly unknown[];
+  notificationsQueryKey: QueryKey;
 }
 
 /**
@@ -32,7 +38,7 @@ export function useRealtimeNotifications({
   const maxReconnectAttempts = 5;
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: notificationsQueryKey as any });
+    queryClient.invalidateQueries({ queryKey: notificationsQueryKey });
   }, [queryClient, notificationsQueryKey]);
 
   const handleNew = useCallback((n: any) => {
@@ -41,18 +47,19 @@ export function useRealtimeNotifications({
       else if (n.priority === 'high') triggerMediumHapticSync();
       else triggerLightHapticSync();
 
-      queryClient.setQueryData<LiveNotification[] | { items: LiveNotification[] } | undefined>(
+      queryClient.setQueryData<NotificationCache | undefined>(
         notificationsQueryKey,
         (old) => {
+          const nextItem = n as LiveNotification;
           if (Array.isArray(old)) {
-            const next = [n as LiveNotification, ...old];
+            const next = [nextItem, ...old];
             return next.slice(0, maxItems);
           }
-          if (old && typeof old === 'object' && Array.isArray((old as any).items)) {
-            const items = [(n as LiveNotification), ...((old as any).items as LiveNotification[])].slice(0, maxItems);
-            return { ...(old as any), items };
+          if (isItemsObject(old)) {
+            const items = [nextItem, ...old.items].slice(0, maxItems);
+            return { ...old, items };
           }
-          return [n as LiveNotification].slice(0, maxItems);
+          return [nextItem].slice(0, maxItems);
         }
       );
     } catch (e) {
@@ -61,13 +68,14 @@ export function useRealtimeNotifications({
   }, [queryClient, notificationsQueryKey, maxItems]);
 
   const handleUpdate = useCallback((n: any) => {
-    queryClient.setQueryData<LiveNotification[] | { items: LiveNotification[] } | undefined>(
+    queryClient.setQueryData<NotificationCache | undefined>(
       notificationsQueryKey,
       (old) => {
-        if (Array.isArray(old)) return old.map(x => (x.id === n.id ? n : x));
-        if (old && typeof old === 'object' && Array.isArray((old as any).items)) {
-          const items = ((old as any).items as LiveNotification[]).map(x => (x.id === n.id ? n : x));
-          return { ...(old as any), items };
+        const updated = n as LiveNotification;
+        if (Array.isArray(old)) return old.map(x => (x.id === updated.id ? updated : x));
+        if (isItemsObject(old)) {
+          const items = old.items.map(x => (x.id === updated.id ? updated : x));
+          return { ...old, items };
         }
         return old;
       }
@@ -75,13 +83,14 @@ export function useRealtimeNotifications({
   }, [queryClient, notificationsQueryKey]);
 
   const handleDelete = useCallback((n: any) => {
-    queryClient.setQueryData<LiveNotification[] | { items: LiveNotification[] } | undefined>(
+    queryClient.setQueryData<NotificationCache | undefined>(
       notificationsQueryKey,
       (old) => {
-        if (Array.isArray(old)) return old.filter(x => x.id !== n.id);
-        if (old && typeof old === 'object' && Array.isArray((old as any).items)) {
-          const items = ((old as any).items as LiveNotification[]).filter(x => x.id !== n.id);
-          return { ...(old as any), items };
+        const removed = n as LiveNotification;
+        if (Array.isArray(old)) return old.filter(x => x.id !== removed.id);
+        if (isItemsObject(old)) {
+          const items = old.items.filter(x => x.id !== removed.id);
+          return { ...old, items };
         }
         return old;
       }
@@ -91,27 +100,26 @@ export function useRealtimeNotifications({
   const handleBatch = useCallback((batch: any[]) => {
     if (!batch?.length) return;
     const processed = batch.slice(0, 10);
-    queryClient.setQueryData<LiveNotification[] | { items: LiveNotification[] } | undefined>(
+    queryClient.setQueryData<NotificationCache | undefined>(
       notificationsQueryKey,
       (old) => {
+        const incoming = processed as LiveNotification[];
         if (Array.isArray(old)) {
-          const next = [...(processed as LiveNotification[]), ...old];
+          const next = [...incoming, ...old];
           return next.slice(0, maxItems);
         }
-        if (old && typeof old === 'object' && Array.isArray((old as any).items)) {
-          const items = [
-            ...(processed as LiveNotification[]),
-            ...((old as any).items as LiveNotification[]),
-          ].slice(0, maxItems);
-          return { ...(old as any), items };
+        if (isItemsObject(old)) {
+          const items = [...incoming, ...old.items].slice(0, maxItems);
+          return { ...old, items };
         }
-        return (processed as LiveNotification[]).slice(0, maxItems);
+        return incoming.slice(0, maxItems);
       }
     );
     triggerLightHapticSync();
   }, [queryClient, notificationsQueryKey, maxItems]);
 
-  const handleReconnection = useCallback(() => {
+  // note: declared before setup to avoid circular reference initialization errors when used in setup's body
+  const handleReconnection = useCallback((): void => {
     if (reconnectAttempts.current >= maxReconnectAttempts) {
       log.warn('Max reconnection attempts reached');
       return;
@@ -124,8 +132,7 @@ export function useRealtimeNotifications({
       log.info(`Realtime reconnection attempt ${reconnectAttempts.current}`);
       setup();
     }, delay);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [maxReconnectAttempts]); // setup is intentionally excluded; see setup dependency on handleReconnection
 
   const teardown = useCallback(() => {
     try {
@@ -142,7 +149,7 @@ export function useRealtimeNotifications({
     }
   }, []);
 
-  const setup = useCallback(() => {
+  const setup = useCallback((): void => {
     try {
       setStatus('connecting');
       if (channelRef.current) channelRef.current.unsubscribe();
@@ -169,7 +176,10 @@ export function useRealtimeNotifications({
         )
         .on('broadcast', { event: 'notification_batch' }, (payload) => {
           log.info('Realtime batch', payload);
-          handleBatch((payload as any).notifications);
+          const notifications = (payload as { notifications?: LiveNotification[] } | any)?.notifications;
+          if (Array.isArray(notifications)) {
+            handleBatch(notifications);
+          }
           invalidate();
         })
         .on('presence', { event: 'sync' }, () => {
