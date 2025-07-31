@@ -30,7 +30,7 @@ import { Q } from '@nozbe/watermelondb';
 
 // --- Strict types: use model interfaces for type safety ---
 import type { MessageAttachment } from '../models/Message';
-import type { NotificationData } from '../models/LiveNotification';
+import type { NotificationData, NotificationAction } from '../models/LiveNotification';
 
 import type { GroupSettings } from '../models/SocialGroup';
 
@@ -70,7 +70,7 @@ export interface CreateNotificationParams {
   message: string;
   data: NotificationData;
   priority?: NotificationPriority;
-  actions?: any[];
+  actions?: NotificationAction[];
 }
 
 export interface CreateSocialGroupParams {
@@ -90,6 +90,17 @@ export interface CreateLiveEventParams {
   scheduledStart: Date;
   scheduledEnd: Date;
   settings?: EventSettings;
+}
+
+/**
+ * User presence data payload for richer presence context.
+ * All fields are optional and safely serializable.
+ */
+export interface UserPresenceData {
+  location?: string;       // e.g., "Berlin, DE" or "Home"
+  activity?: string;       // e.g., "browsing", "messaging", "in-call"
+  customStatus?: string;   // e.g., "Away for lunch"
+  // Extendable: add more optional metadata fields when needed
 }
 
 class CommunityService {
@@ -247,7 +258,7 @@ class CommunityService {
   /**
    * Update user presence
    */
-  async updateUserPresence(userId: string, status: string, presenceData?: any): Promise<UserPresence> {
+  async updateUserPresence(userId: string, status: string, presenceData?: UserPresenceData): Promise<UserPresence> {
     try {
       // Try to find existing presence record
       let presence: UserPresence | undefined;

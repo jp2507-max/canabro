@@ -232,7 +232,15 @@ export class CommunityPoll extends Model {
       const currentOptions = poll.options || [];
       const currentResults = poll.results || DEFAULT_POLL_RESULTS;
 
-      // Remove user's votes from all options
+      // If the poll is anonymous, skip modifying voter arrays and vote counts.
+      // Anonymous polls do not track voter IDs; removing a vote by userId is a no-op.
+      if (poll.settings?.isAnonymous) {
+        // Preserve current tallies and participants as-is to avoid unintended side effects.
+        // No changes to options or results.
+        return;
+      }
+
+      // Remove user's votes from all options (non-anonymous only)
       currentOptions.forEach(option => {
         option.voters = option.voters.filter(voterId => voterId !== userId);
         option.votes = option.voters.length;

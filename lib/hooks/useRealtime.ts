@@ -49,13 +49,54 @@ export interface RealtimeHookReturn {
     lastError: Error | null;
 }
 
-export function useRealtime(
+/**
+ * Strongly-typed realtime payloads
+ */
+type PostgresAction = 'INSERT' | 'UPDATE' | 'DELETE';
+type PostgresEvent = PostgresAction | '*';
+
+export interface RealtimeRowPayload<Row = unknown> {
+    schema: string;
+    table: string;
+    eventType: PostgresAction;
+    commit_timestamp?: string;
+    errors?: string | null;
+    new?: Row;
+    old?: Partial<Row> | null;
+}
+
+export interface RealtimeBroadcastPayload<T = unknown> {
+    type: 'message' | 'typing' | 'presence' | 'notification' | string;
+    payload: T;
+    userId?: string;
+    timestamp?: number;
+    messageId?: string;
+    retryCount?: number;
+}
+
+/**
+ * Typing payload for typing events
+ */
+export interface TypingPayload {
+    userId: string;
+    threadId: string;
+    isTyping: boolean;
+}
+
+export interface PresenceJoinLeaveEvent {
+    key: string;
+    currentPresences: PresenceState;
+    newPresences?: PresenceState;
+    leftPresences?: PresenceState;
+}
+
+export function useRealtime<Row = unknown, BroadcastT = unknown>(
     config: RealtimeSubscriptionConfig,
     callbacks: {
-        onInsert?: (payload: unknown) => void;
-        onUpdate?: (payload: unknown) => void;
-        onDelete?: (payload: unknown) => void;
-        onBroadcast?: (payload: unknown) => void;
+        onInsert?: (payload: RealtimeRowPayload<Row>) => void;
+        onUpdate?: (payload: RealtimeRowPayload<Row>) => void;
+        onDelete?: (payload: RealtimeRowPayload<Row>) => void;
+        onBroadcast?: (payload: RealtimeBroadcastPayload<BroadcastT>) => void;
         onPresenceSync?: (state: PresenceState) => void;
         onPresenceJoin?: (key: string, currentPresences: PresenceState, newPresences: PresenceState) => void;
         onPresenceLeave?: (key: string, currentPresences: PresenceState, leftPresences: PresenceState) => void;
@@ -113,7 +154,7 @@ export function useRealtime(
             // Enhanced callbacks with error handling and performance monitoring
             const enhancedCallbacks = {
                 ...callbacks,
-                onInsert: callbacks.onInsert ? (payload: any) => {
+                onInsert: callbacks.onInsert ? (payload: RealtimeRowPayload<Row>) => {
                     try {
                         const startTime = performance.now();
                         callbacks.onInsert!(payload);
@@ -125,7 +166,7 @@ export function useRealtime(
                     }
                 } : undefined,
                 
-                onUpdate: callbacks.onUpdate ? (payload: any) => {
+                onUpdate: callbacks.onUpdate ? (payload: RealtimeRowPayload<Row>) => {
                     try {
                         const startTime = performance.now();
                         callbacks.onUpdate!(payload);
@@ -137,7 +178,7 @@ export function useRealtime(
                     }
                 } : undefined,
                 
-                onDelete: callbacks.onDelete ? (payload: any) => {
+                onDelete: callbacks.onDelete ? (payload: RealtimeRowPayload<Row>) => {
                     try {
                         callbacks.onDelete!(payload);
                     } catch (error) {
@@ -146,12 +187,16 @@ export function useRealtime(
                     }
                 } : undefined,
                 
-                onBroadcast: callbacks.onBroadcast ? (payload: any) => {
+                onBroadcast: callbacks.onBroadcast ? (payload: RealtimeBroadcastPayload<BroadcastT>) => {
                     try {
-                        // Handle batched messages
-                        if (payload.payload?.messages && Array.isArray(payload.payload.messages)) {
-                            payload.payload.messages.forEach((msg: any) => {
-                                callbacks.onBroadcast!(msg);
+                        // Handle batched messages safely
+                        const p = payload as RealtimeBroadcastPayload<BroadcastT & { messages?: BroadcastT[] }>;
+                        if (p?.payload && typeof (p.payload as any).messages !== 'undefined' && Array.isArray((p.payload as any).messages)) {
+                            ((p.payload as any).messages as BroadcastT[]).forEach((msg: BroadcastT) => {
+                                callbacks.onBroadcast!({
+                                    ...payload,
+                                    payload: msg,
+                                } as RealtimeBroadcastPayload<BroadcastT>);
                             });
                         } else {
                             callbacks.onBroadcast!(payload);
@@ -162,7 +207,7 @@ export function useRealtime(
                     }
                 } : undefined,
                 
-                onPresenceSync: callbacks.onPresenceSync ? (state: any) => {
+                onPresenceSync: callbacks.onPresenceSync ? (state: PresenceState) => {
                     try {
                         setPresenceState(state);
                         callbacks.onPresenceSync!(state);
@@ -363,7 +408,7 @@ export function useRealtime(
                 clearInterval(healthCheckIntervalRef.current);
             }
         };
-    }, []);
+    }, [unsubscribe]);
 
     return {
         isConnected,
@@ -381,18 +426,34 @@ export function useRealtime(
 /**
  * Hook for conversation messaging
  */
+export interface MessageRow {
+    id: string;
+    thread_id: string;
+    user_id: string;
+    content: string | null;
+    created_at?: string;
+    updated_at?: string;
+    // add other known columns if needed
+}
+
+export interface TypingBroadcast {
+    type: 'typing';
+    payload: TypingPayload;
+    timestamp?: number;
+}
+
 export function useConversationRealtime(
     conversationId: string,
     callbacks: {
-        onNewMessage?: (message: any) => void;
-        onMessageUpdate?: (message: any) => void;
-        onMessageDelete?: (message: any) => void;
-        onTyping?: (payload: any) => void;
-        onPresenceChange?: (state: any) => void;
+        onNewMessage?: (message: RealtimeRowPayload<MessageRow>) => void;
+        onMessageUpdate?: (message: RealtimeRowPayload<MessageRow>) => void;
+        onMessageDelete?: (message: RealtimeRowPayload<MessageRow>) => void;
+        onTyping?: (payload: RealtimeBroadcastPayload<TypingPayload>) => void;
+        onPresenceChange?: (state: PresenceState) => void;
     },
     options: UseRealtimeOptions = {}
 ) {
-    return useRealtime(
+    return useRealtime<MessageRow, TypingPayload>(
         {
             channelName: `conversation:${conversationId}`,
             table: 'messages',
@@ -415,15 +476,25 @@ export function useConversationRealtime(
 /**
  * Hook for user notifications
  */
+export interface NotificationRow {
+    id: string;
+    user_id: string;
+    title?: string | null;
+    body?: string | null;
+    read?: boolean;
+    created_at?: string;
+    // extend as needed
+}
+
 export function useNotificationRealtime(
     userId: string,
     callbacks: {
-        onNewNotification?: (notification: any) => void;
-        onNotificationUpdate?: (notification: any) => void;
+        onNewNotification?: (notification: RealtimeRowPayload<NotificationRow>) => void;
+        onNotificationUpdate?: (notification: RealtimeRowPayload<NotificationRow>) => void;
     },
     options: UseRealtimeOptions = {}
 ) {
-    return useRealtime(
+    return useRealtime<NotificationRow>(
         {
             channelName: `notifications:${userId}`,
             table: 'live_notifications',
@@ -443,18 +514,31 @@ export function useNotificationRealtime(
 /**
  * Hook for live events
  */
+export interface LiveEventRow {
+    id: string;
+    title?: string | null;
+    status?: string | null;
+    starts_at?: string | null;
+    ends_at?: string | null;
+}
+
+export interface EventBroadcastPayload {
+    event: string;
+    data?: unknown;
+}
+
 export function useLiveEventRealtime(
     eventId: string,
     callbacks: {
-        onEventUpdate?: (event: any) => void;
-        onParticipantJoin?: (participant: any) => void;
-        onParticipantLeave?: (participant: any) => void;
-        onBroadcast?: (payload: any) => void;
-        onPresenceChange?: (state: any) => void;
+        onEventUpdate?: (event: RealtimeRowPayload<LiveEventRow>) => void;
+        onParticipantJoin?: (participant: PresenceState) => void;
+        onParticipantLeave?: (participant: PresenceState) => void;
+        onBroadcast?: (payload: RealtimeBroadcastPayload<EventBroadcastPayload>) => void;
+        onPresenceChange?: (state: PresenceState) => void;
     },
     options: UseRealtimeOptions = {}
 ) {
-    return useRealtime(
+    return useRealtime<LiveEventRow, EventBroadcastPayload>(
         {
             channelName: `event:${eventId}`,
             table: 'live_events',
@@ -464,10 +548,10 @@ export function useLiveEventRealtime(
             onUpdate: callbacks.onEventUpdate,
             onBroadcast: callbacks.onBroadcast,
             onPresenceSync: callbacks.onPresenceChange,
-            onPresenceJoin: (_key: any, _currentPresences: any, newPresences: any) => {
+            onPresenceJoin: (_key: string, _currentPresences: PresenceState, newPresences: PresenceState) => {
                 callbacks.onParticipantJoin?.(newPresences);
             },
-            onPresenceLeave: (_key: any, _currentPresences: any, leftPresences: any) => {
+            onPresenceLeave: (_key: string, _currentPresences: PresenceState, leftPresences: PresenceState) => {
                 callbacks.onParticipantLeave?.(leftPresences);
             },
         },

@@ -58,36 +58,38 @@ export interface SupabaseClientConfig {
 }
 
 class RealtimeConfigService {
+    private static readonly DEFAULTS: RealtimeConfig = {
+        // Connection settings
+        maxConnections: 16384, // Supabase default soft limit
+        connectionTimeout: 30000, // 30 seconds
+        heartbeatInterval: 30, // 30 seconds
+
+        // Rate limiting (aligned with Supabase quotas)
+        maxMessagesPerSecond: 100, // Per user
+        maxChannelsPerUser: 100, // Per user
+        maxConcurrentUsers: 200, // Per channel
+
+        // Batching settings
+        batchSize: 10,
+        batchTimeout: 100, // 100ms
+
+        // Retry settings
+        maxRetries: 5,
+        baseRetryDelay: 1000, // 1 second
+        maxRetryDelay: 30000, // 30 seconds
+
+        // Performance settings
+        enableCompression: true,
+        enableDeduplication: true,
+        cacheSize: 1000 // Number of cached messages
+    };
+
     private config: RealtimeConfig;
     private quotas: RealtimeQuotas;
 
     constructor() {
         // Default configuration optimized for 2025
-        this.config = {
-            // Connection settings
-            maxConnections: 16384, // Supabase default soft limit
-            connectionTimeout: 30000, // 30 seconds
-            heartbeatInterval: 30, // 30 seconds
-
-            // Rate limiting (aligned with Supabase quotas)
-            maxMessagesPerSecond: 100, // Per user
-            maxChannelsPerUser: 100, // Per user
-            maxConcurrentUsers: 200, // Per channel
-
-            // Batching settings
-            batchSize: 10,
-            batchTimeout: 100, // 100ms
-
-            // Retry settings
-            maxRetries: 5,
-            baseRetryDelay: 1000, // 1 second
-            maxRetryDelay: 30000, // 30 seconds
-
-            // Performance settings
-            enableCompression: true,
-            enableDeduplication: true,
-            cacheSize: 1000 // Number of cached messages
-        };
+        this.config = { ...RealtimeConfigService.DEFAULTS };
 
         // Current Supabase quotas (2025)
         this.quotas = {
@@ -306,22 +308,7 @@ class RealtimeConfigService {
      * Reset to default configuration
      */
     resetToDefaults(): void {
-        this.config = {
-            maxConnections: 16384,
-            connectionTimeout: 30000,
-            heartbeatInterval: 30,
-            maxMessagesPerSecond: 100,
-            maxChannelsPerUser: 100,
-            maxConcurrentUsers: 200,
-            batchSize: 10,
-            batchTimeout: 100,
-            maxRetries: 5,
-            baseRetryDelay: 1000,
-            maxRetryDelay: 30000,
-            enableCompression: true,
-            enableDeduplication: true,
-            cacheSize: 1000
-        };
+        this.config = { ...RealtimeConfigService.DEFAULTS };
         log.info('[RealtimeConfig] Configuration reset to defaults');
     }
 }

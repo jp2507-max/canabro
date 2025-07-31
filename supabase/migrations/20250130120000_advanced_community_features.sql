@@ -367,7 +367,12 @@ ALTER TABLE community_polls ENABLE ROW LEVEL SECURITY;
 -- Live notifications policies
 CREATE POLICY "Users can view their own notifications" ON live_notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can update their own notifications" ON live_notifications FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "System can insert notifications" ON live_notifications FOR INSERT WITH CHECK (true);
+CREATE POLICY "Authorized users can insert notifications" ON live_notifications
+FOR INSERT
+WITH CHECK (
+  auth.uid() = user_id
+  OR coalesce(current_setting('request.jwt.claims', true)::jsonb->>'role', '') IN ('service_role', 'admin')
+);
 
 -- Conversation threads policies
 CREATE POLICY "Users can view threads they participate in" ON conversation_threads FOR SELECT USING (

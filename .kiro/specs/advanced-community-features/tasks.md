@@ -25,8 +25,14 @@
 
 - [ ] **ACF-T02**: Implement real-time messaging system
 - [ ] **ACF-T02.1**: Create DirectMessaging component for private conversations
+
+
+
+
+
+
   - Build messaging interface using existing `FlashListWrapper` for message virtualization (`estimatedItemSize: 80`)
-  - Implement real-time message delivery with Supabase Realtime v2 and Broadcast API
+  - Implement real-time message delivery with Supabase Realtime v2 and Broadcast API (check up to date infos via bravesearch or context 7 or implementations from other coder)
   - Add error handling using existing `lib/utils/errorHandler` and logging with custom logger
   - Add message status indicators using existing animation utilities from `lib/animations/useButtonAnimation`
   - Integrate haptic feedback using existing `lib/utils/haptics` for message interactions
@@ -35,7 +41,10 @@
   - Use existing `NetworkResilientImage` for optimized message media loading
   - _Requirements: 1_
 
-- [ ] **ACF-T02.2**: Create GroupChat component for community discussions
+- [-] **ACF-T02.2**: Create GroupChat component for community discussions
+
+
+
   - Build group conversation interface using existing `FlashListWrapper` for member lists virtualization
   - Implement real-time group message synchronization with message batching
   - Add comprehensive error handling using existing error utilities and logging
