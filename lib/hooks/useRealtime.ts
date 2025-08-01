@@ -65,6 +65,62 @@ export interface RealtimeRowPayload<Row = unknown> {
     old?: Partial<Row> | null;
 }
 
+/**
+ * Runtime type guards to validate inbound Supabase payloads
+ * and safely narrow types without weakening type safety.
+ */
+function isObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+function hasKeys<T extends string>(obj: Record<string, unknown>, keys: readonly T[]): obj is Record<T, unknown> {
+    return keys.every(k => Object.prototype.hasOwnProperty.call(obj, k));
+}
+
+function isPostgresAction(v: unknown): v is PostgresAction {
+    return v === 'INSERT' || v === 'UPDATE' || v === 'DELETE';
+}
+
+export function isRealtimeRowPayload<Row = unknown>(payload: unknown): payload is RealtimeRowPayload<Row> {
+    if (!isObject(payload)) return false;
+    if (!hasKeys(payload, ['schema', 'table', 'eventType'] as const)) return false;
+    if (typeof payload.schema !== 'string') return false;
+    if (typeof payload.table !== 'string') return false;
+    if (!isPostgresAction((payload as any).eventType)) return false;
+    // new/old are optional and can be unknown shapes; no further runtime validation here
+    return true;
+}
+
+export function isBatchedBroadcastPayload<T = unknown>(payload: unknown): payload is RealtimeBroadcastPayload<{ messages: T[] }> {
+    if (!isRealtimeBroadcastPayload<Record<string, unknown>>(payload)) return false;
+    const pl = (payload as RealtimeBroadcastPayload<Record<string, unknown>>).payload;
+    return isObject(pl) && Array.isArray((pl as any).messages);
+}
+
+export function isRealtimeBroadcastPayload<T = unknown>(payload: unknown): payload is RealtimeBroadcastPayload<T> {
+    if (!isObject(payload)) return false;
+    if (!hasKeys(payload, ['type', 'payload'] as const)) return false;
+    if (typeof payload.type !== 'string') return false;
+    // payload can be any; optional metadata fields are not strictly required
+    return true;
+}
+
+export function isTypingPayload(payload: unknown): payload is TypingPayload {
+    if (!isObject(payload)) return false;
+    return typeof (payload as any).userId === 'string'
+        && typeof (payload as any).threadId === 'string'
+        && typeof (payload as any).isTyping === 'boolean';
+}
+
+export function isPresenceStateLike(value: unknown): value is PresenceState {
+    if (!isObject(value)) return false;
+    // minimal presence validation; PresenceState fields can be extended by service
+    if (typeof (value as any).userId !== 'string') return false;
+    // status often 'online'|'offline'|'away' etc. Treat as string for runtime check
+    if (typeof (value as any).status !== 'string') return false;
+    return true;
+}
+
 export interface RealtimeBroadcastPayload<T = unknown> {
     type: 'message' | 'typing' | 'presence' | 'notification' | string;
     payload: T;
@@ -150,77 +206,103 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
 
             // Apply configuration optimizations
             const realtimeConfigData = realtimeConfig.getConfig();
-            
+            // Debug mode sourced from monitoring config to avoid relying on non-existent 'debug' flag on RealtimeConfig
+            const monitoring = realtimeConfig.getMonitoringConfig?.();
+            const debugMode = !!(monitoring && monitoring.logLevel === 'debug');
+
             // Enhanced callbacks with error handling and performance monitoring
             const enhancedCallbacks = {
                 ...callbacks,
-                onInsert: callbacks.onInsert ? (payload: Record<string, unknown>) => {
+
+                onInsert: callbacks.onInsert ? (payload: unknown) => {
                     try {
-                        const startTime = performance.now();
-                        callbacks.onInsert!(payload as unknown as RealtimeRowPayload<Row>);
-                        const duration = performance.now() - startTime;
-                        log.debug(`[useRealtime] onInsert processed in ${duration}ms`);
+                        if (!isRealtimeRowPayload<Row>(payload)) {
+                            throw new Error('Invalid payload for onInsert');
+                        }
+                        let startTime: number | undefined;
+                        if (debugMode && typeof performance?.now === 'function') {
+                            startTime = performance.now();
+                        }
+                        callbacks.onInsert!(payload);
+
+                        if (debugMode && startTime !== undefined) {
+                            const duration = performance.now() - startTime;
+                            log.debug(`[useRealtime] onInsert processed in ${duration}ms`);
+                        }
                     } catch (error) {
                         log.error('[useRealtime] Error in onInsert callback:', error);
                         setLastError(error as Error);
                     }
                 } : undefined,
-                
-                onUpdate: callbacks.onUpdate ? (payload: Record<string, unknown>) => {
+
+                onUpdate: callbacks.onUpdate ? (payload: unknown) => {
                     try {
-                        const startTime = performance.now();
-                        callbacks.onUpdate!(payload as unknown as RealtimeRowPayload<Row>);
-                        const duration = performance.now() - startTime;
-                        log.debug(`[useRealtime] onUpdate processed in ${duration}ms`);
+                        if (!isRealtimeRowPayload<Row>(payload)) {
+                            throw new Error('Invalid payload for onUpdate');
+                        }
+                        let startTime: number | undefined;
+                        if (debugMode && typeof performance?.now === 'function') {
+                            startTime = performance.now();
+                        }
+                        callbacks.onUpdate!(payload);
+
+                        if (debugMode && startTime !== undefined) {
+                            const duration = performance.now() - startTime;
+                            log.debug(`[useRealtime] onUpdate processed in ${duration}ms`);
+                        }
                     } catch (error) {
                         log.error('[useRealtime] Error in onUpdate callback:', error);
                         setLastError(error as Error);
                     }
                 } : undefined,
-                
-                onDelete: callbacks.onDelete ? (payload: Record<string, unknown>) => {
+
+                onDelete: callbacks.onDelete ? (payload: unknown) => {
                     try {
-                        callbacks.onDelete!(payload as unknown as RealtimeRowPayload<Row>);
+                        if (!isRealtimeRowPayload<Row>(payload)) {
+                            throw new Error('Invalid payload for onDelete');
+                        }
+                        callbacks.onDelete!(payload);
                     } catch (error) {
                         log.error('[useRealtime] Error in onDelete callback:', error);
                         setLastError(error as Error);
                     }
                 } : undefined,
-                
-                onBroadcast: callbacks.onBroadcast ? (payload: Record<string, unknown>) => {
+
+                onBroadcast: callbacks.onBroadcast ? (payload: unknown) => {
                     try {
-                        // Handle batched messages safely
-                        const p = payload as unknown as RealtimeBroadcastPayload<BroadcastT & { messages?: BroadcastT[] }>;
-                        if (p?.payload && typeof (p.payload as any).messages !== 'undefined' && Array.isArray((p.payload as any).messages)) {
-                            ((p.payload as any).messages as BroadcastT[]).forEach((msg: BroadcastT) => {
+                        if (!isRealtimeBroadcastPayload<BroadcastT>(payload)) {
+                            throw new Error('Invalid payload for onBroadcast');
+                        }
+
+                        if (isBatchedBroadcastPayload<BroadcastT>(payload)) {
+                            const items = (payload.payload as any).messages as BroadcastT[];
+                            for (const msg of items) {
                                 callbacks.onBroadcast!({
                                     ...payload,
                                     payload: msg,
-                                } as unknown as RealtimeBroadcastPayload<BroadcastT>);
-                            });
+                                } as RealtimeBroadcastPayload<BroadcastT>);
+                            }
                         } else {
-                            callbacks.onBroadcast!(payload as unknown as RealtimeBroadcastPayload<BroadcastT>);
+                            callbacks.onBroadcast!(payload as RealtimeBroadcastPayload<BroadcastT>);
                         }
                     } catch (error) {
                         log.error('[useRealtime] Error in onBroadcast callback:', error);
                         setLastError(error as Error);
                     }
                 } : undefined,
-                
+
                 onPresenceSync: callbacks.onPresenceSync
                     ? (state: PresenceState | Record<string, unknown>) => {
                           try {
-                              // Accept service presence union and normalize to PresenceState
-                              const typed: PresenceState =
-                                  (state as PresenceState)?.userId !== undefined
-                                      ? (state as PresenceState)
-                                      : ({
-                                            userId: String((state as any)?.userId ?? ''),
-                                            status: String((state as any)?.status ?? 'offline') as PresenceState['status'],
-                                            lastSeen: String((state as any)?.lastSeen ?? ''),
-                                            location: (state as any)?.location,
-                                            activity: (state as any)?.activity,
-                                        } as PresenceState);
+                              const typed: PresenceState = isPresenceStateLike(state)
+                                  ? (state as PresenceState)
+                                  : ({
+                                        userId: String((state as any)?.userId ?? ''),
+                                        status: String((state as any)?.status ?? 'offline') as PresenceState['status'],
+                                        lastSeen: String((state as any)?.lastSeen ?? ''),
+                                        location: (state as any)?.location,
+                                        activity: (state as any)?.activity,
+                                    } as PresenceState);
 
                               setPresenceState(typed);
                               callbacks.onPresenceSync!(typed);
@@ -230,7 +312,7 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
                           }
                       }
                     : undefined,
-                
+
                 onPresenceJoin: callbacks.onPresenceJoin
                     ? ((key: string, currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
                           try {
@@ -241,7 +323,7 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
                           }
                       }) as (key: string, currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => void
                     : undefined,
-                
+
                 onPresenceLeave: callbacks.onPresenceLeave
                     ? ((key: string, currentPresences: Record<string, unknown>, leftPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
                           try {
@@ -256,12 +338,14 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
 
             const channel = await realtimeService.subscribe(configRef.current, enhancedCallbacks);
             channelRef.current = channel;
-            
+
             setIsConnected(true);
             setIsReconnecting(false);
             onConnectionChange?.('connected');
-            
-            log.info(`[useRealtime] Successfully subscribed to ${configRef.current.channelName}`);
+
+            if (debugMode) {
+                log.info(`[useRealtime] Successfully subscribed to ${configRef.current.channelName}`);
+            }
         } catch (error) {
             log.error(`[useRealtime] Subscription failed:`, error);
             setLastError(error as Error);
@@ -582,11 +666,29 @@ export function useLiveEventRealtime(
             onBroadcast: callbacks.onBroadcast,
             onPresenceSync: callbacks.onPresenceChange,
             onPresenceJoin: (_key: string, _currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
-                const first = (newPresences?.[0]?.metas?.[0] ?? {}) as unknown as PresenceState;
+                const maybe = newPresences?.[0]?.metas?.[0];
+                const first: PresenceState = isPresenceStateLike(maybe)
+                    ? (maybe as PresenceState)
+                    : ({
+                          userId: String((maybe as any)?.userId ?? ''),
+                          status: String((maybe as any)?.status ?? 'offline') as PresenceState['status'],
+                          lastSeen: String((maybe as any)?.lastSeen ?? ''),
+                          location: (maybe as any)?.location,
+                          activity: (maybe as any)?.activity,
+                      } as PresenceState);
                 callbacks.onParticipantJoin?.(first);
             },
             onPresenceLeave: (_key: string, _currentPresences: Record<string, unknown>, leftPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
-                const first = (leftPresences?.[0]?.metas?.[0] ?? {}) as unknown as PresenceState;
+                const maybe = leftPresences?.[0]?.metas?.[0];
+                const first: PresenceState = isPresenceStateLike(maybe)
+                    ? (maybe as PresenceState)
+                    : ({
+                          userId: String((maybe as any)?.userId ?? ''),
+                          status: String((maybe as any)?.status ?? 'offline') as PresenceState['status'],
+                          lastSeen: String((maybe as any)?.lastSeen ?? ''),
+                          location: (maybe as any)?.location,
+                          activity: (maybe as any)?.activity,
+                      } as PresenceState);
                 callbacks.onParticipantLeave?.(first);
             },
         },

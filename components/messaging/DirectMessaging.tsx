@@ -13,12 +13,38 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+// Throttle utility (simple, avoids extra deps)
+function useThrottledCallback<T extends (...args: any[]) => void>(callback: T, delay: number): T {
+  const lastCall = useRef(0);
+  const timeout = useRef<NodeJS.Timeout | null>(null);
+  const savedCallback = useRef(callback);
+  savedCallback.current = callback;
+
+  // @ts-ignore
+  return useCallback(((...args: any[]) => {
+    const now = Date.now();
+    if (now - lastCall.current > delay) {
+      lastCall.current = now;
+      savedCallback.current(...args);
+    } else {
+      if (timeout.current) clearTimeout(timeout.current);
+      timeout.current = setTimeout(() => {
+        lastCall.current = Date.now();
+        savedCallback.current(...args);
+      }, delay - (now - lastCall.current));
+    }
+  }) as T, [delay]);
+}
 import { View, Pressable, Alert, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
+  withRepeat,
+  withSequence,
+  withDelay,
+  Easing,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -41,6 +67,43 @@ import { log } from '@/lib/utils/logger';
 // Services and models
 import { realtimeService } from '@/lib/services/realtimeService';
 import { Message, MessageReaction } from '@/lib/models/Message';
+import useWatermelon from '@/lib/hooks/useWatermelon';
+import { Q } from '@nozbe/watermelondb';
+// TypeScript interface for a plain message record from Supabase
+export interface MessageRecord {
+  id: string;
+  thread_id: string;
+  sender_id: string;
+  content: string;
+  message_type: string;
+  attachments?: any[];
+  reply_to?: string;
+  reactions?: any[];
+  is_edited: boolean;
+  delivered_at?: string | null;
+  read_at?: string | null;
+  is_deleted?: boolean;
+  last_synced_at?: string | null;
+  sent_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Type guard for MessageRecord
+function isMessageRecord(obj: any): obj is MessageRecord {
+  return (
+    obj &&
+    typeof obj === 'object' &&
+    typeof obj.id === 'string' &&
+    typeof obj.thread_id === 'string' &&
+    typeof obj.sender_id === 'string' &&
+    typeof obj.content === 'string' &&
+    typeof obj.message_type === 'string' &&
+    typeof obj.sent_at === 'string' &&
+    typeof obj.created_at === 'string' &&
+    typeof obj.updated_at === 'string'
+  );
+}
 import { ConversationThread } from '@/lib/models/ConversationThread';
 import { UserPresence } from '@/lib/models/UserPresence';
 import supabase from '@/lib/supabase';
@@ -277,7 +340,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
             variant="default"
             className={isOwnMessage ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'}
           >
-            {message.content}
+            {message?.content ?? ''}
           </ThemedText>
 
           {/* Attachments */}
@@ -308,26 +371,69 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
  * Typing Indicator Component
  */
 const TypingIndicator: React.FC<TypingIndicatorProps> = React.memo(({ isVisible, userName }) => {
+  // Container appearance
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.8);
 
+  // Dot pulse shared values
+  const dot1 = useSharedValue(0);
+  const dot2 = useSharedValue(0);
+  const dot3 = useSharedValue(0);
+
   useEffect(() => {
     if (isVisible) {
+      // Fade/scale in container
       opacity.value = withTiming(1, { duration: 200 });
       scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+
+      // Define a looping pulse sequence from 0 -> 1 -> 0
+      const pulse = () =>
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
+            withTiming(0, { duration: 400, easing: Easing.inOut(Easing.ease) })
+          ),
+          -1,
+          false
+        );
+
+      // Staggered delays for each dot
+      dot1.value = withDelay(0, pulse());
+      dot2.value = withDelay(200, pulse());
+      dot3.value = withDelay(400, pulse());
     } else {
+      // Fade/scale out container
       opacity.value = withTiming(0, { duration: 200 });
       scale.value = withTiming(0.8, { duration: 200 });
-    }
-  }, [isVisible, opacity, scale]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+      // Stop pulsing by resetting to base
+      dot1.value = withTiming(0, { duration: 150 });
+      dot2.value = withTiming(0, { duration: 150 });
+      dot3.value = withTiming(0, { duration: 150 });
+    }
+  }, [isVisible, opacity, scale, dot1, dot2, dot3]);
+
+  const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ scale: scale.value }],
   }));
 
+  // Map pulse value to scale and opacity for a subtle pulse
+  const dotStyle1 = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.8 + dot1.value * 0.4 }],
+    opacity: 0.6 + dot1.value * 0.4,
+  }));
+  const dotStyle2 = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.8 + dot2.value * 0.4 }],
+    opacity: 0.6 + dot2.value * 0.4,
+  }));
+  const dotStyle3 = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.8 + dot3.value * 0.4 }],
+    opacity: 0.6 + dot3.value * 0.4,
+  }));
+
   useAnimationCleanup({
-    sharedValues: [opacity, scale],
+    sharedValues: [opacity, scale, dot1, dot2, dot3],
     autoCleanup: true,
   });
 
@@ -335,14 +441,14 @@ const TypingIndicator: React.FC<TypingIndicatorProps> = React.memo(({ isVisible,
 
   return (
     <Animated.View
-      style={[animatedStyle, { paddingHorizontal: 16, marginBottom: 8 }]}
+      style={[containerStyle, { paddingHorizontal: 16, marginBottom: 8 }]}
     >
       <View className="flex-row items-center">
         <View className="bg-neutral-200 dark:bg-neutral-700 rounded-2xl rounded-bl-md px-4 py-3">
           <View className="flex-row items-center space-x-1">
-            <View className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse" />
-            <View className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-            <View className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+            <Animated.View className="w-2 h-2 bg-neutral-400 rounded-full" style={dotStyle1} />
+            <Animated.View className="w-2 h-2 bg-neutral-400 rounded-full" style={dotStyle2} />
+            <Animated.View className="w-2 h-2 bg-neutral-400 rounded-full" style={dotStyle3} />
           </View>
         </View>
         {userName && (
@@ -481,6 +587,8 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
   onClose,
   className = '',
 }) => {
+  // WatermelonDB
+  const { database } = useWatermelon();
   // State management
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -580,17 +688,70 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
         conversationChannel = await realtimeService.subscribeToConversation(
           conversationId,
           {
-            onNewMessage: (message) => {
-              if (isMountedRef.current) {
-                setMessages(prev => [...prev, message as unknown as Message]);
+            onNewMessage: async (message) => {
+              if (isMountedRef.current && isMessageRecord(message)) {
+                // Upsert message into WatermelonDB
+                await database.write(async () => {
+                  const existing = await database.get('messages').find(message.id).catch(() => null);
+                  if (existing) {
+                    await existing.update((msg: any) => {
+                      Object.assign(msg, {
+                        threadId: message.thread_id,
+                        senderId: message.sender_id,
+                        content: message.content,
+                        messageType: message.message_type,
+                        attachments: message.attachments,
+                        replyTo: message.reply_to,
+                        reactions: message.reactions,
+                        isEdited: message.is_edited,
+                        deliveredAt: message.delivered_at ? new Date(message.delivered_at) : undefined,
+                        readAt: message.read_at ? new Date(message.read_at) : undefined,
+                        isDeleted: message.is_deleted,
+                        lastSyncedAt: message.last_synced_at ? new Date(message.last_synced_at) : undefined,
+                        sentAt: new Date(message.sent_at),
+                        createdAt: new Date(message.created_at),
+                        updatedAt: new Date(message.updated_at),
+                      });
+                    });
+                  } else {
+                    await database.get('messages').create((msg: any) => {
+                      msg.id = message.id;
+                      msg.threadId = message.thread_id;
+                      msg.senderId = message.sender_id;
+                      msg.content = message.content;
+                      msg.messageType = message.message_type;
+                      msg.attachments = message.attachments;
+                      msg.replyTo = message.reply_to;
+                      msg.reactions = message.reactions;
+                      msg.isEdited = message.is_edited;
+                      msg.deliveredAt = message.delivered_at ? new Date(message.delivered_at) : undefined;
+                      msg.readAt = message.read_at ? new Date(message.read_at) : undefined;
+                      msg.isDeleted = message.is_deleted;
+                      msg.lastSyncedAt = message.last_synced_at ? new Date(message.last_synced_at) : undefined;
+                      msg.sentAt = new Date(message.sent_at);
+                      msg.createdAt = new Date(message.created_at);
+                      msg.updatedAt = new Date(message.updated_at);
+                    });
+                  }
+                });
+
+                // Reload messages from DB
+                const updatedMessages = await database.get('messages')
+                  .query(
+                    Q.where('thread_id', message.thread_id),
+                    Q.sortBy('sent_at', Q.asc),
+                    Q.take(50)
+                  )
+                  .fetch();
+                setMessages(updatedMessages);
 
                 // Mark as read if not own message
-                if ((message as any).sender_id !== currentUserId) {
+                if (message.sender_id !== currentUserId) {
                   safeAsync(async () => {
                     await supabase
                       .from('messages')
                       .update({ read_at: new Date().toISOString() })
-                      .eq('id', (message as any).id);
+                      .eq('id', message.id);
                   });
                 }
 
@@ -600,11 +761,62 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
                 }, 100);
               }
             },
-            onMessageUpdate: (message) => {
-              if (isMountedRef.current) {
-                setMessages(prev =>
-                  prev.map(m => m.id === (message as any).id ? message as unknown as Message : m)
-                );
+            onMessageUpdate: async (message) => {
+              if (isMountedRef.current && isMessageRecord(message)) {
+                // Upsert message into WatermelonDB
+                await database.write(async () => {
+                  const existing = await database.get('messages').find(message.id).catch(() => null);
+                  if (existing) {
+                    await existing.update((msg: any) => {
+                      Object.assign(msg, {
+                        threadId: message.thread_id,
+                        senderId: message.sender_id,
+                        content: message.content,
+                        messageType: message.message_type,
+                        attachments: message.attachments,
+                        replyTo: message.reply_to,
+                        reactions: message.reactions,
+                        isEdited: message.is_edited,
+                        deliveredAt: message.delivered_at ? new Date(message.delivered_at) : undefined,
+                        readAt: message.read_at ? new Date(message.read_at) : undefined,
+                        isDeleted: message.is_deleted,
+                        lastSyncedAt: message.last_synced_at ? new Date(message.last_synced_at) : undefined,
+                        sentAt: new Date(message.sent_at),
+                        createdAt: new Date(message.created_at),
+                        updatedAt: new Date(message.updated_at),
+                      });
+                    });
+                  } else {
+                    await database.get('messages').create((msg: any) => {
+                      msg.id = message.id;
+                      msg.threadId = message.thread_id;
+                      msg.senderId = message.sender_id;
+                      msg.content = message.content;
+                      msg.messageType = message.message_type;
+                      msg.attachments = message.attachments;
+                      msg.replyTo = message.reply_to;
+                      msg.reactions = message.reactions;
+                      msg.isEdited = message.is_edited;
+                      msg.deliveredAt = message.delivered_at ? new Date(message.delivered_at) : undefined;
+                      msg.readAt = message.read_at ? new Date(message.read_at) : undefined;
+                      msg.isDeleted = message.is_deleted;
+                      msg.lastSyncedAt = message.last_synced_at ? new Date(message.last_synced_at) : undefined;
+                      msg.sentAt = new Date(message.sent_at);
+                      msg.createdAt = new Date(message.created_at);
+                      msg.updatedAt = new Date(message.updated_at);
+                    });
+                  }
+                });
+
+                // Reload messages from DB
+                const updatedMessages = await database.get('messages')
+                  .query(
+                    Q.where('thread_id', message.thread_id),
+                    Q.sortBy('sent_at', Q.asc),
+                    Q.take(50)
+                  )
+                  .fetch();
+                setMessages(updatedMessages);
               }
             },
             onTyping: (payload) => {
@@ -756,7 +968,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
     }
   }, [inputText, conversation, conversationId, currentUserId, replyingTo]);
 
-  // Handle typing indicator
+  // Handle typing indicator (throttled)
   const handleTyping = useCallback(() => {
     if (!isTyping) {
       setIsTyping(true);
@@ -794,6 +1006,9 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
       }
     }, 2000);
   }, [isTyping, conversationId, currentUserId]);
+
+  // Throttle handleTyping to avoid excessive broadcasts
+  const throttledHandleTyping = useThrottledCallback(handleTyping, 1500);
 
   // Handle message reactions
   const handleReaction = useCallback(async (messageId: string, emoji: string) => {
@@ -979,7 +1194,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
           value={inputText}
           onChangeText={setInputText}
           onSend={handleSendMessage}
-          onTyping={handleTyping}
+          onTyping={throttledHandleTyping}
           replyingTo={replyingTo}
           onCancelReply={handleCancelReply}
         />

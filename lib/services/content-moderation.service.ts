@@ -305,12 +305,11 @@ class ContentModerationService {
     const violations: ModerationViolation[] = [];
     let maxConfidence = 0;
 
-    // Utility to escape regex special characters in words
-    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 
     // Check critical profanity with word-boundary regex (case-insensitive)
     for (const word of PROFANITY_FILTERS.critical) {
-      const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+  const regex = new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'i');
       if (regex.test(content)) {
         violations.push({
           type: 'profanity',
@@ -325,7 +324,7 @@ class ContentModerationService {
 
     // Check high-level profanity with word-boundary regex (case-insensitive)
     for (const word of PROFANITY_FILTERS.high) {
-      const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+  const regex = new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'i');
       if (regex.test(content)) {
         violations.push({
           type: 'profanity',
@@ -340,7 +339,7 @@ class ContentModerationService {
 
     // Check medium-level profanity with word-boundary regex (case-insensitive)
     for (const word of PROFANITY_FILTERS.medium) {
-      const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+  const regex = new RegExp(`\\b${this.escapeRegex(word)}\\b`, 'i');
       if (regex.test(content)) {
         violations.push({
           type: 'profanity',
@@ -448,9 +447,11 @@ class ContentModerationService {
     const lowerContent = content.toLowerCase();
     let maxConfidence = 0;
 
-    // Check for illegal activities
+
+    // Check for illegal activities (whole word/phrase match)
     for (const phrase of CANNABIS_INAPPROPRIATE_CONTENT.illegal_activities) {
-      if (lowerContent.includes(phrase)) {
+      const regex = new RegExp(`\\b${this.escapeRegex(phrase)}\\b`, 'i');
+      if (regex.test(content)) {
         violations.push({
           type: 'illegal_content',
           severity: 'critical',
@@ -462,9 +463,10 @@ class ContentModerationService {
       }
     }
 
-    // Check for harmful practices
+    // Check for harmful practices (whole word/phrase match)
     for (const phrase of CANNABIS_INAPPROPRIATE_CONTENT.harmful_practices) {
-      if (lowerContent.includes(phrase)) {
+      const regex = new RegExp(`\\b${this.escapeRegex(phrase)}\\b`, 'i');
+      if (regex.test(content)) {
         violations.push({
           type: 'inappropriate_content',
           severity: 'high',
@@ -476,9 +478,12 @@ class ContentModerationService {
       }
     }
 
-    // Check for off-topic content
+
+
+    // Check for off-topic content (whole word/phrase match)
     for (const phrase of CANNABIS_INAPPROPRIATE_CONTENT.off_topic) {
-      if (lowerContent.includes(phrase)) {
+      const regex = new RegExp(`\b${this.escapeRegex(phrase)}\b`, 'i');
+      if (regex.test(content)) {
         violations.push({
           type: 'off_topic',
           severity: 'medium',
@@ -491,6 +496,13 @@ class ContentModerationService {
     }
 
     return { violations, confidence: maxConfidence };
+  }
+
+  /**
+   * Utility to escape regex special characters in words/phrases
+   */
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**

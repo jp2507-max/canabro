@@ -42,7 +42,20 @@ const FlaggedContentItem: React.FC<FlaggedContentItemProps> = ({
   }, [content.id, onAction, t]);
 
   return (
-    <ThemedView variant="card" className="mb-4 p-4">
+    <ThemedView
+      variant="card"
+      className="mb-4 p-4"
+      accessible={true}
+      accessibilityRole="summary"
+      accessibilityLabel={
+        `${t('moderationDashboard.flaggedItemLabel', {
+          type: content.type,
+          title: content.title,
+          reportCount: content.reportCount,
+          status: content.status
+        })}`
+      }
+    >
       {/* Header */}
       <View className="flex-row items-start justify-between mb-3">
         <View className="flex-1">
@@ -94,12 +107,31 @@ const FlaggedContentItem: React.FC<FlaggedContentItemProps> = ({
 
       {/* Violations */}
       {content.moderationResult.violations.length > 0 && (
-        <View className="mb-4">
+        <View
+          className="mb-4"
+          accessible={true}
+          accessibilityRole="list"
+          accessibilityLabel={t('moderationDashboard.violationsListLabel', {
+            count: content.moderationResult.violations.length,
+          })}
+        >
           <ThemedText className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             {t('moderationDashboard.violations')}:
           </ThemedText>
           {content.moderationResult.violations.map((violation, index) => (
-            <View key={index} className="flex-row items-center mb-1">
+            <View
+              key={index}
+              className="flex-row items-center mb-1"
+              accessible={true}
+              accessibilityRole="text"
+              accessibilityLabel={t('moderationDashboard.violationItemLabel', {
+                index: index + 1,
+                total: content.moderationResult.violations.length,
+                severity: violation.severity,
+                description: violation.description,
+                confidence: Math.round(violation.confidence * 100),
+              })}
+            >
               <View
                 className={`w-2 h-2 rounded-full mr-2 ${
                   violation.severity === 'critical'
@@ -110,6 +142,8 @@ const FlaggedContentItem: React.FC<FlaggedContentItemProps> = ({
                     ? 'bg-yellow-500'
                     : 'bg-blue-500'
                 }`}
+                accessibilityElementsHidden={true}
+                importantForAccessibility="no"
               />
               <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400 flex-1">
                 {violation.description}
@@ -123,7 +157,12 @@ const FlaggedContentItem: React.FC<FlaggedContentItemProps> = ({
       )}
 
       {/* Actions */}
-      <View className="flex-row space-x-2">
+      <View
+        className="flex-row space-x-2"
+        accessible={true}
+        accessibilityRole="summary"
+        accessibilityLabel={t('moderationDashboard.actionsGroupLabel', 'Moderation actions')}
+      >
         <AnimatedButton
           title={t('moderationDashboard.approve')}
           onPress={() => handleAction('approve')}

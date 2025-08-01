@@ -31,47 +31,35 @@ export function parseOptionalNumber(value: string | number | null | undefined): 
  */
 export function parseOptionalStringArray(value: string | string[] | null | undefined): string[] | null {
   if (value === null || value === undefined) return null;
-  if (Array.isArray(value)) return value;
+  if (Array.isArray(value)) {
+    // Ensure items are strings and trimmed
+    return value
+      .filter((item): item is string => typeof item === 'string')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  }
   if (typeof value === 'string') {
-    // Handle comma-separated or JSON string format
+    // Try JSON array first, then fall back to comma-separated list
     try {
       const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [value];
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((item): item is string => typeof item === 'string')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+      }
+      // If parsed isn't an array, treat original as single/comma-separated
     } catch {
-      return value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      // ignore JSON parse error and try CSV parsing
     }
+    return value
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
   }
   return null;
 }
 
-/**
- * Parses a value that might be a JSON string array or an actual array.
- * @param value - The value to parse.
- * @returns An array of strings, or an empty array if parsing fails or value is null/undefined.
- */
-export function parseOptionalStringArray(value: string[] | string | null | undefined): string[] {
-  if (!value) {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.filter((item) => typeof item === 'string');
-  }
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((item) => typeof item === 'string');
-      }
-      return [];
-    } catch (error) {
-      // If parsing fails, and it's a non-empty string, perhaps it's a single item not in an array format.
-      // This part depends on expected data format. For now, assume it should be a valid JSON array.
-      console.warn('Failed to parse string as JSON array:', value, error);
-      return [];
-    }
-  }
-  return [];
-}
 
 /**
  * Parses a string or number into a number, attempting to extract from strings like "15-20%" or "22%".

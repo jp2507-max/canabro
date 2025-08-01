@@ -56,83 +56,166 @@ const UserModerationItem: React.FC<UserModerationItemProps> = ({ user, onAction 
   };
 
   return (
-    <ThemedView variant="card" className="mb-4 p-4">
+  <ThemedView variant="card" className="mb-4 p-4">
       {/* Header */}
       <View className="flex-row items-start justify-between mb-3">
         <View className="flex-row items-center flex-1">
           {/* Avatar */}
-          <View className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 items-center justify-center mr-3">
+          <View
+            className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 items-center justify-center mr-3"
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel={t('moderationDashboard.avatarLabel', { name: user.name }) || `User avatar for ${user.name}`}
+          >
             {user.avatar ? (
-              <Text>👤</Text>
+              <Text accessible accessibilityRole="text" accessibilityLabel={t('moderationDashboard.avatarEmojiLabel', { name: user.name }) || `Avatar emoji for ${user.name}`}>👤</Text>
             ) : (
-              <Text className="text-lg font-medium text-neutral-600 dark:text-neutral-400">
+              <Text className="text-lg font-medium text-neutral-600 dark:text-neutral-400" accessible accessibilityRole="text" accessibilityLabel={t('moderationDashboard.avatarInitialLabel', { name: user.name, initial: user.name.charAt(0).toUpperCase() }) || `Avatar initial ${user.name.charAt(0).toUpperCase()} for ${user.name}` }>
                 {user.name.charAt(0).toUpperCase()}
               </Text>
             )}
           </View>
 
           <View className="flex-1">
-            <ThemedText className="font-semibold text-neutral-900 dark:text-white">
+            <ThemedText className="font-semibold text-neutral-900 dark:text-white" accessible accessibilityRole="text" accessibilityLabel={user.name}>
               {user.name}
             </ThemedText>
-            <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
+            <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400" accessible accessibilityRole="text" accessibilityLabel={user.email}>
               {user.email}
             </ThemedText>
-            <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+            <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400 mt-1" accessible accessibilityRole="text" accessibilityLabel={`${t('moderationDashboard.joinedOn')} ${user.joinedAt.toLocaleDateString()}` }>
               {t('moderationDashboard.joinedOn')} {user.joinedAt.toLocaleDateString()}
             </ThemedText>
           </View>
         </View>
 
         {/* Status Badge */}
-        <View className={`px-3 py-1 rounded-full ${getStatusColor(user.status)}`}>
-          <Text className={`text-xs font-medium capitalize ${getStatusColor(user.status).split(' ')[0]}`}>
+        <View
+          className={`px-3 py-1 rounded-full ${getStatusColor(user.status)}`}
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={t('moderationDashboard.statusLabel', { status: user.status }) || `Status: ${user.status}`}
+        >
+          <Text className={`text-xs font-medium capitalize ${getStatusColor(user.status).split(' ')[0]}`} accessible accessibilityRole="text" accessibilityLabel={t('moderationDashboard.statusLabel', { status: user.status }) || `Status: ${user.status}` }>
             {user.status}
           </Text>
         </View>
       </View>
 
       {/* Stats */}
-      <View className="flex-row justify-between mb-4">
-        <View className="items-center">
-          <ThemedText className="text-lg font-bold text-neutral-900 dark:text-white">
+      <View
+        className="flex-row justify-between mb-4"
+        accessible
+        accessibilityRole="summary"
+        accessibilityLabel={t('moderationDashboard.userStatsSummary') || 'User statistics summary'}
+      >
+        <View
+          className="items-center"
+          accessible
+          accessibilityRole="summary"
+          accessibilityLabel={(t('moderationDashboard.postsCountLabel', { count: user.postCount }) as string) || `Posts count: ${user.postCount}`}
+        >
+          <ThemedText
+            className="text-lg font-bold text-neutral-900 dark:text-white"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.postsCountValue', { count: user.postCount }) as string) || `Posts count ${user.postCount}`}
+          >
             {user.postCount}
           </ThemedText>
-          <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400">
+          <ThemedText
+            className="text-xs text-neutral-500 dark:text-neutral-400"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.posts') as string) || 'Posts'}
+          >
             {t('moderationDashboard.posts')}
           </ThemedText>
         </View>
 
-        <View className="items-center">
-          <ThemedText className="text-lg font-bold text-orange-600 dark:text-orange-400">
+        <View
+          className="items-center"
+          accessible
+          accessibilityRole="summary"
+          accessibilityLabel={(t('moderationDashboard.reportsCountLabel', { count: user.reportCount }) as string) || `Reports count: ${user.reportCount}`}
+        >
+          <ThemedText
+            className="text-lg font-bold text-orange-600 dark:text-orange-400"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.reportsCountValue', { count: user.reportCount }) as string) || `Reports count ${user.reportCount}`}
+          >
             {user.reportCount}
           </ThemedText>
-          <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400">
+          <ThemedText
+            className="text-xs text-neutral-500 dark:text-neutral-400"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.reports') as string) || 'Reports'}
+          >
             {t('moderationDashboard.reports')}
           </ThemedText>
         </View>
 
-        <View className="items-center">
-          <ThemedText className="text-lg font-bold text-red-600 dark:text-red-400">
+        <View
+          className="items-center"
+          accessible
+          accessibilityRole="summary"
+          accessibilityLabel={(t('moderationDashboard.violationsCountLabel', { count: user.violationCount }) as string) || `Violations count: ${user.violationCount}`}
+        >
+          <ThemedText
+            className="text-lg font-bold text-red-600 dark:text-red-400"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.violationsCountValue', { count: user.violationCount }) as string) || `Violations count ${user.violationCount}`}
+          >
             {user.violationCount}
           </ThemedText>
-          <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400">
+          <ThemedText
+            className="text-xs text-neutral-500 dark:text-neutral-400"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.violations') as string) || 'Violations'}
+          >
             {t('moderationDashboard.violations')}
           </ThemedText>
         </View>
 
-        <View className="items-center">
-          <ThemedText className="text-xs text-neutral-500 dark:text-neutral-400">
+        <View
+          className="items-center"
+          accessible
+          accessibilityRole="summary"
+          accessibilityLabel={(t('moderationDashboard.lastActiveLabel', { date: user.lastActivity.toLocaleDateString() }) as string) || `Last active: ${user.lastActivity.toLocaleDateString()}`}
+        >
+          <ThemedText
+            className="text-xs text-neutral-500 dark:text-neutral-400"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.lastActive') as string) || 'Last active'}
+          >
             {t('moderationDashboard.lastActive')}
           </ThemedText>
-          <ThemedText className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+          <ThemedText
+            className="text-xs font-medium text-neutral-700 dark:text-neutral-300"
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={(t('moderationDashboard.lastActiveValue', { date: user.lastActivity.toLocaleDateString() }) as string) || `Last active ${user.lastActivity.toLocaleDateString()}`}
+          >
             {user.lastActivity.toLocaleDateString()}
           </ThemedText>
         </View>
       </View>
 
       {/* Actions */}
-      <View className="flex-row space-x-2">
+      <View
+        className="flex-row space-x-2"
+        accessible
+  accessibilityRole="toolbar"
+        accessibilityLabel={
+          t('moderationDashboard.actionsGroupLabel', { name: user.name }) ||
+          `Moderation actions for ${user.name}`
+        }
+      >
         {user.status === 'active' && (
           <>
             <AnimatedButton

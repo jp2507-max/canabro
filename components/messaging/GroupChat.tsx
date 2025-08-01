@@ -13,7 +13,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, Pressable, Alert, ScrollView, Platform } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '@nozbe/watermelondb';
 
@@ -57,10 +57,16 @@ export interface GroupMemberListProps {
   onInviteMembers: () => void;
 }
 
+export interface GroupSettings {
+  isPublic?: boolean;
+  allowInvites?: boolean;
+  requireApproval?: boolean;
+}
+
 export interface GroupSettingsProps {
   group: SocialGroup;
   currentUserRole: GroupRole;
-  onUpdateSettings: (settings: Partial<any>) => void;
+  onUpdateSettings: (settings: Partial<GroupSettings>) => void;
   onLeaveGroup: () => void;
   onDeleteGroup?: () => void;
 }
@@ -177,6 +183,46 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
   const [allowInvites, setAllowInvites] = useState(group.settings?.allowInvites || false);
   const [requireApproval, setRequireApproval] = useState(group.settings?.requireApproval || false);
 
+  // Reanimated toggle progress values for smooth knob translation
+  const isPublicProgress = useSharedValue(isPublic ? 1 : 0);
+  const allowInvitesProgress = useSharedValue(allowInvites ? 1 : 0);
+  const requireApprovalProgress = useSharedValue(requireApproval ? 1 : 0);
+
+  // Sync shared values when state changes externally
+  useEffect(() => {
+    isPublicProgress.value = withTiming(isPublic ? 1 : 0, { duration: 180 });
+  }, [isPublic, isPublicProgress]);
+
+  useEffect(() => {
+    allowInvitesProgress.value = withTiming(allowInvites ? 1 : 0, { duration: 180 });
+  }, [allowInvites, allowInvitesProgress]);
+
+  useEffect(() => {
+    requireApprovalProgress.value = withTiming(requireApproval ? 1 : 0, { duration: 180 });
+  }, [requireApproval, requireApprovalProgress]);
+
+  // Animated styles for each toggle's knob
+  const isPublicKnobStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(isPublicProgress.value, [0, 1], [2, 24]); // 0.5rem -> 1.5rem approx
+    return {
+      transform: [{ translateX }],
+    };
+  });
+
+  const allowInvitesKnobStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(allowInvitesProgress.value, [0, 1], [2, 24]);
+    return {
+      transform: [{ translateX }],
+    };
+  });
+
+  const requireApprovalKnobStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(requireApprovalProgress.value, [0, 1], [2, 24]);
+    return {
+      transform: [{ translateX }],
+    };
+  });
+
   const canEditSettings = currentUserRole === 'admin';
 
   const handleToggleSetting = (setting: string, value: boolean) => {
@@ -290,9 +336,9 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
               onPress={() => handleToggleSetting('isPublic', !isPublic)}
               className={`w-12 h-6 rounded-full ${isPublic ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}
             >
-              <View
-                className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${isPublic ? 'translate-x-6' : 'translate-x-0.5'
-                  } mt-0.5`}
+              <Animated.View
+                style={isPublicKnobStyle}
+                className="w-5 h-5 rounded-full bg-white shadow-sm mt-0.5"
               />
             </Pressable>
           </View>
@@ -311,9 +357,9 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
               onPress={() => handleToggleSetting('allowInvites', !allowInvites)}
               className={`w-12 h-6 rounded-full ${allowInvites ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}
             >
-              <View
-                className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${allowInvites ? 'translate-x-6' : 'translate-x-0.5'
-                  } mt-0.5`}
+              <Animated.View
+                style={allowInvitesKnobStyle}
+                className="w-5 h-5 rounded-full bg-white shadow-sm mt-0.5"
               />
             </Pressable>
           </View>
@@ -332,9 +378,9 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
               onPress={() => handleToggleSetting('requireApproval', !requireApproval)}
               className={`w-12 h-6 rounded-full ${requireApproval ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}
             >
-              <View
-                className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${requireApproval ? 'translate-x-6' : 'translate-x-0.5'
-                  } mt-0.5`}
+              <Animated.View
+                style={requireApprovalKnobStyle}
+                className="w-5 h-5 rounded-full bg-white shadow-sm mt-0.5"
               />
             </Pressable>
           </View>
@@ -778,7 +824,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({
   }, [currentUserMember, group, database]);
 
   // Handle group settings updates
-  const handleUpdateSettings = useCallback(async (settings: Partial<any>) => {
+  const handleUpdateSettings = useCallback(async (settings: Partial<GroupSettings>) => {
     if (!group || !currentUserMember || currentUserMember.role !== 'admin') return;
 
     try {
