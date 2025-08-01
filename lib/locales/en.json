@@ -845,6 +845,8 @@
     "fed": "Fed"
   },
   "strains": {
+    "authRequiredTitle": "User not authenticated",
+    "authRequiredSubtitle": "Please log in to view strains.",
     "type": {
       "sativa": "Sativa",
       "indica": "Indica",
@@ -1459,6 +1461,13 @@
       "title": "Activity Engagement",
       "body": "{{username}} {{action}}"
     }
+  },
+  "diagnosis": {
+    "removeImage": "Remove image",
+    "takeNewPhoto": "Take new photo",
+    "analyzingTitle": "Analyzing Plant...",
+    "analyzingSubtitle": "Our AI is examining your plant for\ndiseases, pests, and nutrient deficiencies",
+    "analysisFailedTitle": "Analysis Failed",
+    "analysisFailedMessage": "Please try again with a clearer image of your plant."
   }
 }
-

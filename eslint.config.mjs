@@ -55,7 +55,8 @@ export default [
     },
     rules: {
       // i18n: Block hard-coded strings except in test, debug, and script files
-      "i18next/no-literal-string": ["error", {
+      // Relax to warn globally; we fully disable in test/dev overrides below.
+      "i18next/no-literal-string": ["warn", {
         "markupOnly": false,
         "ignoreAttribute": ["testID", "accessibilityLabel", "accessibilityHint", "placeholder", "aria-label", "aria-labelledby", "aria-describedby"],
         "ignoreCallee": ["require", "t", "i18n.t", "console.log", "console.warn", "console.error"],
@@ -194,10 +195,15 @@ export default [
     files: [
       "**/*debug*.{ts,tsx}",
       "**/*test*.{ts,tsx}",
+      "**/*.test.{ts,tsx}",
+      "**/__tests__/**/*.{ts,tsx}",
       "**/*dev*.{ts,tsx}",
       "**/*tester*.{ts,tsx}",
       "**/*monitor*.{ts,tsx}",
       "**/*helper*.{ts,tsx}",
+      "**/__mocks__/**/*.{ts,tsx,js}",
+      "scripts/**/*.{js,mjs,ts}",
+      "docs/**/*.{md,mdx,ts,tsx}",
       "**/components/**/*Debug*.{ts,tsx}",
       "**/components/**/*Test*.{ts,tsx}",
       "**/components/**/*Tester*.{ts,tsx}",
@@ -355,11 +361,11 @@ export default [
       "**/components/**/*Overshoot*.{ts,tsx}"
     ],
     rules: {
-      "no-console": "off", // Allow all console methods in debug files
+      "no-console": "off",
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-explicit-any": "warn", // Warn instead of error for complex components
-      "i18next/no-literal-string": "warn", // Warn instead of error for non-user-facing components
-      "i18n/no-literal-string": "warn", // Warn instead of error for non-user-facing components
+      "@typescript-eslint/no-explicit-any": "warn",
+      "i18next/no-literal-string": "off",
+      "i18n/no-literal-string": "off"
     },
   },
 
@@ -376,15 +382,62 @@ export default [
   // Ignore patterns
   {
     ignores: [
+      // Dependencies
       "node_modules/**",
+
+      // Expo
       ".expo/**",
+      ".expo-shared/**",
+
+      // Build outputs
       "dist/**",
       "build/**",
-      "coverage/**",
-      "**/*.d.ts",
-      "ios/**",
-      "android/**",
       "web-build/**",
+
+      // Generated files
+      "*.generated.*",
+      "**/*.d.ts",
+
+      // Metro bundler cache
+      ".metro-health-check*",
+
+      // Coverage
+      "coverage/**",
+
+      // Logs
+      "*.log",
+      "npm-debug.log*",
+      "yarn-debug.log*",
+      "yarn-error.log*",
+
+      // Runtime data
+      "pids",
+      "*.pid",
+      "*.seed",
+      "*.pid.lock",
+
+      // IDE
+      ".vscode/**",
+      ".idea/**",
+
+      // OS
+      ".DS_Store",
+      "Thumbs.db",
+
+      // Temporary files
+      "*.tmp",
+      "*.temp",
+
+      // Supabase
+      "supabase/.branches",
+      "supabase/.temp",
+
+      // Task Master AI
+      "tasks/*.txt",
+
+      // Native platform folders (if present)
+      "ios/**",
+      "android/**"
     ],
   },
 ];

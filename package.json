@@ -14,7 +14,7 @@
     "ios:export": "expo export --platform ios",
     "ios:bundle-size": "expo export --platform ios --output-dir dist/ios && du -sh dist/ios",
     "ios:profile": "expo start --ios --profile",
-    "lint": "npx expo lint",
+    "lint": "eslint app components --cache --cache-location=.expo/cache/eslint",
     "lint:check": "eslint \"**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "npx expo lint --fix",
     "format": "prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",

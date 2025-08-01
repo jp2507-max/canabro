@@ -136,6 +136,10 @@ const GroupMemberItem: React.FC<{
         {...handlers}
         onPress={handleMemberPress}
         className="flex-row items-center p-4 border-b border-neutral-100 dark:border-neutral-800"
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`Manage member ${member.userId === currentUserId ? 'your profile' : 'User ' + member.userId.slice(-6)}`}
+        accessibilityState={{ disabled: !canManageMembers || member.userId === currentUserId }}
       >
         {/* Member Avatar */}
         <View className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 items-center justify-center mr-3">
@@ -335,6 +339,10 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
             <Pressable
               onPress={() => handleToggleSetting('isPublic', !isPublic)}
               className={`w-12 h-6 rounded-full ${isPublic ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Toggle public group ${isPublic ? 'on' : 'off'}`}
+              accessibilityState={{ selected: isPublic }}
             >
               <Animated.View
                 style={isPublicKnobStyle}
@@ -356,6 +364,10 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
             <Pressable
               onPress={() => handleToggleSetting('allowInvites', !allowInvites)}
               className={`w-12 h-6 rounded-full ${allowInvites ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Toggle allow member invites ${allowInvites ? 'on' : 'off'}`}
+              accessibilityState={{ selected: allowInvites }}
             >
               <Animated.View
                 style={allowInvitesKnobStyle}
@@ -377,6 +389,10 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
             <Pressable
               onPress={() => handleToggleSetting('requireApproval', !requireApproval)}
               className={`w-12 h-6 rounded-full ${requireApproval ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Toggle require approval ${requireApproval ? 'on' : 'off'}`}
+              accessibilityState={{ selected: requireApproval }}
             >
               <Animated.View
                 style={requireApprovalKnobStyle}
@@ -397,6 +413,10 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
         <Pressable
           onPress={handleLeaveGroup}
           className="flex-row items-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20 mb-3"
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Leave group"
+          accessibilityHint="Double tap to leave this group"
         >
           <OptimizedIcon name="log-in" size={20} className="text-red-500 mr-3" />
           <ThemedText variant="default" className="text-red-500 font-medium">
@@ -409,6 +429,10 @@ const GroupSettings: React.FC<GroupSettingsProps> = React.memo(({
           <Pressable
             onPress={handleDeleteGroup}
             className="flex-row items-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20"
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Delete group"
+            accessibilityHint="Double tap to permanently delete this group"
           >
             <OptimizedIcon name="trash-outline" size={20} className="text-red-500 mr-3" />
             <ThemedText variant="default" className="text-red-500 font-medium">
@@ -474,6 +498,10 @@ const GroupMemberList: React.FC<GroupMemberListProps> = React.memo(({
             <Pressable
               {...inviteButtonHandlers}
               className="flex-row items-center px-3 py-2 bg-primary-500 rounded-lg"
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Invite members"
+              accessibilityHint="Opens the member invitation flow"
             >
               <OptimizedIcon name="person-add" size={16} className="text-white mr-2" />
               <ThemedText variant="caption" className="text-white font-medium">
@@ -579,26 +607,25 @@ export const GroupChat: React.FC<GroupChatProps> = ({
         if (threadData.length === 0) {
           // Create new group conversation thread
           await database.write(async () => {
-            // Narrow create callback param type instead of using `any`
-            // This matches the fields we set on conversation_threads
-            type ConversationThreadDraft = {
+            // Define exact insert shape for conversation_threads to ensure type safety
+            type ConversationThreadInsert = {
               threadType: 'group';
               participants: string[];
               createdBy: string;
               unreadCount: number;
             };
-
+  
             const newThread = await database
               .get('conversation_threads')
-              .create((thread: ConversationThreadDraft & Partial<ConversationThread>) => {
+              .create((thread: ConversationThreadInsert) => {
                 thread.threadType = 'group';
                 thread.participants = membersData.map((m: GroupMember) => m.userId);
                 thread.createdBy = currentUserId;
                 thread.unreadCount = 0;
               });
-
+  
             if (isMountedRef.current) {
-              setConversationThread(newThread as unknown as ConversationThread);
+              setConversationThread(newThread as ConversationThread);
             }
           });
         } else if (isMountedRef.current) {
@@ -691,8 +718,8 @@ export const GroupChat: React.FC<GroupChatProps> = ({
       // Save to local database first to get the actual Message object
       let createdMessage: Message;
       await database.write(async () => {
-        createdMessage = await database.get('messages').create((message: any) => {
-          Object.assign(message, newMessage);
+        createdMessage = await database.get('messages').create((message: Message) => {
+          Object.assign(message as unknown as Record<string, unknown>, newMessage);
         });
       });
 
@@ -987,7 +1014,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({
       <View className="flex-row items-center justify-between p-4 border-b border-neutral-200 dark:border-neutral-700">
         <View className="flex-row items-center flex-1">
           {onClose && (
-            <Pressable onPress={onClose} className="mr-3">
+            <Pressable onPress={onClose} className="mr-3" accessible={true} accessibilityRole="button" accessibilityLabel="Go back" accessibilityHint="Returns to the previous screen">
               <OptimizedIcon name="chevron-back" size={24} className="text-neutral-600 dark:text-neutral-400" />
             </Pressable>
           )}
@@ -1031,6 +1058,10 @@ export const GroupChat: React.FC<GroupChatProps> = ({
                   ? 'bg-white dark:bg-neutral-700 shadow-sm'
                   : ''
                 }`}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={`Switch to ${segment.label} view`}
+              accessibilityState={{ selected: currentView === segment.value }}
             >
               <ThemedText
                 variant="caption"
@@ -1105,6 +1136,10 @@ export const GroupChat: React.FC<GroupChatProps> = ({
                   ? 'bg-primary-500'
                   : 'bg-neutral-300 dark:bg-neutral-600'
                 }`}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Send message"
+              accessibilityState={{ disabled: !inputText.trim() }}
             >
               <OptimizedIcon
                 name="send"

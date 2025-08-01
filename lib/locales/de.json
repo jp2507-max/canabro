@@ -1234,5 +1234,13 @@
       "description": "Etwas ist mit dem Umwelt-Dashboard schiefgelaufen.",
       "retry": "Wiederholen"
     }
+  },
+  "diagnosis": {
+    "removeImage": "Bild entfernen",
+    "takeNewPhoto": "Neues Foto aufnehmen",
+    "analyzingTitle": "Pflanze wird analysiert...",
+    "analyzingSubtitle": "Unsere KI untersucht Ihre Pflanze auf\nKrankheiten, Schädlinge und Nährstoffmängel",
+    "analysisFailedTitle": "Analyse fehlgeschlagen",
+    "analysisFailedMessage": "Bitte versuchen Sie es erneut mit einem klareren Bild Ihrer Pflanze."
   }
 }

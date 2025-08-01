@@ -482,7 +482,7 @@ class ContentModerationService {
 
     // Check for off-topic content (whole word/phrase match)
     for (const phrase of CANNABIS_INAPPROPRIATE_CONTENT.off_topic) {
-      const regex = new RegExp(`\b${this.escapeRegex(phrase)}\b`, 'i');
+      const regex = new RegExp(`\\b${this.escapeRegex(phrase)}\\b`, 'i');
       if (regex.test(content)) {
         violations.push({
           type: 'off_topic',

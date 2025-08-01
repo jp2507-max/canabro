@@ -50,7 +50,7 @@ export function getProfanityConfig(locale: string = DEFAULT_LOCALE): ProfanityCo
     case 'en':
     default:
       // Importing JSON keeps the words out of TS source
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+       
       return require('./en.json') as ProfanityConfig;
   }
 }
