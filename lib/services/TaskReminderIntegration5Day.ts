@@ -242,7 +242,7 @@ export class TaskReminderIntegration5Day {
         focusWindow: { start: Date; end: Date };
         cachedBatches: number;
         batchingStrategy: string;
-        notificationStats: any;
+        notificationStats: Record<string, unknown>;
     } {
         const fiveDayStats = taskReminderEngine5Day.get5DayStats();
         const notificationStats = taskReminderEngine5Day.getNotificationStats();

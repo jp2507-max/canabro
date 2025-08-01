@@ -24,7 +24,10 @@ import { useCommentLike } from '../../lib/hooks/community/useCommentLike';
 import supabase from '../../lib/supabase';
 import { Comment } from '../../lib/types/community';
 import { OptimizedIcon } from '../ui/OptimizedIcon';
-import { triggerSuccessHaptic, triggerErrorHaptic } from '@/lib/utils/haptics';
+import ModerationIndicator, { type ModerationStatus } from './ModerationIndicator';
+import ContentReportModal from './ContentReportModal';
+import { CommunityService } from '../../lib/services/community-service';
+import { triggerSuccessHaptic, triggerErrorHaptic, triggerLightHaptic } from '@/lib/utils/haptics';
 import { useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
 
@@ -37,9 +40,17 @@ interface CommentItemProps {
     image_url?: string | null;
     user_has_liked?: boolean;
     likes_count?: number;
+    moderation_status?: ModerationStatus;
+    moderation_metadata?: {
+      violations?: any[];
+      confidence?: number;
+      flaggedAt?: string;
+    };
   };
   currentUserId?: string;
   onReply?: (commentId: string, username: string) => void;
+  showModerationActions?: boolean;
+  isModeratorView?: boolean;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -87,6 +98,8 @@ export default React.memo(function CommentItem({
   comment,
   currentUserId,
   onReply,
+  showModerationActions = false,
+  isModeratorView = false,
 }: CommentItemProps) {
   const { t } = useTranslation(['community', 'common']);
   // 🎬 Enhanced animation system using custom hooks
@@ -118,6 +131,10 @@ export default React.memo(function CommentItem({
   
   // 🎯 Use React Query hook for comment likes
   const commentLikeMutation = useCommentLike();
+  
+  // State for moderation actions
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reporting, setReporting] = useState(false);
   
   const [userProfile, setUserProfile] = useState(
     comment.profile || {
@@ -266,6 +283,43 @@ export default React.memo(function CommentItem({
     );
   };
 
+  /**
+   * Handle content reporting
+   */
+  const handleReportPress = async () => {
+    await triggerLightHaptic();
+    setShowReportModal(true);
+  };
+
+  const handleReportSubmit = async (reason: string, description?: string) => {
+    if (!currentUserId) return;
+    
+    setReporting(true);
+    try {
+      await CommunityService.reportContent(
+        comment.id,
+        'comment',
+        currentUserId,
+        reason,
+        description
+      );
+      
+      await triggerSuccessHaptic();
+      setShowReportModal(false);
+      // Could show a success toast here
+    } catch (error) {
+      console.error('Error reporting comment:', error);
+      await triggerErrorHaptic();
+      // Could show an error toast here
+    } finally {
+      setReporting(false);
+    }
+  };
+
+  const handleReportCancel = () => {
+    setShowReportModal(false);
+  };
+
   // Modern gesture handlers using Gesture.Tap() API
   const likeGesture = Gesture.Tap()
     .enabled(!commentLikeMutation.isPending && !!currentUserId)
@@ -363,16 +417,26 @@ export default React.memo(function CommentItem({
         <View className="flex-1">
           {/* Username and Timestamp */}
           <View className="mb-2 flex-row items-center justify-between">
-            <View className="flex-row items-center">
+            <View className="flex-row items-center flex-1">
               <Text className="mr-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 {userProfile.username}
               </Text>
               {isOwnComment && (
-                <View className="rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-900">
+                <View className="rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-900 mr-2">
                   <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
                     {t('commentItem.you')}
                   </Text>
                 </View>
+              )}
+              
+              {/* Moderation Indicator */}
+              {comment.moderation_status && comment.moderation_status !== 'approved' && (
+                <ModerationIndicator
+                  status={comment.moderation_status}
+                  violationCount={comment.moderation_metadata?.violations?.length}
+                  size="small"
+                  showDetails={isModeratorView}
+                />
               )}
             </View>
             <Text className="text-xs text-zinc-400 dark:text-zinc-500">
@@ -443,6 +507,25 @@ export default React.memo(function CommentItem({
               </GestureDetector>
             )}
 
+            {/* Report Button (for other users' comments) */}
+            {showModerationActions && !isOwnComment && (
+              <Pressable
+                onPress={handleReportPress}
+                className="flex-row items-center rounded-lg px-2 py-1 active:bg-orange-50 dark:active:bg-orange-900/20 mr-4"
+                accessibilityLabel={t('commentItem.accessibility.report')}
+                hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              >
+                <OptimizedIcon
+                  name="warning"
+                  size={16}
+                  color="#ea580c" // orange-600
+                />
+                <Text className="ml-1 text-xs text-orange-600 dark:text-orange-400">
+                  {t('commentItem.report')}
+                </Text>
+              </Pressable>
+            )}
+
             {/* 🗑️ Enhanced Delete Button (only for own comments) */}
             {isOwnComment && (
               <GestureDetector gesture={deleteGesture}>
@@ -464,6 +547,15 @@ export default React.memo(function CommentItem({
           </View>
         </View>
       </View>
+
+      {/* Content Report Modal */}
+      <ContentReportModal
+        visible={showReportModal}
+        onClose={handleReportCancel}
+        onSubmit={handleReportSubmit}
+        contentType="comment"
+        submitting={reporting}
+      />
     </Animated.View>
   );
 });

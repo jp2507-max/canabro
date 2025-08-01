@@ -69,7 +69,7 @@ export interface CleanupStats {
 export interface RetentionPolicy {
     name: string;
     description: string;
-    condition: (item: any) => boolean;
+    condition: (item: Record<string, unknown>) => boolean;
     retentionDays: number;
     priority: 'low' | 'medium' | 'high';
 }

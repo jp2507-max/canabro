@@ -52,7 +52,7 @@ export interface SupabaseClientConfig {
     };
     heartbeatIntervalMs: number;
     reconnectAfterMs: (tries: number) => number;
-    encode?: (payload: any) => string;
+    encode?: (payload: Record<string, unknown>) => string;
     decode?: (payload: string) => any;
   };
 }
@@ -228,7 +228,7 @@ class RealtimeConfigService {
     /**
      * Message compression (if enabled)
      */
-    private compressMessage(payload: any): string {
+    private compressMessage(payload: Record<string, unknown>): string {
         try {
             // Simple JSON compression - in production, use a proper compression library
             const jsonString = JSON.stringify(payload);
@@ -243,13 +243,13 @@ class RealtimeConfigService {
     /**
      * Message decompression (if enabled)
      */
-    private decompressMessage(payload: string): any {
+    private decompressMessage(payload: string): Record<string, unknown> {
         try {
             // Simple JSON decompression - in production, use a proper compression library
             return JSON.parse(payload);
         } catch (error) {
             log.error('[RealtimeConfig] Message decompression failed:', error);
-            return payload;
+            return { error: 'Decompression failed', original: payload as string };
         }
     }
 

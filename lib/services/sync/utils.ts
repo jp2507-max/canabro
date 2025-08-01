@@ -73,9 +73,9 @@ export const requestSemaphore = new Semaphore(SYNC_CONSTANTS.MAX_CONCURRENT_REQU
  */
 export async function executeRpcWithRetry(
   rpcName: string,
-  params: any,
+  params: Record<string, unknown>,
   maxRetries: number = 3
-): Promise<any> {
+): Promise<unknown> {
   let retries = 0;
   let lastError: any = null;
 

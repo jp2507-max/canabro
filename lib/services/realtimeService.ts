@@ -25,7 +25,7 @@ export interface RealtimeSubscriptionConfig {
 
 export interface MessageBroadcast {
     type: 'message' | 'typing' | 'presence' | 'notification';
-    payload: any;
+    payload: Record<string, unknown>;
     userId?: string;
     timestamp: number;
 }
@@ -63,11 +63,11 @@ class RealtimeService {
      * Subscribe to real-time updates for a specific table or channel
      */
     async subscribe(config: RealtimeSubscriptionConfig, callbacks: {
-        onInsert?: (payload: any) => void;
-        onUpdate?: (payload: any) => void;
-        onDelete?: (payload: any) => void;
-        onBroadcast?: (payload: any) => void;
-        onPresenceSync?: (state: any) => void;
+        onInsert?: (payload: Record<string, unknown>) => void;
+        onUpdate?: (payload: Record<string, unknown>) => void;
+        onDelete?: (payload: Record<string, unknown>) => void;
+        onBroadcast?: (payload: Record<string, unknown>) => void;
+        onPresenceSync?: (state: Record<string, unknown>) => void;
         onPresenceJoin?: (key: string, currentPresences: any, newPresences: any) => void;
         onPresenceLeave?: (key: string, currentPresences: any, leftPresences: any) => void;
     }): Promise<RealtimeChannel> {
@@ -93,7 +93,7 @@ class RealtimeService {
                     changeConfig.filter = filter;
                 }
 
-                channel = channel.on('postgres_changes', changeConfig, (payload: any) => {
+                channel = channel.on('postgres_changes', changeConfig, (payload: Record<string, unknown>) => {
                     log.info(`[RealtimeService] Database change in ${table}:`, payload);
 
                     switch (payload.eventType) {
@@ -112,7 +112,7 @@ class RealtimeService {
 
             // Add broadcast listeners
             if (callbacks.onBroadcast) {
-                channel = channel.on('broadcast', { event: 'message' }, (payload: any) => {
+                channel = channel.on('broadcast', { event: 'message' }, (payload: Record<string, unknown>) => {
                     log.info(`[RealtimeService] Broadcast received on ${channelName}:`, payload);
                     callbacks.onBroadcast?.(payload);
                 });
@@ -126,24 +126,25 @@ class RealtimeService {
                     callbacks.onPresenceSync?.(state);
                 });
 
-                channel = channel.on('presence', { event: 'join' }, ({ key, currentPresences, newPresences }: any) => {
+                channel = channel.on('presence', { event: 'join' }, ({ key, currentPresences, newPresences }: Record<string, unknown>) => {
                     log.info(`[RealtimeService] Presence join on ${channelName}:`, { key, newPresences });
-                    callbacks.onPresenceJoin?.(key, currentPresences, newPresences);
+                    callbacks.onPresenceJoin?.(key as string, currentPresences, newPresences);
                 });
 
-                channel = channel.on('presence', { event: 'leave' }, ({ key, currentPresences, leftPresences }: any) => {
+                channel = channel.on('presence', { event: 'leave' }, ({ key, currentPresences, leftPresences }: Record<string, unknown>) => {
                     log.info(`[RealtimeService] Presence leave on ${channelName}:`, { key, leftPresences });
-                    callbacks.onPresenceLeave?.(key, currentPresences, leftPresences);
+                    callbacks.onPresenceLeave?.(key as string, currentPresences, leftPresences);
                 });
             }
 
             // Subscribe to the channel
-            channel.subscribe((status: any) => {
+            channel.subscribe((status: string | Record<string, unknown>) => {
                 log.info(`[RealtimeService] Subscription status for ${channelName}:`, status);
 
-                if (status === 'SUBSCRIBED') {
+                const statusString = typeof status === 'string' ? status : String(status);
+                if (statusString === 'SUBSCRIBED') {
                     this.connectionRetryCount = 0; // Reset retry count on successful connection
-                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                } else if (statusString === 'CHANNEL_ERROR' || statusString === 'TIMED_OUT') {
                     this.handleConnectionError(channelName, config, callbacks);
                 }
             });
@@ -266,7 +267,7 @@ class RealtimeService {
     /**
      * Get current presence state for a channel
      */
-    getPresenceState(channelName: string): any {
+    getPresenceState(channelName: string): Record<string, unknown> {
         const channel = this.channels.get(channelName);
         return channel ? channel.presenceState() : {};
     }
@@ -577,11 +578,11 @@ class RealtimeService {
      * Subscribe to conversation messages
      */
     async subscribeToConversation(conversationId: string, callbacks: {
-        onNewMessage?: (message: any) => void;
-        onMessageUpdate?: (message: any) => void;
-        onMessageDelete?: (message: any) => void;
-        onTyping?: (payload: any) => void;
-        onPresenceChange?: (state: any) => void;
+        onNewMessage?: (message: Record<string, unknown>) => void;
+        onMessageUpdate?: (message: Record<string, unknown>) => void;
+        onMessageDelete?: (message: Record<string, unknown>) => void;
+        onTyping?: (payload: Record<string, unknown>) => void;
+        onPresenceChange?: (state: Record<string, unknown>) => void;
     }): Promise<RealtimeChannel> {
         return this.subscribe(
             {
@@ -594,7 +595,8 @@ class RealtimeService {
                 onUpdate: callbacks.onMessageUpdate,
                 onDelete: callbacks.onMessageDelete,
                 onBroadcast: (payload) => {
-                    if (payload.payload.type === 'typing') {
+                    const payloadData = payload as any;
+                    if (payloadData?.payload?.type === 'typing') {
                         callbacks.onTyping?.(payload);
                     }
                 },
@@ -607,8 +609,8 @@ class RealtimeService {
      * Subscribe to user notifications
      */
     async subscribeToNotifications(userId: string, callbacks: {
-        onNewNotification?: (notification: any) => void;
-        onNotificationUpdate?: (notification: any) => void;
+        onNewNotification?: (notification: Record<string, unknown>) => void;
+        onNotificationUpdate?: (notification: Record<string, unknown>) => void;
     }): Promise<RealtimeChannel> {
         return this.subscribe(
             {
@@ -627,11 +629,11 @@ class RealtimeService {
      * Subscribe to live events
      */
     async subscribeToLiveEvent(eventId: string, callbacks: {
-        onEventUpdate?: (event: any) => void;
-        onParticipantJoin?: (participant: any) => void;
-        onParticipantLeave?: (participant: any) => void;
-        onBroadcast?: (payload: any) => void;
-        onPresenceChange?: (state: any) => void;
+        onEventUpdate?: (event: Record<string, unknown>) => void;
+        onParticipantJoin?: (participant: Record<string, unknown>) => void;
+        onParticipantLeave?: (participant: Record<string, unknown>) => void;
+        onBroadcast?: (payload: Record<string, unknown>) => void;
+        onPresenceChange?: (state: Record<string, unknown>) => void;
     }): Promise<RealtimeChannel> {
         return this.subscribe(
             {
@@ -643,10 +645,10 @@ class RealtimeService {
                 onUpdate: callbacks.onEventUpdate,
                 onBroadcast: callbacks.onBroadcast,
                 onPresenceSync: callbacks.onPresenceChange,
-                onPresenceJoin: (_key: any, _currentPresences: any, newPresences: any) => {
+                onPresenceJoin: (_key: string, _currentPresences: any, newPresences: any) => {
                     callbacks.onParticipantJoin?.(newPresences);
                 },
-                onPresenceLeave: (_key: any, _currentPresences: any, leftPresences: any) => {
+                onPresenceLeave: (_key: string, _currentPresences: any, leftPresences: any) => {
                     callbacks.onParticipantLeave?.(leftPresences);
                 },
             }

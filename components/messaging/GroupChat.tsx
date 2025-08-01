@@ -442,7 +442,6 @@ const GroupMemberList: React.FC<GroupMemberListProps> = React.memo(({
       <FlashListWrapper
         data={sortedMembers}
         renderItem={renderMemberItem}
-        estimatedItemSize={80}
         keyExtractor={(item) => item.userId}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 20 }}
@@ -527,7 +526,7 @@ export const GroupChat: React.FC<GroupChatProps> = ({
         }
 
         // Load or create conversation thread
-        let threadData = await database.get('conversation_threads')
+        const threadData = await database.get('conversation_threads')
           .query(Q.where('thread_type', 'group'), Q.where('group_id', groupId))
           .fetch();
 
@@ -998,10 +997,13 @@ export const GroupChat: React.FC<GroupChatProps> = ({
             <FlashListWrapper
               data={messages}
               renderItem={renderMessageItem}
-              estimatedItemSize={80}
               keyExtractor={(item) => item.id}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingVertical: 16 }}
+              maintainVisibleContentPosition={{
+                autoscrollToBottomThreshold: 0.2,
+                startRenderingFromBottom: true,
+              }}
             />
 
             {/* Typing Indicator */}

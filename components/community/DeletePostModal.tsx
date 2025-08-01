@@ -18,6 +18,9 @@ interface DeletePostModalProps {
   onConfirm: () => void;
   deleting?: boolean;
   postType?: 'post' | 'comment' | 'question' | 'plantShare';
+  moderationReason?: string;
+  showModerationOptions?: boolean;
+  onModerationAction?: (action: 'hide' | 'flag' | 'delete') => void;
 }
 
 export default function DeletePostModal({
@@ -25,7 +28,10 @@ export default function DeletePostModal({
   onClose,
   onConfirm,
   deleting = false,
-  postType = 'post'
+  postType = 'post',
+  moderationReason,
+  showModerationOptions = false,
+  onModerationAction
 }: DeletePostModalProps) {
   const { t } = useTranslation('community');
 
@@ -97,8 +103,40 @@ export default function DeletePostModal({
 
             {/* Message */}
             <ThemedText className="text-center text-neutral-600 dark:text-neutral-400 mb-6 leading-relaxed">
-              {t('deletePostModal.message', { type: getTypeLabel().toLowerCase() })}
+              {moderationReason 
+                ? t('deletePostModal.moderationMessage', { type: getTypeLabel().toLowerCase(), reason: moderationReason })
+                : t('deletePostModal.message', { type: getTypeLabel().toLowerCase() })
+              }
             </ThemedText>
+
+            {/* Moderation Options */}
+            {showModerationOptions && onModerationAction && (
+              <View className="mb-6">
+                <ThemedText className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+                  {t('deletePostModal.moderationOptions.title')}
+                </ThemedText>
+                <View className="space-y-2">
+                  <Pressable
+                    onPress={() => onModerationAction('hide')}
+                    className="flex-row items-center p-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20"
+                  >
+                    <OptimizedIcon name="eye-outline" size={20} className="text-yellow-600 dark:text-yellow-400 mr-3" />
+                    <ThemedText className="text-yellow-700 dark:text-yellow-300">
+                      {t('deletePostModal.moderationOptions.hide')}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => onModerationAction('flag')}
+                    className="flex-row items-center p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20"
+                  >
+                    <OptimizedIcon name="warning" size={20} className="text-orange-600 dark:text-orange-400 mr-3" />
+                    <ThemedText className="text-orange-700 dark:text-orange-300">
+                      {t('deletePostModal.moderationOptions.flag')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            )}
 
             {/* Actions */}
             <View className="flex-row space-x-3">

@@ -233,7 +233,6 @@ export const StrainTemplateRecommendations: React.FC<StrainTemplateRecommendatio
         <FlashList
           data={recommendations}
           renderItem={renderRecommendation}
-          estimatedItemSize={120}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
         />

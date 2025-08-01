@@ -198,7 +198,7 @@ export class PostHarvestScheduler {
           
           // Create the initial task
           const task = await this.createPostHarvestTask(
-            database,
+            database as any,
             plant,
             postTask,
             dueDate,
@@ -210,7 +210,7 @@ export class PostHarvestScheduler {
           // Create recurring tasks if specified
           if (postTask.isRecurring && postTask.recurringInterval) {
             await this.createRecurringPostHarvestTasks(
-              database,
+              database as any,
               plant,
               postTask,
               harvestDate,
@@ -325,7 +325,7 @@ export class PostHarvestScheduler {
         if (nextTask) {
           await database.write(async () => {
             await this.createPostHarvestTask(
-              database,
+              database as any,
               plant,
               nextTask,
               progressData.nextCheckDate!,
@@ -417,7 +417,7 @@ export class PostHarvestScheduler {
   }
 
   private static customizePostHarvestTasks(plant: Plant): PostHarvestTask[] {
-    let tasks = [...this.POST_HARVEST_TASKS];
+    const tasks = [...this.POST_HARVEST_TASKS];
     
     // Customize based on plant size/yield
     if (plant.wetWeight && plant.wetWeight > 500) { // Large harvest

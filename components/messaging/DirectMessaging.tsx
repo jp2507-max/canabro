@@ -3,7 +3,7 @@
  * 
  * Features:
  * - Real-time message delivery with Supabase Realtime v2 and Broadcast API
- * - Message virtualization using FlashListWrapper (estimatedItemSize: 80)
+ * - Message virtualization using FlashListWrapper with automatic sizing (v2)
  * - Error handling with existing errorHandler and custom logger
  * - Message status indicators with animation utilities
  * - Haptic feedback for message interactions
@@ -582,15 +582,15 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
           {
             onNewMessage: (message) => {
               if (isMountedRef.current) {
-                setMessages(prev => [...prev, message]);
+                setMessages(prev => [...prev, message as unknown as Message]);
 
                 // Mark as read if not own message
-                if (message.sender_id !== currentUserId) {
+                if ((message as any).sender_id !== currentUserId) {
                   safeAsync(async () => {
                     await supabase
                       .from('messages')
                       .update({ read_at: new Date().toISOString() })
-                      .eq('id', message.id);
+                      .eq('id', (message as any).id);
                   });
                 }
 
@@ -603,12 +603,13 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
             onMessageUpdate: (message) => {
               if (isMountedRef.current) {
                 setMessages(prev =>
-                  prev.map(m => m.id === message.id ? message : m)
+                  prev.map(m => m.id === (message as any).id ? message as unknown as Message : m)
                 );
               }
             },
             onTyping: (payload) => {
-              if (payload.payload.userId !== currentUserId && isMountedRef.current) {
+              const typingPayload = payload.payload as any;
+              if (typingPayload?.userId !== currentUserId && isMountedRef.current) {
                 setOtherUserTyping(true);
 
                 // Clear typing after 3 seconds
@@ -636,7 +637,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
           {
             onUpdate: (payload) => {
               if (isMountedRef.current) {
-                setOtherUserPresence(payload.new);
+                setOtherUserPresence(payload.new as UserPresence);
               }
             },
           }
@@ -945,11 +946,13 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
           <FlashListWrapper
             data={messageList}
             renderItem={renderMessage}
-            estimatedItemSize={80}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingVertical: 8 }}
             showsVerticalScrollIndicator={false}
-            inverted={false}
+            maintainVisibleContentPosition={{
+              autoscrollToBottomThreshold: 0.2,
+              startRenderingFromBottom: true,
+            }}
             onContentSizeChange={() => {
               // Auto-scroll to bottom when new messages arrive
               setTimeout(() => {

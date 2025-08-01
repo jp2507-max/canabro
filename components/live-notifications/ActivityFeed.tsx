@@ -730,7 +730,6 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
             keyExtractor={(item) => item.key}
             horizontal
             showsHorizontalScrollIndicator={false}
-            estimatedItemSize={80}
             contentContainerStyle={{ paddingRight: 16 }}
           />
         </View>
@@ -741,7 +740,6 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         data={filteredActivities}
         renderItem={renderActivityItem}
         keyExtractor={(item) => item.activityId}
-        estimatedItemSize={120}
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
           enablePullToRefresh ? (

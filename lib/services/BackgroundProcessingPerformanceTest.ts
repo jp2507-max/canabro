@@ -629,7 +629,7 @@ export class BackgroundProcessingPerformanceTest {
             Logger.info('[PerformanceTest] Starting memory usage performance test');
 
             const initialMemory = this.getMemoryUsage();
-            let memoryReadings: number[] = [];
+            const memoryReadings: number[] = [];
 
             // Monitor memory usage during intensive operations
             const monitoringInterval = setInterval(() => {

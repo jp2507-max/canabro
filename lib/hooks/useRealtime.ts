@@ -154,10 +154,10 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
             // Enhanced callbacks with error handling and performance monitoring
             const enhancedCallbacks = {
                 ...callbacks,
-                onInsert: callbacks.onInsert ? (payload: RealtimeRowPayload<Row>) => {
+                onInsert: callbacks.onInsert ? (payload: Record<string, unknown>) => {
                     try {
                         const startTime = performance.now();
-                        callbacks.onInsert!(payload);
+                        callbacks.onInsert!(payload as unknown as RealtimeRowPayload<Row>);
                         const duration = performance.now() - startTime;
                         log.debug(`[useRealtime] onInsert processed in ${duration}ms`);
                     } catch (error) {
@@ -166,10 +166,10 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
                     }
                 } : undefined,
                 
-                onUpdate: callbacks.onUpdate ? (payload: RealtimeRowPayload<Row>) => {
+                onUpdate: callbacks.onUpdate ? (payload: Record<string, unknown>) => {
                     try {
                         const startTime = performance.now();
-                        callbacks.onUpdate!(payload);
+                        callbacks.onUpdate!(payload as unknown as RealtimeRowPayload<Row>);
                         const duration = performance.now() - startTime;
                         log.debug(`[useRealtime] onUpdate processed in ${duration}ms`);
                     } catch (error) {
@@ -178,28 +178,28 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
                     }
                 } : undefined,
                 
-                onDelete: callbacks.onDelete ? (payload: RealtimeRowPayload<Row>) => {
+                onDelete: callbacks.onDelete ? (payload: Record<string, unknown>) => {
                     try {
-                        callbacks.onDelete!(payload);
+                        callbacks.onDelete!(payload as unknown as RealtimeRowPayload<Row>);
                     } catch (error) {
                         log.error('[useRealtime] Error in onDelete callback:', error);
                         setLastError(error as Error);
                     }
                 } : undefined,
                 
-                onBroadcast: callbacks.onBroadcast ? (payload: RealtimeBroadcastPayload<BroadcastT>) => {
+                onBroadcast: callbacks.onBroadcast ? (payload: Record<string, unknown>) => {
                     try {
                         // Handle batched messages safely
-                        const p = payload as RealtimeBroadcastPayload<BroadcastT & { messages?: BroadcastT[] }>;
+                        const p = payload as unknown as RealtimeBroadcastPayload<BroadcastT & { messages?: BroadcastT[] }>;
                         if (p?.payload && typeof (p.payload as any).messages !== 'undefined' && Array.isArray((p.payload as any).messages)) {
                             ((p.payload as any).messages as BroadcastT[]).forEach((msg: BroadcastT) => {
                                 callbacks.onBroadcast!({
                                     ...payload,
                                     payload: msg,
-                                } as RealtimeBroadcastPayload<BroadcastT>);
+                                } as unknown as RealtimeBroadcastPayload<BroadcastT>);
                             });
                         } else {
-                            callbacks.onBroadcast!(payload);
+                            callbacks.onBroadcast!(payload as unknown as RealtimeBroadcastPayload<BroadcastT>);
                         }
                     } catch (error) {
                         log.error('[useRealtime] Error in onBroadcast callback:', error);
@@ -207,18 +207,33 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
                     }
                 } : undefined,
                 
-                onPresenceSync: callbacks.onPresenceSync ? (state: PresenceState) => {
+                onPresenceSync: callbacks.onPresenceSync ? (state: Record<string, unknown>) => {
                     try {
-                        setPresenceState(state);
-                        callbacks.onPresenceSync!(state);
+                        setPresenceState(state as unknown as PresenceState);
+                        callbacks.onPresenceSync!(state as unknown as PresenceState);
                     } catch (error) {
                         log.error('[useRealtime] Error in onPresenceSync callback:', error);
                         setLastError(error as Error);
                     }
                 } : undefined,
                 
-                onPresenceJoin: callbacks.onPresenceJoin,
-                onPresenceLeave: callbacks.onPresenceLeave
+                onPresenceJoin: callbacks.onPresenceJoin ? (key: string, currentPresences: any, newPresences: any) => {
+                    try {
+                        callbacks.onPresenceJoin!(key, currentPresences, newPresences);
+                    } catch (error) {
+                        log.error('[useRealtime] Error in onPresenceJoin callback:', error);
+                        setLastError(error as Error);
+                    }
+                } : undefined,
+                
+                onPresenceLeave: callbacks.onPresenceLeave ? (key: string, currentPresences: any, leftPresences: any) => {
+                    try {
+                        callbacks.onPresenceLeave!(key, currentPresences, leftPresences);
+                    } catch (error) {
+                        log.error('[useRealtime] Error in onPresenceLeave callback:', error);
+                        setLastError(error as Error);
+                    }
+                } : undefined
             };
 
             const channel = await realtimeService.subscribe(configRef.current, enhancedCallbacks);

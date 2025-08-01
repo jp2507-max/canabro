@@ -9,26 +9,25 @@ export class PlantService extends BaseService {
   /**
    * Adapts a database plant record to our frontend Plant model
    */
-  private adaptPlantFromDB(dbPlant: any): Plant {
+  private adaptPlantFromDB(dbPlant: Record<string, unknown>): Plant {
     return {
-      id: dbPlant.id,
-      user_id: dbPlant.user_id,
-      name: dbPlant.name,
-      strain: dbPlant.strain || '',
-      growth_stage: (dbPlant.stage as GrowthStage) || 'seedling',
-      planted_date: dbPlant.planted_date || new Date().toISOString(),
-      location_id: dbPlant.location_id,
-      journal_id: dbPlant.journal_id,
-      created_at: dbPlant.created_at,
-      updated_at: dbPlant.updated_at,
-    };
+      id: dbPlant.id as string,
+      user_id: dbPlant.user_id as string,
+      name: dbPlant.name as string,
+      strain: dbPlant.strain || '' as string,
+      stage: dbPlant.stage as PlantStage,
+      planted_date: dbPlant.planted_date || new Date().toISOString() as string,
+      location_id: dbPlant.location_id as string | undefined,
+      journal_id: dbPlant.journal_id as string | undefined,
+      created_at: dbPlant.created_at as string,
+      updated_at: dbPlant.updated_at as string | undefined,
   }
 
   /**
    * Adapts our frontend Plant model to database format
    */
-  private adaptPlantToDB(plant: Partial<Plant>): Record<string, any> {
-    const dbPlant: Record<string, any> = {};
+  private adaptPlantToDB(plant: Partial<Plant>): Record<string, unknown> {
+    const dbPlant: Record<string, unknown> = {};
 
     if (plant.user_id) dbPlant.user_id = plant.user_id;
     if (plant.name) dbPlant.name = plant.name;
@@ -134,8 +133,8 @@ export class PlantService extends BaseService {
 export const plantService = createService(PlantService);
 
 // Export adapter functions for backwards compatibility
-export const adaptPlantFromDB = (dbPlant: any): Plant => plantService['adaptPlantFromDB'](dbPlant);
-export const adaptPlantToDB = (plant: Partial<Plant>): Record<string, any> =>
+export const adaptPlantFromDB = (dbPlant: Record<string, unknown>): Plant => plantService['adaptPlantFromDB'](dbPlant);
+export const adaptPlantToDB = (plant: Partial<Plant>): Record<string, unknown> =>
   plantService['adaptPlantToDB'](plant);
 
 // Export service methods with legacy function signatures for backwards compatibility

@@ -474,7 +474,7 @@ export class TaskNotificationService {
   generateTaskNotificationContent(task: PlantTask, plant: Plant): {
     title: string;
     body: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
   } {
     const priorityEmoji = {
       low: '🟢',

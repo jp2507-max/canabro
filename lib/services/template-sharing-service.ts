@@ -201,16 +201,18 @@ export class TemplateSharingService extends BaseService {
   /**
    * Validate template data structure
    */
-  private validateTemplateData(data: any): boolean {
+  private validateTemplateData(data: Record<string, unknown>): boolean {
     if (!data || typeof data !== 'object') return false;
-    if (!data.template || !data.version || !data.metadata) return false;
     
-    const { template } = data;
+    const dataObj = data as any;
+    if (!dataObj.template || !dataObj.version || !dataObj.metadata) return false;
+    
+    const template = dataObj.template as any;
     if (!template.name || !template.category || !template.durationWeeks) return false;
     if (!Array.isArray(template.templateData)) return false;
     
     // Validate each task in template data
-    return template.templateData.every((task: any) => 
+    return template.templateData.every((task: Record<string, unknown>) => 
       task.weekNumber && 
       task.dayOfWeek !== undefined && 
       task.taskType && 

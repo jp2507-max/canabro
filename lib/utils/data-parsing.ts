@@ -13,12 +13,35 @@ export function sanitizeString(value: string | null | undefined): string {
  * @param value - The value to parse.
  * @returns The parsed number, or undefined if parsing is not possible or value is null/undefined.
  */
-export function parseOptionalNumber(value: any): number | undefined {
-  if (value === null || value === undefined) {
-    return undefined;
+/**
+ * Parses an optional number from various input types
+ */
+export function parseOptionalNumber(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number' && !isNaN(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return isNaN(parsed) ? null : parsed;
   }
-  const num = Number(value);
-  return isNaN(num) ? undefined : num;
+  return null;
+}
+
+/**
+ * Parses an optional string array from various input types
+ */
+export function parseOptionalStringArray(value: string | string[] | null | undefined): string[] | null {
+  if (value === null || value === undefined) return null;
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    // Handle comma-separated or JSON string format
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [value];
+    } catch {
+      return value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
+  }
+  return null;
 }
 
 /**
@@ -26,7 +49,7 @@ export function parseOptionalNumber(value: any): number | undefined {
  * @param value - The value to parse.
  * @returns An array of strings, or an empty array if parsing fails or value is null/undefined.
  */
-export function parseOptionalStringArray(value: any): string[] {
+export function parseOptionalStringArray(value: string[] | string | null | undefined): string[] {
   if (!value) {
     return [];
   }

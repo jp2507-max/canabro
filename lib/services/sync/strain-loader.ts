@@ -56,7 +56,7 @@ function convertToStrainObject(strainData: StrainModel): StrainObject {
    * Helper function to safely parse JSON string arrays back to actual arrays
    * This aligns with the SYNC_ARRAY_FIX to ensure arrays remain as arrays for Supabase
    */
-  const parseJsonStringToArray = (value: any): string[] | undefined => {
+  const parseJsonStringToArray = (value: unknown): string[] | undefined => {
     if (value === null || value === undefined) return undefined;
     if (Array.isArray(value)) return value;
     if (typeof value === 'string') {

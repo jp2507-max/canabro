@@ -272,7 +272,7 @@ function generateMockActivityData(count: number = 50): ActivityItem[] {
     { id: '3', username: 'CannaExpert', avatar_url: 'https://via.placeholder.com/48' },
     { id: '4', username: 'GreenThumb', avatar_url: 'https://via.placeholder.com/48' },
     { id: '5', username: 'HarvestKing', avatar_url: 'https://via.placeholder.com/48' },
-  ] as const;
+  ];
 
   // Ensure we have data to work with
   if (users.length === 0 || activityTypes.length === 0) {

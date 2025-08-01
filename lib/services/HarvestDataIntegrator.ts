@@ -503,18 +503,20 @@ export class HarvestDataIntegrator {
     };
   }
 
-  private static findCommonValues(items: any[], path: string): string[] {
+  private static findCommonValues(items: unknown[], path: string): string[] {
     const values = items.map(item => {
       const keys = path.split('.');
-      let value = item;
+      let value: any = item;
       for (const key of keys) {
-        value = value?.[key];
+        if (value === null || value === undefined || typeof value !== 'object') return null;
+        value = (value as Record<string, unknown>)[key];
       }
       return value;
     }).filter(Boolean);
 
-    const counts = values.reduce((acc, val) => {
-      acc[val] = (acc[val] || 0) + 1;
+    const counts = values.reduce((acc: Record<string, number>, val: any) => {
+      const key = String(val);
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 

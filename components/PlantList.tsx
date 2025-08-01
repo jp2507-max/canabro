@@ -240,7 +240,6 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
             />
           ) : undefined
         }
-        estimatedItemSize={120} // Approximate height of PlantCard
         contentContainerStyle={{
           paddingTop: ListHeaderComponent ? 0 : 8,
           paddingBottom: 80,

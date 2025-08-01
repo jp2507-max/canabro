@@ -770,7 +770,6 @@ const LiveNotificationCenter: React.FC<LiveNotificationCenterProps> = ({
                 <FlashListWrapper
                     data={flatData}
                     renderItem={renderItem}
-                    estimatedItemSize={120}
                     keyExtractor={keyExtractor}
                     getItemType={getItemType}
                     onScroll={scrollHandler}

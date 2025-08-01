@@ -59,7 +59,7 @@ export const apiLogger = {
   logApiResponse: (url: string, method: string, status: number, response?: any) => {
     log.debug(`API Response: ${method} ${url} - Status: ${status}`, response || '');
   },
-  logApiError: (url: string, method: string, error: any) => {
+  logApiError: (url: string, method: string, error: Error | unknown) => {
     log.error(`API Error: ${method} ${url}`, error);
   },
 };
