@@ -1,6 +1,6 @@
 import supabase from '../supabase';
 import { BaseService, ApiResponse, createService } from './service-factory';
-import { Plant, GrowthStage } from '../types/plant';
+import { Plant } from '../types/plant';
 
 /**
  * Service for managing plant-related operations
@@ -14,13 +14,14 @@ export class PlantService extends BaseService {
       id: dbPlant.id as string,
       user_id: dbPlant.user_id as string,
       name: dbPlant.name as string,
-      strain: dbPlant.strain || '' as string,
-      stage: dbPlant.stage as PlantStage,
-      planted_date: dbPlant.planted_date || new Date().toISOString() as string,
+      strain: (dbPlant.strain || '') as string,
+      growth_stage: dbPlant.stage as Plant['growth_stage'],
+      planted_date: (dbPlant.planted_date as string) || new Date().toISOString(),
       location_id: dbPlant.location_id as string | undefined,
       journal_id: dbPlant.journal_id as string | undefined,
       created_at: dbPlant.created_at as string,
       updated_at: dbPlant.updated_at as string | undefined,
+    };
   }
 
   /**

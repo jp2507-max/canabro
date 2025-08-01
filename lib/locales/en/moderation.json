@@ -128,6 +128,48 @@
     "submit": "Submit Report",
     "submitting": "Submitting..."
   },
+  "moderation": {
+    "userReport": {
+      "categories": {
+        "harassment": "Harassment",
+        "spam": "Spam",
+        "inappropriate_behavior": "Inappropriate",
+        "misinformation": "Misinformation",
+        "impersonation": "Impersonation",
+        "community_guidelines": "Guidelines",
+        "other": "Other"
+      },
+      "subcategories": {
+        "harassment": {
+          "bullying": "Bullying or intimidation",
+          "targeted": "Targeted harassment",
+          "hate_speech": "Hate speech",
+          "threats": "Threats or violence",
+          "doxxing": "Doxxing or privacy violation"
+        },
+        "spam": {
+          "excessive_posting": "Excessive posting",
+          "promotional": "Promotional content",
+          "repetitive": "Repetitive messages",
+          "off_topic": "Off-topic content",
+          "bot_behavior": "Bot-like behavior"
+        },
+        "inappropriate": {
+          "offensive_language": "Offensive language",
+          "sexual_content": "Sexual content",
+          "discriminatory": "Discriminatory behavior",
+          "trolling": "Trolling or baiting",
+          "disruptive": "Disruptive behavior"
+        }
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      }
+    }
+  },
   "userReportReview": {
     "title": "User Reports Review",
     "subtitle": "Review and moderate user behavior reports",
@@ -165,6 +207,13 @@
     "reportedOn": "Reported on",
     "moderationAction": "Moderation Action",
     "guidelinesTitle": "Appeal Guidelines",
+    "appealGuidelines": {
+      "guideline1": "Provide specific evidence that contradicts the original report",
+      "guideline2": "Explain any context that may have been misunderstood",
+      "guideline3": "Be respectful and professional in your appeal",
+      "guideline4": "Include any relevant screenshots or documentation",
+      "guideline5": "Appeals are reviewed by senior moderators within 48 hours"
+    },
     "appealReasonLabel": "Appeal Reason",
     "appealReasonPlaceholder": "Explain why you believe this report was incorrect or unfair...",
     "appealReasonHint": "Minimum 20 characters required",

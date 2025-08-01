@@ -81,8 +81,15 @@ export default function ContentReportModal({
   const [selectedReason, setSelectedReason] = useState<string>('');
   const [description, setDescription] = useState('');
 
-  // Modal fade animation
+  // AnimatedPressable must be created unconditionally to respect Rules of Hooks
+  const AnimatedPressable = React.useMemo(() => Animated.createAnimatedComponent(Pressable), []);
+
+  // Modal fade animation (hooks must be before any early return)
   const fadeOpacity = useSharedValue(0);
+
+  // Animated scale values for buttons (declare before any returns)
+  const submitScale = useSharedValue(1);
+  const cancelScale = useSharedValue(1);
 
   React.useEffect(() => {
     if (visible) {
@@ -99,7 +106,18 @@ export default function ContentReportModal({
     opacity: fadeOpacity.value,
   }));
 
-  if (!visible && fadeOpacity.value === 0) return null;
+  const submitAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: submitScale.value }],
+  }));
+
+  const cancelAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cancelScale.value }],
+  }));
+
+  // Guard render after hooks are initialized to follow Rules of Hooks
+  if (!visible && fadeOpacity.value === 0) {
+    return null;
+  }
 
   const handleSubmit = () => {
     if (!selectedReason) return;
@@ -113,19 +131,7 @@ export default function ContentReportModal({
     setSelectedReason(reason);
   };
 
-  // Animated scale values for buttons
-  const submitScale = useSharedValue(1);
-  const cancelScale = useSharedValue(1);
-
-  const submitAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: submitScale.value }],
-  }));
-
-  const cancelAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: cancelScale.value }],
-  }));
-
-  const AnimatedPressable = React.useMemo(() => Animated.createAnimatedComponent(Pressable), []);
+  // Moved above to ensure hooks are not after an early return
 
   return (
     <Modal

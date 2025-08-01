@@ -38,9 +38,9 @@
     "confirm": "Bestätigen",
     "somethingWentWrong": "Etwas ist schiefgelaufen",
     "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-  "tryAgain": "Erneut versuchen",
+    "tryAgain": "Erneut versuchen",
     "days": "Tage"
-    },
+  },
   "navigation": {
     "tabs": {
       "home": "Startseite",
@@ -64,10 +64,10 @@
       "evening": "Guten Abend"
     },
     "plantCountMessages": {
-  "zero": "Du hast noch keine Pflanzen",
-  "one": "Du kümmerst dich um 1 schöne Pflanze",
-  "many": "Du pflegst viele Pflanzen ({{count}})",
-  "other": "Du pflegst {{count}} tolle Pflanzen"
+      "zero": "Du hast noch keine Pflanzen",
+      "one": "Du kümmerst dich um 1 schöne Pflanze",
+      "many": "Du pflegst viele Pflanzen ({{count}})",
+      "other": "Du pflegst {{count}} tolle Pflanzen"
     },
     "stats": {
       "active": "Aktiv",
@@ -165,8 +165,7 @@
       "basement": "Keller",
       "garage": "Garage",
       "closet": "Schrank"
-  }
-  
+    }
   },
   "metricsForm": {
     "healthStep": {
@@ -535,6 +534,57 @@
       "detectDiseases": "Krankheiten & Schädlinge erkennen",
       "nutrientDeficiency": "Analyse von Nährstoffmangel",
       "personalizedRecommendations": "Personalisierte Empfehlungen"
+    }
+  },
+  "moderation": {
+    "userAppealModal": {
+      "appealGuidelines": {
+        "guideline1": "Geben Sie konkrete Nachweise an, die den ursprünglichen Bericht widerlegen",
+        "guideline2": "Erläutern Sie jeden Kontext, der möglicherweise missverstanden wurde",
+        "guideline3": "Bleiben Sie in Ihrer Beschwerde respektvoll und professionell",
+        "guideline4": "Fügen Sie relevante Screenshots oder Dokumente bei",
+        "guideline5": "Beschwerden werden innerhalb von 48 Stunden von Senior-Moderatoren geprüft"
+      }
+    },
+    "userReport": {
+      "categories": {
+        "harassment": "Belästigung",
+        "spam": "Spam",
+        "inappropriate_behavior": "Unangemessen",
+        "misinformation": "Fehlinformation",
+        "impersonation": "Identitätsanmaßung",
+        "community_guidelines": "Richtlinien",
+        "other": "Andere"
+      },
+      "subcategories": {
+        "harassment": {
+          "bullying": "Mobbing oder Einschüchterung",
+          "targeted": "Gezielte Belästigung",
+          "hate_speech": "Hassrede",
+          "threats": "Drohungen oder Gewalt",
+          "doxxing": "Doxxing oder Datenschutzverletzung"
+        },
+        "spam": {
+          "excessive_posting": "Übermäßiges Posten",
+          "promotional": "Werbliche Inhalte",
+          "repetitive": "Wiederholte Nachrichten",
+          "off_topic": "Themenfremde Inhalte",
+          "bot_behavior": "Bot-ähnliches Verhalten"
+        },
+        "inappropriate": {
+          "offensive_language": "Anstößige Sprache",
+          "sexual_content": "Sexuelle Inhalte",
+          "discriminatory": "Diskriminierendes Verhalten",
+          "trolling": "Trolling oder Provokation",
+          "disruptive": "Störendes Verhalten"
+        }
+      },
+      "severity": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch",
+        "critical": "Kritisch"
+      }
     }
   },
   "community": {
@@ -1186,4 +1236,3 @@
     }
   }
 }
-

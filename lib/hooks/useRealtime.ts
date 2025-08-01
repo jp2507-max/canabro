@@ -85,9 +85,9 @@ export interface TypingPayload {
 
 export interface PresenceJoinLeaveEvent {
     key: string;
-    currentPresences: PresenceState;
-    newPresences?: PresenceState;
-    leftPresences?: PresenceState;
+    currentPresences: Record<string, unknown>;
+    newPresences?: Array<{ id: string; metas: Array<Record<string, unknown>> }>;
+    leftPresences?: Array<{ id: string; metas: Array<Record<string, unknown>> }>;
 }
 
 export function useRealtime<Row = unknown, BroadcastT = unknown>(
@@ -98,8 +98,8 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
         onDelete?: (payload: RealtimeRowPayload<Row>) => void;
         onBroadcast?: (payload: RealtimeBroadcastPayload<BroadcastT>) => void;
         onPresenceSync?: (state: PresenceState) => void;
-        onPresenceJoin?: (key: string, currentPresences: PresenceState, newPresences: PresenceState) => void;
-        onPresenceLeave?: (key: string, currentPresences: PresenceState, leftPresences: PresenceState) => void;
+        onPresenceJoin?: (key: string, currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => void;
+        onPresenceLeave?: (key: string, currentPresences: Record<string, unknown>, leftPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => void;
     },
     options: UseRealtimeOptions = {}
 ): RealtimeHookReturn {
@@ -207,33 +207,51 @@ export function useRealtime<Row = unknown, BroadcastT = unknown>(
                     }
                 } : undefined,
                 
-                onPresenceSync: callbacks.onPresenceSync ? (state: Record<string, unknown>) => {
-                    try {
-                        setPresenceState(state as unknown as PresenceState);
-                        callbacks.onPresenceSync!(state as unknown as PresenceState);
-                    } catch (error) {
-                        log.error('[useRealtime] Error in onPresenceSync callback:', error);
-                        setLastError(error as Error);
-                    }
-                } : undefined,
+                onPresenceSync: callbacks.onPresenceSync
+                    ? (state: PresenceState | Record<string, unknown>) => {
+                          try {
+                              // Accept service presence union and normalize to PresenceState
+                              const typed: PresenceState =
+                                  (state as PresenceState)?.userId !== undefined
+                                      ? (state as PresenceState)
+                                      : ({
+                                            userId: String((state as any)?.userId ?? ''),
+                                            status: String((state as any)?.status ?? 'offline') as PresenceState['status'],
+                                            lastSeen: String((state as any)?.lastSeen ?? ''),
+                                            location: (state as any)?.location,
+                                            activity: (state as any)?.activity,
+                                        } as PresenceState);
+
+                              setPresenceState(typed);
+                              callbacks.onPresenceSync!(typed);
+                          } catch (error) {
+                              log.error('[useRealtime] Error in onPresenceSync callback:', error);
+                              setLastError(error as Error);
+                          }
+                      }
+                    : undefined,
                 
-                onPresenceJoin: callbacks.onPresenceJoin ? (key: string, currentPresences: any, newPresences: any) => {
-                    try {
-                        callbacks.onPresenceJoin!(key, currentPresences, newPresences);
-                    } catch (error) {
-                        log.error('[useRealtime] Error in onPresenceJoin callback:', error);
-                        setLastError(error as Error);
-                    }
-                } : undefined,
+                onPresenceJoin: callbacks.onPresenceJoin
+                    ? ((key: string, currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
+                          try {
+                              callbacks.onPresenceJoin!(key, currentPresences, newPresences);
+                          } catch (error) {
+                              log.error('[useRealtime] Error in onPresenceJoin callback:', error);
+                              setLastError(error as Error);
+                          }
+                      }) as (key: string, currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => void
+                    : undefined,
                 
-                onPresenceLeave: callbacks.onPresenceLeave ? (key: string, currentPresences: any, leftPresences: any) => {
-                    try {
-                        callbacks.onPresenceLeave!(key, currentPresences, leftPresences);
-                    } catch (error) {
-                        log.error('[useRealtime] Error in onPresenceLeave callback:', error);
-                        setLastError(error as Error);
-                    }
-                } : undefined
+                onPresenceLeave: callbacks.onPresenceLeave
+                    ? ((key: string, currentPresences: Record<string, unknown>, leftPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
+                          try {
+                              callbacks.onPresenceLeave!(key, currentPresences, leftPresences);
+                          } catch (error) {
+                              log.error('[useRealtime] Error in onPresenceLeave callback:', error);
+                              setLastError(error as Error);
+                          }
+                      }) as (key: string, currentPresences: Record<string, unknown>, leftPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => void
+                    : undefined
             };
 
             const channel = await realtimeService.subscribe(configRef.current, enhancedCallbacks);
@@ -563,11 +581,13 @@ export function useLiveEventRealtime(
             onUpdate: callbacks.onEventUpdate,
             onBroadcast: callbacks.onBroadcast,
             onPresenceSync: callbacks.onPresenceChange,
-            onPresenceJoin: (_key: string, _currentPresences: PresenceState, newPresences: PresenceState) => {
-                callbacks.onParticipantJoin?.(newPresences);
+            onPresenceJoin: (_key: string, _currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
+                const first = (newPresences?.[0]?.metas?.[0] ?? {}) as unknown as PresenceState;
+                callbacks.onParticipantJoin?.(first);
             },
-            onPresenceLeave: (_key: string, _currentPresences: PresenceState, leftPresences: PresenceState) => {
-                callbacks.onParticipantLeave?.(leftPresences);
+            onPresenceLeave: (_key: string, _currentPresences: Record<string, unknown>, leftPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
+                const first = (leftPresences?.[0]?.metas?.[0] ?? {}) as unknown as PresenceState;
+                callbacks.onParticipantLeave?.(first);
             },
         },
         {

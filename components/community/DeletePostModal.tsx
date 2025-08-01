@@ -117,6 +117,8 @@ export default function DeletePostModal({
                 </ThemedText>
                 <View className="space-y-2">
                   <Pressable
+                    accessible={true}
+                    accessibilityLabel={t('deletePostModal.moderationOptions.hide')}
                     onPress={() => onModerationAction('hide')}
                     className="flex-row items-center p-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20"
                   >
@@ -126,6 +128,8 @@ export default function DeletePostModal({
                     </ThemedText>
                   </Pressable>
                   <Pressable
+                    accessible={true}
+                    accessibilityLabel={t('deletePostModal.moderationOptions.flag')}
                     onPress={() => onModerationAction('flag')}
                     className="flex-row items-center p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20"
                   >

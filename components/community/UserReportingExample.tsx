@@ -153,10 +153,13 @@ export default function UserReportingExample({
         User Reporting System Demo
       </ThemedText>
       
-      <View className="space-y-3">
+      <View>
         {/* Report User Button */}
         <Pressable
           onPress={handleReportUser}
+          accessibilityRole="button"
+          accessibilityLabel={`Report ${user.displayName || user.username} for community violations`}
+          style={{ marginBottom: 12 }}
           className="flex-row items-center p-3 rounded-lg bg-red-50 dark:bg-red-900/20"
         >
           <OptimizedIcon
@@ -177,6 +180,8 @@ export default function UserReportingExample({
         {/* Appeal Example Button */}
         <Pressable
           onPress={() => setShowAppealModal(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Open appeal form to contest a moderation decision"
           className="flex-row items-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20"
         >
           <OptimizedIcon

@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, Pressable, Alert } from 'react-native';
+import { View, Pressable, Alert, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -949,10 +949,16 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingVertical: 8 }}
             showsVerticalScrollIndicator={false}
-            maintainVisibleContentPosition={{
-              autoscrollToBottomThreshold: 0.2,
-              startRenderingFromBottom: true,
-            }}
+            // iOS-only maintainVisibleContentPosition; Android uses wrapper's bottom-pinning fallback
+            maintainVisibleContentPosition={
+              Platform.OS === 'ios'
+                ? {
+                    autoscrollToBottomThreshold: 0.2,
+                    startRenderingFromBottom: true,
+                  }
+                : undefined
+            }
+            stickyToBottomOnAndroid
             onContentSizeChange={() => {
               // Auto-scroll to bottom when new messages arrive
               setTimeout(() => {

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "profanity": {
+    "critical": [
+      "f**k",
+      "s**t",
+      "b***h",
+      "a******",
+      "d**n",
+      "c**p"
+    ],
+    "high": [
+      "stupid",
+      "idiot",
+      "moron",
+      "dumb"
+    ],
+    "medium": [
+      "suck",
+      "lame",
+      "crappy"
+    ]
+  },
+  "cannabis_inappropriate": {
+    "illegal_activities": [
+      "selling",
+      "buy weed",
+      "drug dealer",
+      "black market",
+      "illegal sale",
+      "street dealer",
+      "trafficking"
+    ],
+    "harmful_practices": [
+      "pesticide abuse",
+      "dangerous chemicals",
+      "mold contamination",
+      "unsafe growing",
+      "toxic nutrients"
+    ],
+    "off_topic": [
+      "hard drugs",
+      "cocaine",
+      "heroin",
+      "meth",
+      "pills",
+      "prescription drugs",
+      "alcohol abuse"
+    ]
+  }
+}

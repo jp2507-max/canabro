@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, Pressable, Alert, ScrollView } from 'react-native';
+import { View, Pressable, Alert, ScrollView, Platform } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Q } from '@nozbe/watermelondb';
@@ -533,15 +533,26 @@ export const GroupChat: React.FC<GroupChatProps> = ({
         if (threadData.length === 0) {
           // Create new group conversation thread
           await database.write(async () => {
-            const newThread = await database.get('conversation_threads').create((thread: any) => {
-              thread.threadType = 'group';
-              thread.participants = membersData.map((m: GroupMember) => m.userId);
-              thread.createdBy = currentUserId;
-              thread.unreadCount = 0;
-            });
+            // Narrow create callback param type instead of using `any`
+            // This matches the fields we set on conversation_threads
+            type ConversationThreadDraft = {
+              threadType: 'group';
+              participants: string[];
+              createdBy: string;
+              unreadCount: number;
+            };
+
+            const newThread = await database
+              .get('conversation_threads')
+              .create((thread: ConversationThreadDraft & Partial<ConversationThread>) => {
+                thread.threadType = 'group';
+                thread.participants = membersData.map((m: GroupMember) => m.userId);
+                thread.createdBy = currentUserId;
+                thread.unreadCount = 0;
+              });
 
             if (isMountedRef.current) {
-              setConversationThread(newThread);
+              setConversationThread(newThread as unknown as ConversationThread);
             }
           });
         } else if (isMountedRef.current) {
@@ -1000,10 +1011,16 @@ export const GroupChat: React.FC<GroupChatProps> = ({
               keyExtractor={(item) => item.id}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingVertical: 16 }}
-              maintainVisibleContentPosition={{
-                autoscrollToBottomThreshold: 0.2,
-                startRenderingFromBottom: true,
-              }}
+              // Gate maintainVisibleContentPosition to iOS; Android uses wrapper fallback pinning
+              maintainVisibleContentPosition={
+                Platform.OS === 'ios'
+                  ? {
+                      autoscrollToBottomThreshold: 0.2,
+                      startRenderingFromBottom: true,
+                    }
+                  : undefined
+              }
+              stickyToBottomOnAndroid
             />
 
             {/* Typing Indicator */}

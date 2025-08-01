@@ -65,45 +65,52 @@ export type UserReportCategory =
 
 export type ReportSeverity = 'low' | 'medium' | 'high' | 'critical';
 
-const REPORT_CATEGORIES: SegmentedControlOption[] = [
-  { key: 'harassment', label: 'Harassment', icon: 'person', color: 'text-red-600 dark:text-red-400' },
-  { key: 'spam', label: 'Spam', icon: 'mail', color: 'text-orange-600 dark:text-orange-400' },
-  { key: 'inappropriate_behavior', label: 'Inappropriate', icon: 'warning', color: 'text-red-600 dark:text-red-400' },
-  { key: 'misinformation', label: 'Misinformation', icon: 'help-circle', color: 'text-yellow-600 dark:text-yellow-400' },
-  { key: 'impersonation', label: 'Impersonation', icon: 'person', color: 'text-purple-600 dark:text-purple-400' },
-  { key: 'community_guidelines', label: 'Guidelines', icon: 'document-text-outline', color: 'text-blue-600 dark:text-blue-400' },
-  { key: 'other', label: 'Other', icon: 'settings', color: 'text-neutral-600 dark:text-neutral-400' },
+/**
+ * Category and options helpers must be translation-aware.
+ * Define as functions that receive `t` so they re-evaluate per locale.
+ */
+const getReportCategories = (t: (k: string) => string): SegmentedControlOption[] => [
+  { key: 'harassment', label: t('moderation.userReport.categories.harassment'), icon: 'person', color: 'text-red-600 dark:text-red-400' },
+  { key: 'spam', label: t('moderation.userReport.categories.spam'), icon: 'mail', color: 'text-orange-600 dark:text-orange-400' },
+  { key: 'inappropriate_behavior', label: t('moderation.userReport.categories.inappropriate_behavior'), icon: 'warning', color: 'text-red-600 dark:text-red-400' },
+  { key: 'misinformation', label: t('moderation.userReport.categories.misinformation'), icon: 'help-circle', color: 'text-yellow-600 dark:text-yellow-400' },
+  { key: 'impersonation', label: t('moderation.userReport.categories.impersonation'), icon: 'person', color: 'text-purple-600 dark:text-purple-400' },
+  { key: 'community_guidelines', label: t('moderation.userReport.categories.community_guidelines'), icon: 'document-text-outline', color: 'text-blue-600 dark:text-blue-400' },
+  { key: 'other', label: t('moderation.userReport.categories.other'), icon: 'settings', color: 'text-neutral-600 dark:text-neutral-400' },
 ];
 
-const HARASSMENT_SUBCATEGORIES = [
-  'Bullying or intimidation',
-  'Targeted harassment',
-  'Hate speech',
-  'Threats or violence',
-  'Doxxing or privacy violation',
+/**
+ * Subcategories helpers use translation function to return localized arrays.
+ */
+const getHarassmentSubcategories = (t: (k: string) => string): string[] => [
+  t('moderation.userReport.subcategories.harassment.bullying'),
+  t('moderation.userReport.subcategories.harassment.targeted'),
+  t('moderation.userReport.subcategories.harassment.hate_speech'),
+  t('moderation.userReport.subcategories.harassment.threats'),
+  t('moderation.userReport.subcategories.harassment.doxxing'),
 ];
 
-const SPAM_SUBCATEGORIES = [
-  'Excessive posting',
-  'Promotional content',
-  'Repetitive messages',
-  'Off-topic content',
-  'Bot-like behavior',
+const getSpamSubcategories = (t: (k: string) => string): string[] => [
+  t('moderation.userReport.subcategories.spam.excessive_posting'),
+  t('moderation.userReport.subcategories.spam.promotional'),
+  t('moderation.userReport.subcategories.spam.repetitive'),
+  t('moderation.userReport.subcategories.spam.off_topic'),
+  t('moderation.userReport.subcategories.spam.bot_behavior'),
 ];
 
-const INAPPROPRIATE_SUBCATEGORIES = [
-  'Offensive language',
-  'Sexual content',
-  'Discriminatory behavior',
-  'Trolling or baiting',
-  'Disruptive behavior',
+const getInappropriateSubcategories = (t: (k: string) => string): string[] => [
+  t('moderation.userReport.subcategories.inappropriate.offensive_language'),
+  t('moderation.userReport.subcategories.inappropriate.sexual_content'),
+  t('moderation.userReport.subcategories.inappropriate.discriminatory'),
+  t('moderation.userReport.subcategories.inappropriate.trolling'),
+  t('moderation.userReport.subcategories.inappropriate.disruptive'),
 ];
 
-const SEVERITY_OPTIONS: SegmentedControlOption[] = [
-  { key: 'low', label: 'Low', icon: 'checkmark', color: 'text-green-600 dark:text-green-400' },
-  { key: 'medium', label: 'Medium', icon: 'warning', color: 'text-yellow-600 dark:text-yellow-400' },
-  { key: 'high', label: 'High', icon: 'warning', color: 'text-orange-600 dark:text-orange-400' },
-  { key: 'critical', label: 'Critical', icon: 'warning', color: 'text-red-600 dark:text-red-400' },
+const getSeverityOptions = (t: (k: string) => string): SegmentedControlOption[] => [
+  { key: 'low', label: t('moderation.userReport.severity.low'), icon: 'checkmark', color: 'text-green-600 dark:text-green-400' },
+  { key: 'medium', label: t('moderation.userReport.severity.medium'), icon: 'warning', color: 'text-yellow-600 dark:text-yellow-400' },
+  { key: 'high', label: t('moderation.userReport.severity.high'), icon: 'warning', color: 'text-orange-600 dark:text-orange-400' },
+  { key: 'critical', label: t('moderation.userReport.severity.critical'), icon: 'warning', color: 'text-red-600 dark:text-red-400' },
 ];
 
 export default function UserReportModal({
@@ -146,11 +153,11 @@ export default function UserReportModal({
   const getSubcategories = (): string[] => {
     switch (selectedCategory) {
       case 'harassment':
-        return HARASSMENT_SUBCATEGORIES;
+        return getHarassmentSubcategories(t);
       case 'spam':
-        return SPAM_SUBCATEGORIES;
+        return getSpamSubcategories(t);
       case 'inappropriate_behavior':
-        return INAPPROPRIATE_SUBCATEGORIES;
+        return getInappropriateSubcategories(t);
       default:
         return [];
     }
@@ -212,6 +219,11 @@ export default function UserReportModal({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
+      accessible
+      // RN Modal does not support 'dialog' role; use accessibilityViewIsModal and labels instead
+      accessibilityViewIsModal
+      accessibilityLabel={t('userReportModal.title')}
+      accessibilityHint={t('userReportModal.accessibility.modalHint', { defaultValue: 'User report dialog. Review details and submit or cancel.' })}
     >
       <Animated.View style={[{ flex: 1 }, fadeAnimatedStyle]}>
         <BlurView
@@ -257,7 +269,7 @@ export default function UserReportModal({
                     {t('userReportModal.categoryLabel')}
                   </ThemedText>
                   <SegmentedControl
-                    options={REPORT_CATEGORIES}
+                    options={getReportCategories(t)}
                     selectedKey={selectedCategory}
                     onSelectionChange={handleCategoryChange}
                   />
@@ -289,7 +301,7 @@ export default function UserReportModal({
                     {t('userReportModal.severityLabel')}
                   </ThemedText>
                   <SegmentedControl
-                    options={SEVERITY_OPTIONS}
+                    options={getSeverityOptions(t)}
                     selectedKey={severity}
                     onSelectionChange={handleSeverityChange}
                   />
@@ -320,6 +332,10 @@ export default function UserReportModal({
                       triggerLightHapticSync();
                     }}
                     className="flex-row items-center p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('userReportModal.anonymousLabel')}
+                    accessibilityHint={t('userReportModal.accessibility.anonymousHint', { defaultValue: 'Toggle anonymous reporting' })}
+                    accessibilityState={{ checked: isAnonymous }}
                   >
                     <OptimizedIcon
                       name={isAnonymous ? "checkmark" : "close"}
@@ -350,6 +366,10 @@ export default function UserReportModal({
                   disabled={submitting}
                   style={cancelAnimatedStyle}
                   className="flex-1 py-3 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('userReportModal.cancel')}
+                  accessibilityHint={t('userReportModal.accessibility.cancelHint', { defaultValue: 'Close the report dialog without submitting' })}
+                  accessibilityState={{ disabled: submitting }}
                   onPressIn={() => {
                     cancelScale.value = withSpring(0.96, { damping: 10 });
                     triggerLightHapticSync();
@@ -368,6 +388,10 @@ export default function UserReportModal({
                   onPress={handleSubmit}
                   disabled={!isFormValid || submitting}
                   style={submitAnimatedStyle}
+                  accessibilityRole="button"
+                  accessibilityLabel={submitting ? t('userReportModal.submitting') : t('userReportModal.submit')}
+                  accessibilityHint={t('userReportModal.accessibility.submitHint', { defaultValue: 'Submit the user report' })}
+                  accessibilityState={{ disabled: !isFormValid || submitting, busy: submitting }}
                   className={`flex-1 py-3 px-4 rounded-xl items-center ${
                     !isFormValid || submitting
                       ? 'bg-neutral-300 dark:bg-neutral-700'

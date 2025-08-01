@@ -47,11 +47,22 @@ import type { CommunityQuestion } from '../../lib/types/community';
 
 dayjs.extend(relativeTime);
 
+interface ModerationViolation {
+  id?: string;
+  type: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  description?: string;
+  code?: string;
+  flaggedAt?: string;
+  source?: 'auto' | 'manual';
+  details?: Record<string, unknown>;
+}
+
 interface QuestionPostItemProps {
   question: CommunityQuestion & {
     moderation_status?: ModerationStatus;
     moderation_metadata?: {
-      violations?: any[];
+      violations?: ModerationViolation[];
       confidence?: number;
       flaggedAt?: string;
     };
@@ -185,8 +196,24 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
         await triggerSuccessHaptic();
         setShowReportModal(false);
         // Could show a success toast here
-      } catch (error) {
-        console.error('Error reporting content:', error);
+  } catch (error) {
+        // Use custom monitoring in production (Sentry if available), fallback to custom logger in dev
+        if (process.env.NODE_ENV === 'production') {
+          try {
+            const Sentry = require('@sentry/react-native');
+            if (Sentry?.captureException) {
+              Sentry.captureException(error, {
+                extra: { context: 'QuestionPostItem.handleReportSubmit', questionId: question.id },
+              });
+            }
+          } catch {
+            // Fallback if Sentry not available at runtime
+          }
+        } else {
+          // Use project logger to ensure errors are captured consistently
+          const { log } = require('@/lib/utils/logger');
+          log.error('Error reporting content:', error);
+        }
         await triggerErrorHaptic();
         // Could show an error toast here
       } finally {

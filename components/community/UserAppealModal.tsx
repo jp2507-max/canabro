@@ -50,13 +50,13 @@ export interface AppealData {
   additionalContext?: string;
 }
 
-const APPEAL_GUIDELINES = [
-  'Provide specific evidence that contradicts the original report',
-  'Explain any context that may have been misunderstood',
-  'Be respectful and professional in your appeal',
-  'Include any relevant screenshots or documentation',
-  'Appeals are reviewed by senior moderators within 48 hours',
-];
+const APPEAL_GUIDELINES_KEYS = [
+  'userAppealModal.appealGuidelines.guideline1',
+  'userAppealModal.appealGuidelines.guideline2',
+  'userAppealModal.appealGuidelines.guideline3',
+  'userAppealModal.appealGuidelines.guideline4',
+  'userAppealModal.appealGuidelines.guideline5',
+] as const;
 
 export default function UserAppealModal({
   visible,
@@ -88,6 +88,22 @@ export default function UserAppealModal({
   const fadeAnimatedStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
   }));
+
+  // Animated scale values for buttons (hooks must be declared before any early return)
+  const submitScale = useSharedValue(1);
+  const cancelScale = useSharedValue(1);
+
+  const submitAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: submitScale.value }],
+  }));
+
+  const cancelAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cancelScale.value }],
+  }));
+
+  const AnimatedPressable = React.useMemo(() => Animated.createAnimatedComponent(Pressable), []);
+
+  const isFormValid = appealReason.trim().length >= 20;
 
   if (!visible && fadeOpacity.value === 0) return null;
 
@@ -124,21 +140,6 @@ export default function UserAppealModal({
     triggerLightHapticSync();
   };
 
-  // Animated scale values for buttons
-  const submitScale = useSharedValue(1);
-  const cancelScale = useSharedValue(1);
-
-  const submitAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: submitScale.value }],
-  }));
-
-  const cancelAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: cancelScale.value }],
-  }));
-
-  const AnimatedPressable = React.useMemo(() => Animated.createAnimatedComponent(Pressable), []);
-
-  const isFormValid = appealReason.trim().length >= 20;
 
   return (
     <Modal
@@ -147,6 +148,8 @@ export default function UserAppealModal({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
+      accessibilityLabel={t('userAppealModal.title')}
+      accessible
     >
       <Animated.View style={[{ flex: 1 }, fadeAnimatedStyle]}>
         <BlurView
@@ -154,7 +157,12 @@ export default function UserAppealModal({
           className="flex-1 items-center justify-center bg-black/30 px-4"
         >
           <EnhancedKeyboardWrapper>
-            <ThemedView className="w-full max-w-md rounded-2xl bg-white/95 dark:bg-neutral-900/95 p-6 shadow-2xl max-h-[90%]">
+            <ThemedView
+              className="w-full max-w-md rounded-2xl bg-white/95 dark:bg-neutral-900/95 p-6 shadow-2xl max-h-[90%]"
+              accessibilityRole="summary"
+              accessibilityLabel={t('userAppealModal.title')}
+              accessible
+            >
               {/* Header */}
               <View className="items-center mb-6">
                 <View className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center mb-3">
@@ -219,11 +227,11 @@ export default function UserAppealModal({
                     {t('userAppealModal.guidelinesTitle')}
                   </ThemedText>
                   <View className="space-y-2">
-                    {APPEAL_GUIDELINES.map((guideline, index) => (
+                    {APPEAL_GUIDELINES_KEYS.map((key, index) => (
                       <View key={index} className="flex-row items-start">
                         <View className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 mt-2 mr-3" />
                         <ThemedText className="text-xs text-neutral-600 dark:text-neutral-400 flex-1 leading-4">
-                          {guideline}
+                          {t(key)}
                         </ThemedText>
                       </View>
                     ))}
@@ -327,6 +335,8 @@ export default function UserAppealModal({
                   disabled={submitting}
                   style={cancelAnimatedStyle}
                   className="flex-1 py-3 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 items-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('userAppealModal.cancel')}
                   onPressIn={() => {
                     cancelScale.value = withSpring(0.96, { damping: 10 });
                     triggerLightHapticSync();
@@ -350,6 +360,10 @@ export default function UserAppealModal({
                       ? 'bg-neutral-300 dark:bg-neutral-700'
                       : 'bg-blue-500 dark:bg-blue-600'
                   }`}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    submitting ? t('userAppealModal.submitting') : t('userAppealModal.submit')
+                  }
                   onPressIn={() => {
                     if (!isFormValid || submitting) return;
                     submitScale.value = withSpring(0.96, { damping: 10 });

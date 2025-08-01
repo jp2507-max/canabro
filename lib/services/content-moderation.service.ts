@@ -90,42 +90,19 @@ export interface SpamIndicator {
 
 /**
  * Profanity and inappropriate content keywords
- * Organized by severity level for graduated responses
+ * Now loaded dynamically from external configuration to avoid
+ * embedding sensitive words directly in source code.
  */
-const PROFANITY_FILTERS = {
-  critical: [
-    // Severe profanity and slurs (immediate block)
-    'fuck', 'shit', 'bitch', 'asshole', 'damn', 'crap',
-    // Add more as needed - keeping it cannabis-community appropriate
-  ],
-  high: [
-    // Moderate profanity (flag for review)
-    'stupid', 'idiot', 'moron', 'dumb',
-  ],
-  medium: [
-    // Mild inappropriate language (warning)
-    'suck', 'lame', 'crappy',
-  ],
-};
+import { getProfanityConfig } from '../config/moderation/profanity';
+
+const PROFANITY_CONFIG = getProfanityConfig('en');
+const PROFANITY_FILTERS = PROFANITY_CONFIG.profanity;
 
 /**
  * Cannabis-specific inappropriate content
- * Focus on illegal activities and harmful practices
+ * Loaded from external configuration (env/JSON).
  */
-const CANNABIS_INAPPROPRIATE_CONTENT = {
-  illegal_activities: [
-    'selling', 'buy weed', 'drug dealer', 'black market',
-    'illegal sale', 'street dealer', 'trafficking',
-  ],
-  harmful_practices: [
-    'pesticide abuse', 'dangerous chemicals', 'mold contamination',
-    'unsafe growing', 'toxic nutrients',
-  ],
-  off_topic: [
-    'hard drugs', 'cocaine', 'heroin', 'meth', 'pills',
-    'prescription drugs', 'alcohol abuse',
-  ],
-};
+const CANNABIS_INAPPROPRIATE_CONTENT = PROFANITY_CONFIG.cannabis_inappropriate;
 
 /**
  * Spam detection patterns
@@ -326,12 +303,15 @@ class ContentModerationService {
    */
   private detectProfanity(content: string): { violations: ModerationViolation[]; confidence: number } {
     const violations: ModerationViolation[] = [];
-    const lowerContent = content.toLowerCase();
     let maxConfidence = 0;
 
-    // Check critical profanity
+    // Utility to escape regex special characters in words
+    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Check critical profanity with word-boundary regex (case-insensitive)
     for (const word of PROFANITY_FILTERS.critical) {
-      if (lowerContent.includes(word)) {
+      const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+      if (regex.test(content)) {
         violations.push({
           type: 'profanity',
           severity: 'critical',
@@ -343,9 +323,10 @@ class ContentModerationService {
       }
     }
 
-    // Check high-level profanity
+    // Check high-level profanity with word-boundary regex (case-insensitive)
     for (const word of PROFANITY_FILTERS.high) {
-      if (lowerContent.includes(word)) {
+      const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+      if (regex.test(content)) {
         violations.push({
           type: 'profanity',
           severity: 'high',
@@ -357,9 +338,10 @@ class ContentModerationService {
       }
     }
 
-    // Check medium-level profanity
+    // Check medium-level profanity with word-boundary regex (case-insensitive)
     for (const word of PROFANITY_FILTERS.medium) {
-      if (lowerContent.includes(word)) {
+      const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i');
+      if (regex.test(content)) {
         violations.push({
           type: 'profanity',
           severity: 'medium',
@@ -517,8 +499,40 @@ class ContentModerationService {
   private validateImageUrl(url: string): boolean {
     try {
       const urlObj = new URL(url);
-      const validDomains = ['supabase.co', 'supabase.in', 'localhost'];
-      const isValidDomain = validDomains.some(domain => urlObj.hostname.includes(domain));
+
+      // Load allowed domains from configuration with fallbacks
+      // 1) Environment variable: MODERATION_ALLOWED_DOMAINS=domain1.com,domain2.com
+      // 2) Optional globalThis.APP_CONFIG?.moderation?.allowedDomains (if present in app)
+      // 3) Fallback to previous hardcoded defaults to preserve behavior
+      const envDomains = (typeof process !== 'undefined' && process?.env?.MODERATION_ALLOWED_DOMAINS)
+        ? String(process.env.MODERATION_ALLOWED_DOMAINS)
+            .split(',')
+            .map(s => s.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+
+      // Attempt to read from a global runtime config if available (non-fatal if absent)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const runtimeConfigDomains: string[] = (globalThis as any)?.APP_CONFIG?.moderation?.allowedDomains ?? [];
+
+      const fallbackDefaults = ['supabase.co', 'supabase.in', 'localhost'];
+
+      const allowedDomains = (envDomains.length > 0
+        ? envDomains
+        : (runtimeConfigDomains && runtimeConfigDomains.length > 0
+          ? runtimeConfigDomains
+          : fallbackDefaults))
+        .map(d => d.trim().toLowerCase());
+
+      // Normalize hostname for comparison
+      const hostname = urlObj.hostname.toLowerCase();
+
+      // Consider a domain valid if hostname matches or is a subdomain of any allowed domain
+      const isValidDomain = allowedDomains.some(base => {
+        if (!base) return false;
+        return hostname === base || hostname.endsWith('.' + base) || hostname.includes(base);
+      });
+
       const hasImageExtension = /\.(jpg|jpeg|png|webp|gif)$/i.test(urlObj.pathname);
       
       return isValidDomain && (hasImageExtension || urlObj.pathname.includes('storage'));

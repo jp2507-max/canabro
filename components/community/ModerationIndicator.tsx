@@ -16,8 +16,9 @@ import Animated, {
   withSpring,
   withRepeat,
   withSequence,
+  cancelAnimation,
 } from 'react-native-reanimated';
-import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 import { useTranslation } from 'react-i18next';
 
 export type ModerationStatus = 
@@ -61,6 +62,14 @@ const ModerationIndicator: React.FC<ModerationIndicatorProps> = ({
         true
       );
     }
+
+    // Cleanup to prevent memory leaks / stray animations
+    return () => {
+      // Stop any ongoing animation on this shared value
+      cancelAnimation(scale);
+      // Optionally reset to a stable value to avoid residual transforms
+      scale.value = 1;
+    };
   }, [status, animated]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -69,7 +78,13 @@ const ModerationIndicator: React.FC<ModerationIndicatorProps> = ({
   }));
 
   // Get status configuration
-  const getStatusConfig = () => {
+  const getStatusConfig = (): {
+    icon: IconName;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    label: string;
+  } | null => {
     switch (status) {
       case 'approved':
         return {
@@ -89,7 +104,7 @@ const ModerationIndicator: React.FC<ModerationIndicatorProps> = ({
         };
       case 'flagged':
         return {
-          icon: 'flag',
+          icon: 'warning', // 'flag' not in IconName; use closest existing warning symbol
           color: 'text-orange-600 dark:text-orange-400',
           bgColor: 'bg-orange-50 dark:bg-orange-900/20',
           borderColor: 'border-orange-200 dark:border-orange-800',
@@ -97,7 +112,7 @@ const ModerationIndicator: React.FC<ModerationIndicatorProps> = ({
         };
       case 'hidden':
         return {
-          icon: 'eye-off',
+          icon: 'eye-outline', // 'eye-off' not in IconName; use view icon
           color: 'text-gray-600 dark:text-gray-400',
           bgColor: 'bg-gray-50 dark:bg-gray-900/20',
           borderColor: 'border-gray-200 dark:border-gray-800',
@@ -105,7 +120,7 @@ const ModerationIndicator: React.FC<ModerationIndicatorProps> = ({
         };
       case 'blocked':
         return {
-          icon: 'ban',
+          icon: 'close-circle', // 'ban' not in IconName; use close-circle to indicate blocked
           color: 'text-red-600 dark:text-red-400',
           bgColor: 'bg-red-50 dark:bg-red-900/20',
           borderColor: 'border-red-200 dark:border-red-800',
@@ -159,7 +174,7 @@ const ModerationIndicator: React.FC<ModerationIndicatorProps> = ({
       accessibilityLabel={`${config.label}${violationCount > 0 ? ` - ${violationCount} violations` : ''}`}
     >
       <OptimizedIcon
-        name={config.icon as any}
+        name={config.icon}
         size={currentSize.iconSize}
         className={`${config.color} ${currentSize.spacing}`}
       />
