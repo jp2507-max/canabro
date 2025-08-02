@@ -9,6 +9,7 @@ import {
 } from '@/lib/utils/image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, ScrollView, View, Linking } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -291,7 +292,8 @@ const AnimatedExpandableSection = ({
 /**
  * Animated website button with sophisticated press effects
  */
-const AnimatedWebsiteButton = ({ onPress, url }: { onPress: () => void; url: string }) => {
+const AnimatedWebsiteButton = ({ onPress, _url }: { onPress: () => void; _url: string }) => {
+  const { t } = useTranslation('catalog');
   const scale = useSharedValue(1);
   const pressed = useSharedValue(0);
 
@@ -341,7 +343,7 @@ const AnimatedWebsiteButton = ({ onPress, url }: { onPress: () => void; url: str
           accessibilityLabel="Open strain source website">
           <OptimizedIcon name="globe-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
           <ThemedText className="text-base font-semibold text-white">
-            Visit Official Website
+            {t('visitOfficialWebsite', 'Visit Official Website')}
           </ThemedText>
         </Animated.View>
       </GestureDetector>
@@ -350,6 +352,7 @@ const AnimatedWebsiteButton = ({ onPress, url }: { onPress: () => void; url: str
 };
 
 export default function StrainDetailPage() {
+  const { t } = useTranslation('catalog');
   const { strain_id } = useLocalSearchParams<{ strain_id: string }>();
   const router = useRouter();
   const [imageError, setImageError] = useState(false);
@@ -659,7 +662,7 @@ export default function StrainDetailPage() {
         {strain.parents && Array.isArray(strain.parents) && strain.parents.length > 0 && (
           <ThemedView className="mx-6 mt-4 rounded-2xl border border-neutral-200 p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
             <ThemedText className="mb-2 text-xl font-semibold text-neutral-800 dark:text-neutral-100">
-              Parent Genetics
+              {t('parentGenetics', 'Parent Genetics')}
             </ThemedText>
             <View className="mt-1 flex-row flex-wrap gap-2">
               {strain.parents.map((parent: string) => (
@@ -677,7 +680,7 @@ export default function StrainDetailPage() {
         {(strain.url || strain.link) && (
           <AnimatedWebsiteButton
             onPress={handleWebsitePress}
-            url={(strain.link || strain.url) as string}
+            _url={(strain.link || strain.url) as string}
           />
         )}
       </ScrollView>

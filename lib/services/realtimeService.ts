@@ -64,7 +64,7 @@ class RealtimeService {
     private retryDelay = 1000; // Start with 1 second
 
     // 2025 Enhancements
-    private messageQueue: Map<string, any[]> = new Map(); // Message batching queue
+    private messageQueue: Map<string, MessageBroadcast[]> = new Map(); // Message batching queue
     private rateLimiters: Map<string, { count: number; resetTime: number }> = new Map();
     private readonly MAX_MESSAGES_PER_SECOND = 100; // Rate limiting
     private readonly BATCH_SIZE = 10; // Message batching size
@@ -93,7 +93,12 @@ class RealtimeService {
 
             // Add database change listeners if table is specified
             if (table) {
-                const changeConfig: any = {
+                const changeConfig: {
+                    event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+                    schema: 'public';
+                    table: string;
+                    filter?: string;
+                } = {
                     event: event || '*',
                     schema: 'public',
                     table: table,
@@ -103,45 +108,56 @@ class RealtimeService {
                     changeConfig.filter = filter;
                 }
 
-                channel = channel.on('postgres_changes', changeConfig, (payload: unknown) => {
+                channel = (channel as unknown as {
+                    on: (type: 'postgres_changes', filter: typeof changeConfig, callback: (payload: {
+                        eventType?: 'INSERT' | 'UPDATE' | 'DELETE';
+                    } & Record<string, unknown>) => void) => RealtimeChannel
+                }).on('postgres_changes', changeConfig, (payload: {
+                    eventType?: 'INSERT' | 'UPDATE' | 'DELETE';
+                } & Record<string, unknown>) => {
                     log.info(`[RealtimeService] Database change in ${table}:`, payload);
-                    const p = (payload ?? {}) as Record<string, unknown> & { eventType?: 'INSERT' | 'UPDATE' | 'DELETE' };
 
-                    switch (p.eventType) {
-                        case 'INSERT':
-                            callbacks.onInsert?.(p);
-                            break;
-                        case 'UPDATE':
-                            callbacks.onUpdate?.(p);
-                            break;
-                        case 'DELETE':
-                            callbacks.onDelete?.(p);
-                            break;
-                        default:
-                            // no-op for unexpected event types
-                            break;
+                    const eventType = payload?.eventType;
+                    if (eventType === 'INSERT') {
+                        callbacks.onInsert?.(payload);
+                    } else if (eventType === 'UPDATE') {
+                        callbacks.onUpdate?.(payload);
+                    } else if (eventType === 'DELETE') {
+                        callbacks.onDelete?.(payload);
                     }
                 });
             }
 
             // Add broadcast listeners
             if (callbacks.onBroadcast) {
-                channel = channel.on('broadcast', { event: 'message' }, (payload: unknown) => {
+                channel = (channel as unknown as {
+                    on: (type: 'broadcast', filter: { event: string }, callback: (payload: Record<string, unknown>) => void) => RealtimeChannel
+                }).on('broadcast', { event: 'message' }, (payload: Record<string, unknown>) => {
                     log.info(`[RealtimeService] Broadcast received on ${channelName}:`, payload);
-                    const p = (payload ?? {}) as Record<string, unknown>;
-                    callbacks.onBroadcast?.(p);
+                    callbacks.onBroadcast?.(payload);
                 });
                 // Also listen for batch messages for queue flushes
-                channel = channel.on('broadcast', { event: 'batch_message' }, (payload: unknown) => {
+                channel = (channel as unknown as {
+                    on: (type: 'broadcast', filter: { event: string }, callback: (payload: {
+                        messages: MessageBroadcast[];
+                        timestamp: number;
+                        batchSize: number;
+                    } & Record<string, unknown>) => void) => RealtimeChannel
+                }).on('broadcast', { event: 'batch_message' }, (payload: {
+                    messages: MessageBroadcast[];
+                    timestamp: number;
+                    batchSize: number;
+                } & Record<string, unknown>) => {
                     log.info(`[RealtimeService] Batch broadcast received on ${channelName}:`, payload);
-                    const p = (payload ?? {}) as Record<string, unknown>;
-                    callbacks.onBroadcast?.(p);
+                    callbacks.onBroadcast?.(payload as unknown as Record<string, unknown>);
                 });
             }
 
             // Add presence listeners
             if (callbacks.onPresenceSync || callbacks.onPresenceJoin || callbacks.onPresenceLeave) {
-channel = channel.on('presence', { event: 'sync' }, () => {
+channel = (channel as unknown as {
+    on: (type: 'presence', filter: { event: 'sync' | 'join' | 'leave' }, callback: (ev?: unknown) => void) => RealtimeChannel
+}).on('presence', { event: 'sync' }, () => {
     const state = channel.presenceState();
     log.info(`[RealtimeService] Presence sync on ${channelName}:`, state);
     // presenceState() returns a map-like object keyed by presence key. We expose our typed PresenceState if available.
@@ -151,11 +167,24 @@ channel = channel.on('presence', { event: 'sync' }, () => {
         callbacks.onPresenceSync?.(typed);
     } else {
         // best-effort extraction from presence map
-        const firstKey = Object.keys(state as Record<string, any>)[0];
-        const firstMeta = firstKey && (state as Record<string, any>)[firstKey]?.[0]?.metas?.[0];
+        type PresenceMeta = {
+            userId?: string;
+            status?: PresenceState['status'] | string;
+            lastSeen?: string;
+            location?: string;
+            activity?: string;
+        };
+        type PresenceEntry = { metas?: PresenceMeta[] };
+        const presenceMap = state as Record<string, PresenceEntry>;
+        const firstKey = Object.keys(presenceMap)[0];
+        const metas = firstKey ? presenceMap[firstKey]?.metas : undefined;
+        const firstMeta: PresenceMeta | undefined = Array.isArray(metas) ? metas[0] : undefined;
+
         const fallback: PresenceState = {
             userId: String(firstMeta?.userId ?? ''),
-            status: String(firstMeta?.status ?? 'offline') as PresenceState['status'],
+            status: (typeof firstMeta?.status === 'string'
+                ? (firstMeta?.status as PresenceState['status'])
+                : 'offline'),
             lastSeen: String(firstMeta?.lastSeen ?? ''),
             location: firstMeta?.location,
             activity: firstMeta?.activity,
@@ -164,44 +193,55 @@ channel = channel.on('presence', { event: 'sync' }, () => {
     }
 });
 
-                channel = channel.on('presence', { event: 'join' }, (ev: unknown) => {
-                    const { key, currentPresences, newPresences } = (ev ?? {}) as {
-                        key?: unknown;
-                        currentPresences?: unknown;
+                channel = (channel as unknown as {
+                    on: (type: 'presence', filter: { event: 'join' }, callback: (ev: {
+                        key?: string;
+                        currentPresences?: Record<string, unknown>;
                         newPresences?: Array<{ id: string; metas: Array<Record<string, unknown>> }>;
-                    };
+                    }) => void) => RealtimeChannel
+                }).on('presence', { event: 'join' }, (ev: {
+                    key?: string;
+                    currentPresences?: Record<string, unknown>;
+                    newPresences?: Array<{ id: string; metas: Array<Record<string, unknown>> }>;
+                }) => {
+                    const { key, currentPresences, newPresences } = ev ?? {};
                     log.info(`[RealtimeService] Presence join on ${channelName}:`, { key, newPresences });
                     callbacks.onPresenceJoin?.(
                         String(key ?? ''),
-                        currentPresences as Record<string, unknown>,
+                        (currentPresences ?? {}) as Record<string, unknown>,
                         (newPresences ?? []) as Array<{ id: string; metas: Array<Record<string, unknown>> }>
                     );
                 });
 
-                channel = channel.on('presence', { event: 'leave' }, (ev: unknown) => {
-                    const { key, currentPresences, leftPresences } = (ev ?? {}) as {
-                        key?: unknown;
-                        currentPresences?: unknown;
+                channel = (channel as unknown as {
+                    on: (type: 'presence', filter: { event: 'leave' }, callback: (ev: {
+                        key?: string;
+                        currentPresences?: Record<string, unknown>;
                         leftPresences?: Array<{ id: string; metas: Array<Record<string, unknown>> }>;
-                    };
+                    }) => void) => RealtimeChannel
+                }).on('presence', { event: 'leave' }, (ev: {
+                    key?: string;
+                    currentPresences?: Record<string, unknown>;
+                    leftPresences?: Array<{ id: string; metas: Array<Record<string, unknown>> }>;
+                }) => {
+                    const { key, currentPresences, leftPresences } = ev ?? {};
                     log.info(`[RealtimeService] Presence leave on ${channelName}:`, { key, leftPresences });
                     callbacks.onPresenceLeave?.(
                         String(key ?? ''),
-                        currentPresences as Record<string, unknown>,
+                        (currentPresences ?? {}) as Record<string, unknown>,
                         (leftPresences ?? []) as Array<{ id: string; metas: Array<Record<string, unknown>> }>
                     );
                 });
             }
 
             // Subscribe to the channel
-            channel.subscribe((status: string | Record<string, unknown>) => {
+            channel.subscribe((status: 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | string) => {
                 log.info(`[RealtimeService] Subscription status for ${channelName}:`, status);
 
-                const statusString = typeof status === 'string' ? status : String(status);
-                if (statusString === 'SUBSCRIBED') {
+                if (status === 'SUBSCRIBED') {
                     this.connectionRetryCount = 0; // Reset retry count on successful connection
-                } else if (statusString === 'CHANNEL_ERROR' || statusString === 'TIMED_OUT') {
-                    this.handleConnectionError(channelName, config, callbacks);
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    void this.handleConnectionError(channelName, config, callbacks);
                 }
             });
 
@@ -351,13 +391,15 @@ channel = channel.on('presence', { event: 'sync' }, () => {
 
         log.warn(`[RealtimeService] Retrying connection to ${channelName} in ${delay}ms (attempt ${this.connectionRetryCount})`);
 
-        setTimeout(async () => {
-            try {
-                await this.subscribe(config, callbacks);
-            } catch (error) {
-                log.error(`[RealtimeService] Retry failed for ${channelName}:`, error);
-                await this.handleConnectionError(channelName, config, callbacks);
-            }
+        setTimeout(() => {
+            void (async () => {
+                try {
+                    await this.subscribe(config, callbacks);
+        } catch (_error) {
+            log.error(`[RealtimeService] Retry failed for ${channelName}:`, _error);
+            await this.handleConnectionError(channelName, config, callbacks);
+        }
+            })();
         }, delay);
     }
 
@@ -386,16 +428,16 @@ channel = channel.on('presence', { event: 'sync' }, () => {
                         this.connectionRetryCount = 0;
                     }
                 }
-            } catch (error) {
-                log.debug(`[RealtimeService] Reconnection attempt failed for ${channelName}`);
-            }
+        } catch (_error) {
+            log.debug(`[RealtimeService] Reconnection attempt failed for ${channelName}`);
+        }
         }, 10000); // Try every 10 seconds
     }
 
     /**
      * Check channel connection status (2025 Feature)
      */
-    private async checkChannelStatus(channel: RealtimeChannel): Promise<string> {
+    private async checkChannelStatus(channel: RealtimeChannel): Promise<'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT'> {
         return new Promise((resolve) => {
             // Simple ping to check if channel is responsive
             const timeout = setTimeout(() => resolve('TIMED_OUT'), 5000);
@@ -412,7 +454,7 @@ channel = channel.on('presence', { event: 'sync' }, () => {
                     clearTimeout(timeout);
                     resolve('CHANNEL_ERROR');
                 });
-            } catch (error) {
+            } catch {
                 clearTimeout(timeout);
                 resolve('CHANNEL_ERROR');
             }
@@ -659,7 +701,7 @@ async subscribeToConversation(conversationId: string, callbacks: {
         };
 
         type BatchBroadcastPayload = {
-            messages: Array<MessageBroadcast>;
+            messages: MessageBroadcast[];
             timestamp: number;
             batchSize: number;
         };
@@ -735,10 +777,10 @@ async subscribeToLiveEvent(eventId: string, callbacks: {
                 onBroadcast: callbacks.onBroadcast,
                 onPresenceSync: callbacks.onPresenceChange,
                 onPresenceJoin: (_key: string, _currentPresences: Record<string, unknown>, newPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
-                    callbacks.onParticipantJoin?.(newPresences as unknown as Record<string, unknown>);
+                    callbacks.onParticipantJoin?.({ newPresences } as unknown as Record<string, unknown>);
                 },
                 onPresenceLeave: (_key: string, _currentPresences: Record<string, unknown>, leftPresences: Array<{ id: string; metas: Array<Record<string, unknown>> }>) => {
-                    callbacks.onParticipantLeave?.(leftPresences as unknown as Record<string, unknown>);
+                    callbacks.onParticipantLeave?.({ leftPresences } as unknown as Record<string, unknown>);
                 },
             }
         );

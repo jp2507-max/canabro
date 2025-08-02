@@ -245,12 +245,35 @@ export class TaskNotificationService {
   /**
    * Mark task as completed (adapts markReminderCompleted)
    */
-  async markTaskCompleted(taskId: string, completionData?: any): Promise<void> {
+  async markTaskCompleted(
+    taskId: string,
+    completionData?: {
+      completedAt?: string | Date;
+      notes?: string;
+      photos?: string[];
+      [key: string]: unknown;
+    }
+  ): Promise<void> {
     try {
       const task = await database.collections
         .get<PlantTask>('plant_tasks')
         .find(taskId);
-      await task.markAsCompleted(completionData);
+
+      // Normalize to model's expected shape: Date for completedAt
+      let normalized: Record<string, unknown> | undefined;
+      if (completionData) {
+        const completedAt =
+          typeof completionData.completedAt === 'string'
+            ? new Date(completionData.completedAt)
+            : completionData.completedAt;
+
+        normalized = {
+          ...completionData,
+          completedAt,
+        };
+      }
+
+      await task.markAsCompleted(normalized as unknown as Partial<unknown>);
     } catch (error) {
       Logger.error('Failed to mark task as completed', { taskId, error });
     }
@@ -381,7 +404,7 @@ export class TaskNotificationService {
    */
   async batchMarkCompleted(taskIds: string[]): Promise<void> {
     await database.write(async () => {
-      const results = await Promise.all(
+      await Promise.all(
         taskIds.map(async (id) => {
           try {
             const task = await database.collections
@@ -398,7 +421,6 @@ export class TaskNotificationService {
           }
         })
       );
-      // Results can be used for error reporting if needed
     });
   }
 

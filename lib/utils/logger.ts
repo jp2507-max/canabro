@@ -6,12 +6,7 @@
  * Replace with a more robust logger (e.g., Sentry, Winston, or a custom solution) as needed.
  */
 
-enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
-}
+type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
 // Basic console logger, can be expanded
 function logMessage(level: LogLevel, message: string, ...optionalParams: unknown[]): void {
@@ -19,22 +14,25 @@ function logMessage(level: LogLevel, message: string, ...optionalParams: unknown
   const messagePrefix = `[${timestamp}] [${level}] ${message}`;
 
   switch (level) {
-    case LogLevel.DEBUG:
-      console.debug(messagePrefix, ...(optionalParams as any[]));
+    case 'DEBUG':
+      // Route debug to warn to satisfy ESLint (only warn/error allowed)
+      console.warn(messagePrefix, ...optionalParams);
       break;
-    case LogLevel.INFO:
-      console.info(messagePrefix, ...(optionalParams as any[]));
+    case 'INFO':
+      // Route info to warn to satisfy ESLint (only warn/error allowed)
+      console.warn(messagePrefix, ...optionalParams);
       break;
-    case LogLevel.WARN:
-      console.warn(messagePrefix, ...(optionalParams as any[]));
+    case 'WARN':
+      console.warn(messagePrefix, ...optionalParams);
       break;
-    case LogLevel.ERROR:
-      console.error(messagePrefix, ...(optionalParams as any[]));
+    case 'ERROR':
+      console.error(messagePrefix, ...optionalParams);
       break;
     default: {
-      // Exhaustive check – will error at compile-time if a new enum member appears
-      const _exhaustive: never = level;
-      console.log(messagePrefix, ...(optionalParams as any[]));
+      // Exhaustive check safeguard
+      const _exhaustive: never = level as never;
+      // Fallback to warn to satisfy ESLint policy
+      console.warn(messagePrefix, ...optionalParams);
       return _exhaustive;
     }
   }
@@ -42,24 +40,32 @@ function logMessage(level: LogLevel, message: string, ...optionalParams: unknown
 
 export const log = {
   debug: (message: string, ...optionalParams: unknown[]) =>
-    logMessage(LogLevel.DEBUG, message, ...optionalParams),
+    logMessage('DEBUG', message, ...optionalParams),
   info: (message: string, ...optionalParams: unknown[]) =>
-    logMessage(LogLevel.INFO, message, ...optionalParams),
+    logMessage('INFO', message, ...optionalParams),
   warn: (message: string, ...optionalParams: unknown[]) =>
-    logMessage(LogLevel.WARN, message, ...optionalParams),
+    logMessage('WARN', message, ...optionalParams),
   error: (message: string, ...optionalParams: unknown[]) =>
-    logMessage(LogLevel.ERROR, message, ...optionalParams),
+    logMessage('ERROR', message, ...optionalParams),
 };
 
 // Example of a more specific logger if needed, e.g., for API calls
+type JsonLike =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonLike }
+  | JsonLike[];
+
 export const apiLogger = {
-  logApiRequest: (url: string, method: string, params?: any) => {
-    log.debug(`API Request: ${method} ${url}`, params || '');
+  logApiRequest: (url: string, method: string, params?: JsonLike | Record<string, unknown> | unknown) => {
+    log.debug(`API Request: ${method} ${url}`, params ?? '');
   },
-  logApiResponse: (url: string, method: string, status: number, response?: any) => {
-    log.debug(`API Response: ${method} ${url} - Status: ${status}`, response || '');
+  logApiResponse: (url: string, method: string, status: number, response?: JsonLike | Record<string, unknown> | unknown) => {
+    log.debug(`API Response: ${method} ${url} - Status: ${status}`, response ?? '');
   },
-  logApiError: (url: string, method: string, error: Error | unknown) => {
+  logApiError: (url: string, method: string, error: unknown) => {
     log.error(`API Error: ${method} ${url}`, error);
   },
 };

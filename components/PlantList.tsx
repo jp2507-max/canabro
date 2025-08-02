@@ -20,7 +20,7 @@ interface PlantListComponentProps {
   plants: WDBPlant[];
   isLoading: boolean;
   onCountChange?: (count: number) => void;
-  ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
+  ListHeaderComponent?: React.ComponentType | React.ReactElement | null;
   refreshing?: boolean;
   onRefresh?: () => void;
   searchQuery?: string;

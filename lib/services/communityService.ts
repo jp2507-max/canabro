@@ -210,7 +210,7 @@ class CommunityService {
       const notification = await database.write(async () => {
         return await database.get<LiveNotification>('live_notifications').create((notif) => {
           notif.userId = params.userId;
-          notif.notificationType = params.notificationType as any;
+          notif.notificationType = params.notificationType as unknown as typeof notif.notificationType;
           notif.title = params.title;
           notif.message = params.message;
           notif.data = params.data;

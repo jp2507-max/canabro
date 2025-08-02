@@ -8,7 +8,6 @@
  * - Performance optimization settings
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
 import { log } from '../utils/logger';
 
 export interface RealtimeConfig {
@@ -53,7 +52,7 @@ export interface SupabaseClientConfig {
     heartbeatIntervalMs: number;
     reconnectAfterMs: (tries: number) => number;
     encode?: (payload: Record<string, unknown>) => string;
-    decode?: (payload: string) => any;
+    decode?: (payload: string) => Record<string, unknown>;
   };
 }
 
@@ -246,10 +245,10 @@ class RealtimeConfigService {
     private decompressMessage(payload: string): Record<string, unknown> {
         try {
             // Simple JSON decompression - in production, use a proper compression library
-            return JSON.parse(payload);
+            return JSON.parse(payload) as Record<string, unknown>;
         } catch (error) {
             log.error('[RealtimeConfig] Message decompression failed:', error);
-            return { error: 'Decompression failed', original: payload as string };
+            return { error: 'Decompression failed', original: payload };
         }
     }
 

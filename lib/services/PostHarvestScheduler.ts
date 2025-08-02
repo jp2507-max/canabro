@@ -1,10 +1,11 @@
 import { Plant } from '../models/Plant';
 import { PlantTask } from '../models/PlantTask';
+import type { TaskType } from '../types/taskTypes';
 import { log } from '../utils/logger';
 import { addDays } from '../utils/date';
 import { generateUuid } from '../utils/uuid';
 import { getDatabase } from '../database/database';
-import { Q } from '@nozbe/watermelondb';
+import { Database, Q, Model } from '@nozbe/watermelondb';
 
 export interface PostHarvestTask {
   taskType: 'drying' | 'curing' | 'trimming' | 'weighing' | 'storage' | 'cleanup' | 'data_recording';
@@ -198,7 +199,7 @@ export class PostHarvestScheduler {
           
           // Create the initial task
           const task = await this.createPostHarvestTask(
-            database as any,
+            database as unknown as Database,
             plant,
             postTask,
             dueDate,
@@ -210,7 +211,7 @@ export class PostHarvestScheduler {
           // Create recurring tasks if specified
           if (postTask.isRecurring && postTask.recurringInterval) {
             await this.createRecurringPostHarvestTasks(
-              database as any,
+              database as unknown as Database,
               plant,
               postTask,
               harvestDate,
@@ -263,8 +264,9 @@ export class PostHarvestScheduler {
           .fetch();
 
         for (const task of activeTasks) {
-          await task.update((t: any) => {
-            t.status = 'archived';
+          await task.update((t) => {
+            // Narrow inside update without widening the callback type
+            (t as unknown as PlantTask).status = 'archived';
           });
         }
       });
@@ -284,7 +286,7 @@ export class PostHarvestScheduler {
    */
   static async updatePostHarvestProgress(
     plant: Plant,
-    taskType: PostHarvestTask['taskType'],
+    taskType: TaskType,
     progressData: {
       actualDuration?: number;
       notes?: string;
@@ -308,12 +310,13 @@ export class PostHarvestScheduler {
 
       await database.write(async () => {
         for (const task of tasks) {
-          await task.update((t: any) => {
+          await task.update((t) => {
+            const pt = t as unknown as PlantTask;
             if (progressData.actualDuration) {
-              t.estimatedDuration = progressData.actualDuration;
+              pt.estimatedDuration = progressData.actualDuration;
             }
             if (progressData.notes) {
-              t.description = `${t.description}\n\nProgress Notes: ${progressData.notes}`;
+              pt.description = `${pt.description ?? ''}\n\nProgress Notes: ${progressData.notes}`;
             }
           });
         }
@@ -321,11 +324,11 @@ export class PostHarvestScheduler {
 
       // Schedule next check if specified
       if (progressData.nextCheckDate) {
-        const nextTask = this.POST_HARVEST_TASKS.find(t => t.taskType === taskType);
+        const nextTask = this.POST_HARVEST_TASKS.find(t => t.taskType === (taskType as unknown as PostHarvestTask['taskType']));
         if (nextTask) {
           await database.write(async () => {
             await this.createPostHarvestTask(
-              database as any,
+              database as unknown as Database,
               plant,
               nextTask,
               progressData.nextCheckDate!,
@@ -342,18 +345,19 @@ export class PostHarvestScheduler {
   }
 
   private static async createPostHarvestTask(
-    database: any,
+    database: Database,
     plant: Plant,
     postTask: PostHarvestTask,
     dueDate: Date,
     sequenceNumber: number
   ): Promise<PlantTask> {
-    return await database.get('plant_tasks').create((newTask: any) => {
+    // WatermelonDB Model types are nominal; use the runtime shape and cast within the writer
+    return await database.get<PlantTask>('plant_tasks').create((newTask) => {
       newTask.taskId = generateUuid();
       newTask.plantId = plant.id;
       newTask.title = postTask.title;
       newTask.description = postTask.description;
-      newTask.taskType = postTask.taskType;
+      (newTask as unknown as PlantTask).taskType = postTask.taskType as unknown as TaskType;
       newTask.dueDate = dueDate.toISOString();
       newTask.status = 'pending';
       newTask.userId = plant.userId;
@@ -366,7 +370,7 @@ export class PostHarvestScheduler {
   }
 
   private static async createRecurringPostHarvestTasks(
-    database: any,
+    database: Database,
     plant: Plant,
     postTask: PostHarvestTask,
     harvestDate: Date,
@@ -406,7 +410,8 @@ export class PostHarvestScheduler {
         plant,
         {
           ...postTask,
-          title: `${postTask.title} (Day ${startDay + (i * postTask.recurringInterval)})`,
+          // postTask.recurringInterval is defined within the guard above
+          title: `${postTask.title} (Day ${startDay + i * (postTask.recurringInterval as number)})`,
         },
         recurringDueDate,
         i + 1

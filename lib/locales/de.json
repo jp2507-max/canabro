@@ -426,6 +426,8 @@
   },
 
   "strains": {
+      "authRequiredTitle": "Benutzer nicht authentifiziert",
+      "authRequiredSubtitle": "Bitte melden Sie sich an, um Sorten anzuzeigen.",
     "thc": "THC",
     "cbd": "CBD",
     "effectsLabel": "Effekte",

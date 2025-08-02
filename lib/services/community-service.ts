@@ -1,9 +1,9 @@
 
 import supabase from '../supabase';
-import type { 
-  CommunityQuestion, 
-  CommunityPlantShare, 
-  CreateQuestionData, 
+import type {
+  CommunityQuestion,
+  CommunityPlantShare,
+  CreateQuestionData,
   CreatePlantShareData,
   QuestionFilters,
   PlantShareFilters,
@@ -149,8 +149,8 @@ export class CommunityService {
 
     // Add moderation metadata if flagged for review
     if (moderationResult.suggestedAction === 'flag_for_review') {
-      (questionData as any).moderation_status = 'pending_review';
-      (questionData as any).moderation_metadata = {
+      (questionData as Record<string, unknown>).moderation_status = 'pending_review';
+      (questionData as Record<string, unknown>).moderation_metadata = {
         flaggedAt: new Date().toISOString(),
         violations: moderationResult.violations,
         confidence: moderationResult.confidence,
@@ -260,7 +260,10 @@ export class CommunityService {
     const moderationResult = await contentModerationService.moderatePlantShare(data);
     
     if (!moderationResult.isAllowed) {
-      const error = new Error('Content violates community guidelines') as any;
+      const error = new Error('Content violates community guidelines') as Error & {
+        moderationResult: ModerationResult;
+        code: string;
+      };
       error.moderationResult = moderationResult;
       error.code = 'CONTENT_MODERATION_FAILED';
       throw error;
@@ -270,15 +273,19 @@ export class CommunityService {
     if (data.images_urls && data.images_urls.length > 0) {
       log.info('[CommunityService] Moderating plant share images');
       for (const imageUrl of data.images_urls) {
-        const imageModerationResult = await contentModerationService.moderateImageContent(imageUrl);
-        
-        if (!imageModerationResult.isAppropriate) {
-          const error = new Error('Image content violates community guidelines') as any;
-          error.imageModerationResult = imageModerationResult;
-          error.code = 'IMAGE_MODERATION_FAILED';
-          error.imageUrl = imageUrl;
-          throw error;
-        }
+          const imageModerationResult = await contentModerationService.moderateImageContent(imageUrl);
+          
+          if (!imageModerationResult.isAppropriate) {
+            const error = new Error('Image content violates community guidelines') as Error & {
+              imageModerationResult: { isAppropriate: boolean; [k: string]: unknown };
+              code: string;
+              imageUrl: string;
+            };
+            error.imageModerationResult = imageModerationResult as unknown as { isAppropriate: boolean; [k: string]: unknown };
+            error.code = 'IMAGE_MODERATION_FAILED';
+            error.imageUrl = imageUrl;
+            throw error;
+          }
       }
     }
 
@@ -290,8 +297,8 @@ export class CommunityService {
 
     // Add moderation metadata if flagged for review
     if (moderationResult.suggestedAction === 'flag_for_review') {
-      (plantShareData as any).moderation_status = 'pending_review';
-      (plantShareData as any).moderation_metadata = {
+      (plantShareData as Record<string, unknown>).moderation_status = 'pending_review';
+      (plantShareData as Record<string, unknown>).moderation_metadata = {
         flaggedAt: new Date().toISOString(),
         violations: moderationResult.violations,
         confidence: moderationResult.confidence,
@@ -771,7 +778,10 @@ export class CommunityService {
     const moderationResult = await contentModerationService.moderateComment(data);
     
     if (!moderationResult.isAllowed) {
-      const error = new Error('Comment violates community guidelines') as any;
+      const error = new Error('Comment violates community guidelines') as Error & {
+        moderationResult: ModerationResult;
+        code: string;
+      };
       error.moderationResult = moderationResult;
       error.code = 'CONTENT_MODERATION_FAILED';
       throw error;
@@ -783,8 +793,11 @@ export class CommunityService {
       const imageModerationResult = await contentModerationService.moderateImageContent(data.image_url);
       
       if (!imageModerationResult.isAppropriate) {
-        const error = new Error('Comment image violates community guidelines') as any;
-        error.imageModerationResult = imageModerationResult;
+        const error = new Error('Comment image violates community guidelines') as Error & {
+          imageModerationResult: { isAppropriate: boolean; [k: string]: unknown };
+          code: string;
+        };
+        error.imageModerationResult = imageModerationResult as unknown as { isAppropriate: boolean; [k: string]: unknown };
         error.code = 'IMAGE_MODERATION_FAILED';
         throw error;
       }
@@ -798,8 +811,8 @@ export class CommunityService {
 
     // Add moderation metadata if flagged for review
     if (moderationResult.suggestedAction === 'flag_for_review') {
-      (commentData as any).moderation_status = 'pending_review';
-      (commentData as any).moderation_metadata = {
+      (commentData as Record<string, unknown>).moderation_status = 'pending_review';
+      (commentData as Record<string, unknown>).moderation_metadata = {
         flaggedAt: new Date().toISOString(),
         violations: moderationResult.violations,
         confidence: moderationResult.confidence,
@@ -919,7 +932,7 @@ export class CommunityService {
         ? 'community_plant_shares' 
         : 'comments';
 
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         moderation_status: action,
         moderation_metadata: {
           actionAppliedAt: new Date().toISOString(),

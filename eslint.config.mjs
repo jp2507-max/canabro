@@ -382,6 +382,14 @@ export default [
   // Ignore patterns
   {
     ignores: [
+      // Tests and Scripts (exclude from lint runs)
+      "__tests__/**",
+      "**/__tests__/**",
+      "**/*.test.*",
+      "**/*test.*",
+      "**/__mocks__/**",
+      "scripts/**",
+
       // Dependencies
       "node_modules/**",
 

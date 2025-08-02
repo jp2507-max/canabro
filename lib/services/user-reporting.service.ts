@@ -21,7 +21,6 @@ import type {
   UserAction 
 } from '../../components/community/UserReportReview';
 import type { 
-  UserReportData, 
   UserReportCategory, 
   ReportSeverity 
 } from '../../components/community/UserReportModal';
@@ -252,39 +251,100 @@ class UserReportingService {
       }
 
       // Transform data to UserReport format
-      const reports: UserReport[] = (data || []).map((report: Record<string, unknown>) => {
-        const reportedUser = report.reported_user as any;
-        const reporter = report.reporter as any;
-        
+      type ProfileRow = {
+        id?: string;
+        username?: string;
+        display_name?: string;
+        avatar_url?: string;
+        created_at?: string;
+      };
+
+      type ReportRow = {
+        id?: string;
+        reported_user?: ProfileRow | null;
+        reporter?: ProfileRow | null;
+        category?: UserReportCategory;
+        subcategory?: string | null;
+        severity?: ReportSeverity;
+        description?: string;
+        evidence?: string[] | null;
+        status?: ReportStatus;
+        created_at?: string;
+        reviewed_at?: string | null;
+        reviewed_by?: string | null;
+        moderator_notes?: string | null;
+        is_anonymous?: boolean;
+      };
+
+      const asProfile = (value: unknown): ProfileRow | null => {
+        if (typeof value !== 'object' || value === null) return null;
+        const v = value as Record<string, unknown>;
         return {
-          id: report.id as string,
+          id: typeof v.id === 'string' ? v.id : undefined,
+          username: typeof v.username === 'string' ? v.username : undefined,
+          display_name: typeof v.display_name === 'string' ? v.display_name : undefined,
+          avatar_url: typeof v.avatar_url === 'string' ? v.avatar_url : undefined,
+          created_at: typeof v.created_at === 'string' ? v.created_at : undefined,
+        };
+      };
+
+      const asReportRow = (value: unknown): ReportRow => {
+        const v = (typeof value === 'object' && value !== null) ? value as Record<string, unknown> : {};
+        return {
+          id: typeof v.id === 'string' ? v.id : undefined,
+          reported_user: asProfile(v.reported_user ?? null),
+          reporter: asProfile(v.reporter ?? null),
+          category: v.category as UserReportCategory | undefined,
+          subcategory: typeof v.subcategory === 'string' ? v.subcategory : null,
+          severity: v.severity as ReportSeverity | undefined,
+          description: typeof v.description === 'string' ? v.description : undefined,
+          evidence: Array.isArray(v.evidence) ? (v.evidence as string[]) : null,
+          status: v.status as ReportStatus | undefined,
+          created_at: typeof v.created_at === 'string' ? v.created_at : undefined,
+          reviewed_at: typeof v.reviewed_at === 'string' ? v.reviewed_at : null,
+          reviewed_by: typeof v.reviewed_by === 'string' ? v.reviewed_by : null,
+          moderator_notes: typeof v.moderator_notes === 'string' ? v.moderator_notes : null,
+          is_anonymous: typeof v.is_anonymous === 'boolean' ? v.is_anonymous : false,
+        };
+      };
+
+      const reports: UserReport[] = (data || []).map((raw: unknown) => {
+        const report = asReportRow(raw);
+
+        const reportedUser = report.reported_user;
+        const reporter = report.reporter;
+
+        return {
+          id: report.id ?? '',
           reportedUser: {
-            id: reportedUser?.id,
-            username: reportedUser?.username,
+            id: reportedUser?.id ?? '',
+            username: reportedUser?.username ?? '',
             avatar: reportedUser?.avatar_url,
-            displayName: reportedUser?.display_name,
-            joinedAt: new Date(reportedUser?.created_at || Date.now()),
-            postsCount: 0, // TODO: Get from posts table
-            reportsCount: 0, // TODO: Get from user_reports table
-            lastActive: new Date(), // TODO: Get from user activity
+            displayName: reportedUser?.display_name ?? '',
+            joinedAt: new Date(reportedUser?.created_at ?? Date.now()),
+            postsCount: 0, // TODO
+            reportsCount: 0, // TODO
+            lastActive: new Date(), // TODO
           },
-          reporter: reporter ? {
-            id: reporter.id,
-            username: reporter.username,
-            avatar: reporter.avatar_url,
-            displayName: reporter.display_name,
-          } : null,
-          category: report.category as any, // Cast to proper UserReportCategory type
-          subcategory: report.subcategory as string,
-          severity: report.severity as any, // Cast to proper severity type
-          description: report.description as string,
-          evidence: report.evidence as string[] || [],
-          status: report.status as any, // Cast to proper ReportStatus type
-          createdAt: new Date(report.created_at as string || Date.now()),
-          reviewedAt: report.reviewed_at ? new Date(report.reviewed_at as string) : undefined,
-          reviewedBy: report.reviewed_by as string,
-          moderatorNotes: report.moderator_notes as string,
-          isAnonymous: report.is_anonymous as boolean,
+          reporter: reporter
+            ? {
+                id: reporter.id ?? '',
+                username: reporter.username ?? '',
+                avatar: reporter.avatar_url,
+                displayName: reporter.display_name ?? '',
+              }
+            : null,
+          category: (report.category as UserReportCategory) ?? 'harassment',
+          subcategory: report.subcategory ?? undefined,
+          severity: (report.severity as ReportSeverity) ?? 'low',
+          description: report.description ?? '',
+          evidence: report.evidence ?? [],
+          status: (report.status as ReportStatus) ?? 'pending',
+          createdAt: new Date(report.created_at ?? Date.now()),
+          reviewedAt: report.reviewed_at ? new Date(report.reviewed_at) : undefined,
+          reviewedBy: report.reviewed_by ?? undefined,
+          moderatorNotes: report.moderator_notes ?? undefined,
+          isAnonymous: report.is_anonymous ?? false,
         };
       });
 
@@ -480,25 +540,46 @@ class UserReportingService {
         .select('category, severity, status, created_at, reviewed_at')
         .gte('created_at', startDate.toISOString());
 
+      // Type for aggregated reports fetched for stats
+      type StatsReportRow = {
+        category?: UserReportCategory;
+        severity?: ReportSeverity;
+        status?: ReportStatus;
+        created_at?: string;
+        reviewed_at?: string | null;
+      };
+
       const totalReports = reports?.length || 0;
-      const pendingReports = reports?.filter((r: Record<string, unknown>) => r.status === 'pending').length || 0;
-      const resolvedReports = reports?.filter((r: Record<string, unknown>) => r.status === 'resolved').length || 0;
-      const dismissedReports = reports?.filter((r: Record<string, unknown>) => r.status === 'dismissed').length || 0;
-      const escalatedReports = reports?.filter((r: Record<string, unknown>) => r.status === 'escalated').length || 0;
+      const pendingReports =
+        reports?.filter((r: StatsReportRow) => r.status === 'pending').length || 0;
+      const resolvedReports =
+        reports?.filter((r: StatsReportRow) => r.status === 'resolved').length || 0;
+      const dismissedReports =
+        reports?.filter((r: StatsReportRow) => r.status === 'dismissed').length || 0;
+      const escalatedReports =
+        reports?.filter((r: StatsReportRow) => r.status === 'escalated').length || 0;
 
       // Calculate category and severity distributions
       const reportsByCategory = this.groupByField(reports || [], 'category');
       const reportsBySeverity = this.groupByField(reports || [], 'severity');
 
       // Calculate average resolution time
-      const resolvedWithTimes = reports?.filter((r: Record<string, unknown>) => r.status === 'resolved' && r.reviewed_at) || [];
-      const averageResolutionTime = resolvedWithTimes.length > 0
-        ? resolvedWithTimes.reduce((sum: number, r: any) => {
-            const created = new Date(r.created_at).getTime();
-            const reviewed = new Date(r.reviewed_at!).getTime();
-            return sum + (reviewed - created);
-          }, 0) / resolvedWithTimes.length / (1000 * 60 * 60) // Convert to hours
-        : 0;
+      const resolvedWithTimes =
+        reports?.filter(
+          (r: StatsReportRow) =>
+            r.status === 'resolved' && typeof r.reviewed_at === 'string' && typeof r.created_at === 'string'
+        ) || [];
+
+      const averageResolutionTime =
+        resolvedWithTimes.length > 0
+          ? resolvedWithTimes.reduce((sum: number, r: StatsReportRow) => {
+              const created = new Date(String(r.created_at)).getTime();
+              const reviewed = new Date(String(r.reviewed_at)).getTime();
+              return sum + (reviewed - created);
+            }, 0) /
+            resolvedWithTimes.length /
+            (1000 * 60 * 60) // hours
+          : 0;
 
       // Get top reported users (placeholder - would need actual query)
       const topReportedUsers: UserReportStats['topReportedUsers'] = [];
@@ -603,12 +684,12 @@ class UserReportingService {
   }
 
   private async updateUserModerationStatus(
-    userId: string,
+    _userId: string,
     action: UserAction,
     expiresAt: Date | null
   ): Promise<void> {
     // This would update the user's moderation status in their profile
-    log.info('[UserReporting] Updated user moderation status', { userId, action, expiresAt });
+    log.info('[UserReporting] Updated user moderation status', { action, expiresAt });
   }
 
   private async logModerationAction(action: {
@@ -650,12 +731,13 @@ class UserReportingService {
     }
   }
 
-  private groupByField<T extends Record<string, unknown>>(
-    items: T[],
-    field: keyof T
-  ): Record<string, number> {
+  private groupByField<
+    T extends Record<string, unknown>,
+    K extends keyof T
+  >(items: T[], field: K): Record<string, number> {
     return items.reduce((acc, item) => {
-      const key = item[field] as string;
+      const raw = item[field];
+      const key = typeof raw === 'string' ? raw : String(raw ?? '');
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);

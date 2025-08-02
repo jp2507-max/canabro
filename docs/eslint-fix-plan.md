@@ -1,7 +1,12 @@
 # ESLint Cleanup Plan (Errors First)
 
 Goal: Resolve all ESLint errors before warnings, iterating until error count is 0. Keep changes scoped, typed, and aligned with existing i18n architecture.
-first run npx run lint and then fix all errors 
+
+First, run ESLint with autofix to resolve trivial issues:
+npx eslint . --ext .ts,.tsx --fix
+
+Then re-run the linter and manually fix all remaining errors first, followed by warnings.
+
 ## Current Findings
 
 - ESLint errors are mainly:
@@ -111,10 +116,31 @@ Based on lint output, address in this order:
 
 Adjust wording as desired; maintain consistency with existing namespaces.
 
-## TypeSeSiprpAnyy→ S→ff Typee Types
+## Type Safety: Replace any with unknown + type guards
 
--b`l/b/uti/r/loggsr.ts`:: caageefunc ifnugrgn turosmfrom ` `y`ny` `unk`own`ooopproperly eypedx emerpcnvgsfudsci; herfarm dypegud#befoot trgfyg/ung
-`libevceur-Lipoftg g.aa`vge`fla`: rollow oeDpi l-xcwi keys exist in `en.json` (and in `de.json` mirrored or translated).
-  Uxlicimpp#(psoSubaswh r`nhc `(repry)`.-Wherehid-prty lbreueercdadefmlra.-`b/srvc/y/*`tulclpouduncnu/uspcutogy-Wh`zd`iiuslad(.g.d-dbric)preferprt voi `ay`##Ns-ESLcofladyh``(oi).`.nr` dpatin wargsinfoa;rving`.sltr`isopio.
--Kplasccsbf cradrs;srTmex usagrmais gdxcpforotourc-Fllwxitdnvn(TpSrpttitRaNtv/Ex,NvWid ylg,e.## Don Dfnion-`nxi-t.s--awg=0`ror0ror.Aprviuly fiscomlar.Newkeyx`.jo`n `jo` mrroror ae)Nw`y`nrodud;vou`y`occurrdsd.##Nex(cee=0)
--Optoy dresswags:-`n-csle`develomece allwed pecnf;cosdrmizgwhflaggd.-`-usd-vs`tesspcmaprconfgobeiiupfusefu.-Unnc/cchasy warnngcandldfsrd.
+Prefer unknown for untrusted or loosely-typed inputs, then narrow with a type guard before accessing properties. This satisfies @typescript-eslint/no-explicit-any and preserves runtime safety.
+
+Example:
+
+```ts
+function isRecordWithName(value: unknown): value is { name: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof (value as Record<string, unknown>).name === 'string'
+  );
+}
+
+export function greet(data: unknown): string {
+  if (!isRecordWithName(data)) {
+    return 'Hello, friend';
+  }
+  return `Hello, ${data.name}`;
+}
+```
+
+Why this approach:
+- The parameter is unknown, preventing unsafe property access.
+- The type guard performs runtime checks and informs TypeScript that after the guard, data is { name: string }.
+- Avoids any while maintaining strict, ergonomic type safety.

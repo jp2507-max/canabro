@@ -5,7 +5,7 @@
  * to ensure task prioritization and milestone tracking work correctly.
  */
 
-import { GrowthStage } from '../../types/plant';
+import { type GrowthStage, GROWTH_STAGES } from '../../types/plant';
 import { TaskType } from '../../types/taskTypes';
 import { GrowthStageTaskPrioritization } from '../GrowthStageTaskPrioritization';
 import { TaskAutomationService } from '../TaskAutomationService';
@@ -39,31 +39,54 @@ describe('GrowthStageIntegration', () => {
         const mockPlant = {
           id: 'plant-1',
           name: 'Test Plant',
-          growthStage: GrowthStage.VEGETATIVE,
+          growthStage: GROWTH_STAGES.VEGETATIVE,
           plantedDate: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(), // 35 days ago
           userId: 'user-1',
           strainId: null,
           cannabisType: 'hybrid',
         };
 
-        const nextStage = await TaskAutomationService.detectGrowthStageTransition(mockPlant as any);
+        type DetectPlant = {
+          id: string;
+          name: string;
+          growthStage: GrowthStage;
+          plantedDate: string;
+          userId: string;
+          strainId: string | null;
+          cannabisType: 'indica' | 'sativa' | 'hybrid';
+        };
+        const nextStage = await TaskAutomationService.detectGrowthStageTransition(
+          mockPlant as unknown as import('../../models/Plant').Plant
+        );
         
         // Should transition from vegetative (30 days) to pre-flower after 35 days
-        expect(nextStage).toBe(GrowthStage.PRE_FLOWER);
+        expect(nextStage).toBe(GROWTH_STAGES.PRE_FLOWER);
       });
 
       it('should return null when plant is not ready for transition', async () => {
         const mockPlant = {
           id: 'plant-1',
           name: 'Test Plant',
-          growthStage: GrowthStage.VEGETATIVE,
+          growthStage: GROWTH_STAGES.VEGETATIVE,
           plantedDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
           userId: 'user-1',
           strainId: null,
           cannabisType: 'hybrid',
         };
 
-        const nextStage = await TaskAutomationService.detectGrowthStageTransition(mockPlant as any);
+        type DetectPlant = {
+          id: string;
+          name: string;
+          growthStage: GrowthStage;
+          plantedDate: string;
+          userId: string;
+          strainId: string | null;
+          cannabisType: 'indica' | 'sativa' | 'hybrid';
+        };
+        // Cast to a compatible Plant from models (test-only bypass)
+        const nextStage = await TaskAutomationService.detectGrowthStageTransition(
+          mockPlant as unknown as import('../../models/Plant').Plant
+        );
         
         // Should not transition yet (only 15 days, needs 30)
         expect(nextStage).toBeNull();
@@ -72,16 +95,24 @@ describe('GrowthStageIntegration', () => {
 
     describe('generateTaskTitle', () => {
       it('should generate appropriate task titles', () => {
-        const title = (TaskAutomationService as any).generateTaskTitle('watering', 'Test Plant');
+        type TestableTaskAutomationService = {
+          generateTaskTitle: (taskType: string, plantName: string) => string;
+        };
+        const svc = TaskAutomationService as unknown as TestableTaskAutomationService;
+        const title = svc.generateTaskTitle('watering', 'Test Plant');
         expect(title).toBe('Water Test Plant');
       });
     });
 
     describe('generateTaskDescription', () => {
       it('should generate stage-appropriate task descriptions', () => {
-        const description = (TaskAutomationService as any).generateTaskDescription(
+        type TestableTaskAutomationService2 = {
+          generateTaskDescription: (taskType: string, stage: GrowthStage) => string;
+        };
+        const svc2 = TaskAutomationService as unknown as TestableTaskAutomationService2;
+        const description = svc2.generateTaskDescription(
           'watering',
-          GrowthStage.FLOWERING
+          GROWTH_STAGES.FLOWERING
         );
         expect(description).toContain('avoid getting buds wet');
       });
@@ -89,18 +120,20 @@ describe('GrowthStageIntegration', () => {
 
     describe('calculateTaskPriority', () => {
       it('should calculate correct priority for watering in flowering stage', () => {
-        const priority = (TaskAutomationService as any).calculateTaskPriority(
-          'watering',
-          GrowthStage.FLOWERING
-        );
+        type SvcCalcPriority = {
+          calculateTaskPriority: (taskType: string, stage: GrowthStage) => 'low' | 'medium' | 'high' | 'critical' | string;
+        };
+        const svcCalc = TaskAutomationService as unknown as SvcCalcPriority;
+        const priority = svcCalc.calculateTaskPriority('watering', GROWTH_STAGES.FLOWERING);
         expect(priority).toBe('high');
       });
 
       it('should calculate correct priority for feeding in germination stage', () => {
-        const priority = (TaskAutomationService as any).calculateTaskPriority(
-          'feeding',
-          GrowthStage.GERMINATION
-        );
+        type SvcCalcPriority2 = {
+          calculateTaskPriority: (taskType: string, stage: GrowthStage) => 'low' | 'medium' | 'high' | 'critical' | string;
+        };
+        const svcCalc2 = TaskAutomationService as unknown as SvcCalcPriority2;
+        const priority = svcCalc2.calculateTaskPriority('feeding', GROWTH_STAGES.GERMINATION);
         expect(priority).toBe('low');
       });
     });
@@ -112,16 +145,24 @@ describe('GrowthStageIntegration', () => {
         const mockPlant = {
           id: 'plant-1',
           name: 'Test Plant',
-          growthStage: GrowthStage.VEGETATIVE,
+          growthStage: GROWTH_STAGES.VEGETATIVE,
           plantedDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
         };
 
-        const progress = await GrowthStageTaskPrioritization.calculateMilestoneProgress(mockPlant as any);
+        type ProgressPlant = {
+          id: string;
+          name: string;
+          growthStage: GrowthStage;
+          plantedDate: string;
+        };
+        const progress = await GrowthStageTaskPrioritization.calculateMilestoneProgress(
+          mockPlant as unknown as import('../../models/Plant').Plant
+        );
         
         // 15 days out of 30 expected = 50%
         expect(progress.progressPercentage).toBe(50);
-        expect(progress.currentStage).toBe(GrowthStage.VEGETATIVE);
-        expect(progress.nextStage).toBe(GrowthStage.PRE_FLOWER);
+        expect(progress.currentStage).toBe(GROWTH_STAGES.VEGETATIVE);
+        expect(progress.nextStage).toBe(GROWTH_STAGES.PRE_FLOWER);
         expect(progress.isReadyForTransition).toBe(false);
       });
 
@@ -129,11 +170,13 @@ describe('GrowthStageIntegration', () => {
         const mockPlant = {
           id: 'plant-1',
           name: 'Test Plant',
-          growthStage: GrowthStage.VEGETATIVE,
+          growthStage: GROWTH_STAGES.VEGETATIVE,
           plantedDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days ago
         };
 
-        const progress = await GrowthStageTaskPrioritization.calculateMilestoneProgress(mockPlant as any);
+        const progress = await GrowthStageTaskPrioritization.calculateMilestoneProgress(
+          mockPlant as unknown as import('../../models/Plant').Plant
+        );
         
         // 25 days out of 30 expected = 83.33% (>80% threshold)
         expect(progress.progressPercentage).toBeGreaterThan(80);
@@ -149,7 +192,7 @@ describe('GrowthStageIntegration', () => {
           find: jest.fn().mockResolvedValue({
             id: 'plant-1',
             name: 'Test Plant',
-            growthStage: GrowthStage.HARVEST,
+            growthStage: GROWTH_STAGES.HARVEST,
             plantedDate: new Date().toISOString(),
           }),
         });
@@ -163,62 +206,65 @@ describe('GrowthStageIntegration', () => {
   });
 
   describe('Priority Matrix', () => {
-    const testCases = [
-      {
-        taskType: 'watering' as TaskType,
-        stage: GrowthStage.GERMINATION,
-        expectedPriority: 'high',
-      },
-      {
-        taskType: 'feeding' as TaskType,
-        stage: GrowthStage.GERMINATION,
-        expectedPriority: 'low',
-      },
-      {
-        taskType: 'inspection' as TaskType,
-        stage: GrowthStage.LATE_FLOWERING,
-        expectedPriority: 'critical',
-      },
-      {
-        taskType: 'harvest' as TaskType,
-        stage: GrowthStage.HARVEST,
-        expectedPriority: 'critical',
-      },
-    ];
+        const testCases = [
+          {
+            taskType: 'watering' as TaskType,
+            stage: GROWTH_STAGES.GERMINATION,
+            expectedPriority: 'high',
+          },
+          {
+            taskType: 'feeding' as TaskType,
+            stage: GROWTH_STAGES.GERMINATION,
+            expectedPriority: 'low',
+          },
+          {
+            taskType: 'inspection' as TaskType,
+            stage: GROWTH_STAGES.LATE_FLOWERING,
+            expectedPriority: 'critical',
+          },
+          {
+            taskType: 'harvest' as TaskType,
+            stage: GROWTH_STAGES.HARVEST,
+            expectedPriority: 'critical',
+          },
+        ];
 
     testCases.forEach(({ taskType, stage, expectedPriority }) => {
       it(`should assign ${expectedPriority} priority to ${taskType} in ${stage} stage`, () => {
-        const priority = (TaskAutomationService as any).calculateTaskPriority(taskType, stage);
+        type SvcCalcPriority3 = {
+          calculateTaskPriority: (taskType: string, stage: GrowthStage | (typeof GROWTH_STAGES)[keyof typeof GROWTH_STAGES]) => string;
+        };
+        const svcCalc3 = TaskAutomationService as unknown as SvcCalcPriority3;
+        const priority = svcCalc3.calculateTaskPriority(taskType, stage);
         expect(priority).toBe(expectedPriority);
       });
     });
   });
 
   describe('Environmental Adjustments', () => {
+    type SvcEnvAdjust = {
+      calculateEnvironmentalAdjustments: (
+        taskType: string,
+        env: { humidity?: number; pH?: number }
+      ) => { rescheduleHours?: number; newPriority?: string };
+    };
+    const svcEnv = TaskAutomationService as unknown as SvcEnvAdjust;
+
     it('should delay watering in high humidity', () => {
-      const adjustments = (TaskAutomationService as any).calculateEnvironmentalAdjustments(
-        'watering',
-        { humidity: 80 }
-      );
+      const adjustments = svcEnv.calculateEnvironmentalAdjustments('watering', { humidity: 80 });
       
       expect(adjustments.rescheduleHours).toBe(12);
     });
 
     it('should prioritize watering in low humidity', () => {
-      const adjustments = (TaskAutomationService as any).calculateEnvironmentalAdjustments(
-        'watering',
-        { humidity: 30 }
-      );
+      const adjustments = svcEnv.calculateEnvironmentalAdjustments('watering', { humidity: 30 });
       
       expect(adjustments.rescheduleHours).toBe(-6);
       expect(adjustments.newPriority).toBe('high');
     });
 
     it('should mark feeding as critical when pH is out of range', () => {
-      const adjustments = (TaskAutomationService as any).calculateEnvironmentalAdjustments(
-        'feeding',
-        { pH: 5.0 }
-      );
+      const adjustments = svcEnv.calculateEnvironmentalAdjustments('feeding', { pH: 5.0 });
       
       expect(adjustments.newPriority).toBe('critical');
     });

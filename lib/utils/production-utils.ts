@@ -270,10 +270,29 @@ export const memoryOptimization = {
   // New: Monitor memory usage
   getMemoryUsage: () => {
     if (__DEV__) {
+      type PerformanceMemory = {
+        jsHeapSizeLimit: number;
+        totalJSHeapSize: number;
+        usedJSHeapSize: number;
+      };
+      type PerfWithMemory = {
+        memory?: PerformanceMemory;
+      };
+
+      const perf: unknown = (global as unknown as { performance?: PerfWithMemory }).performance;
+
+      const memory =
+        perf &&
+        typeof perf === 'object' &&
+        'memory' in (perf as Record<string, unknown>) &&
+        (perf as PerfWithMemory).memory
+          ? (perf as PerfWithMemory).memory
+          : undefined;
+
       return {
-        jsHeapSizeLimit: (global as any).performance?.memory?.jsHeapSizeLimit || 'N/A',
-        totalJSHeapSize: (global as any).performance?.memory?.totalJSHeapSize || 'N/A',
-        usedJSHeapSize: (global as any).performance?.memory?.usedJSHeapSize || 'N/A',
+        jsHeapSizeLimit: memory?.jsHeapSizeLimit ?? 'N/A',
+        totalJSHeapSize: memory?.totalJSHeapSize ?? 'N/A',
+        usedJSHeapSize: memory?.usedJSHeapSize ?? 'N/A',
       };
     }
     return null;

@@ -299,18 +299,58 @@ export class StrainCalendarIntegrationService {
   private static convertToStrainCharacteristics(strain: DataStrain | Strain): StrainCharacteristics {
     // Handle different strain object structures
     const isDataStrain = 'thcContent' in strain;
-    
+
+    // Narrowing helpers for Strain model shape
+    const maybeStrainModel = (!isDataStrain && typeof strain === 'object' && strain !== null)
+      ? (strain as Partial<Record<'floweringTime' | 'thcPercentage' | 'cbdPercentage' | 'growDifficulty' | 'averageYield' | 'heightIndoor' | 'heightOutdoor', unknown>>)
+      : null;
+
+    const floweringTime: number =
+      isDataStrain
+        ? 8
+        : (typeof maybeStrainModel?.floweringTime === 'number' ? maybeStrainModel.floweringTime : 8);
+
+    const thcPercentage: number | undefined =
+      isDataStrain
+        ? (strain as DataStrain).thcContent
+        : (typeof maybeStrainModel?.thcPercentage === 'number' ? maybeStrainModel.thcPercentage : undefined);
+
+    const cbdPercentage: number | undefined =
+      isDataStrain
+        ? (strain as DataStrain).cbdContent
+        : (typeof maybeStrainModel?.cbdPercentage === 'number' ? maybeStrainModel.cbdPercentage : undefined);
+
+    const growDifficulty: string | undefined =
+      isDataStrain
+        ? (strain as DataStrain).growDifficulty
+        : (typeof maybeStrainModel?.growDifficulty === 'string' ? maybeStrainModel.growDifficulty : undefined);
+
+    const averageYield: string | undefined =
+      isDataStrain
+        ? undefined
+        : (typeof maybeStrainModel?.averageYield === 'string' ? maybeStrainModel.averageYield : undefined);
+
+    const heightIndoor: string | undefined =
+      isDataStrain
+        ? undefined
+        : (typeof maybeStrainModel?.heightIndoor === 'string' ? maybeStrainModel.heightIndoor : undefined);
+
+    const heightOutdoor: string | undefined =
+      isDataStrain
+        ? undefined
+        : (typeof maybeStrainModel?.heightOutdoor === 'string' ? maybeStrainModel.heightOutdoor : undefined);
+
     return {
       strainId: strain.id as string,
       name: strain.name as string,
       type: (strain.type || 'unknown') as 'indica' | 'sativa' | 'hybrid' | 'cbd' | 'unknown',
-      floweringTime: isDataStrain ? 8 : ((strain as any).floweringTime as number) || 8, // Default 8 weeks
-      thcPercentage: isDataStrain ? (strain as DataStrain).thcContent : (strain as any).thcPercentage as number | undefined,
-      cbdPercentage: isDataStrain ? (strain as DataStrain).cbdContent : (strain as any).cbdPercentage as number | undefined,
-      growDifficulty: isDataStrain ? (strain as DataStrain).growDifficulty : (strain as any).growDifficulty as string | undefined,
-      averageYield: isDataStrain ? undefined : (strain as any).averageYield as string | undefined,
-      heightIndoor: isDataStrain ? undefined : (strain as any).heightIndoor as string | undefined,
-      heightOutdoor: isDataStrain ? undefined : (strain as any).heightOutdoor as string | undefined,
+      floweringTime,
+      thcPercentage,
+      cbdPercentage,
+      growDifficulty,
+      averageYield,
+      heightIndoor,
+      heightOutdoor,
     };
   }
 

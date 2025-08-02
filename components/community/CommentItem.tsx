@@ -42,7 +42,7 @@ interface CommentItemProps {
     likes_count?: number;
     moderation_status?: ModerationStatus;
     moderation_metadata?: {
-      violations?: any[];
+      violations?: Array<Record<string, unknown>>;
       confidence?: number;
       flaggedAt?: string;
     };

@@ -38,8 +38,8 @@ interface StrainAutocompleteProps {
   initialStrainName?: string;
   label?: string;
   placeholder?: string;
-  inputStyle?: any;
-  containerStyle?: any;
+  inputStyle?: React.ComponentProps<typeof EnhancedTextInput>['style'];
+  containerStyle?: React.ComponentProps<typeof Animated.View>['style'];
   disabled?: boolean;
   limit?: number;
   onFocus?: () => void;

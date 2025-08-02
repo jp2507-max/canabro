@@ -182,7 +182,7 @@ export default function ContentReportModal({
                       }`}
                     >
                       <OptimizedIcon
-                        name={reason.icon as any}
+                        name={reason.icon}
                         size={20}
                         className={`${reason.color} mr-3`}
                       />
