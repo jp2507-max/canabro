@@ -1244,5 +1244,61 @@
     "analyzingSubtitle": "Unsere KI untersucht Ihre Pflanze auf\nKrankheiten, Schädlinge und Nährstoffmängel",
     "analysisFailedTitle": "Analyse fehlgeschlagen",
     "analysisFailedMessage": "Bitte versuchen Sie es erneut mit einem klareren Bild Ihrer Pflanze."
+  },
+  "community": {
+    "filters": {
+      "all": "Alle Beiträge",
+      "plants": "Pflanzen-Updates",
+      "strains": "Sorten-Bewertungen",
+      "achievements": "Erfolge"
+    },
+    "feed": {
+      "empty": {
+        "title": "Noch keine Beiträge",
+        "description": "Folgen Sie anderen Züchtern, um ihre Beiträge und Updates in Ihrem Feed zu sehen."
+      }
+    },
+    "stats": {
+      "followers": "Follower",
+      "following": "Folge ich",
+      "posts": "Beiträge",
+      "reputation": "Reputation"
+    },
+    "labels": {
+      "mutual": "Gegenseitig"
+    },
+    "actions": {
+      "follow": "Folgen",
+      "following": "Folge ich",
+      "unfollow": "Entfolgen",
+      "unfollowUser": "Benutzer entfolgen",
+      "unfollowConfirm": "Sind Sie sicher, dass Sie {{username}} entfolgen möchten?"
+    },
+    "sections": {
+      "followRequests": "Folge-Anfragen"
+    },
+    "tabs": {
+      "followers": "Follower",
+      "following": "Folge ich"
+    },
+    "time": {
+      "justNow": "Gerade eben",
+      "minutesAgo": "vor {{count}}m",
+      "hoursAgo": "vor {{count}}h",
+      "daysAgo": "vor {{count}}d"
+    },
+    "errors": {
+      "followFailed": "Benutzer konnte nicht gefolgt werden",
+      "unfollowFailed": "Benutzer konnte nicht entfolgt werden",
+      "loadFeedFailed": "Feed konnte nicht geladen werden",
+      "tryAgain": "Bitte versuchen Sie es erneut"
+    },
+    "notifications": {
+      "newFollower": "Neuer Follower",
+      "newFollowerBody": "{{username}} folgt Ihnen jetzt"
+    },
+    "accessibility": {
+      "userAvatar": "Profilbild von {{username}}"
+    }
   }
 }
