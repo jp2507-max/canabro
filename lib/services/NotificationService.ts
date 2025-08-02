@@ -145,7 +145,7 @@ export async function scheduleNotification({
 }: {
   title: string;
   body: string;
-  data?: any;
+  data?: Record<string, unknown>;
   trigger: number; // Seconds from now
   type?: NotificationType;
 }) {

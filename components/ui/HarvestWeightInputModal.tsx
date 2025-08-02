@@ -80,7 +80,7 @@ export const HarvestWeightInputModal: React.FC<HarvestWeightInputModalProps> = (
       if (timer) clearTimeout(timer);
       // Cancel ongoing animations and reset shared values on unmount
       // Use runOnUI to ensure this runs on the UI thread
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+       
       const { runOnUI, cancelAnimation } = require('react-native-reanimated');
       runOnUI(() => {
         cancelAnimation(backdropOpacity);

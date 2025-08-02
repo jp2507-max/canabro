@@ -76,16 +76,25 @@ export function isValidUuid(uuid: string | undefined | null): boolean {
  * @param table The table name
  * @returns A cleaned record suitable for Supabase
  */
-export function sanitizeRecord(record: any, table: string): any {
+type Primitive = string | number | boolean | null;
+type Json = Primitive | Json[] | { [key: string]: Json };
+
+export function sanitizeRecord(
+  record: Record<string, unknown>,
+  table: string
+): Record<string, unknown> {
   // Make a copy to avoid mutating the original
-  const cleanedRecord = { ...record };
+  const cleanedRecord: Record<string, unknown> = { ...record };
 
   // Remove WatermelonDB system fields that should not be synced
   delete cleanedRecord._status;
   delete cleanedRecord._changed;
 
   // Ensure id field exists AND is not an empty string or invalid type
-  if (!cleanedRecord.id || typeof cleanedRecord.id !== 'string' || cleanedRecord.id.trim() === '') {
+  if (
+    typeof cleanedRecord.id !== 'string' ||
+    (cleanedRecord.id as string).trim() === ''
+  ) {
     // Throw a specific error instead of just warning
     throw new Error(
       `Record in table ${table} has missing or invalid primary id: '${cleanedRecord.id}'`
@@ -105,21 +114,31 @@ export function sanitizeRecord(record: any, table: string): any {
 
     // Handle strainId to strain_id conversion for plants table
     if (cleanedRecord.strainId !== undefined) {
-      logger.log(`[Plant Sync Fix] Converting strainId to strain_id: ${cleanedRecord.strainId}`);
-      cleanedRecord.strain_id = cleanedRecord.strainId;
+      logger.log(
+        `[Plant Sync Fix] Converting strainId to strain_id: ${String(cleanedRecord.strainId)}`
+      );
+      cleanedRecord.strain_id = cleanedRecord.strainId as string;
       delete cleanedRecord.strainId;
-    } else if (record.strainId !== undefined) {
+    } else if ((record as Record<string, unknown>).strainId !== undefined) {
       // Also check the original record (before copy)
       logger.log(
-        `[Plant Sync Fix] Converting original record strainId to strain_id: ${record.strainId}`
+        `[Plant Sync Fix] Converting original record strainId to strain_id: ${String(
+          (record as Record<string, unknown>).strainId
+        )}`
       );
-      cleanedRecord.strain_id = record.strainId;
-    } else if (record._raw && record._raw.strainId) {
+      cleanedRecord.strain_id = (record as Record<string, unknown>).strainId as string;
+    } else if (
+      (record as Record<string, unknown>)._raw &&
+      (record as { _raw: Record<string, unknown> })._raw.strainId
+    ) {
       // Try to get from _raw property if available (direct WatermelonDB record)
       logger.log(
-        `[Plant Sync Fix] Converting _raw.strainId to strain_id: ${record._raw.strainId}`
+        `[Plant Sync Fix] Converting _raw.strainId to strain_id: ${String(
+          (record as { _raw: Record<string, unknown> })._raw.strainId
+        )}`
       );
-      cleanedRecord.strain_id = record._raw.strainId;
+      cleanedRecord.strain_id = (record as { _raw: Record<string, unknown> })._raw
+        .strainId as string;
     } else {
       logger.log(`[Plant Sync Debug] Plant record has no strainId field: ${cleanedRecord.id}`);
     }
@@ -159,17 +178,23 @@ export function sanitizeRecord(record: any, table: string): any {
 
   // Common camelCase to snake_case date field conversions
   if (cleanedRecord.createdAt) {
-    cleanedRecord.created_at = formatDateForSupabase(cleanedRecord.createdAt);
+    cleanedRecord.created_at = formatDateForSupabase(
+      cleanedRecord.createdAt as Date | number | string | null
+    );
     delete cleanedRecord.createdAt;
   }
 
   if (cleanedRecord.updatedAt) {
-    cleanedRecord.updated_at = formatDateForSupabase(cleanedRecord.updatedAt);
+    cleanedRecord.updated_at = formatDateForSupabase(
+      cleanedRecord.updatedAt as Date | number | string | null
+    );
     delete cleanedRecord.updatedAt;
   }
 
   if (cleanedRecord.lastSyncedAt) {
-    cleanedRecord.last_synced_at = formatDateForSupabase(cleanedRecord.lastSyncedAt);
+    cleanedRecord.last_synced_at = formatDateForSupabase(
+      cleanedRecord.lastSyncedAt as Date | number | string | null
+    );
     delete cleanedRecord.lastSyncedAt;
   }
 
@@ -191,7 +216,9 @@ export function sanitizeRecord(record: any, table: string): any {
       }
       // Handle growing_since (should be a valid date or null)
       if (cleanedRecord.growing_since) {
-        const formattedDate = formatDateForSupabase(cleanedRecord.growing_since);
+        const formattedDate = formatDateForSupabase(
+          cleanedRecord.growing_since as Date | number | string | null
+        );
         if (formattedDate) {
           cleanedRecord.growing_since = formattedDate;
         } else {
@@ -206,7 +233,9 @@ export function sanitizeRecord(record: any, table: string): any {
     case 'plants':
       // Handle planted_date
       if (cleanedRecord.plantedDate) {
-        const formattedDate = formatDateForSupabase(cleanedRecord.plantedDate);
+        const formattedDate = formatDateForSupabase(
+          cleanedRecord.plantedDate as Date | number | string | null
+        );
         if (formattedDate) {
           cleanedRecord.planted_date = formattedDate;
         } else {
@@ -220,7 +249,9 @@ export function sanitizeRecord(record: any, table: string): any {
 
       // Handle expected_harvest_date (optional)
       if (cleanedRecord.expectedHarvestDate) {
-        const formattedDate = formatDateForSupabase(cleanedRecord.expectedHarvestDate);
+        const formattedDate = formatDateForSupabase(
+          cleanedRecord.expectedHarvestDate as Date | number | string | null
+        );
         if (formattedDate) {
           cleanedRecord.expected_harvest_date = formattedDate;
         } else {
@@ -237,7 +268,9 @@ export function sanitizeRecord(record: any, table: string): any {
     case 'journal_entries':
       // Handle entry_date
       if (cleanedRecord.entryDate) {
-        const formattedDate = formatDateForSupabase(cleanedRecord.entryDate);
+        const formattedDate = formatDateForSupabase(
+          cleanedRecord.entryDate as Date | number | string | null
+        );
         if (formattedDate) {
           cleanedRecord.entry_date = formattedDate;
         } else {
@@ -256,7 +289,9 @@ export function sanitizeRecord(record: any, table: string): any {
     case 'plant_tasks':
       // Handle due_date
       if (cleanedRecord.dueDate) {
-        const formattedDate = formatDateForSupabase(cleanedRecord.dueDate);
+        const formattedDate = formatDateForSupabase(
+          cleanedRecord.dueDate as Date | number | string | null
+        );
         if (formattedDate) {
           cleanedRecord.due_date = formattedDate;
         } else {
@@ -305,7 +340,7 @@ export function sanitizeRecord(record: any, table: string): any {
 
     if (!isValidISODate) {
       // Try to format the date properly
-      const formattedDate = formatDateForSupabase(value);
+      const formattedDate = formatDateForSupabase(value as Date | number | string | null);
       if (formattedDate) {
         cleanedRecord[key] = formattedDate;
       } else {

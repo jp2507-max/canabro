@@ -116,7 +116,6 @@ const { animatedStyle, handlers } = useButtonAnimation({
   renderItem={({ item }) => (
     <PlantCard plant={item} />
   )}
-  estimatedItemSize={120}
 />
 ```
 

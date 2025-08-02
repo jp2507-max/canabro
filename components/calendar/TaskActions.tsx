@@ -9,7 +9,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import { OptimizedIcon } from '../ui/OptimizedIcon';
+import { OptimizedIcon, IconName } from '../ui/OptimizedIcon';
 import { useTranslation } from 'react-i18next';
 import ThemedText from '../ui/ThemedText';
 import ThemedView from '../ui/ThemedView';
@@ -31,7 +31,7 @@ export interface TaskActionsProps {
 
 // Individual action button component with animations
 interface ActionButtonProps {
-  icon: string;
+  icon: IconName;
   title: string;
   subtitle?: string;
   onPress: () => void;
@@ -104,7 +104,7 @@ const ActionButton = React.memo(
           accessibilityHint={subtitle || `Tap to ${title.toLowerCase()}`}>
           {/* Icon Container */}
           <ThemedView className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
-            <OptimizedIcon name={icon as any} size={24} color={color} />
+            <OptimizedIcon name={icon} size={24} color={color} />
           </ThemedView>
 
           {/* Text Content */}

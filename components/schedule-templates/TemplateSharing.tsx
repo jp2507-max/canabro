@@ -696,7 +696,6 @@ export const TemplateSharing: React.FC<TemplateSharingProps> = ({
                       onRestore={handleRestoreVersion}
                     />
                   )}
-                  estimatedItemSize={120}
                   scrollEnabled={false}
                 />
               ) : (

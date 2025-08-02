@@ -219,9 +219,18 @@ const StrainSchema = z.object({
 
 const StrainArraySchema = z.array(StrainSchema);
 
-// --- Helper: Map WeedDB API snake_case to camelCase for Strain ---
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapWeedDbStrain(raw: any): Strain {
+/**
+ * Helper: Map WeedDB API snake_case to camelCase for Strain
+ * Accepts unknown and narrows using the validated Zod shape.
+ */
+function isStrainType(value: unknown): value is 'sativa' | 'indica' | 'hybrid' {
+  return value === 'sativa' || value === 'indica' || value === 'hybrid';
+}
+
+function mapWeedDbStrain(raw: unknown): Strain {
+  // Narrow using Zod safeParse to ensure expected fields exist
+  const parsed = StrainSchema.safeParse(raw);
+  const safe = parsed.success ? parsed.data : (raw as Record<string, unknown>);
   // Helper for determining strain type from genetics info
   const determineStrainType = (genetic?: string): string | undefined => {
     if (!genetic) return undefined;
@@ -250,61 +259,199 @@ function mapWeedDbStrain(raw: any): Strain {
   };
 
   // Extract type from multiple sources
-  const strainType = raw.type || determineStrainType(raw.genetics) || 'hybrid';
+  const strainType =
+    (safe as { type?: string }).type ||
+    determineStrainType((safe as { genetics?: string | null | undefined }).genetics ?? undefined) ||
+    'hybrid';
 
   // Format description from array or string
-  const formattedDescription = Array.isArray(raw.description)
-    ? raw.description.join('\n\n')
-    : raw.description;
+  const formattedDescription = Array.isArray((safe as { description?: unknown }).description)
+    ? ((safe as { description?: unknown }).description as unknown[]).join('\n\n')
+    : ((safe as { description?: string | null | undefined }).description ?? undefined);
 
   // Ensure we have a valid ID, generate a stable fallback if needed
-  const primaryId = raw._id || raw.id;
+  const primaryId = (safe as { _id?: unknown; id?: unknown })._id ?? (safe as { _id?: unknown; id?: unknown }).id;
   const validId = isValidId(primaryId) ? String(primaryId) : null;
-  const finalId = validId || generateStableFallbackKey(raw.name, strainType, raw.genetics, 'strain');
+  const finalId =
+    validId ||
+    generateStableFallbackKey(
+      String((safe as { name?: unknown }).name ?? ''),
+      strainType,
+      (safe as { genetics?: string | null | undefined }).genetics ?? undefined,
+      'strain'
+    );
 
   // Log warning if we had to generate a fallback ID
   if (!validId && __DEV__) {
     logger.warn('Generated fallback ID for strain without valid primary ID', {
       originalId: primaryId,
       fallbackId: finalId,
-      strainName: raw.name,
+      strainName: String((safe as { name?: unknown }).name ?? ''),
     });
   }
 
   return {
     id: finalId,
-    name: raw.name,
-    genetics: raw.genetics,
-    type: strainType,
-    thc: raw.THC ?? raw.thc,
-    cbd: raw.CBD ?? raw.cbd,
-    growDifficulty: raw.growDifficulty || raw.grow_difficulty,
-    floweringTime: raw.floweringTime || raw.flowering_time,
-    floweringType: raw.floweringType || raw.flowering_type,
-    parents: raw.parents ? (Array.isArray(raw.parents) ? raw.parents : [raw.parents]) : undefined,
-    image: raw.imageUrl || raw.image_url || raw.image,
-    imageUrl: raw.imageUrl || raw.image_url || raw.image,
-    description: formattedDescription,
-    effects: raw.effect || raw.effects,
-    flavors: raw.smellAndFlavour || raw.smell_and_flavour || raw.flavors || raw.smellAndFlavour,
-    origin: raw.origin,
-    breeder: raw.breeder,
-    isAutoFlower: raw.isAutoFlower ?? raw.is_auto_flower,
-    isFeminized: raw.isFeminized ?? raw.is_feminized,
-    heightIndoor: raw.heightIndoor || raw.height_indoor,
-    heightOutdoor: raw.heightOutdoor || raw.height_outdoor,
-    yieldIndoor: raw.yieldIndoor || raw.yield_indoor,
-    yieldOutdoor: raw.yieldOutdoor || raw.yield_outdoor,
-    medicalUses: raw.medicalUses || raw.medical_uses,
-    negativeEffects: raw.negativeEffects || raw.negative_effects,
-    growingTips: raw.growingTips || raw.growing_tips,
-    harvestTimeOutdoor: raw.harvestTimeOutdoor || raw.harvest_time_outdoor,
-    link: raw.link,
-    createdAt: raw.createdAt || raw.created_at,
-    updatedAt: raw.updatedAt || raw.updated_at,
+    name: String((safe as { name?: unknown }).name ?? ''),
+    genetics: (safe as { genetics?: string | null | undefined }).genetics ?? undefined,
+    type: isStrainType(strainType) ? strainType : 'hybrid',
+    thc: (() => {
+      const v = (safe as { THC?: unknown; thc?: unknown }).THC ?? (safe as { THC?: unknown; thc?: unknown }).thc;
+      return typeof v === 'number' ? v : v == null ? null : Number.isFinite(Number(v)) ? Number(v) : null;
+    })(),
+    cbd: (() => {
+      const v = (safe as { CBD?: unknown; cbd?: unknown }).CBD ?? (safe as { CBD?: unknown; cbd?: unknown }).cbd;
+      return typeof v === 'number' ? v : v == null ? null : Number.isFinite(Number(v)) ? Number(v) : null;
+    })(),
+    growDifficulty: (() => {
+      const v =
+        (safe as { growDifficulty?: unknown; grow_difficulty?: unknown }).growDifficulty ??
+        (safe as { growDifficulty?: unknown; grow_difficulty?: unknown }).grow_difficulty;
+      return v === 'easy' || v === 'medium' || v === 'difficult' ? v : undefined;
+    })(),
+    floweringTime: (() => {
+      const v =
+        (safe as { floweringTime?: unknown; flowering_time?: unknown }).floweringTime ??
+        (safe as { floweringTime?: unknown; flowering_time?: unknown }).flowering_time;
+      return typeof v === 'string' ? v : v == null ? undefined : String(v);
+    })(),
+    floweringType: (() => {
+      const v =
+        (safe as { floweringType?: unknown; flowering_type?: unknown }).floweringType ??
+        (safe as { floweringType?: unknown; flowering_type?: unknown }).flowering_type;
+      return typeof v === 'string' ? v : v == null ? undefined : String(v);
+    })(),
+    parents: ((): string[] | undefined => {
+      const p = (safe as { parents?: unknown }).parents;
+      if (p == null) return undefined;
+      if (Array.isArray(p)) return p.map(String);
+      return [String(p)];
+    })(),
+    image: (() => {
+      const v =
+        (safe as { imageUrl?: unknown; image_url?: unknown; image?: unknown }).imageUrl ??
+        (safe as { imageUrl?: unknown; image_url?: unknown; image?: unknown }).image_url ??
+        (safe as { imageUrl?: unknown; image_url?: unknown; image?: unknown }).image;
+      return typeof v === 'string' ? v : undefined;
+    })(),
+    imageUrl: (() => {
+      const v =
+        (safe as { imageUrl?: unknown; image_url?: unknown; image?: unknown }).imageUrl ??
+        (safe as { imageUrl?: unknown; image_url?: unknown; image?: unknown }).image_url ??
+        (safe as { imageUrl?: unknown; image_url?: unknown; image?: unknown }).image;
+      return typeof v === 'string' ? v : undefined;
+    })(),
+    description: formattedDescription ?? undefined,
+    effects: (() => {
+      const v =
+        (safe as { effect?: unknown; effects?: unknown }).effect ??
+        (safe as { effect?: unknown; effects?: unknown }).effects;
+      if (Array.isArray(v)) return v.map(String);
+      return typeof v === 'string' ? [v] : undefined;
+    })(),
+    flavors: (() => {
+      const v1 =
+        (safe as { smellAndFlavour?: unknown; smell_and_flavour?: unknown; flavors?: unknown })
+          .smellAndFlavour;
+      const v2 =
+        (safe as { smellAndFlavour?: unknown; smell_and_flavour?: unknown; flavors?: unknown })
+          .smell_and_flavour;
+      const v3 =
+        (safe as { smellAndFlavour?: unknown; smell_and_flavour?: unknown; flavors?: unknown }).flavors;
+      const v = v1 ?? v2 ?? v3 ?? v1;
+      if (Array.isArray(v)) return v.map(String);
+      return typeof v === 'string' ? [v] : undefined;
+    })(),
+    origin: (() => {
+      const v = (safe as { origin?: unknown }).origin;
+      return typeof v === 'string' ? v : undefined;
+    })(),
+    breeder: (() => {
+      const v = (safe as { breeder?: unknown }).breeder;
+      return typeof v === 'string' ? v : undefined;
+    })(),
+    isAutoFlower:
+      (safe as { isAutoFlower?: boolean | null; is_auto_flower?: boolean | null }).isAutoFlower ??
+      (safe as { isAutoFlower?: boolean | null; is_auto_flower?: boolean | null }).is_auto_flower ??
+      undefined,
+    isFeminized:
+      (safe as { isFeminized?: boolean | null; is_feminized?: boolean | null }).isFeminized ??
+      (safe as { isFeminized?: boolean | null; is_feminized?: boolean | null }).is_feminized ??
+      undefined,
+    heightIndoor: (() => {
+      const v =
+        (safe as { heightIndoor?: unknown; height_indoor?: unknown }).heightIndoor ??
+        (safe as { heightIndoor?: unknown; height_indoor?: unknown }).height_indoor;
+      return typeof v === 'string' ? v : Array.isArray(v) ? v.map(String).join(' / ') : undefined;
+    })(),
+    heightOutdoor: (() => {
+      const v =
+        (safe as { heightOutdoor?: unknown; height_outdoor?: unknown }).heightOutdoor ??
+        (safe as { heightOutdoor?: unknown; height_outdoor?: unknown }).height_outdoor;
+      return typeof v === 'string' ? v : Array.isArray(v) ? v.map(String).join(' / ') : undefined;
+    })(),
+    yieldIndoor: (() => {
+      const v =
+        (safe as { yieldIndoor?: unknown; yield_indoor?: unknown }).yieldIndoor ??
+        (safe as { yieldIndoor?: unknown; yield_indoor?: unknown }).yield_indoor;
+      return typeof v === 'string' ? v : Array.isArray(v) ? v.map(String).join(' / ') : undefined;
+    })(),
+    yieldOutdoor: (() => {
+      const v =
+        (safe as { yieldOutdoor?: unknown; yield_outdoor?: unknown }).yieldOutdoor ??
+        (safe as { yieldOutdoor?: unknown; yield_outdoor?: unknown }).yield_outdoor;
+      return typeof v === 'string' ? v : Array.isArray(v) ? v.map(String).join(' / ') : undefined;
+    })(),
+    medicalUses: (() => {
+      const v =
+        (safe as { medicalUses?: unknown; medical_uses?: unknown }).medicalUses ??
+        (safe as { medicalUses?: unknown; medical_uses?: unknown }).medical_uses;
+      if (Array.isArray(v)) return v.map(String);
+      return typeof v === 'string' ? [v] : undefined;
+    })(),
+    negativeEffects: (() => {
+      const v =
+        (safe as { negativeEffects?: unknown; negative_effects?: unknown }).negativeEffects ??
+        (safe as { negativeEffects?: unknown; negative_effects?: unknown }).negative_effects;
+      if (Array.isArray(v)) return v.map(String);
+      return typeof v === 'string' ? [v] : undefined;
+    })(),
+    growingTips: (() => {
+      const v =
+        (safe as { growingTips?: unknown; growing_tips?: unknown }).growingTips ??
+        (safe as { growingTips?: unknown; growing_tips?: unknown }).growing_tips;
+      if (Array.isArray(v)) return v.map(String).join('\n\n');
+      return typeof v === 'string' ? v : undefined;
+    })(),
+    harvestTimeOutdoor: (() => {
+      const v =
+        (safe as { harvestTimeOutdoor?: unknown; harvest_time_outdoor?: unknown }).harvestTimeOutdoor ??
+        (safe as { harvestTimeOutdoor?: unknown; harvest_time_outdoor?: unknown }).harvest_time_outdoor;
+      return typeof v === 'string' ? v : v == null ? undefined : String(v);
+    })(),
+    link: (() => {
+      const v = (safe as { link?: unknown }).link;
+      return typeof v === 'string' ? v : undefined;
+    })(),
+    createdAt: (() => {
+      const v =
+        (safe as { createdAt?: unknown; created_at?: unknown }).createdAt ??
+        (safe as { createdAt?: unknown; created_at?: unknown }).created_at;
+      return typeof v === 'string' || typeof v === 'number' ? v : v == null ? undefined : String(v);
+    })(),
+    updatedAt: (() => {
+      const v =
+        (safe as { updatedAt?: unknown; updated_at?: unknown }).updatedAt ??
+        (safe as { updatedAt?: unknown; updated_at?: unknown }).updated_at;
+      return typeof v === 'string' || typeof v === 'number' ? v : v == null ? undefined : String(v);
+    })(),
     // Ensure the API ID is always available
-    api_id: String(raw._id || raw.id),
-    originalId: String(raw._id || raw.id),
+    api_id: String(
+      (safe as { _id?: unknown; id?: unknown })._id ?? (safe as { _id?: unknown; id?: unknown }).id ?? ''
+    ),
+    originalId: String(
+      (safe as { _id?: unknown; id?: unknown })._id ?? (safe as { _id?: unknown; id?: unknown }).id ?? ''
+    ),
   };
 }
 

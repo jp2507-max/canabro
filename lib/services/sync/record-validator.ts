@@ -172,7 +172,7 @@ export function sanitizeProfileRecords(
 export async function validatePlantRecord(
   plantRecord: PlantRecord,
   database: Database,
-  strainCache?: Map<string, any>
+  strainCache?: Map<string, StrainObject | undefined>
 ): Promise<PlantRecord> {
   if (!plantRecord || typeof plantRecord !== 'object') {
     throw new Error('Invalid plant record: not an object');
@@ -234,7 +234,7 @@ export async function validatePlantRecord(
             `[Plant Validation] Loading strain ${effectiveStrainId} from database (cache miss)`
           );
           const strain = await loadStrainFromDatabase(database, effectiveStrainId);
-          strainCache.set(effectiveStrainId, strain);
+          strainCache.set(effectiveStrainId, strain ?? undefined);
         } else {
           logger.log(`[Plant Validation] Using cached strain ${effectiveStrainId} (cache hit)`);
         }

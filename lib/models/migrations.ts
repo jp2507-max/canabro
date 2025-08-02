@@ -655,6 +655,201 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 34: Add advanced community features tables
+    {
+      toVersion: 34,
+      steps: [
+        // Create conversation_threads table
+        createTable({
+          name: 'conversation_threads',
+          columns: [
+            { name: 'thread_type', type: 'string' }, // 'direct' | 'group'
+            { name: 'participants', type: 'string' }, // JSON array of user IDs
+            { name: 'last_message_id', type: 'string', isOptional: true },
+            { name: 'unread_count', type: 'number' },
+            { name: 'created_by', type: 'string' },
+            { name: 'name', type: 'string', isOptional: true }, // For group conversations
+            { name: 'description', type: 'string', isOptional: true }, // For group conversations
+            { name: 'avatar_url', type: 'string', isOptional: true }, // For group conversations
+            { name: 'settings', type: 'string', isOptional: true }, // JSON group settings
+            { name: 'is_active', type: 'boolean' },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create messages table
+        createTable({
+          name: 'messages',
+          columns: [
+            { name: 'thread_id', type: 'string', isIndexed: true },
+            { name: 'sender_id', type: 'string', isIndexed: true },
+            { name: 'content', type: 'string' },
+            { name: 'message_type', type: 'string' }, // 'text' | 'image' | 'file' | 'plant_share' | 'location'
+            { name: 'attachments', type: 'string', isOptional: true }, // JSON array
+            { name: 'reply_to', type: 'string', isOptional: true }, // Message ID being replied to
+            { name: 'reactions', type: 'string', isOptional: true }, // JSON array
+            { name: 'is_edited', type: 'boolean' },
+            { name: 'delivered_at', type: 'number', isOptional: true },
+            { name: 'read_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'sent_at', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create live_notifications table
+        createTable({
+          name: 'live_notifications',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'notification_type', type: 'string' },
+            { name: 'title', type: 'string' },
+            { name: 'message', type: 'string' },
+            { name: 'data', type: 'string' }, // JSON notification data
+            { name: 'priority', type: 'string' }, // 'low' | 'normal' | 'high' | 'urgent'
+            { name: 'is_read', type: 'boolean' },
+            { name: 'is_actionable', type: 'boolean' },
+            { name: 'actions', type: 'string', isOptional: true }, // JSON array
+            { name: 'expires_at', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create user_presence table
+        createTable({
+          name: 'user_presence',
+          columns: [
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'status', type: 'string' }, // 'online' | 'away' | 'busy' | 'offline'
+            { name: 'last_seen', type: 'number' },
+            { name: 'is_online', type: 'boolean' },
+            { name: 'presence_data', type: 'string', isOptional: true }, // JSON presence data
+            { name: 'connection_id', type: 'string', isOptional: true }, // WebSocket connection ID
+            { name: 'heartbeat_interval', type: 'number', isOptional: true }, // Seconds
+            { name: 'last_heartbeat', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create follow_relationships table
+        createTable({
+          name: 'follow_relationships',
+          columns: [
+            { name: 'follower_id', type: 'string', isIndexed: true },
+            { name: 'following_id', type: 'string', isIndexed: true },
+            { name: 'notification_settings', type: 'string' }, // JSON notification settings
+            { name: 'relationship_type', type: 'string' }, // 'follow' | 'mutual' | 'blocked'
+            { name: 'is_active', type: 'boolean' },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'followed_at', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create social_groups table
+        createTable({
+          name: 'social_groups',
+          columns: [
+            { name: 'name', type: 'string' },
+            { name: 'description', type: 'string' },
+            { name: 'category', type: 'string' },
+            { name: 'tags', type: 'string' }, // JSON array
+            { name: 'avatar', type: 'string', isOptional: true },
+            { name: 'cover_image', type: 'string', isOptional: true },
+            { name: 'settings', type: 'string' }, // JSON group settings
+            { name: 'stats', type: 'string' }, // JSON group stats
+            { name: 'created_by', type: 'string' },
+            { name: 'is_active', type: 'boolean' },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create group_members table
+        createTable({
+          name: 'group_members',
+          columns: [
+            { name: 'group_id', type: 'string', isIndexed: true },
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'role', type: 'string' }, // 'member' | 'moderator' | 'admin'
+            { name: 'permissions', type: 'string' }, // JSON permissions
+            { name: 'is_active', type: 'boolean' },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'joined_at', type: 'number' },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create live_events table
+        createTable({
+          name: 'live_events',
+          columns: [
+            { name: 'title', type: 'string' },
+            { name: 'description', type: 'string' },
+            { name: 'event_type', type: 'string' },
+            { name: 'host_id', type: 'string' },
+            { name: 'co_hosts', type: 'string', isOptional: true }, // JSON array
+            { name: 'scheduled_start', type: 'number' },
+            { name: 'scheduled_end', type: 'number' },
+            { name: 'actual_start', type: 'number', isOptional: true },
+            { name: 'actual_end', type: 'number', isOptional: true },
+            { name: 'status', type: 'string' }, // 'scheduled' | 'live' | 'ended' | 'cancelled' | 'recorded'
+            { name: 'settings', type: 'string' }, // JSON event settings
+            { name: 'recording', type: 'string', isOptional: true }, // JSON recording data
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create event_participants table
+        createTable({
+          name: 'event_participants',
+          columns: [
+            { name: 'event_id', type: 'string', isIndexed: true },
+            { name: 'user_id', type: 'string', isIndexed: true },
+            { name: 'role', type: 'string' }, // 'host' | 'co_host' | 'speaker' | 'participant'
+            { name: 'permissions', type: 'string' }, // JSON permissions
+            { name: 'is_active', type: 'boolean' },
+            { name: 'joined_at', type: 'number', isOptional: true },
+            { name: 'left_at', type: 'number', isOptional: true },
+            { name: 'duration_minutes', type: 'number', isOptional: true },
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+        // Create community_polls table
+        createTable({
+          name: 'community_polls',
+          columns: [
+            { name: 'question', type: 'string' },
+            { name: 'description', type: 'string', isOptional: true },
+            { name: 'options', type: 'string' }, // JSON array of poll options
+            { name: 'settings', type: 'string' }, // JSON poll settings
+            { name: 'created_by', type: 'string' },
+            { name: 'ends_at', type: 'number', isOptional: true },
+            { name: 'status', type: 'string' }, // 'active' | 'ended' | 'cancelled'
+            { name: 'results', type: 'string' }, // JSON poll results
+            { name: 'is_deleted', type: 'boolean', isOptional: true },
+            { name: 'last_synced_at', type: 'number', isOptional: true },
+            { name: 'created_at', type: 'number' },
+            { name: 'updated_at', type: 'number' },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

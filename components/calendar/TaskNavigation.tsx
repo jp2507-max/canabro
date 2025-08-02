@@ -50,7 +50,9 @@ export default function TaskNavigation({
     triggerLightHapticSync();
   }, []);
 
-  const handleDatePickerChange = useCallback((event: any, date?: Date) => {
+  type DateTimeChangeEvent = { type: 'set' | 'dismissed' | string };
+
+  const handleDatePickerChange = useCallback((event: DateTimeChangeEvent, date?: Date) => {
     setShowDatePicker(false);
     if (date && event.type === 'set') {
       onDateSelect(date);

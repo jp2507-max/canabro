@@ -343,7 +343,6 @@ export default function OptimizedWeeklyTaskView({
         onSelectTask={handleTaskSelect}
         isHorizontalLayout={false}
         enableVirtualization={true}
-        estimatedItemSize={120}
       />
 
       {/* Bulk action buttons */}

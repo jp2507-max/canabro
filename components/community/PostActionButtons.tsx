@@ -1,5 +1,5 @@
 /**
- * PostActionButtons - Native-style action buttons for post creation
+ * PostActionButtons - Native-style action buttons for post creation with content moderation
  *
  * Features:
  * - Native iOS-style action buttons with SF Symbol inspiration
@@ -7,9 +7,10 @@
  * - Spring animations and haptic feedback
  * - Proper accessibility support
  * - Consistent with app's native bottom tab aesthetic
+ * - Integrated content moderation actions (ACF-T04.1)
  */
 import React from 'react';
-import { Pressable, Platform } from 'react-native';
+import { Pressable, Platform, Alert } from 'react-native';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -21,13 +22,18 @@ import { triggerLightHaptic, triggerMediumHapticSync } from '@/lib/utils/haptics
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon, type IconName } from '@/components/ui/OptimizedIcon';
+import { useTranslation } from 'react-i18next';
 
 interface PostActionButtonsProps {
   onCameraPress?: () => void;
   onPhotoLibraryPress?: () => void;
   onLocationPress?: () => void;
   onMentionPress?: () => void;
+  onReportPress?: () => void;
+  onModerationPress?: () => void;
   disabled?: boolean;
+  showModerationActions?: boolean;
+  isModeratorView?: boolean;
 }
 
 const SPRING_CONFIG = {
@@ -145,49 +151,96 @@ function NativeActionButton({
 }
 
 /**
- * Grid of native-style action buttons for post creation
+ * Grid of native-style action buttons for post creation with moderation actions
  */
 export function PostActionButtons({
   onCameraPress,
   onPhotoLibraryPress,
   onLocationPress,
   onMentionPress,
+  onReportPress,
+  onModerationPress,
   disabled = false,
+  showModerationActions = false,
+  isModeratorView = false,
 }: PostActionButtonsProps) {
+  const { t } = useTranslation('community');
+
+  const handleReportPress = () => {
+    Alert.alert(
+      t('postActionButtons.report.title'),
+      t('postActionButtons.report.message'),
+      [
+        { text: t('postActionButtons.report.cancel'), style: 'cancel' },
+        { 
+          text: t('postActionButtons.report.confirm'), 
+          style: 'destructive',
+          onPress: onReportPress 
+        },
+      ]
+    );
+  };
+
   return (
     <ThemedView className="flex-row flex-wrap gap-3">
+      {/* Standard creation actions */}
       <NativeActionButton
-        iconName="camera-outline"
-        label="Camera"
+        iconName="camera"
+        label={t('postActionButtons.camera')}
         onPress={onCameraPress}
         disabled={disabled}
-        accessibilityLabel="Take photo with camera"
+        accessibilityLabel={t('postActionButtons.accessibility.camera')}
         variant="primary"
       />
 
       <NativeActionButton
         iconName="images-outline"
-        label="Photos"
+        label={t('postActionButtons.photos')}
         onPress={onPhotoLibraryPress}
         disabled={disabled}
-        accessibilityLabel="Choose from photo library"
+        accessibilityLabel={t('postActionButtons.accessibility.photos')}
       />
 
       <NativeActionButton
         iconName="location-outline"
-        label="Location"
+        label={t('postActionButtons.location')}
         onPress={onLocationPress}
         disabled={disabled}
-        accessibilityLabel="Add location"
+        accessibilityLabel={t('postActionButtons.accessibility.location')}
       />
 
       <NativeActionButton
         iconName="at-outline"
-        label="Mention"
+        label={t('postActionButtons.mention')}
         onPress={onMentionPress}
         disabled={disabled}
-        accessibilityLabel="Mention someone"
+        accessibilityLabel={t('postActionButtons.accessibility.mention')}
       />
+
+      {/* Moderation actions */}
+      {showModerationActions && (
+        <>
+          <NativeActionButton
+            iconName="warning"
+            label={t('postActionButtons.report.button')}
+            onPress={handleReportPress}
+            disabled={disabled}
+            accessibilityLabel={t('postActionButtons.accessibility.report')}
+            variant="secondary"
+          />
+
+          {isModeratorView && (
+            <NativeActionButton
+              iconName="checkmark"
+              label={t('postActionButtons.moderate')}
+              onPress={onModerationPress}
+              disabled={disabled}
+              accessibilityLabel={t('postActionButtons.accessibility.moderate')}
+              variant="secondary"
+            />
+          )}
+        </>
+      )}
     </ThemedView>
   );
 }

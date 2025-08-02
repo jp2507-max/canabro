@@ -247,7 +247,6 @@ export default function WeeklyTaskViewWithBulkActions({
                     <FlashList
                         data={tasksForSelectedDate}
                         renderItem={renderTaskItem}
-                        estimatedItemSize={120}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingBottom: showBulkActions ? 80 : 20 }}
                         refreshControl={

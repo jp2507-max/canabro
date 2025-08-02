@@ -9,6 +9,7 @@ import { ActiveFilters } from '@/components/strains/StrainFilterModal';
 import ThemedText from '@/components/ui/ThemedText';
 import ThemedView from '@/components/ui/ThemedView';
 import { useAuth } from '@/lib/contexts/AuthProvider';
+import { useTranslation } from 'react-i18next';
 // StrainSpecies import removed: use string union type for species
 // Use React Native's batching utility when updating state from Reanimated callbacks
 
@@ -21,6 +22,7 @@ export default function StrainsScreen() {
   const router = useSafeRouter();
   const { user } = useAuth();
   const userId = user?.id;
+  const { t } = useTranslation('strains');
 
   // State hooks
   // Remove selectedStrainType; use activeFilters.species as the single source of truth
@@ -182,10 +184,10 @@ export default function StrainsScreen() {
       <SafeAreaView className="flex-1 bg-white dark:bg-black">
         <ThemedView variant="default" className="flex-1 items-center justify-center px-6">
           <ThemedText className="mb-2 text-center text-xl font-bold">
-            User not authenticated
+            {t('authRequiredTitle')}
           </ThemedText>
           <ThemedText className="mb-4 text-center text-base">
-            Please log in to view strains.
+            {t('authRequiredSubtitle')}
           </ThemedText>
         </ThemedView>
       </SafeAreaView>

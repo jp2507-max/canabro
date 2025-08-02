@@ -39,28 +39,42 @@ export interface BackgroundProcessingConfig {
     };
 }
 
+export interface ProcessingStats {
+    tasksProcessed: number;
+    errorsCount: number;
+    lastProcessedAt: Date | null;
+    averageProcessingTime: number;
+}
+
+export interface SyncStats {
+    recordsSynced: number;
+    conflictsResolved: number;
+    lastSyncAt: Date | null;
+    syncDuration: number;
+}
+
 export interface BackgroundProcessingStatus {
     isRunning: boolean;
     services: {
         taskProcessor: {
             isProcessing: boolean;
             queueSize: number;
-            stats: any;
+            stats: ProcessingStats;
         };
         notificationBatcher: {
             isProcessing: boolean;
             pendingNotifications: number;
-            stats: any;
+            stats: ProcessingStats;
         };
         dataSync: {
             isSyncing: boolean;
-            pendingChanges: any;
-            stats: any;
+            pendingChanges: Record<string, unknown>;
+            stats: SyncStats;
         };
         dataCleanup: {
             isCleaningUp: boolean;
             nextScheduledCleanup: Date;
-            stats: any;
+            stats: ProcessingStats;
         };
     };
     health: {
@@ -299,22 +313,42 @@ export class BackgroundProcessingManager {
                 taskProcessor: {
                     isProcessing: taskProcessorStats.isProcessing,
                     queueSize: taskProcessorStats.queueSize,
-                    stats: taskProcessorStats,
+                    stats: {
+                        tasksProcessed: taskProcessorStats.totalProcessed,
+                        errorsCount: taskProcessorStats.totalFailed,
+                        lastProcessedAt: taskProcessorStats.lastProcessedAt,
+                        averageProcessingTime: taskProcessorStats.averageProcessingTime,
+                    },
                 },
                 notificationBatcher: {
                     isProcessing: false, // Not exposed by batchNotificationProcessor
                     pendingNotifications: 0, // Not exposed by batchNotificationProcessor
-                    stats: notificationBatcherStats,
+                    stats: {
+                        tasksProcessed: notificationBatcherStats.totalNotifications,
+                        errorsCount: 0, // Not tracked in BatchProcessingStats
+                        lastProcessedAt: notificationBatcherStats.lastProcessedAt,
+                        averageProcessingTime: notificationBatcherStats.averageProcessingTime,
+                    },
                 },
                 dataSync: {
                     isSyncing: dataSyncStats.isSyncing,
                     pendingChanges: dataSyncStats.pendingChanges,
-                    stats: dataSyncStats,
+                    stats: {
+                        recordsSynced: dataSyncStats.totalSyncs,
+                        conflictsResolved: dataSyncStats.totalConflicts,
+                        lastSyncAt: dataSyncStats.lastSyncAt,
+                        syncDuration: dataSyncStats.averageSyncTime,
+                    },
                 },
                 dataCleanup: {
                     isCleaningUp: false, // Not exposed by dataCleanupService
                     nextScheduledCleanup: dataCleanupStats.nextScheduledCleanup,
-                    stats: dataCleanupStats,
+                    stats: {
+                        tasksProcessed: dataCleanupStats.totalCleanups,
+                        errorsCount: 0, // Not tracked in CleanupStats
+                        lastProcessedAt: dataCleanupStats.lastCleanupAt,
+                        averageProcessingTime: dataCleanupStats.averageCleanupTime,
+                    },
                 },
             },
             health: {
@@ -417,8 +451,8 @@ export class BackgroundProcessingManager {
      * Force immediate cleanup and optimization
      */
     async performMaintenance(): Promise<{
-        cleanup: any;
-        sync: any;
+        cleanup: ProcessingStats;
+        sync: SyncStats;
         optimization: boolean;
     }> {
         try {
@@ -440,8 +474,18 @@ export class BackgroundProcessingManager {
             Logger.info('[BackgroundProcessingManager] Maintenance operations completed');
 
             return {
-                cleanup: cleanupResult,
-                sync: syncResult,
+                cleanup: {
+                    tasksProcessed: cleanupResult.tasksDeleted + cleanupResult.remindersDeleted,
+                    errorsCount: cleanupResult.errors.length,
+                    lastProcessedAt: cleanupResult.endTime,
+                    averageProcessingTime: cleanupResult.duration,
+                },
+                sync: {
+                    recordsSynced: syncResult.tasksProcessed + syncResult.remindersProcessed + syncResult.plantsProcessed,
+                    conflictsResolved: syncResult.conflicts,
+                    lastSyncAt: syncResult.endTime,
+                    syncDuration: syncResult.duration,
+                },
                 optimization: true,
             };
 
@@ -454,7 +498,11 @@ export class BackgroundProcessingManager {
     /**
      * Run performance tests
      */
-    async runPerformanceTests(): Promise<any> {
+    async runPerformanceTests(): Promise<{
+        testResults: Record<string, unknown>;
+        performanceMetrics: Record<string, number>;
+        recommendations: string[];
+    }> {
         try {
             Logger.info('[BackgroundProcessingManager] Running performance tests');
 
@@ -467,7 +515,20 @@ export class BackgroundProcessingManager {
                 criticalIssues: report.summary.criticalIssues.length
             });
 
-            return report;
+            return {
+                testResults: report.testResults.reduce((acc: Record<string, unknown>, test) => {
+                    acc[test.testSuite] = test;
+                    return acc;
+                }, {}),
+                performanceMetrics: {
+                    overallScore: report.overallScore,
+                    averageScore: report.summary.averageScore,
+                    totalTests: report.summary.totalTests,
+                    passedTests: report.summary.passedTests,
+                    failedTests: report.summary.failedTests,
+                },
+                recommendations: report.recommendations,
+            };
 
         } catch (error) {
             Logger.error('[BackgroundProcessingManager] Performance tests failed', { error });

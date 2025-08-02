@@ -109,3 +109,5 @@ export function SegmentedPostControl({
     </View>
   );
 }
+
+export default SegmentedPostControl;

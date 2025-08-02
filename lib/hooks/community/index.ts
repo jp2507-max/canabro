@@ -7,4 +7,5 @@ export * from './useRealTimeUpdates';
 
 // 🚀 Enhanced Community Hooks (Task 1.4)
 export * from './useCommunityQuestions';
-export * from './useCommunityPlantShares'; 
+export * from './useCommunityPlantShares';
+export * from './useActivityFeed'; 

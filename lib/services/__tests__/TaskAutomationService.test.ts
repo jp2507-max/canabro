@@ -6,7 +6,7 @@
  */
 
 import { TaskAutomationService } from '../TaskAutomationService';
-import { GrowthStage } from '../../types/plant';
+import { type GrowthStage, GROWTH_STAGES } from '../../types/plant';
 import { Plant } from '../../models/Plant';
 
 // Mock dependencies
@@ -19,7 +19,7 @@ describe('TaskAutomationService', () => {
     id: 'test-plant-id',
     name: 'Test Plant',
     userId: 'test-user-id',
-    growthStage: GrowthStage.VEGETATIVE,
+    growthStage: GROWTH_STAGES.VEGETATIVE,
     strainId: '123e4567-e89b-12d3-a456-426614174000',
     cannabisType: 'hybrid',
     plantedDate: new Date().toISOString(),
@@ -59,7 +59,7 @@ describe('TaskAutomationService', () => {
 
       const tasks = await TaskAutomationService.scheduleForGrowthStage(
         mockPlant,
-        GrowthStage.VEGETATIVE
+        GROWTH_STAGES.VEGETATIVE
       );
 
       expect(tasks).toBeDefined();
@@ -100,7 +100,7 @@ describe('TaskAutomationService', () => {
 
       const tasks = await TaskAutomationService.scheduleForGrowthStage(
         plantWithoutStrain,
-        GrowthStage.VEGETATIVE
+        GROWTH_STAGES.VEGETATIVE
       );
 
       expect(tasks).toBeDefined();
@@ -110,7 +110,18 @@ describe('TaskAutomationService', () => {
 
   describe('generateRecurringTasks', () => {
     it('should create recurring task series with proper intervals', async () => {
-      const mockTasks: any[] = [];
+      type TestTask = {
+        id: string;
+        taskId: string;
+        plantId: string;
+        taskType: string;
+        status: 'pending' | 'completed' | 'cancelled' | string;
+        sequenceNumber: number;
+        update?: jest.Mock;
+        dueDate?: string;
+        priority?: string;
+      };
+      const mockTasks: TestTask[] = [];
       const mockDatabase = {
         write: jest.fn((callback) => callback()),
         get: jest.fn(() => ({
@@ -153,7 +164,7 @@ describe('TaskAutomationService', () => {
 
       const seedlingPlant = {
         ...mockPlant,
-        growthStage: GrowthStage.SEEDLING,
+        growthStage: GROWTH_STAGES.SEEDLING,
         plantedDate: oldPlantedDate.toISOString(),
       } as Plant;
 
@@ -166,7 +177,7 @@ describe('TaskAutomationService', () => {
 
       const nextStage = await TaskAutomationService.detectGrowthStageTransition(seedlingPlant);
 
-      expect(nextStage).toBe(GrowthStage.VEGETATIVE);
+      expect(nextStage).toBe(GROWTH_STAGES.VEGETATIVE);
     });
 
     it('should return null when plant is not ready for transition', async () => {
@@ -176,7 +187,7 @@ describe('TaskAutomationService', () => {
 
       const youngSeedlingPlant = {
         ...mockPlant,
-        growthStage: GrowthStage.SEEDLING,
+        growthStage: GROWTH_STAGES.SEEDLING,
         plantedDate: recentPlantedDate.toISOString(),
       } as Plant;
 

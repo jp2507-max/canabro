@@ -646,7 +646,6 @@ export const TemplateApplicator: React.FC<TemplateApplicatorProps> = ({
                   preview={previews[item.id]}
                 />
               )}
-              estimatedItemSize={120}
               scrollEnabled={false}
             />
           </View>

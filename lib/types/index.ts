@@ -59,6 +59,6 @@ export interface PaginatedResponse<T> {
  */
 export interface SearchParams {
   query: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   pagination?: PaginationParams;
 }

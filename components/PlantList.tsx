@@ -20,7 +20,7 @@ interface PlantListComponentProps {
   plants: WDBPlant[];
   isLoading: boolean;
   onCountChange?: (count: number) => void;
-  ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
+  ListHeaderComponent?: React.ComponentType | React.ReactElement | null;
   refreshing?: boolean;
   onRefresh?: () => void;
   searchQuery?: string;
@@ -240,7 +240,6 @@ const PlantListComponent: React.FC<PlantListComponentProps> = React.memo(
             />
           ) : undefined
         }
-        estimatedItemSize={120} // Approximate height of PlantCard
         contentContainerStyle={{
           paddingTop: ListHeaderComponent ? 0 : 8,
           paddingBottom: 80,

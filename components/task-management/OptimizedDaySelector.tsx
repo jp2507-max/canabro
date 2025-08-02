@@ -21,7 +21,7 @@
 
 import React, { useCallback, useMemo, useRef } from 'react';
 import { Pressable, ViewStyle } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 import ThemedView from '../ui/ThemedView';
@@ -56,7 +56,6 @@ interface OptimizedDaySelectorProps {
 
     // Performance options
     enableVirtualization?: boolean;
-    estimatedItemSize?: number;
 }
 
 // Memoized day item component for optimal performance
@@ -167,10 +166,9 @@ export default function OptimizedDaySelector({
     showTaskCounts = true,
     contentContainerStyle,
     enableVirtualization = true,
-    estimatedItemSize = ESTIMATED_DAY_ITEM_SIZE,
 }: OptimizedDaySelectorProps) {
     const { t } = useTranslation();
-    const flashListRef = useRef<FlashList<DayData>>(null);
+    const flashListRef = useRef<FlashListRef<DayData>>(null);
 
     // Generate focus window days with stable reference
     const focusWindowDays = useMemo(() => {
@@ -312,7 +310,6 @@ export default function OptimizedDaySelector({
                         data={focusWindowDays}
                         renderItem={renderItem}
                         keyExtractor={keyExtractor}
-                        estimatedItemSize={estimatedItemSize}
                         drawDistance={DRAW_DISTANCE}
                         scrollEventThrottle={SCROLL_EVENT_THROTTLE}
                         showsHorizontalScrollIndicator={false}

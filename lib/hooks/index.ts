@@ -32,3 +32,15 @@ export * from './useTaskReminders';
 
 // Task analytics hooks
 export * from './useTaskAnalytics';
+
+// Realtime hooks (2025 Enhanced)
+export { 
+    useRealtime, 
+    useConversationRealtime, 
+    useNotificationRealtime, 
+    useLiveEventRealtime 
+} from './useRealtime';
+export type { 
+    UseRealtimeOptions, 
+    RealtimeHookReturn 
+} from './useRealtime';

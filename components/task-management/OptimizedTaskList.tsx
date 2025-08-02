@@ -21,7 +21,7 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import { Logger } from '@/lib/utils/production-utils';
 import { RefreshControl, ViewStyle } from 'react-native';
-import { FlashList, FlashListProps } from '@shopify/flash-list';
+import { FlashList, FlashListProps, FlashListRef } from '@shopify/flash-list';
 import Animated from 'react-native-reanimated';
 
 import { PlantTask } from '@/lib/models/PlantTask';
@@ -68,7 +68,6 @@ interface OptimizedTaskListProps {
   
   // Performance options
   enableVirtualization?: boolean;
-  estimatedItemSize?: number;
 }
 
 // Memoized task item component for optimal performance
@@ -178,9 +177,8 @@ export default function OptimizedTaskList({
   isHorizontalLayout = false,
   contentContainerStyle,
   enableVirtualization = true,
-  estimatedItemSize = ESTIMATED_ITEM_SIZE,
 }: OptimizedTaskListProps) {
-  const flashListRef = useRef<FlashList<PlantTask>>(null);
+  const flashListRef = useRef<FlashListRef<PlantTask>>(null);
 
   // Stable event handlers with useCallback
 
@@ -257,7 +255,6 @@ export default function OptimizedTaskList({
     renderItem,
     keyExtractor,
     getItemType,
-    estimatedItemSize,
     drawDistance: DRAW_DISTANCE,
     removeClippedSubviews: true,
     scrollEventThrottle: SCROLL_EVENT_THROTTLE,
@@ -279,7 +276,6 @@ export default function OptimizedTaskList({
     renderItem,
     keyExtractor,
     getItemType,
-    estimatedItemSize,
     showBatchActions,
     contentContainerStyle,
     onRefresh,

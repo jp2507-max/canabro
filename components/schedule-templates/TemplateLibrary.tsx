@@ -364,7 +364,6 @@ export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
         data={TEMPLATE_CATEGORIES}
         horizontal
         showsHorizontalScrollIndicator={false}
-        estimatedItemSize={80}
         renderItem={({ item: category }) => (
           <Pressable
             onPress={() => setSelectedCategory(category)}
@@ -396,7 +395,6 @@ export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
         data={TEMPLATE_SORT_OPTIONS}
         horizontal
         showsHorizontalScrollIndicator={false}
-        estimatedItemSize={80}
         renderItem={({ item: option }) => (
           <Pressable
             onPress={() => setSortBy(option)}
@@ -477,7 +475,6 @@ export const TemplateLibrary: React.FC<TemplateLibraryProps> = ({
             isSelected={selectedTemplateId === item.id}
           />
         )}
-        estimatedItemSize={200}
         onRefresh={handleRefresh}
         refreshing={refreshing}
         ListEmptyComponent={renderEmptyState}

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import { RefreshControl } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -155,7 +155,7 @@ export default function DaySelector({
   dateRange = 14
 }: DaySelectorProps) {
   const { i18n } = useTranslation();
-  const flashListRef = useRef<FlashList<DayItemData>>(null);
+  const flashListRef = useRef<FlashListRef<DayItemData>>(null);
 
   // Generate date range
   const dates = useMemo(() => {
@@ -248,7 +248,6 @@ export default function DaySelector({
         ref={flashListRef}
         data={dayItems}
         renderItem={renderDayItem}
-        estimatedItemSize={80}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}

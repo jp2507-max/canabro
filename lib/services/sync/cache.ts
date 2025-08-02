@@ -8,7 +8,8 @@ import { CacheEntry } from './types';
  * Simple cache system for frequently accessed data
  */
 export class DataCache {
-  private cache = new Map<string, CacheEntry<any>>();
+  // Store unknown to avoid any; typed APIs ensure correct types at the edges.
+  private cache = new Map<string, CacheEntry<unknown>>();
   private defaultTTL = 60 * 60 * 1000; // 1 hour by default
   private maxEntries = 100; // Maximum number of entries to prevent memory leaks
 
@@ -22,11 +23,11 @@ export class DataCache {
    */
   async get<T>(key: string, fetcher: () => Promise<T>, ttl: number = this.defaultTTL): Promise<T> {
     const now = Date.now();
-    const cached = this.cache.get(key);
+    const cached = this.cache.get(key) as CacheEntry<T> | undefined;
 
     // Return from cache if valid
     if (cached && now < cached.expiresAt) {
-      return cached.data;
+      return cached.data as T;
     }
 
     // Fetch fresh data
@@ -41,7 +42,7 @@ export class DataCache {
           `[DataCache] Failed to refresh ${key}, using stale data from ${new Date(cached.timestamp).toLocaleString()}`,
           error
         );
-        return cached.data;
+        return cached.data as T;
       }
       throw error; // No cached data to fall back to
     }

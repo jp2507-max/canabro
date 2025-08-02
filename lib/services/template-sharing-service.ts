@@ -201,23 +201,47 @@ export class TemplateSharingService extends BaseService {
   /**
    * Validate template data structure
    */
-  private validateTemplateData(data: any): boolean {
+  private validateTemplateData(data: Record<string, unknown>): boolean {
     if (!data || typeof data !== 'object') return false;
-    if (!data.template || !data.version || !data.metadata) return false;
-    
-    const { template } = data;
-    if (!template.name || !template.category || !template.durationWeeks) return false;
-    if (!Array.isArray(template.templateData)) return false;
-    
-    // Validate each task in template data
-    return template.templateData.every((task: any) => 
-      task.weekNumber && 
-      task.dayOfWeek !== undefined && 
-      task.taskType && 
-      task.title &&
-      task.priority &&
-      task.estimatedDuration !== undefined
-    );
+
+    type TemplatePayload = {
+      version?: unknown;
+      metadata?: unknown;
+      template?: {
+        name?: unknown;
+        category?: unknown;
+        durationWeeks?: unknown;
+        strainType?: unknown;
+        templateData?: unknown;
+      };
+    };
+
+    const dataObj = data as TemplatePayload;
+    if (!dataObj.template || !dataObj.version || !dataObj.metadata) return false;
+
+    const template = dataObj.template;
+    if (
+      !template ||
+      typeof template.name !== 'string' ||
+      typeof template.category !== 'string' ||
+      typeof template.durationWeeks !== 'number' ||
+      !Array.isArray(template.templateData)
+    ) {
+      return false;
+    }
+
+    // Validate each task in template data with runtime checks
+    return (template.templateData as unknown[]).every((task) => {
+      const t = task as Partial<TemplateTaskData> & Record<string, unknown>;
+      return (
+        typeof t.weekNumber === 'number' &&
+        typeof t.dayOfWeek === 'number' &&
+        typeof t.taskType === 'string' &&
+        typeof t.title === 'string' &&
+        typeof t.priority === 'string' &&
+        (typeof t.estimatedDuration === 'number' || t.estimatedDuration === 0)
+      );
+    });
   }
 
   /**
@@ -225,17 +249,17 @@ export class TemplateSharingService extends BaseService {
    */
   compareTemplateVersions(v1: TemplateTaskData[], v2: TemplateTaskData[]): string[] {
     const changes: string[] = [];
-    
+
     if (v1.length !== v2.length) {
       changes.push(`Task count changed from ${v1.length} to ${v2.length}`);
     }
-    
+
     // Compare individual tasks
     const maxLength = Math.max(v1.length, v2.length);
     for (let i = 0; i < maxLength; i++) {
       const task1 = v1[i];
       const task2 = v2[i];
-      
+
       if (!task1 && task2) {
         changes.push(`Added task: ${task2.title}`);
       } else if (!task2 && task1) {
@@ -245,17 +269,23 @@ export class TemplateSharingService extends BaseService {
           changes.push(`Task title changed: "${task1.title}" → "${task2.title}"`);
         }
         if (task1.taskType !== task2.taskType) {
-          changes.push(`Task type changed for "${task1.title}": ${task1.taskType} → ${task2.taskType}`);
+          changes.push(
+            `Task type changed for "${task1.title}": ${task1.taskType} → ${task2.taskType}`
+          );
         }
         if (task1.priority !== task2.priority) {
-          changes.push(`Priority changed for "${task1.title}": ${task1.priority} → ${task2.priority}`);
+          changes.push(
+            `Priority changed for "${task1.title}": ${task1.priority} → ${task2.priority}`
+          );
         }
         if (task1.estimatedDuration !== task2.estimatedDuration) {
-          changes.push(`Duration changed for "${task1.title}": ${task1.estimatedDuration}min → ${task2.estimatedDuration}min`);
+          const d1 = typeof task1.estimatedDuration === 'number' ? task1.estimatedDuration : 0;
+          const d2 = typeof task2.estimatedDuration === 'number' ? task2.estimatedDuration : 0;
+          changes.push(`Duration changed for "${task1.title}": ${d1}min → ${d2}min`);
         }
       }
     }
-    
+
     return changes;
   }
 

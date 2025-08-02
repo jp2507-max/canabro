@@ -244,6 +244,8 @@ export const IconSVG = {
   'play': '▶️',
   'pause': '⏸️',
   'stop': '⏹️',
+  'mic': '🎤',
+  'mic-outline': '🎙️',
   
   // Time/Date
   'today': '📅',
@@ -374,6 +376,8 @@ const IconLabels: Record<keyof typeof IconSVG, string> = {
   'play': 'Play',
   'pause': 'Pause',
   'stop': 'Stop',
+  'mic': 'Microphone',
+  'mic-outline': 'Microphone',
   
   // Time/Date
   'today': 'Today',

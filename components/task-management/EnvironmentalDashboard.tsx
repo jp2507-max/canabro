@@ -553,7 +553,6 @@ export const EnvironmentalDashboard: React.FC<EnvironmentalDashboardProps> = ({
     <FlashListWrapper
       data={flatData}
       renderItem={renderFlatItem}
-      estimatedItemSize={120}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }

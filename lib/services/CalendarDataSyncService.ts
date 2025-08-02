@@ -65,8 +65,8 @@ export interface ChangeTracker {
 export interface ConflictResolution {
     taskId: string;
     conflictType: 'timestamp' | 'status' | 'data';
-    localVersion: any;
-    remoteVersion: any;
+    localVersion: Record<string, unknown>;
+    remoteVersion: Record<string, unknown>;
     resolution: 'local' | 'remote' | 'merge';
     resolvedAt: Date;
 }
