@@ -9,7 +9,8 @@ export interface AchievementMetadata {
   difficulty: 'bronze' | 'silver' | 'gold' | 'platinum';
   points: number;
   iconName: string;
-  requirements?: Record<string, any>;
+  // Use unknown for flexible metadata while avoiding any
+  requirements?: Record<string, unknown>;
   progress?: {
     current: number;
     target: number;
@@ -26,7 +27,8 @@ export class UserAchievement extends Model {
   @text('achievement_id') achievementId!: string;
   @text('title') title!: string;
   @text('description') description!: string;
-  @json('metadata') metadata!: AchievementMetadata;
+  // WatermelonDB requires a sanitizer for @json fields
+  @json('metadata', (raw) => (raw ?? {} as AchievementMetadata)) metadata!: AchievementMetadata;
   @field('points_earned') pointsEarned!: number;
   @field('is_unlocked') isUnlocked!: boolean;
   @field('progress_percentage') progressPercentage!: number;

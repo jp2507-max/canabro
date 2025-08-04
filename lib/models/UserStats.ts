@@ -44,7 +44,8 @@ export class UserStats extends Model {
   @field('points_to_next_level') pointsToNextLevel!: number;
   @field('achievements_unlocked') achievementsUnlocked!: number;
   @field('leaderboard_rank') leaderboardRank!: number;
-  @json('stats_breakdown') statsBreakdown!: UserStatsBreakdown;
+  // WatermelonDB requires a sanitizer for @json fields
+  @json('stats_breakdown', (raw) => (raw ?? {} as UserStatsBreakdown)) statsBreakdown!: UserStatsBreakdown;
   @readonly @date('last_activity') lastActivity!: Date;
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
@@ -68,9 +69,9 @@ export class UserStats extends Model {
     let maxScore = 0;
 
     Object.entries(breakdown).forEach(([category, stats]) => {
-      const score = Object.values(stats).reduce((sum, value) => sum + (typeof value === 'number' ? value : 0), 0);
-      if (score > maxScore) {
-        maxScore = score;
+      const score = Object.values(stats).reduce((sum: number, value) => sum + (typeof value === 'number' ? value : 0), 0 as number);
+      if ((score as number) > maxScore) {
+        maxScore = score as number;
         maxCategory = category as keyof UserStatsBreakdown;
       }
     });

@@ -1534,11 +1534,6 @@
     "accessibility": {
       "userAvatar": "{{username}}'s profile picture"
     }
-  }
-}
-    "leave": "Leave",
-    "join": "Join",
-    "add": "Add"
   },
   "socialGroups": {
     "title": "Social Groups",
@@ -1768,3 +1763,4 @@
       "subtitle": "Great job on your progress!"
     }
   }
+}

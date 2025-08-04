@@ -9,7 +9,6 @@
  * - Integration with existing community components
  */
 import React, { useState, useCallback, useMemo } from 'react';
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -17,7 +16,6 @@ import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapp
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import SegmentedControl, { SegmentedControlOption } from '@/components/ui/SegmentedControl';
-import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 
 import GroupCreationForm from './GroupCreationForm';
 import GroupDiscovery from './GroupDiscovery';
@@ -42,7 +40,7 @@ export const SocialGroups: React.FC<SocialGroupsProps> = ({
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   // Define tab options for segmented control
-  const tabOptions: SegmentedControlOption[] = useMemo(() => [
+  const tabOptions = useMemo<SegmentedControlOption[]>(() => [
     {
       key: 'discover',
       label: t('tabs.discover'),
@@ -58,13 +56,13 @@ export const SocialGroups: React.FC<SocialGroupsProps> = ({
     {
       key: 'create',
       label: t('tabs.create'),
-      icon: 'add-circle',
+      icon: 'add',
       color: 'text-purple-600 dark:text-purple-400',
     },
     {
       key: 'moderate',
       label: t('tabs.moderate'),
-      icon: 'shield-checkmark',
+      icon: 'people',
       color: 'text-orange-600 dark:text-orange-400',
     },
   ], [t]);

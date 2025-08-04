@@ -23,6 +23,9 @@ A comprehensive reference of all custom utilities, hooks, and components in the 
 - **`crashPrevention.ts`** - Crash prevention utilities and error boundaries. Use to prevent app crashes.
 - **`performance-profiler.ts`** - Performance monitoring and profiling tools. Use for performance analysis.
 - **`perfLogger.ts`** - Performance logging utilities. Use for tracking performance metrics.
+- **`flashlist-performance.ts`** - Enhanced FlashList performance utilities for large datasets (10k+ items) with memory management, virtualization, and intelligent caching. Use for optimizing large message histories and feeds.
+- **`database-optimization.ts`** - Database optimization utilities with query performance analysis, index suggestions, and connection pooling. Use for database performance monitoring and optimization.
+- **`performance-testing.ts`** - Comprehensive performance testing suite for realtime features, FlashList performance, WebSocket connections, and memory usage. Use for performance validation and testing.
 
 ### Platform & Environment
 - **`platform-utils.ts`** - Platform-specific utilities and feature detection. Use for iOS/Android/Web differences.
@@ -77,6 +80,7 @@ A comprehensive reference of all custom utilities, hooks, and components in the 
 
 ### Resource Management
 - **`useResourceCleanup.ts`** - Automatic resource cleanup. Use for preventing memory leaks.
+- **`useRealtimeResourceCleanup.ts`** - Enhanced realtime resource cleanup with WebSocket connection management, message queue cleanup, memory pressure handling, and Supabase Realtime channel cleanup. Use for realtime feature resource management.
 
 ## 🎨 Animation Hooks (`lib/animations/`)
 

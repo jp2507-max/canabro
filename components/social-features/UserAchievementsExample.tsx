@@ -152,7 +152,7 @@ export const UserAchievementsExample: React.FC<UserAchievementsExampleProps> = (
       {/* Main Achievements Component */}
       <UserAchievements
         userId={userId}
-        userStats={userStats}
+        userStats={userStats ?? undefined}
         onAchievementUnlocked={handleAchievementUnlocked}
         className="flex-1"
       />

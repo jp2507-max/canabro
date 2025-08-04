@@ -108,6 +108,7 @@ export type {
 // Realtime services (2025 Enhanced)
 export { realtimeService } from './realtimeService';
 export { realtimeConfig } from './realtimeConfig';
+export { realtimePerformanceOptimizer } from './realtimePerformanceOptimizer';
 export type { 
     RealtimeSubscriptionConfig, 
     MessageBroadcast, 

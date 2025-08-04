@@ -117,7 +117,6 @@ export default function AddPlantTaskScreen() {
         await plantTasksCollection.create((task) => {
           // WatermelonDB Model is structurally typed; avoid narrowing the callback param
           // and assign known fields that exist on PlantTask model.
-          // @ts-expect-error Assigning raw id for new record creation
           task._raw.id = taskId;
           // @ts-expect-error known model fields at runtime
           task.taskId = taskId;
