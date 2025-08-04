@@ -10,17 +10,13 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Pressable, Alert } from 'react-native';
+import { View } from 'react-native';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
   withSpring, 
   withSequence,
-  withDelay,
-  runOnUI,
-  FadeIn,
-  SlideInUp,
-  interpolateColor as rInterpolateColor
+  withDelay
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 
@@ -36,7 +32,7 @@ import StatItem from '@/components/profile/StatItem';
 
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import { UserStats, UserStatsBreakdown } from '@/lib/models/UserStats';
-import { triggerHeavyHapticSync, triggerSuccessHapticSync } from '@/lib/utils/haptics';
+import { triggerSuccessHapticSync } from '@/lib/utils/haptics';
 import { log } from '@/lib/utils/logger';
 
 // Types
@@ -90,7 +86,7 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<keyof UserStatsBreakdown | 'all'>('all');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
 
   // Animation values
   const celebrationScale = useSharedValue(1);
@@ -98,13 +94,13 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
 
   // Tab options
   const tabOptions: SegmentedControlOption[] = [
-    { label: t('achievements:tabs.achievements'), value: 'achievements' },
-    { label: t('achievements:tabs.leaderboard'), value: 'leaderboard' },
-    { label: t('achievements:tabs.stats'), value: 'stats' },
+    { key: 'achievements', label: t('achievements:tabs.achievements'), icon: 'checkmark-circle', color: 'text-primary-600 dark:text-primary-400' },
+    { key: 'leaderboard', label: t('achievements:tabs.leaderboard'), icon: 'stats-chart-outline', color: 'text-blue-600 dark:text-blue-400' },
+    { key: 'stats', label: t('achievements:tabs.stats'), icon: 'reader-outline', color: 'text-neutral-600 dark:text-neutral-400' },
   ];
 
   // Category filter options
-  const categoryOptions = [
+  const categoryOptions: Array<{ label: string; value: 'all' | keyof UserStatsBreakdown }> = [
     { label: t('achievements:categories.all'), value: 'all' },
     { label: t('achievements:categories.growing'), value: 'growing' },
     { label: t('achievements:categories.community'), value: 'community' },
@@ -297,7 +293,7 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
           {/* Achievement Icon */}
           <View className={`relative p-3 rounded-full ${achievement.isUnlocked ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
             <OptimizedIcon
-              name={achievement.metadata.iconName}
+              name={achievement.metadata.iconName as 'leaf-outline' | 'flower-outline' | 'people-outline'}
               size={24}
               className={achievement.isUnlocked ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'}
             />
@@ -354,7 +350,7 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
             {/* Points and Status */}
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center space-x-2">
-                <OptimizedIcon name="star-outline" size={16} className="text-primary-500" />
+                <OptimizedIcon name="star" size={16} className="text-primary-500" />
                 <ThemedText className="text-sm font-medium text-primary-600 dark:text-primary-400">
                   {achievement.metadata.points} {t('achievements:points')}
                 </ThemedText>
@@ -419,7 +415,7 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
               </ThemedText>
             </View>
             <View className="flex-row items-center space-x-1">
-              <OptimizedIcon name="trending-up" size={16} className="text-green-500" />
+              <OptimizedIcon name="stats-chart-outline" size={16} className="text-green-500" />
               <ThemedText className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 {t('achievements:level')} {entry.level}
               </ThemedText>
@@ -441,19 +437,19 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
         icon: 'star' as const,
       },
       {
-        value: userStats.level,
+        value: String(userStats.level),
         label: t('achievements:stats.level'),
-        icon: 'trending-up' as const,
+        icon: 'stats-chart-outline' as const,
       },
       {
-        value: userStats.achievementsUnlocked,
+        value: String(userStats.achievementsUnlocked),
         label: t('achievements:stats.achievements'),
-        icon: 'trophy' as const,
+        icon: 'medal' as const,
       },
       {
         value: `#${userStats.leaderboardRank}`,
         label: t('achievements:stats.rank'),
-        icon: 'podium' as const,
+        icon: 'checkmark-circle' as const,
       },
     ];
 
@@ -471,18 +467,51 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
               </ThemedText>
             </View>
 
-            {/* Progress Ring */}
+            {/* Progress Ring - SVG-based for accurate 0-100% */}
             <View className="relative w-32 h-32 items-center justify-center">
+              {/* Fallback track in case SVG fails to render */}
               <View className="absolute w-full h-full rounded-full border-8 border-neutral-200 dark:border-neutral-700" />
-              <View 
-                className="absolute w-full h-full rounded-full border-8 border-primary-500"
-                style={{
-                  transform: [{ rotate: `${(userStats.levelProgress / 100) * 360}deg` }],
-                  borderTopColor: 'transparent',
-                  borderRightColor: 'transparent',
-                  borderBottomColor: 'transparent',
-                }}
-              />
+              {/* Inline SVG circular progress */}
+              {/* Using react-native-svg primitives via JSX runtime (requires react-native-svg) */}
+              {/*
+                circumference = 2 * Math.PI * r
+                strokeDashoffset = circumference * (1 - progress)
+              */}
+              <View className="absolute inset-0">
+                {/* @ts-ignore - allow inline svg in RN via react-native-svg */}
+                {React.createElement(
+                  // Lazy require to avoid import errors if not installed at compile time;
+                  // project should have react-native-svg installed for this to render.
+                   
+                  require('react-native-svg').Svg,
+                  { width: '100%', height: '100%', viewBox: '0 0 100 100' },
+                  [
+                    React.createElement(require('react-native-svg').Circle, {
+                      key: 'track',
+                      cx: 50,
+                      cy: 50,
+                      r: 42,
+                      strokeWidth: 8,
+                      stroke: '#E5E7EB', // neutral-200
+                      fill: 'none',
+                    }),
+                    React.createElement(require('react-native-svg').Circle, {
+                      key: 'progress',
+                      cx: 50,
+                      cy: 50,
+                      r: 42,
+                      strokeWidth: 8,
+                      strokeLinecap: 'round',
+                      stroke: '#3B82F6', // primary-500
+                      fill: 'none',
+                      strokeDasharray: 2 * Math.PI * 42,
+                      strokeDashoffset: (2 * Math.PI * 42) * (1 - Math.max(0, Math.min(1, userStats.levelProgress / 100))),
+                      // Start at top (12 o'clock)
+                      transform: 'rotate(-90 50 50)',
+                    }),
+                  ]
+                )}
+              </View>
               <View className="items-center">
                 <ThemedText className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                   {Math.round(userStats.levelProgress)}%
@@ -519,8 +548,8 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
             {t('achievements:categoryBreakdown')}
           </ThemedText>
           {Object.entries(userStats.statsBreakdown).map(([category, stats]) => {
-            const totalCategoryPoints = Object.values(stats).reduce((sum, value) => 
-              sum + (typeof value === 'number' ? value : 0), 0
+            const totalCategoryPoints = Object.values(stats as Record<string, unknown>).reduce((acc: number, value: unknown) => 
+              acc + (typeof value === 'number' ? value : 0), 0
             );
             return (
               <View key={category} className="flex-row items-center justify-between py-2 border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
@@ -560,8 +589,8 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
       <View className="px-4 py-4">
         <SegmentedControl
           options={tabOptions}
-          selectedValue={activeTab}
-          onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+          selectedKey={activeTab}
+          onSelectionChange={(key) => setActiveTab(key as typeof activeTab)}
         />
       </View>
 
@@ -580,7 +609,7 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
                     key={option.value}
                     text={option.label}
                     selected={selectedCategory === option.value}
-                    onPress={() => setSelectedCategory(option.value as typeof selectedCategory)}
+                    onPress={() => setSelectedCategory(option.value)}
                     variant="blue"
                     size="small"
                     className="mb-2"
@@ -594,7 +623,6 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
               data={filteredAchievements}
               renderItem={renderAchievementCard}
               keyExtractor={(item) => item.id}
-              estimatedItemSize={120}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
             />
@@ -606,7 +634,6 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
             data={leaderboard}
             renderItem={renderLeaderboardEntry}
             keyExtractor={(item) => item.userId}
-            estimatedItemSize={80}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
           />
@@ -622,7 +649,7 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
         pointerEvents="none"
       >
         <View className="items-center space-y-4">
-          <OptimizedIcon name="trophy" size={80} className="text-yellow-500" />
+          <OptimizedIcon name="medal" size={80} className="text-yellow-500" />
           <ThemedText className="text-2xl font-bold text-white text-center">
             {t('achievements:celebration.title')}
           </ThemedText>

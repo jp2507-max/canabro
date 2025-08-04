@@ -20,7 +20,7 @@ import { FlashListWrapper } from '@/components/ui/FlashListWrapper';
 import SegmentedControl, { SegmentedControlOption } from '@/components/ui/SegmentedControl';
 import TagPill from '@/components/ui/TagPill';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
-import { NetworkResilientImage } from '@/components/ui/NetworkResilientImage';
+import NetworkResilientImage from '@/components/ui/NetworkResilientImage';
 import AnimatedButton from '@/components/buttons/AnimatedButton';
 import PostItem from '@/components/community/PostItem';
 import UserAvatar from '@/components/community/UserAvatar';
@@ -42,7 +42,7 @@ const CONTENT_TABS: SegmentedControlOption[] = [
   {
     key: 'posts',
     label: 'Posts',
-    icon: 'chatbubbles',
+    icon: 'chatbubble-ellipses',
     color: 'text-blue-600 dark:text-blue-400',
   },
   {
@@ -54,7 +54,7 @@ const CONTENT_TABS: SegmentedControlOption[] = [
   {
     key: 'about',
     label: 'About',
-    icon: 'information-circle',
+    icon: 'help-circle',
     color: 'text-purple-600 dark:text-purple-400',
   },
 ];
@@ -95,7 +95,7 @@ const MemberItem: React.FC<MemberItemProps> = ({
       
       <ThemedView className="flex-1 ml-3">
         <ThemedText className="font-medium text-neutral-900 dark:text-neutral-100">
-          User {member.userId.slice(0, 8)}
+          {member.userId.slice(0, 8)}
         </ThemedText>
         <ThemedView className="flex-row items-center mt-1">
           <ThemedView className={`px-2 py-1 rounded-full ${getRoleColor(member.role)}`}>
@@ -116,11 +116,11 @@ const MemberItem: React.FC<MemberItemProps> = ({
               onPress={() => handleMemberAction('promote')}
               className="p-2 mr-1"
             >
-              <OptimizedIcon
-                name="arrow-up-circle"
-                size={20}
-                className="text-green-600 dark:text-green-400"
-              />
+                <OptimizedIcon
+                  name="chevron-up"
+                  size={20}
+                  className="text-green-600 dark:text-green-400"
+                />
             </Pressable>
           )}
           {member.role === 'moderator' && (
@@ -128,11 +128,11 @@ const MemberItem: React.FC<MemberItemProps> = ({
               onPress={() => handleMemberAction('demote')}
               className="p-2 mr-1"
             >
-              <OptimizedIcon
-                name="arrow-down-circle"
-                size={20}
-                className="text-orange-600 dark:text-orange-400"
-              />
+                <OptimizedIcon
+                  name="chevron-down"
+                  size={20}
+                  className="text-orange-600 dark:text-orange-400"
+                />
             </Pressable>
           )}
           <Pressable
@@ -140,7 +140,7 @@ const MemberItem: React.FC<MemberItemProps> = ({
             className="p-2"
           >
             <OptimizedIcon
-              name="remove-circle"
+              name="close-circle"
               size={20}
               className="text-red-600 dark:text-red-400"
             />
@@ -184,7 +184,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
             Q.where('is_active', true)
           ).fetch();
           setUserMembership(membership[0] || null);
-        } catch (error) {
+        } catch (_error) {
           setUserMembership(null);
         }
       }
@@ -203,8 +203,9 @@ export const GroupContent: React.FC<GroupContentProps> = ({
       // This would require extending the posts system to support group filtering
       setPosts([]);
 
-    } catch (error) {
-      console.error('Error loading group data:', error);
+    } catch (_error) {
+      const { log } = require('@/lib/utils/logger');
+      log.error('Error loading group data:', _error);
     } finally {
       setLoading(false);
     }
@@ -218,9 +219,6 @@ export const GroupContent: React.FC<GroupContentProps> = ({
     return userMembership?.canManageMembers || false;
   }, [userMembership]);
 
-  const canModerate = useMemo(() => {
-    return userMembership?.canModerate || false;
-  }, [userMembership]);
 
   const handleJoinGroup = useCallback(async () => {
     if (!currentUserId || !group) return;
@@ -250,8 +248,9 @@ export const GroupContent: React.FC<GroupContentProps> = ({
 
       triggerSuccessHaptic();
       loadGroupData(); // Reload to update membership status
-    } catch (error) {
-      console.error('Error joining group:', error);
+    } catch (_error) {
+      const { log } = require('@/lib/utils/logger');
+      log.error('Error joining group:', _error);
       Alert.alert(t('content.errors.joinFailed'));
     } finally {
       setJoining(false);
@@ -278,8 +277,9 @@ export const GroupContent: React.FC<GroupContentProps> = ({
               
               triggerLightHaptic();
               onBack?.(); // Go back to discovery
-            } catch (error) {
-              console.error('Error leaving group:', error);
+            } catch (_error) {
+              const { log } = require('@/lib/utils/logger');
+              log.error('Error leaving group:', _error);
               Alert.alert(t('content.errors.leaveFailed'));
             }
           },
@@ -325,8 +325,9 @@ export const GroupContent: React.FC<GroupContentProps> = ({
               
               triggerLightHaptic();
               loadGroupData(); // Reload to update member list
-            } catch (error) {
-              console.error(`Error ${action} member:`, error);
+            } catch (_error) {
+              const { log } = require('@/lib/utils/logger');
+              log.error(`Error ${action} member:`, _error);
               Alert.alert(t('content.errors.memberActionFailed'));
             }
           },
@@ -391,7 +392,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
                   url={group.avatar}
                   width={64}
                   height={64}
-                  className="rounded-2xl"
+                  borderRadius={16}
                   fallbackIconName="people"
                   fallbackIconSize={32}
                 />
@@ -407,7 +408,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
             <ThemedView className="flex-1">
               <ThemedView className="flex-row items-center mb-2">
                 <OptimizedIcon
-                  name={group.isPublic ? 'globe' : 'lock-closed'}
+                  name={group.isPublic ? 'globe-outline' : 'lock-closed'}
                   size={16}
                   className="text-neutral-500 dark:text-neutral-400 mr-2"
                 />
@@ -477,7 +478,6 @@ export const GroupContent: React.FC<GroupContentProps> = ({
               <FlashListWrapper
                 data={posts}
                 renderItem={renderPostItem}
-                estimatedItemSize={200}
                 keyExtractor={(item) => item.id}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 8 }}
@@ -485,7 +485,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
             ) : (
               <ThemedView className="flex-1 items-center justify-center p-8">
                 <OptimizedIcon
-                  name="chatbubbles-outline"
+                  name="chatbubble-outline"
                   size={64}
                   className="text-neutral-300 dark:text-neutral-600 mb-4"
                 />
@@ -507,7 +507,6 @@ export const GroupContent: React.FC<GroupContentProps> = ({
             <FlashListWrapper
               data={members}
               renderItem={renderMemberItem}
-              estimatedItemSize={80}
               keyExtractor={(item) => item.id}
               showsVerticalScrollIndicator={false}
             />

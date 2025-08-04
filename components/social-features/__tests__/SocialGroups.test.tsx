@@ -41,7 +41,8 @@ jest.mock('@/components/ui/SegmentedControl', () => {
   const { Pressable, Text } = require('react-native');
   return function MockSegmentedControl({ 
     options, 
-    onSelectionChange 
+    onSelectionChange,
+    selectedKey
   }: { 
     options: any[]; 
     selectedKey: string; 
@@ -152,10 +153,9 @@ describe('SocialGroups', () => {
 
   it('handles group creation callback', () => {
     const mockOnGroupSelect = jest.fn();
-    render(<SocialGroups {...defaultProps} onGroupSelect={mockOnGroupSelect} />);
+    const { getByTestId } = render(<SocialGroups {...defaultProps} onGroupSelect={mockOnGroupSelect} />);
     
     // Switch to create tab
-    const { getByTestId } = render(<SocialGroups {...defaultProps} />);
     fireEvent.press(getByTestId('tab-create'));
     
     expect(getByTestId('group-creation-form')).toBeTruthy();

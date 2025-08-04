@@ -20,7 +20,7 @@ import { FlashListWrapper } from '@/components/ui/FlashListWrapper';
 import { EnhancedTextInput } from '@/components/ui/EnhancedTextInput';
 import TagPill from '@/components/ui/TagPill';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
-import { NetworkResilientImage } from '@/components/ui/NetworkResilientImage';
+import NetworkResilientImage from '@/components/ui/NetworkResilientImage';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { triggerLightHaptic } from '@/lib/utils/haptics';
 
@@ -53,7 +53,7 @@ interface GroupCardProps {
 
 const GroupCard: React.FC<GroupCardProps> = ({ 
   group, 
-  currentUserId, 
+  currentUserId: _currentUserId, 
   onPress, 
   isUserMember = false 
 }) => {
@@ -82,7 +82,6 @@ const GroupCard: React.FC<GroupCardProps> = ({
                 url={group.avatar}
                 width={48}
                 height={48}
-                className="rounded-xl"
                 fallbackIconName="people"
                 fallbackIconSize={24}
               />
@@ -111,7 +110,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
             
             <ThemedView className="flex-row items-center">
               <OptimizedIcon
-                name={group.isPublic ? 'globe' : 'lock-closed'}
+                name={group.isPublic ? 'globe-outline' : 'lock-closed'}
                 size={14}
                 className="text-neutral-500 dark:text-neutral-400 mr-1"
               />
@@ -154,7 +153,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
         <ThemedView className="flex-row items-center justify-between mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
           <ThemedView className="flex-row items-center">
             <OptimizedIcon
-              name="pulse"
+              name="stats-chart-outline"
               size={14}
               className="text-green-500 mr-1"
             />
@@ -175,7 +174,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
 };
 
 export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
-  currentUserId,
+  currentUserId: _currentUserId,
   onGroupSelect,
   showOnlyUserGroups = false,
 }) => {
@@ -187,12 +186,14 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
   const [groups, setGroups] = useState<SocialGroup[]>([]);
   const [userMemberships, setUserMemberships] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Load groups based on filters
   const loadGroups = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const groupsCollection = database.get<SocialGroup>('social_groups');
       let query = groupsCollection.query(
@@ -230,10 +231,10 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
       const fetchedGroups = await query.fetch();
 
       // If showing only user groups, filter by membership
-      if (showOnlyUserGroups && currentUserId) {
+  if (showOnlyUserGroups && _currentUserId) {
         const membershipsCollection = database.get<GroupMember>('group_members');
         const userMemberships = await membershipsCollection.query(
-          Q.where('user_id', currentUserId),
+          Q.where('user_id', _currentUserId),
           Q.where('is_active', true)
         ).fetch();
         
@@ -245,20 +246,22 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
       }
 
       // Load user memberships for display
-      if (currentUserId) {
+      if (_currentUserId) {
         const membershipsCollection = database.get<GroupMember>('group_members');
         const memberships = await membershipsCollection.query(
-          Q.where('user_id', currentUserId),
+          Q.where('user_id', _currentUserId),
           Q.where('is_active', true)
         ).fetch();
         setUserMemberships(new Set(memberships.map(m => m.groupId)));
       }
     } catch (error) {
       console.error('Error loading groups:', error);
+      const message = error instanceof Error ? error.message : t('discovery.loadError');
+      setError(message);
     } finally {
       setLoading(false);
     }
-  }, [database, debouncedSearchQuery, selectedCategory, showOnlyUserGroups, currentUserId]);
+  }, [database, debouncedSearchQuery, selectedCategory, showOnlyUserGroups, _currentUserId]);
 
   useEffect(() => {
     loadGroups();
@@ -280,11 +283,11 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
   const renderGroupCard = useCallback(({ item }: { item: SocialGroup }) => (
     <GroupCard
       group={item}
-      currentUserId={currentUserId}
+      currentUserId={_currentUserId}
       onPress={handleGroupSelect}
       isUserMember={userMemberships.has(item.id)}
     />
-  ), [currentUserId, handleGroupSelect, userMemberships]);
+  ), [_currentUserId, handleGroupSelect, userMemberships]);
 
   const renderEmptyState = useCallback(() => (
     <ThemedView className="flex-1 items-center justify-center p-8">
@@ -346,14 +349,25 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
         </ThemedView>
       </ThemedView>
 
-      {/* Results Count */}
+      {/* Results / Error */}
       <ThemedView className="px-4 py-2 bg-neutral-50 dark:bg-neutral-900">
-        <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
-          {loading 
-            ? t('discovery.loading')
-            : t('discovery.groupsFound', { count: groups.length })
-          }
-        </ThemedText>
+        {error ? (
+          <Animated.View entering={FadeIn} exiting={FadeOut} className="bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700 rounded-lg px-3 py-2">
+            <ThemedText className="text-sm font-medium text-red-700 dark:text-red-300">
+              {t('discovery.loadError')} {__DEV__ && error ? `(${error})` : ''}
+            </ThemedText>
+            <ThemedText className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
+              {t('discovery.pullToRetry') ?? t('discovery.tryAgain')}
+            </ThemedText>
+          </Animated.View>
+        ) : (
+          <ThemedText className="text-sm text-neutral-600 dark:text-neutral-400">
+            {loading 
+              ? t('discovery.loading')
+              : t('discovery.groupsFound', { count: groups.length })
+            }
+          </ThemedText>
+        )}
       </ThemedView>
 
       {/* Groups List */}
@@ -368,7 +382,6 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
           <FlashListWrapper
             data={groups}
             renderItem={renderGroupCard}
-            estimatedItemSize={160}
             keyExtractor={(item) => item.id}
             ListEmptyComponent={renderEmptyState}
             showsVerticalScrollIndicator={false}

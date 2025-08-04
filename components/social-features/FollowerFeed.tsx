@@ -201,7 +201,7 @@ export default function FollowerFeed({
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [currentUserId, debouncedFilter, feedPosts.length, t]);
+    }, [currentUserId, debouncedFilter, t]);
 
     // Handle refresh
     const handleRefresh = useCallback(async () => {

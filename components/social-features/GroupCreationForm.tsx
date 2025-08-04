@@ -9,6 +9,7 @@
  */
 import React, { useState, useCallback, useRef } from 'react';
 import { TextInput, ScrollView, Alert } from 'react-native';
+import EnhancedKeyboardWrapper from '@/components/keyboard/EnhancedKeyboardWrapper';
 import { useTranslation } from 'react-i18next';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useDatabase } from '@nozbe/watermelondb/hooks';
@@ -20,6 +21,7 @@ import SegmentedControl, { SegmentedControlOption } from '@/components/ui/Segmen
 import TagPill from '@/components/ui/TagPill';
 import AnimatedButton from '@/components/buttons/AnimatedButton';
 import { triggerLightHaptic, triggerSuccessHaptic } from '@/lib/utils/haptics';
+import { Logger } from '@/lib/utils/production-utils';
 
 import { SocialGroup, GroupCategory, GroupSettings } from '@/lib/models/SocialGroup';
 import { GroupMember } from '@/lib/models/GroupMember';
@@ -44,7 +46,7 @@ const PRIVACY_OPTIONS: SegmentedControlOption[] = [
   {
     key: 'public',
     label: 'Public',
-    icon: 'globe',
+    icon: 'globe-outline',
     color: 'text-green-600 dark:text-green-400',
   },
   {
@@ -188,7 +190,7 @@ export const GroupCreationForm: React.FC<GroupCreationFormProps> = ({
         onGroupCreated?.(group.id);
       });
     } catch (error) {
-      console.error('Error creating group:', error);
+      Logger.error('Error creating group:', { error });
       Alert.alert(t('form.errors.createFailed'));
     } finally {
       setIsCreating(false);
@@ -208,7 +210,8 @@ export const GroupCreationForm: React.FC<GroupCreationFormProps> = ({
   ]);
 
   return (
-    <ScrollView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
+    <EnhancedKeyboardWrapper>
+      <ScrollView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
       <ThemedView className="p-4">
         <ThemedText className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
           {t('create.title')}
@@ -347,7 +350,8 @@ export const GroupCreationForm: React.FC<GroupCreationFormProps> = ({
           variant="primary"
         />
       </ThemedView>
-    </ScrollView>
+      </ScrollView>
+    </EnhancedKeyboardWrapper>
   );
 };
 

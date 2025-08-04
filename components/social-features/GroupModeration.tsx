@@ -7,7 +7,7 @@
  * - Member management and role assignment
  * - Content moderation and group settings
  */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Pressable, Alert, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useDatabase } from '@nozbe/watermelondb/hooks';
@@ -21,9 +21,8 @@ import SegmentedControl, { SegmentedControlOption } from '@/components/ui/Segmen
 import { EnhancedTextInput } from '@/components/ui/EnhancedTextInput';
 import TagPill from '@/components/ui/TagPill';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
-import AnimatedButton from '@/components/buttons/AnimatedButton';
-import UserAvatar from '@/components/community/UserAvatar';
-import { triggerLightHaptic, triggerSuccessHaptic } from '@/lib/utils/haptics';
+import { triggerSuccessHaptic } from '@/lib/utils/haptics';
+import { log } from 'lib/utils/logger';
 
 import { SocialGroup, GroupSettings } from '@/lib/models/SocialGroup';
 import { GroupMember } from '@/lib/models/GroupMember';
@@ -45,7 +44,7 @@ const MODERATION_TABS: SegmentedControlOption[] = [
   {
     key: 'settings',
     label: 'Settings',
-    icon: 'cog',
+    icon: 'settings',
     color: 'text-green-600 dark:text-green-400',
   },
   {
@@ -57,7 +56,7 @@ const MODERATION_TABS: SegmentedControlOption[] = [
   {
     key: 'reports',
     label: 'Reports',
-    icon: 'flag',
+    icon: 'warning',
     color: 'text-red-600 dark:text-red-400',
   },
 ];
@@ -109,7 +108,7 @@ const ModeratedGroupCard: React.FC<ModeratedGroupCardProps> = ({
           </ThemedView>
           
           <OptimizedIcon
-            name={group.isPublic ? 'globe' : 'lock-closed'}
+            name={group.isPublic ? 'globe-outline' : 'lock-closed'}
             size={20}
             className="text-neutral-500 dark:text-neutral-400"
           />
@@ -321,14 +320,14 @@ export const GroupModeration: React.FC<GroupModerationProps> = ({
 
       const groupsWithRoles = await Promise.all(
         userMemberships.map(async (membership) => {
-          const group = await membership.group.fetch();
+          const group = await membership.group;
           return { group, role: membership.role };
         })
       );
 
       setModeratedGroups(groupsWithRoles);
     } catch (error) {
-      console.error('Error loading moderated groups:', error);
+      log.error('Error loading moderated groups', { error });
     } finally {
       setLoading(false);
     }
@@ -361,7 +360,7 @@ export const GroupModeration: React.FC<GroupModerationProps> = ({
       triggerSuccessHaptic();
       loadModeratedGroups(); // Reload to update group data
     } catch (error) {
-      console.error('Error updating group settings:', error);
+      log.error('Error updating group settings', { error, groupId: selectedGroup?.id });
       Alert.alert(t('moderation.errors.updateFailed'));
     }
   }, [selectedGroup, database, loadModeratedGroups, t]);
@@ -379,7 +378,7 @@ export const GroupModeration: React.FC<GroupModerationProps> = ({
     return (
       <ThemedView className="flex-1 items-center justify-center p-8">
         <OptimizedIcon
-          name="log-in-outline"
+          name="log-in"
           size={64}
           className="text-neutral-300 dark:text-neutral-600 mb-4"
         />
@@ -420,7 +419,6 @@ export const GroupModeration: React.FC<GroupModerationProps> = ({
               <FlashListWrapper
                 data={moderatedGroups}
                 renderItem={renderModeratedGroup}
-                estimatedItemSize={160}
                 keyExtractor={(item) => item.group.id}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingVertical: 8 }}
@@ -428,7 +426,7 @@ export const GroupModeration: React.FC<GroupModerationProps> = ({
             ) : (
               <ThemedView className="flex-1 items-center justify-center p-8">
                 <OptimizedIcon
-                  name="shield-outline"
+                  name="lock-closed-outline"
                   size={64}
                   className="text-neutral-300 dark:text-neutral-600 mb-4"
                 />
@@ -458,7 +456,7 @@ export const GroupModeration: React.FC<GroupModerationProps> = ({
             ) : (
               <ThemedView className="flex-1 items-center justify-center p-8">
                 <OptimizedIcon
-                  name="settings-outline"
+                  name="settings"
                   size={64}
                   className="text-neutral-300 dark:text-neutral-600 mb-4"
                 />
@@ -496,7 +494,7 @@ export const GroupModeration: React.FC<GroupModerationProps> = ({
             className="flex-1 items-center justify-center p-8"
           >
             <OptimizedIcon
-              name="flag-outline"
+              name="warning-outline"
               size={64}
               className="text-neutral-300 dark:text-neutral-600 mb-4"
             />

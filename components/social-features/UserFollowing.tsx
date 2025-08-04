@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
@@ -9,23 +9,13 @@ import { FlashListWrapper } from '@/components/ui/FlashListWrapper';
 import { NotificationBadge } from '@/components/ui/NotificationBadge';
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
-import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import * as Haptics from '@/lib/utils/haptics';
 import { log } from '@/lib/utils/logger';
 
-// Types based on design document
-interface FollowRelationship {
-  followerId: string;
-  followingId: string;
-  followedAt: Date;
-  notificationSettings: FollowNotificationSettings;
-  relationshipType: 'follow' | 'mutual' | 'blocked';
-  isActive: boolean;
-}
 
-interface FollowNotificationSettings {
+interface _FollowNotificationSettings {
   newPosts: boolean;
   plantUpdates: boolean;
   achievements: boolean;
@@ -60,25 +50,23 @@ interface User {
 interface UserFollowingProps {
   currentUserId: string;
   onUserPress?: (user: User) => void;
-  onFollowersPress?: () => void;
-  onFollowingPress?: () => void;
 }
 
 export default function UserFollowing({
   currentUserId,
   onUserPress,
-  onFollowersPress,
-  onFollowingPress,
 }: UserFollowingProps) {
   const { t } = useTranslation('community');
   const { scheduleNotification } = useNotifications();
 
   // State management
-  const [followers, setFollowers] = useState<User[]>([]);
-  const [following, setFollowing] = useState<User[]>([]);
-  const [followRequests, setFollowRequests] = useState<User[]>([]);
+  const [followers] = useState<User[]>([]);
+  const [following] = useState<User[]>([]);
+  const [followRequests] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
+  const [socialStats] = useState<SocialStats | null>(null);
+  // Tabs: 'followers' | 'following'
+  const [activeTab, setActiveTab] = useState<'followers' | 'following'>('followers');
 
   // Animation values
   const statsScale = useSharedValue(1);
@@ -91,10 +79,6 @@ export default function UserFollowing({
   const handleFollowUser = useCallback(async (user: User) => {
     try {
       setIsLoading(true);
-      
-      // Optimistic update
-      const updatedUser = { ...user };
-      updatedUser.socialStats.followersCount += 1;
       
       // Haptic feedback
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -139,10 +123,6 @@ export default function UserFollowing({
             text: t('actions.unfollow'),
             style: 'destructive',
             onPress: async () => {
-              // Optimistic update
-              const updatedUser = { ...user };
-              updatedUser.socialStats.followersCount -= 1;
-              
               // Haptic feedback
               await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               
@@ -188,7 +168,7 @@ export default function UserFollowing({
           
           <View className="ml-3 flex-1">
             <View className="flex-row items-center">
-              <ThemedText variant="subtitle" className="font-semibold">
+              <ThemedText variant="heading" className="font-semibold">
                 {user.displayName}
               </ThemedText>
               {isMutual && (
@@ -242,7 +222,7 @@ export default function UserFollowing({
     <Animated.View style={animatedStatsStyle}>
       <ThemedView className="flex-row justify-around p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl mx-4 mb-4">
         <View className="items-center" onTouchEnd={animateStats}>
-          <ThemedText variant="title" className="font-bold text-primary-600 dark:text-primary-400">
+          <ThemedText variant="heading" className="font-bold text-primary-600 dark:text-primary-400">
             {socialStats?.followersCount || 0}
           </ThemedText>
           <ThemedText variant="caption" className="text-neutral-600 dark:text-neutral-400">
@@ -251,7 +231,7 @@ export default function UserFollowing({
         </View>
         
         <View className="items-center" onTouchEnd={animateStats}>
-          <ThemedText variant="title" className="font-bold text-primary-600 dark:text-primary-400">
+          <ThemedText variant="heading" className="font-bold text-primary-600 dark:text-primary-400">
             {socialStats?.followingCount || 0}
           </ThemedText>
           <ThemedText variant="caption" className="text-neutral-600 dark:text-neutral-400">
@@ -260,7 +240,7 @@ export default function UserFollowing({
         </View>
         
         <View className="items-center" onTouchEnd={animateStats}>
-          <ThemedText variant="title" className="font-bold text-primary-600 dark:text-primary-400">
+          <ThemedText variant="heading" className="font-bold text-primary-600 dark:text-primary-400">
             {socialStats?.reputationScore || 0}
           </ThemedText>
           <ThemedText variant="caption" className="text-neutral-600 dark:text-neutral-400">
@@ -280,7 +260,7 @@ export default function UserFollowing({
       {followRequests.length > 0 && (
         <ThemedView className="mb-4">
           <View className="flex-row items-center justify-between px-4 py-2">
-            <ThemedText variant="subtitle" className="font-semibold">
+            <ThemedText variant="heading" className="font-semibold">
               {t('sections.followRequests')}
             </ThemedText>
             <NotificationBadge count={followRequests.length} priority="medium" size="small" />
@@ -289,7 +269,6 @@ export default function UserFollowing({
           <FlashListWrapper
             data={followRequests}
             renderItem={renderUserItem}
-            estimatedItemSize={80}
             keyExtractor={(item) => `request_${item.id}`}
             showsVerticalScrollIndicator={false}
           />
@@ -299,23 +278,38 @@ export default function UserFollowing({
       {/* Followers and Following Tabs */}
       <ThemedView className="flex-1">
         <View className="flex-row border-b border-neutral-200 dark:border-neutral-700">
-          <View className="flex-1 items-center py-3 border-b-2 border-primary-500">
-            <ThemedText variant="subtitle" className="font-semibold text-primary-600 dark:text-primary-400">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('tabs.followers')}
+            onPress={() => setActiveTab('followers')}
+            className={`flex-1 items-center py-3 ${activeTab === 'followers' ? 'border-b-2 border-primary-500' : ''}`}
+          >
+            <ThemedText
+              variant="heading"
+              className={`${activeTab === 'followers' ? 'font-semibold text-primary-600 dark:text-primary-400' : 'text-neutral-600 dark:text-neutral-400'}`}
+            >
               {t('tabs.followers')}
             </ThemedText>
-          </View>
-          <View className="flex-1 items-center py-3">
-            <ThemedText variant="subtitle" className="text-neutral-600 dark:text-neutral-400">
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('tabs.following')}
+            onPress={() => setActiveTab('following')}
+            className={`flex-1 items-center py-3 ${activeTab === 'following' ? 'border-b-2 border-primary-500' : ''}`}
+          >
+            <ThemedText
+              variant="heading"
+              className={`${activeTab === 'following' ? 'font-semibold text-primary-600 dark:text-primary-400' : 'text-neutral-600 dark:text-neutral-400'}`}
+            >
               {t('tabs.following')}
             </ThemedText>
-          </View>
+          </Pressable>
         </View>
-        
+
         <FlashListWrapper
-          data={followers}
+          data={activeTab === 'followers' ? followers : following}
           renderItem={renderUserItem}
-          estimatedItemSize={100}
-          keyExtractor={(item) => `follower_${item.id}`}
+          keyExtractor={(item) => `${activeTab === 'followers' ? 'follower' : 'following'}_${item.id}`}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
         />

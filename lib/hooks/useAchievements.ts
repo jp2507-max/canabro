@@ -166,14 +166,14 @@ export const useAchievements = ({
   const refreshData = useCallback(async () => {
     try {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: achievementsKey }),
-        queryClient.invalidateQueries({ queryKey: statsKey }),
-        queryClient.invalidateQueries({ queryKey: leaderboardKey }),
+        queryClient.invalidateQueries({ queryKey: ['achievements', userId] }),
+        queryClient.invalidateQueries({ queryKey: ['userStats', userId] }),
+        queryClient.invalidateQueries({ queryKey: ['leaderboard'] }),
       ]);
     } catch (error) {
       log.error('Failed to refresh achievement data:', error);
     }
-  }, [queryClient, achievementsKey, statsKey, leaderboardKey]);
+  }, [queryClient]);
 
   // Set up real-time subscriptions
   useEffect(() => {

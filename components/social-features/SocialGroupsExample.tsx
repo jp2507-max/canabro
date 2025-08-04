@@ -25,7 +25,7 @@ export const SocialGroupsExample: React.FC<SocialGroupsExampleProps> = ({
   };
 
   return (
-    <ThemedView className="flex-1">
+    <ThemedView className="flex-1 pt-safe">
       {/* Header */}
       <ThemedView className="px-4 py-3 bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
         <ThemedText className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
