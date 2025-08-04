@@ -303,7 +303,7 @@ export default function FollowerFeed({
     // Load initial posts
     useEffect(() => {
         loadFeedPosts(true);
-    }, [debouncedFilter]);
+    }, [debouncedFilter, loadFeedPosts]);
 
     // Render post item
     const renderPostItem = useCallback(({ item: post }: { item: FeedPost }) => {

@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useDatabase } from '@nozbe/watermelondb/hooks';
 import { Q } from '@nozbe/watermelondb';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { log } from '@/lib/utils/logger';
 
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
@@ -46,14 +47,12 @@ const GROUP_CATEGORIES: { key: GroupCategory; label: string }[] = [
 
 interface GroupCardProps {
   group: SocialGroup;
-  currentUserId?: string;
   onPress: (groupId: string) => void;
   isUserMember?: boolean;
 }
 
 const GroupCard: React.FC<GroupCardProps> = ({ 
   group, 
-  currentUserId: _currentUserId, 
   onPress, 
   isUserMember = false 
 }) => {
@@ -255,7 +254,7 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
         setUserMemberships(new Set(memberships.map(m => m.groupId)));
       }
     } catch (error) {
-      console.error('Error loading groups:', error);
+      log.error('[GroupDiscovery] Error loading groups', { error });
       const message = error instanceof Error ? error.message : t('discovery.loadError');
       setError(message);
     } finally {
@@ -283,11 +282,10 @@ export const GroupDiscovery: React.FC<GroupDiscoveryProps> = ({
   const renderGroupCard = useCallback(({ item }: { item: SocialGroup }) => (
     <GroupCard
       group={item}
-      currentUserId={_currentUserId}
       onPress={handleGroupSelect}
       isUserMember={userMemberships.has(item.id)}
     />
-  ), [_currentUserId, handleGroupSelect, userMemberships]);
+  ), [handleGroupSelect, userMemberships]);
 
   const renderEmptyState = useCallback(() => (
     <ThemedView className="flex-1 items-center justify-center p-8">

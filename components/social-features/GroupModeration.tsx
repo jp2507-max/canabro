@@ -22,7 +22,7 @@ import { EnhancedTextInput } from '@/components/ui/EnhancedTextInput';
 import TagPill from '@/components/ui/TagPill';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import { triggerSuccessHaptic } from '@/lib/utils/haptics';
-import { log } from 'lib/utils/logger';
+import { log } from '@/lib/utils/logger';
 
 import { SocialGroup, GroupSettings } from '@/lib/models/SocialGroup';
 import { GroupMember } from '@/lib/models/GroupMember';

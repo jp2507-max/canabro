@@ -11,6 +11,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View } from 'react-native';
+import { Svg, Circle } from 'react-native-svg';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -478,39 +479,28 @@ export const UserAchievements: React.FC<UserAchievementsProps> = ({
                 strokeDashoffset = circumference * (1 - progress)
               */}
               <View className="absolute inset-0">
-                {/* @ts-ignore - allow inline svg in RN via react-native-svg */}
-                {React.createElement(
-                  // Lazy require to avoid import errors if not installed at compile time;
-                  // project should have react-native-svg installed for this to render.
-                   
-                  require('react-native-svg').Svg,
-                  { width: '100%', height: '100%', viewBox: '0 0 100 100' },
-                  [
-                    React.createElement(require('react-native-svg').Circle, {
-                      key: 'track',
-                      cx: 50,
-                      cy: 50,
-                      r: 42,
-                      strokeWidth: 8,
-                      stroke: '#E5E7EB', // neutral-200
-                      fill: 'none',
-                    }),
-                    React.createElement(require('react-native-svg').Circle, {
-                      key: 'progress',
-                      cx: 50,
-                      cy: 50,
-                      r: 42,
-                      strokeWidth: 8,
-                      strokeLinecap: 'round',
-                      stroke: '#3B82F6', // primary-500
-                      fill: 'none',
-                      strokeDasharray: 2 * Math.PI * 42,
-                      strokeDashoffset: (2 * Math.PI * 42) * (1 - Math.max(0, Math.min(1, userStats.levelProgress / 100))),
-                      // Start at top (12 o'clock)
-                      transform: 'rotate(-90 50 50)',
-                    }),
-                  ]
-                )}
+                <Svg width="100%" height="100%" viewBox="0 0 100 100">
+                  <Circle
+                    cx={50}
+                    cy={50}
+                    r={42}
+                    strokeWidth={8}
+                    stroke="#E5E7EB"
+                    fill="none"
+                  />
+                  <Circle
+                    cx={50}
+                    cy={50}
+                    r={42}
+                    strokeWidth={8}
+                    strokeLinecap="round"
+                    stroke="#3B82F6"
+                    fill="none"
+                    strokeDasharray={2 * Math.PI * 42}
+                    strokeDashoffset={(2 * Math.PI * 42) * (1 - Math.max(0, Math.min(1, userStats.levelProgress / 100)))}
+                    transform="rotate(-90 50 50)"
+                  />
+                </Svg>
               </View>
               <View className="items-center">
                 <ThemedText className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">

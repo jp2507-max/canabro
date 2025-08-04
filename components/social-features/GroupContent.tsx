@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useDatabase } from '@nozbe/watermelondb/hooks';
 import { Q } from '@nozbe/watermelondb';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { log as logger } from '@/lib/utils/logger';
 
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
@@ -204,8 +205,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
       setPosts([]);
 
     } catch (_error) {
-      const { log } = require('@/lib/utils/logger');
-      log.error('Error loading group data:', _error);
+      logger.error('Error loading group data:', _error);
     } finally {
       setLoading(false);
     }
@@ -249,8 +249,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
       triggerSuccessHaptic();
       loadGroupData(); // Reload to update membership status
     } catch (_error) {
-      const { log } = require('@/lib/utils/logger');
-      log.error('Error joining group:', _error);
+      logger.error('Error joining group:', _error);
       Alert.alert(t('content.errors.joinFailed'));
     } finally {
       setJoining(false);
@@ -278,8 +277,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
               triggerLightHaptic();
               onBack?.(); // Go back to discovery
             } catch (_error) {
-              const { log } = require('@/lib/utils/logger');
-              log.error('Error leaving group:', _error);
+              logger.error('Error leaving group:', _error);
               Alert.alert(t('content.errors.leaveFailed'));
             }
           },
@@ -326,8 +324,7 @@ export const GroupContent: React.FC<GroupContentProps> = ({
               triggerLightHaptic();
               loadGroupData(); // Reload to update member list
             } catch (_error) {
-              const { log } = require('@/lib/utils/logger');
-              log.error(`Error ${action} member:`, _error);
+              logger.error(`Error ${action} member:`, _error);
               Alert.alert(t('content.errors.memberActionFailed'));
             }
           },
