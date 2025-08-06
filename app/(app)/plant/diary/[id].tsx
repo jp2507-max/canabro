@@ -451,9 +451,11 @@ function ScrollableEntryTypeSelector({
 const PlantDiaryScreenWithDatabase = withDatabase(PlantDiaryScreenBase);
 
 // Enhance with observables
+type RouteWithIdParams = { params?: { id?: string } };
+
 const PlantDiaryScreen = withObservables(
   ['route', 'database'],
-  ({ database, route }: { database: Database; route: any }) => {
+  ({ database, route }: { database: Database; route: RouteWithIdParams }) => {
     const plantId = route?.params?.id;
 
     if (!plantId || !database) {

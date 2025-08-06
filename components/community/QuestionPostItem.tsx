@@ -28,10 +28,15 @@ import NetworkResilientImage from '../ui/NetworkResilientImage';
 import UserAvatar from './UserAvatar';
 import TagPill from '../ui/TagPill';
 import DeletePostModal from './DeletePostModal';
+import ModerationIndicator, { type ModerationStatus } from './ModerationIndicator';
+import ContentReportModal from './ContentReportModal';
+import { CommunityService } from '../../lib/services/community-service';
 import {
   triggerLightHaptic,
   triggerMediumHaptic,
   triggerLightHapticSync,
+  triggerSuccessHaptic,
+  triggerErrorHaptic,
 } from '../../lib/utils/haptics';
 import { 
   COMMUNITY_ANIMATION_CONFIG, 
@@ -42,8 +47,26 @@ import type { CommunityQuestion } from '../../lib/types/community';
 
 dayjs.extend(relativeTime);
 
+interface ModerationViolation {
+  id?: string;
+  type: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  description?: string;
+  code?: string;
+  flaggedAt?: string;
+  source?: 'auto' | 'manual';
+  details?: Record<string, unknown>;
+}
+
 interface QuestionPostItemProps {
-  question: CommunityQuestion;
+  question: CommunityQuestion & {
+    moderation_status?: ModerationStatus;
+    moderation_metadata?: {
+      violations?: ModerationViolation[];
+      confidence?: number;
+      flaggedAt?: string;
+    };
+  };
   currentUserId?: string;
   onLike: (questionId: string, currentlyLiked: boolean) => void;
   onComment: (questionId: string) => void;
@@ -53,6 +76,8 @@ interface QuestionPostItemProps {
   onPress?: (questionId: string) => void;
   liking?: boolean;
   deleting?: boolean;
+  showModerationActions?: boolean;
+  isModeratorView?: boolean;
 }
 
 // Using shared animation configurations from community types
@@ -71,10 +96,14 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
     onPress,
     liking = false,
     deleting = false,
+    showModerationActions = false,
+    isModeratorView = false,
   }) => {
     const { t } = useTranslation('community');
-    // State for delete confirmation modal
+    // State for modals
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reporting, setReporting] = useState(false);
 
     // Enhanced Reanimated v3 + React Compiler Compatible Animation System
     const scale = useSharedValue(1);
@@ -143,6 +172,57 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
     // Handle delete modal close
     const handleDeleteCancel = useCallback(() => {
       setShowDeleteModal(false);
+    }, []);
+
+    // Handle content reporting
+    const handleReportPress = useCallback(async () => {
+      await triggerLightHaptic();
+      setShowReportModal(true);
+    }, []);
+
+    const handleReportSubmit = useCallback(async (reason: string, description?: string) => {
+      if (!currentUserId) return;
+      
+      setReporting(true);
+      try {
+        await CommunityService.reportContent(
+          question.id,
+          'question',
+          currentUserId,
+          reason,
+          description
+        );
+        
+        await triggerSuccessHaptic();
+        setShowReportModal(false);
+        // Could show a success toast here
+  } catch (error) {
+        // Use custom monitoring in production (Sentry if available), fallback to custom logger in dev
+        if (process.env.NODE_ENV === 'production') {
+          try {
+            const Sentry = require('@sentry/react-native');
+            if (Sentry?.captureException) {
+              Sentry.captureException(error, {
+                extra: { context: 'QuestionPostItem.handleReportSubmit', questionId: question.id },
+              });
+            }
+          } catch {
+            // Fallback if Sentry not available at runtime
+          }
+        } else {
+          // Use project logger to ensure errors are captured consistently
+          const { log } = require('@/lib/utils/logger');
+          log.error('Error reporting content:', error);
+        }
+        await triggerErrorHaptic();
+        // Could show an error toast here
+      } finally {
+        setReporting(false);
+      }
+    }, [currentUserId, question.id]);
+
+    const handleReportCancel = useCallback(() => {
+      setShowReportModal(false);
     }, []);
 
     // Enhanced event handlers with sophisticated haptic feedback
@@ -247,35 +327,47 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
             accessibilityLabel={t('questionPostItem.accessibility.viewQuestion', { title: question.title })}
           >
             {/* Header */}
-            <View className="flex-row items-center p-5 pb-4">
-              <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full mr-3">
-                <OptimizedIcon
-                  name="help-circle"
-                  size={14}
-                  className="text-blue-600 dark:text-blue-400 mr-1"
-                />
-                <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400 ml-2">
-                  {t('postTypeHeader.question')}
-                </Text>
-              </View>
-
-              {question.category && (
-                <View className="bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-full mr-2">
-                  <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-400 capitalize">
-                    {question.category.replace('_', ' ')}
+            <View className="flex-row items-center justify-between p-5 pb-4">
+              <View className="flex-row items-center flex-1">
+                <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-full mr-3">
+                  <OptimizedIcon
+                    name="help-circle"
+                    size={14}
+                    className="text-blue-600 dark:text-blue-400 mr-1"
+                  />
+                  <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400 ml-2">
+                    {t('postTypeHeader.question')}
                   </Text>
                 </View>
-              )}
 
-              {question.is_solved && (
-                <View className="bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                  <OptimizedIcon
-                    name="checkmark-circle"
-                    size={14}
-                    className="text-green-600 dark:text-green-400 mr-1"
-                  />
-                  <Text className="text-xs font-medium text-green-600 dark:text-green-400">{t('questionPostItem.solved')}</Text>
-                </View>
+                {question.category && (
+                  <View className="bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-full mr-2">
+                    <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-400 capitalize">
+                      {question.category.replace('_', ' ')}
+                    </Text>
+                  </View>
+                )}
+
+                {question.is_solved && (
+                  <View className="bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full mr-2">
+                    <OptimizedIcon
+                      name="checkmark-circle"
+                      size={14}
+                      className="text-green-600 dark:text-green-400 mr-1"
+                    />
+                    <Text className="text-xs font-medium text-green-600 dark:text-green-400">{t('questionPostItem.solved')}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Moderation Indicator */}
+              {question.moderation_status && question.moderation_status !== 'approved' && (
+                <ModerationIndicator
+                  status={question.moderation_status}
+                  violationCount={question.moderation_metadata?.violations?.length}
+                  size="small"
+                  showDetails={isModeratorView}
+                />
               )}
             </View>
 
@@ -423,21 +515,39 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
                   </View>
                 )}
 
-                {canDelete && (
-                  <Pressable
-                    onPress={handleDeletePress}
-                    disabled={deleting}
-                    className="p-2 active:opacity-70"
-                    accessibilityRole="button"
-                    accessibilityLabel={t('questionPostItem.accessibility.deleteQuestion')}
-                  >
-                    <OptimizedIcon
-                      name="trash-outline"
-                      size={20}
-                      className="text-red-500"
-                    />
-                  </Pressable>
-                )}
+                {/* Action buttons */}
+                <View className="flex-row items-center">
+                  {showModerationActions && !canDelete && (
+                    <Pressable
+                      onPress={handleReportPress}
+                      className="p-2 mr-2 active:opacity-70"
+                      accessibilityRole="button"
+                      accessibilityLabel={t('questionPostItem.accessibility.reportQuestion')}
+                    >
+                      <OptimizedIcon
+                        name="warning"
+                        size={20}
+                        className="text-orange-500"
+                      />
+                    </Pressable>
+                  )}
+
+                  {canDelete && (
+                    <Pressable
+                      onPress={handleDeletePress}
+                      disabled={deleting}
+                      className="p-2 active:opacity-70"
+                      accessibilityRole="button"
+                      accessibilityLabel={t('questionPostItem.accessibility.deleteQuestion')}
+                    >
+                      <OptimizedIcon
+                        name="trash-outline"
+                        size={20}
+                        className="text-red-500"
+                      />
+                    </Pressable>
+                  )}
+                </View>
               </View>
             </View>
           </Pressable>
@@ -450,6 +560,17 @@ const QuestionPostItem: React.FC<QuestionPostItemProps> = React.memo(
           onConfirm={handleDeleteConfirm}
           deleting={deleting}
           postType="question"
+          moderationReason={question.moderation_metadata?.violations?.[0]?.description}
+          showModerationOptions={isModeratorView}
+        />
+
+        {/* Content Report Modal */}
+        <ContentReportModal
+          visible={showReportModal}
+          onClose={handleReportCancel}
+          onSubmit={handleReportSubmit}
+          contentType="question"
+          submitting={reporting}
         />
       </Animated.View>
     );

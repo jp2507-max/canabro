@@ -64,7 +64,7 @@ translationFiles.forEach(file => {
           'priorities.high',
         ];
         
-        let missingKeys = [];
+        const missingKeys = [];
         requiredKeys.forEach(key => {
           const keyPath = key.split('.');
           let current = translations.taskNotifications;

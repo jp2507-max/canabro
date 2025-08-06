@@ -28,6 +28,7 @@ import { SPRING_CONFIGS } from '../../../lib/animations/presets';
 import { useAuth } from '../../../lib/contexts/AuthProvider';
 import { analyzeImage } from '../../../lib/services/diagnosis-service';
 import { DiagnosisResult } from '../../../lib/types/diagnosis';
+import { useTranslation } from 'react-i18next';
 
 // Animated Action Button Component
 interface AnimatedControlButtonProps {
@@ -105,6 +106,7 @@ const AnimatedControlButton: React.FC<AnimatedControlButtonProps> = ({
 export default function DiagnosisScreen() {
   const { user } = useAuth();
   const { width } = useWindowDimensions();
+  const { t } = useTranslation('diagnosis');
 
   // State management
   const [image, setImage] = useState<string | null>(null);
@@ -235,7 +237,7 @@ export default function DiagnosisScreen() {
 
         if (isMounted.current) {
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert('Analysis Failed', 'Please try again with a clearer image of your plant.');
+          Alert.alert(t('analysisFailedTitle'), t('analysisFailedMessage'));
         }
       } finally {
         if (isMounted.current) {
@@ -316,13 +318,13 @@ export default function DiagnosisScreen() {
                   <AnimatedControlButton
                     onPress={handleResetImage}
                     icon="close"
-                    label="Remove image"
+                    label={t('removeImage')}
                     disabled={isAnalyzing}
                   />
                   <AnimatedControlButton
                     onPress={handleCameraToggle}
                     icon="camera"
-                    label="Take new photo"
+                    label={t('takeNewPhoto')}
                     disabled={isAnalyzing}
                   />
                 </Animated.View>
@@ -337,12 +339,11 @@ export default function DiagnosisScreen() {
                         </Animated.View>
 
                         <ThemedText className="mt-6 text-xl font-bold text-primary-600 dark:text-primary-400">
-                          Analyzing Plant...
+                          {t('analyzingTitle')}
                         </ThemedText>
 
                         <ThemedText className="mt-3 text-center text-sm leading-6 text-neutral-600 dark:text-neutral-400">
-                          Our AI is examining your plant for{'\n'}
-                          diseases, pests, and nutrient deficiencies
+                          {t('analyzingSubtitle')}
                         </ThemedText>
                       </ThemedView>
                     </Animated.View>

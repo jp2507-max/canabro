@@ -1,9 +1,9 @@
 
 import supabase from '../supabase';
-import type { 
-  CommunityQuestion, 
-  CommunityPlantShare, 
-  CreateQuestionData, 
+import type {
+  CommunityQuestion,
+  CommunityPlantShare,
+  CreateQuestionData,
   CreatePlantShareData,
   QuestionFilters,
   PlantShareFilters,
@@ -12,9 +12,11 @@ import type {
 import { uploadImage } from '../utils/upload-image';
 import { storageCleanupService } from './storage-cleanup';
 import { syncRetryService } from './sync/sync-retry';
+import { contentModerationService, type ModerationResult } from './content-moderation.service';
+import { log } from '../utils/logger';
 
 /**
- * Enhanced Community Service with new data models (Task 1.4)
+ * Enhanced Community Service with new data models (Task 1.4) and Content Moderation (Task ACF-T04.1)
  * 
  * 🏗️ **Architecture Evolution:**
  * - **Old system**: Generic `posts` table with mixed content types
@@ -25,6 +27,13 @@ import { syncRetryService } from './sync/sync-retry';
  * - Uses standardized `upload-image.ts` utility for all uploads
  * - Provides proper validation, compression, and error handling
  * - Supports mobile-friendly `imageUri` approach vs File objects
+ * 
+ * 🛡️ **Content Moderation Integration (ACF-T04.1):**
+ * - Automated content filtering for all posts and comments
+ * - Keyword filtering and spam detection
+ * - Image content moderation using AI analysis
+ * - Automated action system for policy violations
+ * - Integration with existing PostActionButtons and DeletePostModal
  * 
  * 🔄 **Migration Notes:**
  * - Legacy posts table has been fully migrated to community_questions and community_plant_shares
@@ -93,7 +102,7 @@ export class CommunityService {
   }
 
   /**
-   * Create a new community question
+   * Create a new community question with content moderation
    */
   static async createQuestion(data: CreateQuestionData): Promise<CommunityQuestion> {
     // Get the current authenticated user
@@ -102,11 +111,51 @@ export class CommunityService {
       throw new Error('User must be authenticated to create a question');
     }
 
-    // Ensure user_id is set for RLS policy compliance
+    // Step 1: Content Moderation
+    log.info('[CommunityService] Moderating question content before creation');
+    const moderationResult = await contentModerationService.moderateQuestion(data);
+    
+    if (!moderationResult.isAllowed) {
+      const error = new Error('Content violates community guidelines') as Error & {
+        moderationResult: typeof moderationResult;
+        code: string;
+      };
+      error.moderationResult = moderationResult;
+      error.code = 'CONTENT_MODERATION_FAILED';
+      throw error;
+    }
+
+    // Step 2: Image Moderation (if image provided)
+    if (data.image_url) {
+      log.info('[CommunityService] Moderating question image');
+      const imageModerationResult = await contentModerationService.moderateImageContent(data.image_url);
+      
+      if (!imageModerationResult.isAppropriate) {
+        const error = new Error('Image content violates community guidelines') as Error & {
+          imageModerationResult: typeof imageModerationResult;
+          code: string;
+        };
+        error.imageModerationResult = imageModerationResult;
+        error.code = 'IMAGE_MODERATION_FAILED';
+        throw error;
+      }
+    }
+
+    // Step 3: Apply moderation actions if needed
     const questionData = {
       ...data,
       user_id: data.user_id || user.id, // Use provided user_id or fallback to current user
     };
+
+    // Add moderation metadata if flagged for review
+    if (moderationResult.suggestedAction === 'flag_for_review') {
+      (questionData as Record<string, unknown>).moderation_status = 'pending_review';
+      (questionData as Record<string, unknown>).moderation_metadata = {
+        flaggedAt: new Date().toISOString(),
+        violations: moderationResult.violations,
+        confidence: moderationResult.confidence,
+      };
+    }
 
     const { data: result, error } = await supabase
       .from('community_questions')
@@ -115,11 +164,18 @@ export class CommunityService {
       .single();
 
     if (error) throw error;
+
+    log.info('[CommunityService] Question created successfully with moderation', {
+      questionId: result.id,
+      moderationAction: moderationResult.suggestedAction,
+      violationsCount: moderationResult.violations.length,
+    });
+
     return result as CommunityQuestion;
   }
 
   /**
-   * Create a new general community post (category: 'general')
+   * Create a new general community post (category: 'general') with content moderation
    * This is the canonical way to create general posts (not questions or plant shares).
    * @param data - General post data (content, optional image_url)
    * @returns The created CommunityQuestion (with category 'general' and no title)
@@ -132,6 +188,7 @@ export class CommunityService {
       category: 'general',
       image_url: data.image_url,
     };
+    // Content moderation is handled in createQuestion method
     return CommunityService.createQuestion(postData);
   }
 
@@ -189,7 +246,7 @@ export class CommunityService {
   }
 
   /**
-   * Create a new community plant share
+   * Create a new community plant share with content moderation
    */
   static async createPlantShare(data: CreatePlantShareData): Promise<CommunityPlantShare> {
     // Get the current authenticated user
@@ -198,11 +255,55 @@ export class CommunityService {
       throw new Error('User must be authenticated to create a plant share');
     }
 
-    // Ensure user_id is set for RLS policy compliance
+    // Step 1: Content Moderation
+    log.info('[CommunityService] Moderating plant share content before creation');
+    const moderationResult = await contentModerationService.moderatePlantShare(data);
+    
+    if (!moderationResult.isAllowed) {
+      const error = new Error('Content violates community guidelines') as Error & {
+        moderationResult: ModerationResult;
+        code: string;
+      };
+      error.moderationResult = moderationResult;
+      error.code = 'CONTENT_MODERATION_FAILED';
+      throw error;
+    }
+
+    // Step 2: Image Moderation (if images provided)
+    if (data.images_urls && data.images_urls.length > 0) {
+      log.info('[CommunityService] Moderating plant share images');
+      for (const imageUrl of data.images_urls) {
+          const imageModerationResult = await contentModerationService.moderateImageContent(imageUrl);
+          
+          if (!imageModerationResult.isAppropriate) {
+            const error = new Error('Image content violates community guidelines') as Error & {
+              imageModerationResult: { isAppropriate: boolean; [k: string]: unknown };
+              code: string;
+              imageUrl: string;
+            };
+            error.imageModerationResult = imageModerationResult as unknown as { isAppropriate: boolean; [k: string]: unknown };
+            error.code = 'IMAGE_MODERATION_FAILED';
+            error.imageUrl = imageUrl;
+            throw error;
+          }
+      }
+    }
+
+    // Step 3: Apply moderation actions if needed
     const plantShareData = {
       ...data,
       user_id: data.user_id || user.id, // Use provided user_id or fallback to current user
     };
+
+    // Add moderation metadata if flagged for review
+    if (moderationResult.suggestedAction === 'flag_for_review') {
+      (plantShareData as Record<string, unknown>).moderation_status = 'pending_review';
+      (plantShareData as Record<string, unknown>).moderation_metadata = {
+        flaggedAt: new Date().toISOString(),
+        violations: moderationResult.violations,
+        confidence: moderationResult.confidence,
+      };
+    }
 
     const { data: result, error } = await supabase
       .from('community_plant_shares')
@@ -211,6 +312,13 @@ export class CommunityService {
       .single();
 
     if (error) throw error;
+
+    log.info('[CommunityService] Plant share created successfully with moderation', {
+      plantShareId: result.id,
+      moderationAction: moderationResult.suggestedAction,
+      violationsCount: moderationResult.violations.length,
+    });
+
     return result as CommunityPlantShare;
   }
 
@@ -644,5 +752,296 @@ export class CommunityService {
       .eq('id', plantShareId)
       .eq('user_id', userId);
     if (error) throw error;
+  }
+
+  // ========================================
+  // 🛡️ CONTENT MODERATION METHODS (ACF-T04.1)
+  // ========================================
+
+  /**
+   * Create a comment with content moderation
+   */
+  static async createComment(data: {
+    post_id: string;
+    content: string;
+    image_url?: string;
+    parent_id?: string;
+  }): Promise<unknown> {
+    // Get the current authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User must be authenticated to create a comment');
+    }
+
+    // Step 1: Content Moderation
+    log.info('[CommunityService] Moderating comment content before creation');
+    const moderationResult = await contentModerationService.moderateComment(data);
+    
+    if (!moderationResult.isAllowed) {
+      const error = new Error('Comment violates community guidelines') as Error & {
+        moderationResult: ModerationResult;
+        code: string;
+      };
+      error.moderationResult = moderationResult;
+      error.code = 'CONTENT_MODERATION_FAILED';
+      throw error;
+    }
+
+    // Step 2: Image Moderation (if image provided)
+    if (data.image_url) {
+      log.info('[CommunityService] Moderating comment image');
+      const imageModerationResult = await contentModerationService.moderateImageContent(data.image_url);
+      
+      if (!imageModerationResult.isAppropriate) {
+        const error = new Error('Comment image violates community guidelines') as Error & {
+          imageModerationResult: { isAppropriate: boolean; [k: string]: unknown };
+          code: string;
+        };
+        error.imageModerationResult = imageModerationResult as unknown as { isAppropriate: boolean; [k: string]: unknown };
+        error.code = 'IMAGE_MODERATION_FAILED';
+        throw error;
+      }
+    }
+
+    // Step 3: Create comment with moderation metadata
+    const commentData = {
+      ...data,
+      user_id: user.id,
+    };
+
+    // Add moderation metadata if flagged for review
+    if (moderationResult.suggestedAction === 'flag_for_review') {
+      (commentData as Record<string, unknown>).moderation_status = 'pending_review';
+      (commentData as Record<string, unknown>).moderation_metadata = {
+        flaggedAt: new Date().toISOString(),
+        violations: moderationResult.violations,
+        confidence: moderationResult.confidence,
+      };
+    }
+
+    const { data: result, error } = await supabase
+      .from('comments')
+      .insert([commentData])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    log.info('[CommunityService] Comment created successfully with moderation', {
+      commentId: result.id,
+      moderationAction: moderationResult.suggestedAction,
+      violationsCount: moderationResult.violations.length,
+    });
+
+    return result;
+  }
+
+  /**
+   * Moderate existing content (for retroactive moderation)
+   */
+  static async moderateExistingContent(
+    contentId: string,
+    contentType: 'question' | 'plant_share' | 'comment'
+  ): Promise<ModerationResult> {
+    try {
+      log.info('[CommunityService] Moderating existing content', { contentId, contentType });
+
+      let content: Record<string, unknown> | null = null;
+      let moderationResult: ModerationResult;
+
+      // Fetch content based on type
+      switch (contentType) {
+        case 'question': {
+          const { data: question } = await supabase
+            .from('community_questions')
+            .select('*')
+            .eq('id', contentId)
+            .single();
+          content = question;
+          moderationResult = await contentModerationService.moderateQuestion(question);
+          break;
+        }
+
+        case 'plant_share': {
+          const { data: plantShare } = await supabase
+            .from('community_plant_shares')
+            .select('*')
+            .eq('id', contentId)
+            .single();
+          content = plantShare;
+          moderationResult = await contentModerationService.moderatePlantShare(plantShare);
+          break;
+        }
+
+        case 'comment': {
+          const { data: comment } = await supabase
+            .from('comments')
+            .select('*')
+            .eq('id', contentId)
+            .single();
+          content = comment;
+          moderationResult = await contentModerationService.moderateComment(comment);
+          break;
+        }
+
+        default:
+          throw new Error(`Unsupported content type: ${contentType}`);
+      }
+
+      if (!content) {
+        throw new Error(`Content not found: ${contentId}`);
+      }
+
+      // Apply moderation action if needed
+      if (moderationResult.suggestedAction !== 'allow') {
+        await CommunityService.applyModerationAction(
+          contentId,
+          contentType,
+          moderationResult.suggestedAction,
+          moderationResult
+        );
+      }
+
+      return moderationResult;
+    } catch (error) {
+      log.error('[CommunityService] Error moderating existing content:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Apply moderation action to content
+   */
+  static async applyModerationAction(
+    contentId: string,
+    contentType: 'question' | 'plant_share' | 'comment',
+    action: 'flag_for_review' | 'auto_hide' | 'require_approval' | 'block' | 'delete',
+    moderationResult: ModerationResult
+  ): Promise<void> {
+    try {
+      log.info('[CommunityService] Applying moderation action', {
+        contentId,
+        contentType,
+        action,
+        violationsCount: moderationResult.violations.length,
+      });
+
+      const tableName = contentType === 'question' 
+        ? 'community_questions' 
+        : contentType === 'plant_share' 
+        ? 'community_plant_shares' 
+        : 'comments';
+
+      const updateData: Record<string, unknown> = {
+        moderation_status: action,
+        moderation_metadata: {
+          actionAppliedAt: new Date().toISOString(),
+          violations: moderationResult.violations,
+          confidence: moderationResult.confidence,
+          suggestedAction: action,
+        },
+      };
+
+      // Apply specific actions
+      switch (action) {
+        case 'auto_hide':
+          updateData.is_hidden = true;
+          break;
+        case 'block':
+        case 'delete':
+          updateData.is_deleted = true;
+          break;
+        case 'require_approval':
+          updateData.requires_approval = true;
+          break;
+      }
+
+      const { error } = await supabase
+        .from(tableName)
+        .update(updateData)
+        .eq('id', contentId);
+
+      if (error) throw error;
+
+      log.info('[CommunityService] Moderation action applied successfully', {
+        contentId,
+        action,
+      });
+    } catch (error) {
+      log.error('[CommunityService] Error applying moderation action:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get moderation statistics
+   */
+  static async getModerationStats(timeframe: 'day' | 'week' | 'month' = 'day'): Promise<{
+    totalModerated: number;
+    allowed: number;
+    flagged: number;
+    blocked: number;
+    violationTypes: Record<string, number>;
+  }> {
+    return contentModerationService.getModerationStats(timeframe);
+  }
+
+  /**
+   * Report content for manual review
+   */
+  static async reportContent(
+    contentId: string,
+    contentType: 'question' | 'plant_share' | 'comment',
+    reporterId: string,
+    reason: string,
+    description?: string
+  ): Promise<void> {
+    try {
+      log.info('[CommunityService] Reporting content for review', {
+        contentId,
+        contentType,
+        reporterId,
+        reason,
+      });
+
+      // Create a content report record
+      const { error } = await supabase
+        .from('content_reports')
+        .insert([{
+          content_id: contentId,
+          content_type: contentType,
+          reporter_id: reporterId,
+          reason,
+          description,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        }]);
+
+      if (error) throw error;
+
+      // Flag the content for review
+      const tableName = contentType === 'question' 
+        ? 'community_questions' 
+        : contentType === 'plant_share' 
+        ? 'community_plant_shares' 
+        : 'comments';
+
+      await supabase
+        .from(tableName)
+        .update({
+          moderation_status: 'reported',
+          moderation_metadata: {
+            reportedAt: new Date().toISOString(),
+            reportedBy: reporterId,
+            reportReason: reason,
+          },
+        })
+        .eq('id', contentId);
+
+      log.info('[CommunityService] Content reported successfully', { contentId });
+    } catch (error) {
+      log.error('[CommunityService] Error reporting content:', error);
+      throw error;
+    }
   }
 }

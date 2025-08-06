@@ -64,7 +64,7 @@ export class HarvestPredictionService {
       
       // Assess readiness indicators
       const readinessIndicators = {
-        trichomes: (metrics?.trichomeStatus as any) || 'unknown',
+        trichomes: (metrics?.trichomeStatus as 'cloudy' | 'unknown' | 'clear' | 'amber' | 'mixed') || 'unknown',
         pistils: metrics?.pistilBrownPercentage || 0,
         budDensity: metrics?.budDensity || 0,
         floweringWeeks,

@@ -11,7 +11,7 @@ import Animated, {
   interpolateColor as rnInterpolateColor,
   runOnJS,
 } from 'react-native-reanimated';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import ThemedText from '../ui/ThemedText';
@@ -205,7 +205,7 @@ DateItem.displayName = 'DateItem';
 
 function DateSelector({ selectedDate, onDateSelect, tasks = [], onRefresh, refreshing = false }: DateSelectorProps) {
   const { t, i18n } = useTranslation();
-  const flashListRef = useRef<FlashList<Date>>(null);
+  const flashListRef = useRef<FlashListRef<Date>>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Ensure selectedDate is always a valid Date object with more robust validation
@@ -418,7 +418,6 @@ function DateSelector({ selectedDate, onDateSelect, tasks = [], onRefresh, refre
         ref={flashListRef}
         data={dates}
         renderItem={renderDateItem}
-        estimatedItemSize={80}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}

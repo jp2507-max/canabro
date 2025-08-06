@@ -29,10 +29,15 @@ import NetworkResilientImage from '../ui/NetworkResilientImage';
 import UserAvatar from './UserAvatar';
 import TagPill from '../ui/TagPill';
 import DeletePostModal from './DeletePostModal';
+import ModerationIndicator, { type ModerationStatus } from './ModerationIndicator';
+import ContentReportModal from './ContentReportModal';
+import { CommunityService } from '../../lib/services/community-service';
 import {
   triggerLightHaptic,
   triggerMediumHaptic,
   triggerLightHapticSync,
+  triggerSuccessHaptic,
+  triggerErrorHaptic,
 } from '../../lib/utils/haptics';
 import { 
   COMMUNITY_ANIMATION_CONFIG, 
@@ -43,7 +48,14 @@ import type { CommunityPlantShare } from '../../lib/types/community';
 dayjs.extend(relativeTime);
 
 interface PlantSharePostItemProps {
-  plantShare: CommunityPlantShare;
+  plantShare: CommunityPlantShare & {
+    moderation_status?: ModerationStatus;
+    moderation_metadata?: {
+      violations?: any[];
+      confidence?: number;
+      flaggedAt?: string;
+    };
+  };
   currentUserId?: string;
   onLike: (plantShareId: string, currentlyLiked: boolean) => void;
   onComment: (plantShareId: string) => void;
@@ -53,6 +65,8 @@ interface PlantSharePostItemProps {
   onPress?: (plantShareId: string) => void;
   liking?: boolean;
   deleting?: boolean;
+  showModerationActions?: boolean;
+  isModeratorView?: boolean;
 }
 
 // Using shared animation configurations from community types
@@ -60,7 +74,6 @@ const ANIMATION_CONFIG = COMMUNITY_ANIMATION_CONFIG;
 const SCALE_VALUES = COMMUNITY_SCALE_VALUES;
 
 const PlantSharePostItemComponent: React.FC<PlantSharePostItemProps> = ({
- 
     plantShare,
     currentUserId,
     onLike,
@@ -71,10 +84,14 @@ const PlantSharePostItemComponent: React.FC<PlantSharePostItemProps> = ({
     onPress,
     liking = false,
     deleting = false,
+    showModerationActions = false,
+    isModeratorView = false,
   }) => {
     const { t } = useTranslation('community');
-    // State for delete confirmation modal
+    // State for modals
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reporting, setReporting] = useState(false);
 
     // Enhanced Reanimated v3 + React Compiler Compatible Animation System
     const scale = useSharedValue(1);
@@ -154,6 +171,41 @@ const PlantSharePostItemComponent: React.FC<PlantSharePostItemProps> = ({
     // Handle delete modal close
     const handleDeleteCancel = useCallback(() => {
       setShowDeleteModal(false);
+    }, []);
+
+    // Handle content reporting
+    const handleReportPress = useCallback(async () => {
+      await triggerLightHaptic();
+      setShowReportModal(true);
+    }, []);
+
+    const handleReportSubmit = useCallback(async (reason: string, description?: string) => {
+      if (!currentUserId) return;
+      
+      setReporting(true);
+      try {
+        await CommunityService.reportContent(
+          plantShare.id,
+          'plant_share',
+          currentUserId,
+          reason,
+          description
+        );
+        
+        await triggerSuccessHaptic();
+        setShowReportModal(false);
+        // Could show a success toast here
+      } catch (error) {
+        console.error('Error reporting content:', error);
+        await triggerErrorHaptic();
+        // Could show an error toast here
+      } finally {
+        setReporting(false);
+      }
+    }, [currentUserId, plantShare.id]);
+
+    const handleReportCancel = useCallback(() => {
+      setShowReportModal(false);
     }, []);
 
     // Enhanced event handlers with sophisticated haptic feedback
@@ -263,15 +315,27 @@ const PlantSharePostItemComponent: React.FC<PlantSharePostItemProps> = ({
                 </View>
               </View>
 
-              {plantShare.is_featured && (
-                <View className="bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
-                  <OptimizedIcon
-                    name="star"
-                    size={14}
-                    className="text-yellow-600 dark:text-yellow-400"
+              <View className="flex-row items-center">
+                {plantShare.is_featured && (
+                  <View className="bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-full mr-2">
+                    <OptimizedIcon
+                      name="star"
+                      size={14}
+                      className="text-yellow-600 dark:text-yellow-400"
+                    />
+                  </View>
+                )}
+
+                {/* Moderation Indicator */}
+                {plantShare.moderation_status && plantShare.moderation_status !== 'approved' && (
+                  <ModerationIndicator
+                    status={plantShare.moderation_status}
+                    violationCount={plantShare.moderation_metadata?.violations?.length}
+                    size="small"
+                    showDetails={isModeratorView}
                   />
-                </View>
-              )}
+                )}
+              </View>
             </View>
 
             {/* Enhanced User Header with sophisticated gesture handling */}
@@ -453,21 +517,39 @@ const PlantSharePostItemComponent: React.FC<PlantSharePostItemProps> = ({
                 </View>
               </View>
 
-              {canDelete && (
-                <Pressable
-                  onPress={handleDeletePress}
-                  disabled={deleting}
-                  className="p-2 active:opacity-70"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('plantSharePostItem.accessibility.deletePlantShare')}
-                >
-                  <OptimizedIcon
-                    name="trash-outline"
-                    size={20}
-                    className="text-red-500"
-                  />
-                </Pressable>
-              )}
+              {/* Action buttons */}
+              <View className="flex-row items-center">
+                {showModerationActions && !canDelete && (
+                  <Pressable
+                    onPress={handleReportPress}
+                    className="p-2 mr-2 active:opacity-70"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('plantSharePostItem.accessibility.reportPlantShare')}
+                  >
+                    <OptimizedIcon
+                      name="warning"
+                      size={20}
+                      className="text-orange-500"
+                    />
+                  </Pressable>
+                )}
+
+                {canDelete && (
+                  <Pressable
+                    onPress={handleDeletePress}
+                    disabled={deleting}
+                    className="p-2 active:opacity-70"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('plantSharePostItem.accessibility.deletePlantShare')}
+                  >
+                    <OptimizedIcon
+                      name="trash-outline"
+                      size={20}
+                      className="text-red-500"
+                    />
+                  </Pressable>
+                )}
+              </View>
             </View>
           </Pressable>
         </GestureDetector>
@@ -479,6 +561,17 @@ const PlantSharePostItemComponent: React.FC<PlantSharePostItemProps> = ({
           onConfirm={handleDeleteConfirm}
           deleting={deleting}
           postType="plantShare"
+          moderationReason={plantShare.moderation_metadata?.violations?.[0]?.description}
+          showModerationOptions={isModeratorView}
+        />
+
+        {/* Content Report Modal */}
+        <ContentReportModal
+          visible={showReportModal}
+          onClose={handleReportCancel}
+          onSubmit={handleReportSubmit}
+          contentType="plantShare"
+          submitting={reporting}
         />
       </Animated.View>
     );

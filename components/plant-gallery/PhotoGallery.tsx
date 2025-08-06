@@ -181,7 +181,6 @@ export const PhotoGallery = memo(function PhotoGallery({
         numColumns={numColumns}
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
-        estimatedItemSize={itemSize + 8}
       />
     </ThemedView>
   );

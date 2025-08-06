@@ -177,3 +177,5 @@ export function PostAuthorRow({
     </ThemedView>
   );
 }
+
+export default PostAuthorRow;

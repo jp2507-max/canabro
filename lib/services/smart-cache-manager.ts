@@ -134,7 +134,7 @@ class SmartCacheManager {
   private config: CacheConfig;
   private memoryPressureListeners: Array<() => void> = [];
   private currentConcurrentRequests = 0;
-  private requestQueue: Array<() => Promise<any>> = [];
+  private requestQueue: Array<() => Promise<unknown>> = [];
 
   constructor() {
     this.config = getCacheConfigForPlatform();

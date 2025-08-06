@@ -229,7 +229,6 @@ function CommunityScreenView({
         ListEmptyComponent={renderEmptyState}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.8}
-        estimatedItemSize={200}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       />
     ),

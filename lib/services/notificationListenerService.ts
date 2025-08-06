@@ -89,10 +89,10 @@ export class NotificationListenerService {
   /**
    * Handle mark done action
    */
-  private handleMarkDone = async (data: any) => {
-    if (data.reminderId) {
+  private handleMarkDone = async (data: Record<string, unknown>) => {
+    if (data.reminderId && typeof data.reminderId === 'string') {
       try {
-        await careReminderService.markReminderCompleted(data.reminderId);
+        await careReminderService.markReminderCompleted((data as { reminderId: string }).reminderId);
         console.log('Reminder marked as completed:', data.reminderId);
       } catch (error) {
         console.error('Error marking reminder as done:', error);
@@ -103,11 +103,11 @@ export class NotificationListenerService {
   /**
    * Handle snooze action
    */
-  private handleSnooze = async (data: any) => {
-    if (data.reminderId) {
+  private handleSnooze = async (data: Record<string, unknown>) => {
+    if (data.reminderId && typeof data.reminderId === 'string') {
       try {
         // Snooze for 1 hour by default
-        await careReminderService.snoozeReminder(data.reminderId, 1/24); // 1 hour in days
+        await careReminderService.snoozeReminder((data as { reminderId: string }).reminderId, 1/24); // 1 hour in days
         console.log('Reminder snoozed:', data.reminderId);
       } catch (error) {
         console.error('Error snoozing reminder:', error);
@@ -118,7 +118,7 @@ export class NotificationListenerService {
   /**
    * Handle default tap action
    */
-  private handleDefaultTap = async (data: any) => {
+  private handleDefaultTap = async (data: Record<string, unknown>) => {
     // Navigate to the relevant screen
     // This would typically use your navigation service
     console.log('Opening app for reminder:', data.reminderId);
@@ -127,7 +127,7 @@ export class NotificationListenerService {
   /**
    * Schedule next occurrence for recurring notifications
    */
-  private scheduleNextRecurrence = async (data: any) => {
+  private scheduleNextRecurrence = async (data: Record<string, unknown>) => {
     if (!data.repeatInterval || !data.reminderId) {
       return;
     }
@@ -143,14 +143,15 @@ export class NotificationListenerService {
 
       // Calculate next occurrence
       const nextDate = new Date();
-      nextDate.setDate(nextDate.getDate() + data.repeatInterval);
+      const repeatInterval = typeof data.repeatInterval === 'number' ? data.repeatInterval : 1;
+      nextDate.setDate(nextDate.getDate() + repeatInterval);
 
       // Schedule next notification
       await Notifications.scheduleNotificationAsync({
-        identifier: `${data.reminderId}_${Date.now()}`,
+        identifier: `${String(data.reminderId)}_${Date.now()}`,
         content: {
-          title: data.title || 'Plant Care Reminder',
-          body: data.body || 'Time to take care of your plant!',
+          title: (typeof data.title === 'string' ? data.title : undefined) || 'Plant Care Reminder',
+          body: (typeof data.body === 'string' ? data.body : undefined) || 'Time to take care of your plant!',
           data: {
             ...data,
             isRecurring: true,

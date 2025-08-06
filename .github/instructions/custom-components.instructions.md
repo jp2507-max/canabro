@@ -19,6 +19,11 @@ Quick reference for using the custom utilities and components effectively.
 - Use `EnhancedTextInput` for complex inputs
 - Use `useKeyboardPadding` for custom keyboard handling
 
+**For Notifications:**
+- Use `notification-scheduling.ts` for timezone-aware scheduling
+- Use `validateNotificationSchedule` for date validation
+- Use `formatScheduleError` for user-friendly error messages
+
 **For Images:**
 - Use `image-picker.ts` for selection
 - Use `upload-image.ts` for uploads
@@ -114,7 +119,6 @@ const { animatedStyle, handlers } = useButtonAnimation({
   renderItem={({ item }) => (
     <PlantCard plant={item} />
   )}
-  estimatedItemSize={120}
 />
 ```
 

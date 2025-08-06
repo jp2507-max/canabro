@@ -1,7 +1,7 @@
 import * as Haptics from '@/lib/utils/haptics';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { Image as ExpoImage } from 'expo-image';
+import NetworkResilientImage from '../ui/NetworkResilientImage';
 import {
   generateCDNImageURL,
   IMAGE_CACHE_POLICY,
@@ -140,20 +140,11 @@ export default function UserAvatar({
       {imageError || !uri || uri.trim() === '' ? (
         <FallbackAvatar />
       ) : (
-        <ExpoImage
-          source={generateCDNImageURL(uri, 'thumbnail')}
-          style={{
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-          }}
-          className="border-2 border-white bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800"
-          accessibilityRole="image"
+        <NetworkResilientImage
+          url={generateCDNImageURL(uri, 'thumbnail')}
+          width={size}
+          height={size}
           accessibilityLabel={accessibilityLabel || 'User avatar'}
-          cachePolicy={IMAGE_CACHE_POLICY}
-          transition={{ duration: IMAGE_TRANSITION_DURATION }}
-          placeholder={{ blurhash: PLACEHOLDER_BLUR_HASH }}
-          onError={() => setImageError(true)}
         />
       )}
 

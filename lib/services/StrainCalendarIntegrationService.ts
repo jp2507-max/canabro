@@ -5,7 +5,23 @@
  * flowering time predictions, and strain comparison for calendar optimization.
  * 
  * Task 6.1: Connect calendar with plant strain characteristics
- * Requirements: R6-AC1, R6-AC5
+ * Requ  private static convertToStrainCharacteristics(strain: DataStrain | Strain): StrainCharacteristics {
+    // Handle different strain object structures
+    const isDataStrain = 'thcContent' in strain;
+    
+    return {
+      strainId: strain.id as string,
+      name: strain.name as string,
+      type: (strain.type || 'unknown') as 'indica' | 'sativa' | 'hybrid' | 'cbd' | 'unknown',
+      floweringTime: isDataStrain ? 8 : ((strain as any).floweringTime as number) || 8, // Default 8 weeks
+      thcPercentage: isDataStrain ? (strain as DataStrain).thcContent : (strain as any).thcPercentage as number | undefined,
+      cbdPercentage: isDataStrain ? (strain as DataStrain).cbdContent : (strain as any).cbdPercentage as number | undefined,
+      growDifficulty: isDataStrain ? (strain as DataStrain).growDifficulty : (strain as any).growDifficulty as string | undefined,
+      averageYield: isDataStrain ? undefined : (strain as any).averageYield as string | undefined,
+      heightIndoor: isDataStrain ? undefined : (strain as any).heightIndoor as string | undefined,
+      heightOutdoor: isDataStrain ? undefined : (strain as any).heightOutdoor as string | undefined,
+    };
+  }C1, R6-AC5
  */
 
 import { Q } from '@nozbe/watermelondb';
@@ -18,7 +34,7 @@ import { ScheduleTemplate } from '../models/ScheduleTemplate';
 import { PlantTask } from '../models/PlantTask';
 import { GrowthStage } from '../types/plant';
 import { TaskType } from '../types/taskTypes';
-import { getStrainById } from '../data/strains';
+import { Strain as DataStrain, getStrainById } from '../data/strains';
 import { database } from '../models';
 import { TaskAutomationService } from './TaskAutomationService';
 
@@ -280,18 +296,61 @@ export class StrainCalendarIntegrationService {
   /**
    * Convert Strain model to StrainCharacteristics interface
    */
-  private static convertToStrainCharacteristics(strain: any): StrainCharacteristics {
+  private static convertToStrainCharacteristics(strain: DataStrain | Strain): StrainCharacteristics {
+    // Handle different strain object structures
+    const isDataStrain = 'thcContent' in strain;
+
+    // Narrowing helpers for Strain model shape
+    const maybeStrainModel = (!isDataStrain && typeof strain === 'object' && strain !== null)
+      ? (strain as Partial<Record<'floweringTime' | 'thcPercentage' | 'cbdPercentage' | 'growDifficulty' | 'averageYield' | 'heightIndoor' | 'heightOutdoor', unknown>>)
+      : null;
+
+    const floweringTime: number =
+      isDataStrain
+        ? 8
+        : (typeof maybeStrainModel?.floweringTime === 'number' ? maybeStrainModel.floweringTime : 8);
+
+    const thcPercentage: number | undefined =
+      isDataStrain
+        ? (strain as DataStrain).thcContent
+        : (typeof maybeStrainModel?.thcPercentage === 'number' ? maybeStrainModel.thcPercentage : undefined);
+
+    const cbdPercentage: number | undefined =
+      isDataStrain
+        ? (strain as DataStrain).cbdContent
+        : (typeof maybeStrainModel?.cbdPercentage === 'number' ? maybeStrainModel.cbdPercentage : undefined);
+
+    const growDifficulty: string | undefined =
+      isDataStrain
+        ? (strain as DataStrain).growDifficulty
+        : (typeof maybeStrainModel?.growDifficulty === 'string' ? maybeStrainModel.growDifficulty : undefined);
+
+    const averageYield: string | undefined =
+      isDataStrain
+        ? undefined
+        : (typeof maybeStrainModel?.averageYield === 'string' ? maybeStrainModel.averageYield : undefined);
+
+    const heightIndoor: string | undefined =
+      isDataStrain
+        ? undefined
+        : (typeof maybeStrainModel?.heightIndoor === 'string' ? maybeStrainModel.heightIndoor : undefined);
+
+    const heightOutdoor: string | undefined =
+      isDataStrain
+        ? undefined
+        : (typeof maybeStrainModel?.heightOutdoor === 'string' ? maybeStrainModel.heightOutdoor : undefined);
+
     return {
-      strainId: strain.id,
-      name: strain.name,
-      type: strain.type || 'unknown',
-      floweringTime: strain.floweringTime || 8, // Default 8 weeks
-      thcPercentage: strain.thcPercentage,
-      cbdPercentage: strain.cbdPercentage,
-      growDifficulty: strain.growDifficulty,
-      averageYield: strain.averageYield,
-      heightIndoor: strain.heightIndoor,
-      heightOutdoor: strain.heightOutdoor,
+      strainId: strain.id as string,
+      name: strain.name as string,
+      type: (strain.type || 'unknown') as 'indica' | 'sativa' | 'hybrid' | 'cbd' | 'unknown',
+      floweringTime,
+      thcPercentage,
+      cbdPercentage,
+      growDifficulty,
+      averageYield,
+      heightIndoor,
+      heightOutdoor,
     };
   }
 
@@ -390,7 +449,7 @@ export class StrainCalendarIntegrationService {
    * Calculate template match score based on strain characteristics
    */
   private static calculateTemplateMatchScore(
-    strain: any,
+    strain: DataStrain,
     template: ScheduleTemplate,
     environment: string
   ): number {
@@ -431,7 +490,7 @@ export class StrainCalendarIntegrationService {
    * Generate match reasons for template recommendations
    */
   private static generateMatchReasons(
-    strain: any,
+    strain: DataStrain,
     template: ScheduleTemplate,
     matchScore: number
   ): string[] {
@@ -460,9 +519,17 @@ export class StrainCalendarIntegrationService {
   /**
    * Calculate expected cycle duration based on strain
    */
-  private static calculateExpectedCycleDuration(strain: any): number {
+  private static calculateExpectedCycleDuration(strain: DataStrain | StrainCharacteristics): number {
     const baseVegetative = 8; // weeks
-    const floweringTime = strain.floweringTime || 8;
+    
+    // Handle different strain types
+    let floweringTime: number;
+    if ('floweringTime' in strain && typeof strain.floweringTime === 'number') {
+      floweringTime = strain.floweringTime;
+    } else {
+      floweringTime = 8; // Default flowering time
+    }
+    
     const curing = 3; // weeks
     
     return baseVegetative + floweringTime + curing;

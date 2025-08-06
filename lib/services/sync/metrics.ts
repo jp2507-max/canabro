@@ -81,26 +81,51 @@ export function updateSyncMetrics(success: boolean, duration: number, operation?
 /**
  * Add a function to export logs for debugging/support
  */
-export function getLastSyncLogs(): any[] {
-  return logger.logs;
+type SyncLogEntry = {
+  startedAt?: number | Date;
+  finishedAt?: number | Date;
+  success?: boolean;
+  error?: unknown;
+  [key: string]: unknown;
+};
+
+export function getLastSyncLogs(): SyncLogEntry[] {
+  return logger.logs as unknown as SyncLogEntry[];
 }
 
 /**
  * Add a helper to format logs for display
  */
-export function formatSyncLog(log: any): string {
+export function formatSyncLog(log: SyncLogEntry | undefined | null): string {
   if (!log) return 'No sync log available';
 
-  const startTime = new Date(log.startedAt).toLocaleTimeString();
-  const endTime = log.finishedAt ? new Date(log.finishedAt).toLocaleTimeString() : 'unfinished';
-  const duration = log.finishedAt
-    ? ((log.finishedAt - log.startedAt) / 1000).toFixed(2) + 's'
-    : 'ongoing';
+  const started =
+    typeof log.startedAt === 'number'
+      ? log.startedAt
+      : log.startedAt instanceof Date
+        ? log.startedAt.getTime()
+        : Date.now();
+  const finished =
+    typeof log.finishedAt === 'number'
+      ? log.finishedAt
+      : log.finishedAt instanceof Date
+        ? log.finishedAt.getTime()
+        : undefined;
+
+  const startTime = new Date(started).toLocaleTimeString();
+  const endTime = finished ? new Date(finished).toLocaleTimeString() : 'unfinished';
+  const duration = finished ? (((finished - started) / 1000).toFixed(2) + 's') : 'ongoing';
 
   let result = `Sync ${log.success ? 'succeeded' : 'failed'} (${startTime} - ${endTime}, ${duration})`;
 
   if (log.error) {
-    result += `\nError: ${log.error}`;
+    const msg =
+      typeof log.error === 'string'
+        ? log.error
+          : (log.error && (log.error as { message?: unknown }).message)
+            ? String((log.error as { message?: unknown }).message)
+          : String(log.error);
+    result += `\nError: ${msg}`;
   }
 
   return result;
@@ -109,13 +134,20 @@ export function formatSyncLog(log: any): string {
 /**
  * Helper function to calculate the total number of changes in a sync result
  */
-export function calculateChangeCount(changes: Record<string, any>): number {
+type ChangeSetCounts = {
+  created?: unknown[];
+  updated?: unknown[];
+  deleted?: unknown[];
+  [key: string]: unknown;
+};
+
+export function calculateChangeCount(changes: Record<string, unknown>): number {
   return Object.values(changes).reduce(
-    (sum: number, table: any) =>
+    (sum: number, table: unknown) =>
       sum +
-      (table.created?.length || 0) +
-      (table.updated?.length || 0) +
-      (table.deleted?.length || 0),
+      ((table as ChangeSetCounts).created?.length ?? 0) +
+      ((table as ChangeSetCounts).updated?.length ?? 0) +
+      ((table as ChangeSetCounts).deleted?.length ?? 0),
     0
   );
 }
@@ -123,7 +155,20 @@ export function calculateChangeCount(changes: Record<string, any>): number {
 /**
  * Persists sync metadata to localStorage for fault tolerance
  */
-export async function persistSyncMetadata(database: any, syncLog: any): Promise<void> {
+type LocalStorageApi = {
+  set: (key: string, value: string) => Promise<void>;
+  get: (key: string) => Promise<string | null | undefined>;
+  remove: (key: string) => Promise<void>;
+};
+
+type DatabaseWithLocalStorage = {
+  localStorage: LocalStorageApi;
+};
+
+export async function persistSyncMetadata(
+  database: DatabaseWithLocalStorage,
+  syncLog: SyncLogEntry
+): Promise<void> {
   try {
     // Import needed constants
     const { SYNC_METADATA_KEYS } = await import('./types');
@@ -134,9 +179,9 @@ export async function persistSyncMetadata(database: any, syncLog: any): Promise<
     // Store sync summary
     const syncSummary = {
       timestamp: Date.now(),
-      success: syncLog.success,
-      pullCount: calculateChangeCount(syncLog.pulled || {}),
-      pushCount: calculateChangeCount(syncLog.pushed || {}),
+      success: !!syncLog.success,
+      pullCount: calculateChangeCount((syncLog as Record<string, unknown> & { pulled?: Record<string, unknown> }).pulled || {}),
+      pushCount: calculateChangeCount((syncLog as Record<string, unknown> & { pushed?: Record<string, unknown> }).pushed || {}),
     };
 
     await database.localStorage.set(
@@ -147,7 +192,9 @@ export async function persistSyncMetadata(database: any, syncLog: any): Promise<
     // Store limited error information if applicable
     if (!syncLog.success && syncLog.error) {
       const errorInfo = {
-        message: syncLog.error.message || String(syncLog.error),
+        message:
+          (syncLog.error && (syncLog.error as { message?: unknown }).message as string | undefined) ||
+          String(syncLog.error),
         time: Date.now(),
       };
 
@@ -160,7 +207,7 @@ export async function persistSyncMetadata(database: any, syncLog: any): Promise<
       await database.localStorage.remove(SYNC_METADATA_KEYS.LAST_SYNC_ERROR);
     }
 
-    console.log('[Sync Service] Sync metadata persisted successfully');
+    console.warn('[Sync Service] Sync metadata persisted successfully');
   } catch (error) {
     console.error('[Sync Service] Failed to persist sync metadata:', error);
   }
@@ -169,10 +216,12 @@ export async function persistSyncMetadata(database: any, syncLog: any): Promise<
 /**
  * Loads persisted sync metadata from localStorage at startup
  */
-export async function loadSyncMetadata(database: any): Promise<{
+export async function loadSyncMetadata(
+  database: DatabaseWithLocalStorage
+): Promise<{
   lastSyncTime: number;
-  lastSyncSummary?: Record<string, any>;
-  lastSyncError?: Record<string, any>;
+  lastSyncSummary?: Record<string, unknown>;
+  lastSyncError?: Record<string, unknown>;
 }> {
   try {
     // Import needed constants
@@ -192,7 +241,7 @@ export async function loadSyncMetadata(database: any): Promise<{
     }
 
     // Load last sync summary
-    let lastSyncSummary: Record<string, any> | undefined;
+    let lastSyncSummary: Record<string, unknown> | undefined;
     const syncSummaryStr = await database.localStorage.get(SYNC_METADATA_KEYS.LAST_SYNC_SUMMARY);
     if (syncSummaryStr && typeof syncSummaryStr === 'string') {
       try {
@@ -203,7 +252,7 @@ export async function loadSyncMetadata(database: any): Promise<{
     }
 
     // Load last sync error
-    let lastSyncError: Record<string, any> | undefined;
+    let lastSyncError: Record<string, unknown> | undefined;
     const syncErrorStr = await database.localStorage.get(SYNC_METADATA_KEYS.LAST_SYNC_ERROR);
     if (syncErrorStr && typeof syncErrorStr === 'string') {
       try {
@@ -213,7 +262,7 @@ export async function loadSyncMetadata(database: any): Promise<{
       }
     }
 
-    console.log('[Sync Service] Sync metadata loaded successfully', { lastSyncTime });
+    console.warn('[Sync Service] Sync metadata loaded successfully', { lastSyncTime });
 
     return {
       lastSyncTime,

@@ -59,11 +59,20 @@ export default function AddPlantTaskScreen() {
       const plantsCollection = database.get('plants');
       const userPlants = await plantsCollection.query().fetch();
 
-      const plantData = userPlants.map((plant: any) => ({
-        id: plant.id,
-        name: plant.name,
-        strain: plant.strain,
-      }));
+      type PlantModelLike = {
+        id: string;
+        name: string;
+        strain?: string | null;
+      };
+
+      const plantData = userPlants.map((plant: unknown) => {
+        const p = plant as PlantModelLike;
+        return {
+          id: p.id,
+          name: p.name,
+          strain: p.strain ?? undefined,
+        };
+      });
 
       setPlants(plantData);
     } catch (error) {
@@ -105,17 +114,29 @@ export default function AddPlantTaskScreen() {
       // Create plant task in local database
       await database.write(async () => {
         const plantTasksCollection = database.get('plant_tasks');
-        await plantTasksCollection.create((task: any) => {
+        await plantTasksCollection.create((task) => {
+          // WatermelonDB Model is structurally typed; avoid narrowing the callback param
+          // and assign known fields that exist on PlantTask model.
           task._raw.id = taskId;
+          // @ts-expect-error known model fields at runtime
           task.taskId = taskId;
+          // @ts-expect-error known model fields at runtime
           task.plantId = formData.plantId;
+          // @ts-expect-error known model fields at runtime
           task.title = formData.title.trim();
+          // @ts-expect-error known model fields at runtime
           task.description = formData.description.trim() || undefined;
+          // @ts-expect-error known model fields at runtime
           task.taskType = formData.category;
+          // @ts-expect-error known model fields at runtime
           task.dueDate = formData.dueDate.toISOString();
+          // @ts-expect-error known model fields at runtime
           task.status = 'pending';
+          // @ts-expect-error known model fields at runtime
           task.userId = session.user.id;
+          // @ts-expect-error known model fields at runtime
           task.createdAt = now;
+          // @ts-expect-error known model fields at runtime
           task.updatedAt = now;
         });
       });

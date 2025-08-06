@@ -281,7 +281,6 @@ const SearchResultsComponent = ({
             data={filteredPlants}
             keyExtractor={keyExtractor}
             renderItem={renderPlantCard}
-            estimatedItemSize={250}
             ListEmptyComponent={<NoResults searchQuery={searchQuery} hasFilters={hasActiveFilters} />}
             contentContainerStyle={{
                 paddingTop: 8,

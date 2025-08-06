@@ -247,7 +247,6 @@ export default function WeeklyTaskView({
           <FlashList
             data={tasksForSelectedDate}
             renderItem={renderTaskItem}
-            estimatedItemSize={80}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
           />

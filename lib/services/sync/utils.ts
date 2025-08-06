@@ -73,17 +73,17 @@ export const requestSemaphore = new Semaphore(SYNC_CONSTANTS.MAX_CONCURRENT_REQU
  */
 export async function executeRpcWithRetry(
   rpcName: string,
-  params: any,
+  params: Record<string, unknown>,
   maxRetries: number = 3
-): Promise<any> {
+): Promise<unknown> {
   let retries = 0;
-  let lastError: any = null;
+  let lastError: unknown = null;
 
   while (retries < maxRetries) {
     try {
       return await requestSemaphore.acquire(async () => {
         const startTime = Date.now();
-        const { data, error } = await supabase.rpc(rpcName, params);
+        const { data, error } = await supabase.rpc(rpcName, params as Record<string, unknown>);
         const duration = Date.now() - startTime;
 
         // Track slow operations for performance monitoring
@@ -99,7 +99,7 @@ export async function executeRpcWithRetry(
       retries++;
 
       // Log retry attempts
-      console.warn(`RPC call to ${rpcName} failed (attempt ${retries}/${maxRetries}):`, error);
+      console.warn(`RPC call to ${rpcName} failed (attempt ${retries}/${maxRetries}):`, error as unknown);
 
       // Exponential backoff with jitter to prevent request storms
       const delay = Math.min(1000 * Math.pow(2, retries) + Math.random() * 1000, 10000);
@@ -161,7 +161,7 @@ export async function initializeUserData(
       });
     });
 
-    console.log('User profile initialized');
+    console.warn('User profile initialized');
 
     // Mark as first sync
     await database.adapter.setLocal('sync_is_empty', 'true');

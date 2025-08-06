@@ -216,7 +216,6 @@ export const HarvestTimelineView: React.FC<HarvestTimelineViewProps> = ({
       <FlashListWrapper
         data={filteredItems}
         renderItem={renderTimelineItem}
-        estimatedItemSize={120}
         contentContainerStyle={{ padding: 16 }}
         ListEmptyComponent={
           <ThemedView className="flex-1 justify-center items-center py-12">

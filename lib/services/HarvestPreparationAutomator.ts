@@ -275,7 +275,7 @@ export class HarvestPreparationAutomator {
     plant: Plant,
     prediction: HarvestPrediction
   ): HarvestPreparationTask[] {
-    let tasks = [...this.PREPARATION_TASKS];
+    const tasks = [...this.PREPARATION_TASKS];
     
     // Customize based on plant characteristics
     if (plant.isAutoFlower) {

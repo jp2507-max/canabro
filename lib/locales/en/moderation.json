@@ -1,0 +1,232 @@
+{
+  "moderationIndicator": {
+    "approved": "Approved",
+    "pendingReview": "Pending Review",
+    "flagged": "Flagged",
+    "hidden": "Hidden",
+    "blocked": "Blocked",
+    "reported": "Reported"
+  },
+  "contentReportModal": {
+    "title": "Report Content",
+    "subtitle": "Help us keep the community safe by reporting inappropriate {{type}}",
+    "reasonLabel": "Why are you reporting this content?",
+    "reasons": {
+      "spam": "Spam or unwanted commercial content",
+      "inappropriate_content": "Inappropriate or offensive content",
+      "harassment": "Harassment or bullying",
+      "misinformation": "False or misleading information",
+      "off_topic": "Off-topic or irrelevant content",
+      "copyright": "Copyright infringement",
+      "other": "Other (please describe below)"
+    },
+    "descriptionLabel": "Additional details (optional)",
+    "descriptionPlaceholder": "Please provide more context about why you're reporting this content...",
+    "descriptionHint": "Your report helps our moderation team understand the issue better.",
+    "cancel": "Cancel",
+    "submit": "Submit Report",
+    "submitting": "Submitting..."
+  },
+  "postActionButtons": {
+    "camera": "Camera",
+    "photos": "Photos",
+    "location": "Location",
+    "mention": "Mention",
+    "moderate": "Moderate",
+    "report": {
+      "button": "Report",
+      "title": "Report Content",
+      "message": "Are you sure you want to report this content? This action will flag it for review by our moderation team.",
+      "cancel": "Cancel",
+      "confirm": "Report"
+    },
+    "accessibility": {
+      "camera": "Take photo with camera",
+      "photos": "Choose from photo library",
+      "location": "Add location",
+      "mention": "Mention someone",
+      "report": "Report inappropriate content",
+      "moderate": "Open moderation options"
+    }
+  },
+  "deletePostModal": {
+    "moderationMessage": "This {{type}} has been flagged for: {{reason}}. Do you want to delete it?",
+    "moderationOptions": {
+      "title": "Moderation Actions",
+      "hide": "Hide from public view",
+      "flag": "Flag for manual review"
+    }
+  },
+  "questionPostItem": {
+    "accessibility": {
+      "reportQuestion": "Report this question as inappropriate"
+    }
+  },
+  "plantSharePostItem": {
+    "accessibility": {
+      "reportPlantShare": "Report this plant share as inappropriate"
+    }
+  },
+  "commentItem": {
+    "report": "Report",
+    "accessibility": {
+      "report": "Report this comment as inappropriate"
+    }
+  },
+  "moderationDashboard": {
+    "title": "Moderation Dashboard",
+    "subtitle": "Manage community content and users",
+    "pendingReview": "pending review",
+    "tabs": {
+      "flaggedContent": "Flagged Content",
+      "userManagement": "User Management",
+      "analytics": "Analytics"
+    },
+    "noFlaggedContent": "All Clear!",
+    "noFlaggedContentDescription": "No content is currently flagged for review. Great job keeping the community safe!",
+    "noUsers": "No Users Found",
+    "noUsersDescription": "No users require moderation attention at this time.",
+    "confirmAction": "Confirm Action",
+    "confirmActionDescription": "Are you sure you want to {{action}} this content?",
+    "confirmUserAction": "Confirm User Action",
+    "confirmUserActionDescription": "Are you sure you want to {{action}} user {{user}}?",
+    "reports": "reports",
+    "violations": "Violations",
+    "approve": "Approve",
+    "hide": "Hide",
+    "delete": "Delete",
+    "warn": "Warn",
+    "suspend": "Suspend",
+    "ban": "Ban",
+    "unban": "Unban",
+    "unsuspend": "Unsuspend",
+    "clearWarning": "Clear Warning",
+    "joinedOn": "Joined on",
+    "posts": "Posts",
+    "lastActive": "Last Active",
+    "overviewStats": "Overview Statistics",
+    "totalModerated": "Total Moderated",
+    "approved": "Approved",
+    "blocked": "Blocked",
+    "flagged": "Flagged",
+    "violationTypes": "Violation Types",
+    "dailyStats": "Daily Statistics",
+    "approvalRate": "approval rate",
+    "total": "Total"
+  },
+  "userReportModal": {
+    "title": "Report User",
+    "categoryLabel": "Report Category",
+    "subcategoryLabel": "Specific Issue",
+    "severityLabel": "Severity Level",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Please describe the issue in detail...",
+    "descriptionHint": "Provide specific examples and context to help our moderation team.",
+    "anonymousLabel": "Submit anonymously",
+    "anonymousDescription": "Your identity will not be shared with the reported user.",
+    "cancel": "Cancel",
+    "submit": "Submit Report",
+    "submitting": "Submitting..."
+  },
+  "moderation": {
+    "userReport": {
+      "categories": {
+        "harassment": "Harassment",
+        "spam": "Spam",
+        "inappropriate_behavior": "Inappropriate",
+        "misinformation": "Misinformation",
+        "impersonation": "Impersonation",
+        "community_guidelines": "Guidelines",
+        "other": "Other"
+      },
+      "subcategories": {
+        "harassment": {
+          "bullying": "Bullying or intimidation",
+          "targeted": "Targeted harassment",
+          "hate_speech": "Hate speech",
+          "threats": "Threats or violence",
+          "doxxing": "Doxxing or privacy violation"
+        },
+        "spam": {
+          "excessive_posting": "Excessive posting",
+          "promotional": "Promotional content",
+          "repetitive": "Repetitive messages",
+          "off_topic": "Off-topic content",
+          "bot_behavior": "Bot-like behavior"
+        },
+        "inappropriate": {
+          "offensive_language": "Offensive language",
+          "sexual_content": "Sexual content",
+          "discriminatory": "Discriminatory behavior",
+          "trolling": "Trolling or baiting",
+          "disruptive": "Disruptive behavior"
+        }
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      }
+    }
+  },
+  "userReportReview": {
+    "title": "User Reports Review",
+    "subtitle": "Review and moderate user behavior reports",
+    "all": "All",
+    "loading": "Loading reports...",
+    "noReports": "No Reports Found",
+    "noReportsDescription": "No user reports match the selected criteria.",
+    "reportedBy": "Reported by",
+    "anonymousReport": "Anonymous report",
+    "systemGenerated": "System generated",
+    "description": "Description",
+    "userStats": "User Statistics",
+    "joinedOn": "Joined",
+    "posts": "Posts",
+    "reports": "Reports",
+    "moderatorNotes": "Moderator Notes",
+    "moderatorNotesPlaceholder": "Add notes about your review and decision...",
+    "reportActions": "Report Actions",
+    "userActions": "User Actions",
+    "dismiss": "Dismiss",
+    "escalate": "Escalate",
+    "warn": "Warn",
+    "suspend": "Suspend",
+    "confirmAction": "Confirm Action",
+    "confirmActionDescription": "Are you sure you want to {{action}} this report?",
+    "confirmUserAction": "Confirm User Action",
+    "confirmUserActionDescription": "Are you sure you want to {{action}} user {{user}}?",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "userAppealModal": {
+    "title": "Appeal Report",
+    "subtitle": "Contest a moderation decision",
+    "originalReport": "Original Report",
+    "reportedOn": "Reported on",
+    "moderationAction": "Moderation Action",
+    "guidelinesTitle": "Appeal Guidelines",
+    "appealGuidelines": {
+      "guideline1": "Provide specific evidence that contradicts the original report",
+      "guideline2": "Explain any context that may have been misunderstood",
+      "guideline3": "Be respectful and professional in your appeal",
+      "guideline4": "Include any relevant screenshots or documentation",
+      "guideline5": "Appeals are reviewed by senior moderators within 48 hours"
+    },
+    "appealReasonLabel": "Appeal Reason",
+    "appealReasonPlaceholder": "Explain why you believe this report was incorrect or unfair...",
+    "appealReasonHint": "Minimum 20 characters required",
+    "appealReasonRequired": "Please provide a reason for your appeal.",
+    "additionalContextLabel": "Additional Context (Optional)",
+    "additionalContextPlaceholder": "Provide any additional context that might help with the review...",
+    "additionalContextHint": "Any additional information that supports your appeal.",
+    "evidenceLabel": "Supporting Evidence",
+    "addEvidence": "Add Evidence",
+    "evidenceHint": "Upload screenshots, links, or other documentation that supports your appeal.",
+    "cancel": "Cancel",
+    "submit": "Submit Appeal",
+    "submitting": "Submitting...",
+    "error": "Error"
+  }
+}

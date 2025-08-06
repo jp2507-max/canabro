@@ -159,7 +159,10 @@
     "cameraAccessDescription": "Please allow camera access to take photos of your plants for diagnosis",
     "grantPermission": "Grant Permission",
     "goBack": "Go Back",
-    "checkmark": "✓"
+    "checkmark": "✓",
+    "separator": "•",
+    "day": "Day",
+    "views": "views"
   },
   "plantCard": {
     "health": "Health: {{value}}%",
@@ -845,6 +848,8 @@
     "fed": "Fed"
   },
   "strains": {
+    "authRequiredTitle": "User not authenticated",
+    "authRequiredSubtitle": "Please log in to view strains.",
     "type": {
       "sativa": "Sativa",
       "indica": "Indica",
@@ -1407,6 +1412,355 @@
       "description": "Something went wrong with the environmental dashboard.",
       "retry": "Retry"
     }
+  },
+  "activityFeed": {
+    "title": "Activity Feed",
+    "subtitle": "{{count}} activities",
+    "loading": "Loading activities...",
+    "filters": {
+      "all": "All",
+      "following": "Following",
+      "plants": "Plants",
+      "achievements": "Achievements",
+      "community": "Community"
+    },
+    "empty": {
+      "title": "No Activities Yet",
+      "description": "Follow other growers and join the community to see activities here."
+    },
+    "error": {
+      "title": "Error Loading Activities",
+      "description": "Something went wrong while loading activities."
+    },
+    "activities": {
+      "post_created": "{{username}} shared a new post",
+      "comment_added": "{{username}} commented on a post",
+      "plant_updated": "{{username}} updated their plant",
+      "harvest_completed": "{{username}} completed a harvest",
+      "strain_reviewed": "{{username}} reviewed a strain",
+      "achievement_earned": "{{username}} earned an achievement",
+      "group_joined": "{{username}} joined a group",
+      "expert_verified": "{{username}} became a verified expert",
+      "user_followed": "{{username}} followed someone new",
+      "post_liked": "{{username}} liked a post",
+      "milestone_reached": "{{username}} reached a milestone"
+    },
+    "descriptions": {
+      "post_created": "Check out their latest growing update",
+      "comment_added": "Join the conversation",
+      "plant_updated": "See the latest progress photos",
+      "harvest_completed": "Congratulations on the successful harvest!",
+      "strain_reviewed": "Read their detailed strain review",
+      "achievement_earned": "Well deserved recognition!",
+      "group_joined": "Welcome to the community",
+      "expert_verified": "Now offering expert advice",
+      "user_followed": "Growing their network",
+      "post_liked": "Showing appreciation for great content",
+      "milestone_reached": "Another step in their growing journey"
+    }
+  },
+  "notifications": {
+    "activityEngagement": {
+      "title": "Activity Engagement",
+      "body": "{{username}} {{action}}"
+    }
+  },
+  "diagnosis": {
+    "removeImage": "Remove image",
+    "takeNewPhoto": "Take new photo",
+    "analyzingTitle": "Analyzing Plant...",
+    "analyzingSubtitle": "Our AI is examining your plant for\ndiseases, pests, and nutrient deficiencies",
+    "analysisFailedTitle": "Analysis Failed",
+    "analysisFailedMessage": "Please try again with a clearer image of your plant."
+  },
+  "community": {
+    "filters": {
+      "all": "All Posts",
+      "plants": "Plant Updates",
+      "strains": "Strain Reviews",
+      "achievements": "Achievements"
+    },
+    "feed": {
+      "empty": {
+        "title": "No Posts Yet",
+        "description": "Follow other growers to see their posts and updates in your feed."
+      }
+    },
+    "stats": {
+      "followers": "Followers",
+      "following": "Following",
+      "posts": "Posts",
+      "reputation": "Reputation"
+    },
+    "labels": {
+      "mutual": "Mutual"
+    },
+    "actions": {
+      "follow": "Follow",
+      "following": "Following",
+      "unfollow": "Unfollow",
+      "unfollowUser": "Unfollow User",
+      "unfollowConfirm": "Are you sure you want to unfollow {{username}}?"
+    },
+    "sections": {
+      "followRequests": "Follow Requests"
+    },
+    "tabs": {
+      "followers": "Followers",
+      "following": "Following"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "errors": {
+      "followFailed": "Failed to follow user",
+      "unfollowFailed": "Failed to unfollow user",
+      "loadFeedFailed": "Failed to load feed",
+      "tryAgain": "Please try again"
+    },
+    "filters": {
+      "all": "All",
+      "plants": "Plants",
+      "strains": "Strains",
+      "achievements": "Achievements"
+    },
+    "notifications": {
+      "newFollower": "New Follower",
+      "newFollowerBody": "{{username}} started following you"
+    },
+    "accessibility": {
+      "userAvatar": "{{username}}'s profile picture"
+    }
+  },
+  "socialGroups": {
+    "title": "Social Groups",
+    "subtitle": "Connect with growers who share your interests",
+    "tabs": {
+      "discover": "Discover",
+      "myGroups": "My Groups",
+      "create": "Create",
+      "moderate": "Moderate"
+    },
+    "create": {
+      "title": "Create New Group"
+    },
+    "form": {
+      "name": "Group Name",
+      "namePlaceholder": "Enter group name",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your group's purpose and goals",
+      "category": "Category",
+      "tags": "Tags",
+      "addTag": "Add tag",
+      "add": "Add",
+      "privacy": "Privacy",
+      "publicDescription": "Anyone can find and join this group",
+      "privateDescription": "Members must be invited or approved to join",
+      "maxMembers": "Maximum Members",
+      "createGroup": "Create Group",
+      "creating": "Creating...",
+      "errors": {
+        "nameRequired": "Group name is required",
+        "nameTooShort": "Group name must be at least 3 characters",
+        "descriptionRequired": "Description is required",
+        "descriptionTooShort": "Description must be at least 10 characters",
+        "invalidMaxMembers": "Maximum members must be at least 2",
+        "maxMembersTooHigh": "Maximum members cannot exceed 10,000",
+        "notLoggedIn": "You must be logged in to create a group",
+        "createFailed": "Failed to create group. Please try again."
+      }
+    },
+    "discovery": {
+      "searchGroups": "Search groups...",
+      "searchMyGroups": "Search my groups...",
+      "categories": "Categories",
+      "loading": "Loading groups...",
+      "groupsFound": "{{count}} groups found",
+      "member": "Member",
+      "members": "members",
+      "moreTags": "more",
+      "activeMembers": "{{count}} active",
+      "noGroups": "No groups found",
+      "noUserGroups": "You haven't joined any groups yet",
+      "noSearchResults": "No groups match your search",
+      "joinGroupsHint": "Discover and join groups that interest you",
+      "tryDifferentSearch": "Try a different search term",
+      "createFirstGroup": "Be the first to create a group!"
+    },
+    "content": {
+      "loading": "Loading group...",
+      "members": "members",
+      "memberSince": "{{days}} days ago",
+      "joinGroup": "Join Group",
+      "leaveGroup": "Leave Group",
+      "joining": "Joining...",
+      "leaveGroupConfirm": "Are you sure you want to leave this group?",
+      "aboutGroup": "About this Group",
+      "createdDaysAgo": "Created {{days}} days ago",
+      "noPosts": "No posts yet. Be the first to share something!",
+      "confirmAction": "Confirm Action",
+      "confirmActionMessage": "Are you sure you want to {{action}} this member?",
+      "memberActions": {
+        "promote": "promote",
+        "demote": "demote",
+        "remove": "remove"
+      },
+      "errors": {
+        "joinFailed": "Failed to join group. Please try again.",
+        "leaveFailed": "Failed to leave group. Please try again.",
+        "memberActionFailed": "Failed to perform member action. Please try again."
+      }
+    },
+    "roles": {
+      "admin": "Admin",
+      "moderator": "Moderator",
+      "member": "Member"
+    },
+    "moderation": {
+      "loginRequired": "Please log in to access moderation features",
+      "loading": "Loading moderated groups...",
+      "members": "members",
+      "viewGroup": "View",
+      "manage": "Manage",
+      "noModeratedGroups": "You don't moderate any groups",
+      "createOrJoinGroups": "Create a group or become a moderator",
+      "groupSettings": "Group Settings",
+      "privacy": "Privacy",
+      "public": "Public",
+      "private": "Private",
+      "moderationLevel": "Moderation Level",
+      "levels": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "maxMembers": "Maximum Members",
+      "allowInvites": "Allow member invites",
+      "requireApproval": "Require approval to join",
+      "allowFileSharing": "Allow file sharing",
+      "selectGroupToManage": "Select a group from 'My Groups' to manage its settings",
+      "memberManagementComingSoon": "Member management features coming soon",
+      "reportsComingSoon": "Content reporting features coming soon",
+      "errors": {
+        "updateFailed": "Failed to update group settings. Please try again."
+      }
+    }
+  },
+  "userFollowing": {
+    "notifications": {
+      "newFollower": "New Follower",
+      "newFollowerBody": "{{username}} started following you"
+    },
+    "errors": {
+      "followFailed": "Failed to follow user",
+      "unfollowFailed": "Failed to unfollow user",
+      "tryAgain": "Please try again"
+    },
+    "actions": {
+      "follow": "Follow",
+      "following": "Following",
+      "unfollow": "Unfollow",
+      "unfollowUser": "Unfollow User",
+      "unfollowConfirm": "Are you sure you want to unfollow {{username}}?"
+    },
+    "labels": {
+      "mutual": "Mutual"
+    },
+    "stats": {
+      "followers": "{{count}} followers",
+      "following": "Following",
+      "posts": "{{count}} posts",
+      "reputation": "Reputation"
+    },
+    "sections": {
+      "followRequests": "Follow Requests"
+    },
+    "tabs": {
+      "followers": "Followers",
+      "following": "Following"
+    }
+  },
+  "achievements": {
+    "title": "Achievements & Progress",
+    "subtitle": "Track your growing journey and community contributions",
+    "tabs": {
+      "achievements": "Achievements",
+      "leaderboard": "Leaderboard",
+      "stats": "Statistics"
+    },
+    "categories": {
+      "all": "All",
+      "growing": "Growing",
+      "community": "Community",
+      "social": "Social",
+      "knowledge": "Knowledge"
+    },
+    "difficulties": {
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum"
+    },
+    "progress": "Progress",
+    "points": "points",
+    "level": "Level",
+    "unlockedOn": "Unlocked on {{date}}",
+    "filterByCategory": "Filter by category",
+    "toNextLevel": "to next level",
+    "pointsToNext": "points to next level",
+    "categoryBreakdown": "Category Breakdown",
+    "stats": {
+      "totalPoints": "Total Points",
+      "level": "Level",
+      "achievements": "Achievements",
+      "rank": "Rank"
+    },
+    "achievements": {
+      "first_plant": {
+        "title": "Green Thumb",
+        "description": "Add your first plant to the garden"
+      },
+      "first_harvest": {
+        "title": "Harvest Master",
+        "description": "Complete your first harvest"
+      },
+      "community_helper": {
+        "title": "Community Helper",
+        "description": "Help 10 community members"
+      },
+      "strain_expert": {
+        "title": "Strain Expert",
+        "description": "Review 5 different strains"
+      },
+      "social_butterfly": {
+        "title": "Social Butterfly",
+        "description": "Follow 25 other growers"
+      },
+      "master_grower": {
+        "title": "Master Grower",
+        "description": "Successfully grow 10 plants"
+      },
+      "knowledge_seeker": {
+        "title": "Knowledge Seeker",
+        "description": "Answer 50 community questions"
+      },
+      "community_leader": {
+        "title": "Community Leader",
+        "description": "Receive 100 helpful votes"
+      }
+    },
+    "notifications": {
+      "unlocked": {
+        "title": "Achievement Unlocked! 🏆",
+        "body": "Congratulations! You've unlocked: {{title}}"
+      }
+    },
+    "celebration": {
+      "title": "Achievement Unlocked!",
+      "subtitle": "Great job on your progress!"
+    }
   }
 }
-

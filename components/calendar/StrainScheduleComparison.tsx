@@ -26,8 +26,15 @@ interface TaskFrequencyComparisonProps {
   difference: number;
 }
 
+interface BasicStrainInfo {
+  name: string;
+  type?: string;
+  floweringTime?: number;
+  growDifficulty?: string;
+}
+
 interface StrainInfoCardProps {
-  strain: any;
+  strain: BasicStrainInfo;
   label: string;
 }
 

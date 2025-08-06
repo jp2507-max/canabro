@@ -89,3 +89,32 @@ export {
 
 // Strain services
 export { strainLocalService, default as StrainLocalService } from './strain-local.service';
+
+// Community services
+export { CommunityService } from './community-service';
+
+// Content Moderation services (ACF-T04.1)
+export { contentModerationService, default as ContentModerationService } from './content-moderation.service';
+export type { 
+    ModerationResult, 
+    ModerationViolation, 
+    ImageModerationResult, 
+    SpamDetectionResult,
+    ViolationType,
+    ViolationSeverity,
+    ModerationAction
+} from './content-moderation.service';
+
+// Realtime services (2025 Enhanced)
+export { realtimeService } from './realtimeService';
+export { realtimeConfig } from './realtimeConfig';
+export { realtimePerformanceOptimizer } from './realtimePerformanceOptimizer';
+export type { 
+    RealtimeSubscriptionConfig, 
+    MessageBroadcast, 
+    PresenceState 
+} from './realtimeService';
+export type { 
+    RealtimeConfig, 
+    RealtimeQuotas 
+} from './realtimeConfig';

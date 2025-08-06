@@ -4,20 +4,20 @@ import { DiaryEntry, DiaryEntryType } from '../types/diary';
 /**
  * Adapts a database diary entry to our frontend DiaryEntry model
  */
-export function adaptDiaryEntryFromDB(dbEntry: any): DiaryEntry {
+export function adaptDiaryEntryFromDB(dbEntry: Record<string, unknown>): DiaryEntry {
   return {
-    id: dbEntry.id,
-    plant_id: dbEntry.plant_id,
-    user_id: dbEntry.user_id,
-    entry_date: dbEntry.entry_date || dbEntry.created_at,
-    entry_type: dbEntry.type as DiaryEntryType,
-    title: dbEntry.title,
-    content: dbEntry.content,
-    image_url: dbEntry.image_url,
-    metrics: dbEntry.metrics || {},
-    is_public: dbEntry.is_public,
-    created_at: dbEntry.created_at,
-    updated_at: dbEntry.updated_at,
+    id: dbEntry.id as string,
+    plant_id: dbEntry.plant_id as string,
+    user_id: dbEntry.user_id as string,
+    entry_date: (dbEntry.entry_date || dbEntry.created_at) as string,
+    entry_type: dbEntry.entry_type as DiaryEntryType,
+    title: dbEntry.title as string | undefined,
+    content: dbEntry.content as string,
+    image_url: dbEntry.image_url as string | undefined,
+    metrics: dbEntry.metrics ? JSON.parse(dbEntry.metrics as string) : undefined,
+    is_public: dbEntry.is_public as boolean,
+    created_at: dbEntry.created_at as string,
+    updated_at: dbEntry.updated_at as string | undefined,
   };
 }
 
@@ -80,7 +80,7 @@ export async function updateDiaryEntry(
   updates: Partial<Omit<DiaryEntry, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<DiaryEntry | null> {
   try {
-    const dbUpdates: Record<string, any> = {};
+    const dbUpdates: Record<string, unknown> = {};
 
     if (updates.title) dbUpdates.title = updates.title;
     if (updates.content) dbUpdates.content = updates.content;

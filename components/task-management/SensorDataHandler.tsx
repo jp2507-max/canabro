@@ -547,7 +547,6 @@ export const SensorDataHandler: React.FC<SensorDataHandlerProps> = ({
           renderItem={({ item }: { item: SensorStatus }) => (
             <SensorCard sensor={item} onToggle={toggleSensor} />
           )}
-          estimatedItemSize={200}
           showsVerticalScrollIndicator={false}
           accessibilityRole="list"
           accessibilityLabel={t('sensors.connectedSensorsListA11y', 'Connected sensors list')}

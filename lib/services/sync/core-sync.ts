@@ -4,6 +4,7 @@
 
 import { Database } from '@nozbe/watermelondb';
 import type { SyncTableChangeSet } from '@nozbe/watermelondb/sync';
+type TableChanges = Record<string, SyncTableChangeSet>;
 import { synchronize } from '@nozbe/watermelondb/sync';
 
 // Import proper types for strain handling
@@ -25,7 +26,7 @@ interface ValidatedRecord {
 
 // Enhanced sync response type that includes conflict resolutions
 interface EnhancedSyncResponse {
-  changes: Record<string, { created: unknown[]; updated: unknown[]; deleted: string[] }>;
+  changes: TableChanges;
   timestamp: number;
   conflict_resolutions?: ConflictResolution[];
 }
@@ -289,8 +290,8 @@ export async function synchronizeWithServer(
               return { syncJson: json };
             } else {
               // Standard sync processing
-              const receivedChanges = data?.changes || {};
-              const ensuredChanges: Record<string, SyncTableChangeSet> = {};
+              const receivedChanges = (data?.changes || {}) as TableChanges;
+              const ensuredChanges: TableChanges = {};
 
               // Initialize empty changes for all tracked tables
               for (const table of syncConfig.tablesToSync) {

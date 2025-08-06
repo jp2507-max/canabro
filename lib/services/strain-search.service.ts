@@ -91,7 +91,9 @@ async function searchWithBreadthFirst(
     // Add local results with dynamic quota allocation
     let remaining = localLimit;
     wdbResults.slice(0, remaining).forEach((wdbStrain) => {
-      const apiId = (wdbStrain as any).api_id ?? (wdbStrain as any).apiId;
+      // WatermelonDB model may expose either api_id or apiId depending on sync origin
+      const apiId = (wdbStrain as Partial<{ api_id: string; apiId: string }>).api_id
+        ?? (wdbStrain as Partial<{ api_id: string; apiId: string }>).apiId;
       if (apiId && !foundApiIds.has(apiId)) {
         const strain = convertWdbStrainToRawApi(wdbStrain);
         strain._source = 'local';
@@ -172,7 +174,8 @@ async function searchWithLocalFirst(
       return [] as WDBStrainModel[];
     });
     wdbResults.forEach((wdbStrain) => {
-      const apiId = (wdbStrain as any).api_id ?? (wdbStrain as any).apiId;
+      const apiId = (wdbStrain as Partial<{ api_id: string; apiId: string }>).api_id
+        ?? (wdbStrain as Partial<{ api_id: string; apiId: string }>).apiId;
       if (apiId && !foundApiIds.has(apiId)) {
         const strain = convertWdbStrainToRawApi(wdbStrain);
         strain._source = 'local';

@@ -38,8 +38,8 @@ export interface SyncConfig {
  */
 export interface SyncMetadata {
   lastSyncTime: number;
-  lastSyncSummary?: Record<string, any>;
-  lastSyncError?: Record<string, any>;
+  lastSyncSummary?: Record<string, unknown>;
+  lastSyncError?: Record<string, unknown>;
 }
 
 /**

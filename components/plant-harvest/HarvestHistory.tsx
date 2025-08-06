@@ -412,7 +412,6 @@ export const HarvestHistory: React.FC<HarvestHistoryProps> = ({
                 onPress={() => handleHarvestPress(comparison.plantId)}
               />
             )}
-            estimatedItemSize={140}
             keyExtractor={(item) => item.plantId}
             showsVerticalScrollIndicator={false}
           />
