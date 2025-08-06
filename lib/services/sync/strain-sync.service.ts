@@ -47,8 +47,8 @@ export function prepareDataForWatermelonDB(
   }
   // descriptionString is potentially: string | null
 
-  const thcPercentage = parsePercentageString(apiStrain.thc || apiStrain.THC); // is: number | null
-  const cbdPercentage = parsePercentageString(apiStrain.cbd || apiStrain.CBD); // is: number | null
+  const thcPercentage = parsePercentageString((apiStrain.thc || apiStrain.THC) as string | number | null | undefined); // is: number | null
+  const cbdPercentage = parsePercentageString((apiStrain.cbd || apiStrain.CBD) as string | number | null | undefined); // is: number | null
 
   // Parse floweringTime as a single number. Assumes API provides it as a string like "10 weeks" or a direct number.
   // The parseOptionalNumber function will attempt to extract a number from the string.
@@ -749,8 +749,8 @@ export function prepareDataForSupabase(
   }
 
   // Better parsing for THC/CBD - handle formats like "14-19%" and "Unknown"
-  const thcPercentage = parsePercentageString(apiStrain.thc || apiStrain.THC);
-  const cbdPercentage = parsePercentageString(apiStrain.cbd || apiStrain.CBD);
+  const thcPercentage = parsePercentageString((apiStrain.thc || apiStrain.THC) as string | number | null | undefined);
+  const cbdPercentage = parsePercentageString((apiStrain.cbd || apiStrain.CBD) as string | number | null | undefined);
   const floweringTime = parseOptionalNumber(apiStrain.floweringTime || apiStrain.fromSeedToHarvest);
   const supabaseData: Partial<SupabaseStrain> & { api_id: string } = {
     api_id: sanitizeString(apiStrain.api_id) || apiStrain.api_id.trim(),

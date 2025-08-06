@@ -255,7 +255,7 @@ class PerformanceTester {
       let successfulConnections = 0;
       let failedConnections = 0;
       let totalMessagesSent = 0;
-      let totalMessagesReceived = 0;
+      const totalMessagesReceived = 0;
       
       // Test connection establishment
       const connectionStartTime = Date.now();
@@ -404,7 +404,7 @@ class PerformanceTester {
       // Check for memory leaks (continuous growth)
       if (memorySnapshots.length > 10) {
         const recentGrowth = memorySnapshots.slice(-5).reduce((sum, mem, i, arr) => {
-          return i > 0 ? sum + (mem - arr[i - 1]) : sum;
+          return i > 0 ? sum + (mem - (arr[i - 1] || 0)) : sum;
         }, 0);
         
         if (recentGrowth > 10 * 1024 * 1024) { // 10MB growth in last 5 seconds

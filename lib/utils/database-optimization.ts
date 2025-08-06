@@ -529,7 +529,7 @@ class DatabaseOptimizer {
     if (this.queryCache.size >= this.MAX_CACHE_SIZE) {
       const sorted = Array.from(this.queryCache.entries())
         .sort(([, a], [, b]) => a.timestamp - b.timestamp);
-      const oldestKey = sorted.length > 0 ? sorted[0][0] : undefined;
+      const oldestKey = sorted.length > 0 ? sorted[0]?.[0] : undefined;
       if (!oldestKey) return;
       this.queryCache.delete(oldestKey);
     }

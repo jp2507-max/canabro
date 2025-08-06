@@ -189,7 +189,7 @@ export class EnvironmentalDataIntegrationService {
         }
       });
 
-      log.info(`[EnvironmentalIntegration] Created ${adjustments.length} dynamic schedule adjustments for plant ${(plant as any).name}`);
+      log.info(`[EnvironmentalIntegration] Created ${adjustments.length} dynamic schedule adjustments for plant ${(plant as any).name || plant.id || 'Unknown'}`);
       return adjustments;
     } catch (error) {
       log.error(`[EnvironmentalIntegration] Error creating dynamic adjustments:`, error);

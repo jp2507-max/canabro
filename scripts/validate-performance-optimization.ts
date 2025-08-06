@@ -214,13 +214,13 @@ class PerformanceOptimizationValidator {
         result.errors.push(`✗ Dataset optimization failed: expected 500 items, got ${optimized.length}`);
       }
       
-      if (optimized[0].timestamp >= optimized[1].timestamp) {
+      if (optimized[0] && optimized[1] && optimized[0].timestamp >= optimized[1].timestamp) {
         result.details.push('✓ Dataset sorting works correctly');
       } else {
         result.errors.push('✗ Dataset sorting failed');
       }
       
-      if (optimized[0].size !== undefined) {
+      if (optimized[0] && 'size' in optimized[0]) {
         result.details.push('✓ Item size estimation works');
       } else {
         result.errors.push('✗ Item size estimation failed');

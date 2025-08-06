@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useEffect } from 'react';
-import type { FlashList, FlashListProps, ListRenderItemInfo } from '@shopify/flash-list';
+import type { FlashList, FlashListProps, FlashListRef, ListRenderItemInfo } from '@shopify/flash-list';
 import { useSharedValue, runOnJS } from 'react-native-reanimated';
 import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { log } from './logger';
@@ -70,7 +70,7 @@ export function useFlashListPerformance<T extends MessageListItem>(
   data: T[],
   config: FlashListPerformanceConfig
 ): {
-  flashListProps: Partial<FlashListProps<T>> & { ref: React.RefObject<FlashList<T>> };
+  flashListProps: Partial<FlashListProps<T>> & { ref: React.RefObject<FlashListRef<T> | null> };
   metrics: PerformanceMetrics;
   scrollToIndex: (index: number, animated?: boolean) => void;
   scrollToTop: (animated?: boolean) => void;
@@ -78,7 +78,7 @@ export function useFlashListPerformance<T extends MessageListItem>(
   clearCache: () => void;
   createRenderItem: (originalRenderItem: FlashListProps<T>['renderItem']) => (info: ListRenderItemInfo<T>) => React.ReactElement | null;
 } {
-  const flashListRef = useRef<FlashList<T>>(null);
+  const flashListRef = useRef<FlashListRef<T>>(null);
   const metricsRef = useRef<PerformanceMetrics>({
     totalItems: 0,
     renderedItems: 0,
@@ -336,7 +336,7 @@ export function useFlashListPerformance<T extends MessageListItem>(
     scrollToTop,
     scrollToBottom,
     clearCache,
-    createRenderItem
+    createRenderItem: createRenderItem as (originalRenderItem: FlashListProps<T>['renderItem']) => (info: ListRenderItemInfo<T>) => React.ReactElement | null
   };
 }
 

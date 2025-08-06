@@ -112,40 +112,46 @@ const MemberItem: React.FC<MemberItemProps> = ({
 
       {canManageMembers && member.userId !== currentUserId && (
         <ThemedView className="flex-row">
-          {member.role === 'member' && (
-            <Pressable
-              onPress={() => handleMemberAction('promote')}
-              className="p-2 mr-1"
-            >
-                <OptimizedIcon
-                  name="chevron-up"
-                  size={20}
-                  className="text-green-600 dark:text-green-400"
-                />
-            </Pressable>
-          )}
-          {member.role === 'moderator' && (
-            <Pressable
-              onPress={() => handleMemberAction('demote')}
-              className="p-2 mr-1"
-            >
-                <OptimizedIcon
-                  name="chevron-down"
-                  size={20}
-                  className="text-orange-600 dark:text-orange-400"
-                />
-            </Pressable>
-          )}
-          <Pressable
-            onPress={() => handleMemberAction('remove')}
-            className="p-2"
-          >
-            <OptimizedIcon
-              name="close-circle"
-              size={20}
-              className="text-red-600 dark:text-red-400"
-            />
-          </Pressable>
+{member.role === 'member' && (
+  <Pressable
+    onPress={() => handleMemberAction('promote')}
+    className="p-2 mr-1"
+    accessibilityRole="button"
+    accessibilityLabel="Promote member"
+  >
+      <OptimizedIcon
+        name="chevron-up"
+        size={20}
+        className="text-green-600 dark:text-green-400"
+      />
+  </Pressable>
+)}
+{member.role === 'moderator' && (
+  <Pressable
+    onPress={() => handleMemberAction('demote')}
+    className="p-2 mr-1"
+    accessibilityRole="button"
+    accessibilityLabel="Demote member"
+  >
+      <OptimizedIcon
+        name="chevron-down"
+        size={20}
+        className="text-orange-600 dark:text-orange-400"
+      />
+  </Pressable>
+)}
+<Pressable
+  onPress={() => handleMemberAction('remove')}
+  className="p-2"
+  accessibilityRole="button"
+  accessibilityLabel="Remove member"
+>
+  <OptimizedIcon
+    name="close-circle"
+    size={20}
+    className="text-red-600 dark:text-red-400"
+  />
+</Pressable>
         </ThemedView>
       )}
     </ThemedView>
@@ -368,7 +374,12 @@ export const GroupContent: React.FC<GroupContentProps> = ({
       <ThemedView className="bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
         {/* Navigation */}
         <ThemedView className="flex-row items-center px-4 pt-safe pb-2">
-          <Pressable onPress={onBack} className="mr-3 p-2">
+          <Pressable
+            onPress={onBack}
+            className="mr-3 p-2"
+            accessibilityLabel="Back"
+            accessibilityRole="button"
+          >
             <OptimizedIcon
               name="chevron-back"
               size={24}

@@ -506,7 +506,7 @@ export class HarvestDataIntegrator {
   private static findCommonValues(items: unknown[], path: string): string[] {
     const values = items.map(item => {
       const keys = path.split('.');
-      let value: any = item;
+      let value: unknown = item;
       for (const key of keys) {
         if (value === null || value === undefined || typeof value !== 'object') return null;
         value = (value as Record<string, unknown>)[key];
@@ -514,7 +514,7 @@ export class HarvestDataIntegrator {
       return value;
     }).filter(Boolean);
 
-    const counts = values.reduce((acc: Record<string, number>, val: any) => {
+    const counts = values.reduce((acc: Record<string, number>, val: unknown) => {
       const key = String(val);
       acc[key] = (acc[key] || 0) + 1;
       return acc;

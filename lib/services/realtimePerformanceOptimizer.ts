@@ -453,7 +453,7 @@ class RealtimePerformanceOptimizer {
       
       for (const message of batch) {
         try {
-          await this.batchMessage(channelName, message.payload, message.priority as unknown);
+          await this.batchMessage(channelName, message.payload, message.priority as 'low' | 'high' | 'normal' | 'urgent');
           await new Promise(resolve => setTimeout(resolve, 50)); // Small delay between messages
         } catch (error) {
           log.error(`[RealtimeOptimizer] Failed to process queued message:`, error);
@@ -732,8 +732,11 @@ class RealtimePerformanceOptimizer {
     const removeCount = this.connectionPool.size - this.MAX_POOL_SIZE + 1;
     
     for (let i = 0; i < removeCount && i < entries.length; i++) {
-      const [channelName] = entries[i];
-      await this.removeConnection(channelName);
+      const entry = entries[i];
+      if (entry) {
+        const [channelName] = entry;
+        await this.removeConnection(channelName);
+      }
     }
     
     log.info(`[RealtimeOptimizer] Pruned ${removeCount} connections from pool`);

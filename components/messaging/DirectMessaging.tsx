@@ -20,7 +20,7 @@ function useThrottledCallback<T extends (...args: any[]) => void>(callback: T, d
   const savedCallback = useRef(callback);
   savedCallback.current = callback;
 
-  // @ts-ignore
+  // @ts-ignore - Temporary ignore for complex callback typing during refactor
   return useCallback(((...args: any[]) => {
     const now = Date.now();
     if (now - lastCall.current > delay) {
