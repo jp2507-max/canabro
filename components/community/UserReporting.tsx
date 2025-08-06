@@ -12,6 +12,9 @@ import UserReportModal, { type UserReportData } from './UserReportModal';
 import UserReportReview from './UserReportReview';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable } from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { userReportingService } from '@/lib/services/user-reporting.service';
+import { useAuth } from '@/lib/contexts/AuthProvider';
 
 /**
  * TODO(cdp-usrpt-001): contentId and contentType are reserved for future use
@@ -34,8 +37,6 @@ interface UserReportingProps {
     showReviewInterface?: boolean;
 }
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { userReportingService } from '@/lib/services/user-reporting.service';
 
 export const UserReporting: React.FC<UserReportingProps> = ({
     // Reserved for future backend integration
@@ -47,6 +48,8 @@ export const UserReporting: React.FC<UserReportingProps> = ({
     showReviewInterface = false,
 }) => {
     const { t } = useTranslation('community');
+    const { user } = useAuth();
+    const moderatorId = user?.id; // prefer authenticated user id
     const [showReportModal, setShowReportModal] = useState(false);
 
     // Fetch reports for review interface
@@ -76,8 +79,10 @@ export const UserReporting: React.FC<UserReportingProps> = ({
 
     const moderateReportMutation = useMutation({
         mutationFn: async (params: { reportId: string; action: import('./UserReportReview').ReportAction; reason?: string }) => {
-            // In a real app we'd pass the current moderatorId; for now use a placeholder or env user id
-            const moderatorId = 'moderator-self'; // TODO: wire to auth user id with proper role
+            if (!moderatorId) {
+                // Guard: do not submit without a valid moderator id
+                throw new Error('Missing moderator ID. Please sign in as a moderator.');
+            }
             return userReportingService.moderateReport({
                 reportId: params.reportId,
                 action: params.action,
@@ -94,7 +99,10 @@ export const UserReporting: React.FC<UserReportingProps> = ({
 
     const moderateUserMutation = useMutation({
         mutationFn: async (params: { userId: string; action: import('./UserReportReview').UserAction; reason?: string }) => {
-            const moderatorId = 'moderator-self'; // TODO: wire to auth user id with proper role
+            if (!moderatorId) {
+                // Guard: do not submit without a valid moderator id
+                throw new Error('Missing moderator ID. Please sign in as a moderator.');
+            }
             return userReportingService.moderateUser({
                 userId: params.userId,
                 action: params.action,
@@ -111,30 +119,44 @@ export const UserReporting: React.FC<UserReportingProps> = ({
 
     const handleReportAction = useCallback(
         async (reportId: string, action: import('./UserReportReview').ReportAction, reason?: string) => {
-            const res = await moderateReportMutation.mutateAsync({ reportId, action, reason });
-            if (!res.success) {
-                Alert.alert('Action failed', res.error ?? 'Unable to perform report action.');
+            if (!moderatorId) {
+                Alert.alert('Missing moderator', 'You must be signed in to perform moderation actions.');
                 return;
             }
-            // Optional UX feedback
-            // Alert.alert('Success', 'Report updated.');
-            refetchReports();
+            try {
+                const res = await moderateReportMutation.mutateAsync({ reportId, action, reason });
+                if (!res.success) {
+                    Alert.alert('Action failed', res.error ?? 'Unable to perform report action.');
+                    return;
+                }
+                refetchReports();
+            } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : 'Unable to perform report action.';
+                Alert.alert('Action failed', message);
+            }
         },
-        [moderateReportMutation, refetchReports]
+        [moderatorId, moderateReportMutation, refetchReports]
     );
 
     const handleUserAction = useCallback(
         async (userId: string, action: import('./UserReportReview').UserAction, reason?: string) => {
-            const res = await moderateUserMutation.mutateAsync({ userId, action, reason });
-            if (!res.success) {
-                Alert.alert('Action failed', res.error ?? 'Unable to perform user action.');
+            if (!moderatorId) {
+                Alert.alert('Missing moderator', 'You must be signed in to perform moderation actions.');
                 return;
             }
-            // Optional UX feedback
-            // Alert.alert('Success', 'User moderation applied.');
-            refetchReports();
+            try {
+                const res = await moderateUserMutation.mutateAsync({ userId, action, reason });
+                if (!res.success) {
+                    Alert.alert('Action failed', res.error ?? 'Unable to perform user action.');
+                    return;
+                }
+                refetchReports();
+            } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : 'Unable to perform user action.';
+                Alert.alert('Action failed', message);
+            }
         },
-        [moderateUserMutation, refetchReports]
+        [moderatorId, moderateUserMutation, refetchReports]
     );
 
     const handleReportSubmitted = (reportData: UserReportData) => {
