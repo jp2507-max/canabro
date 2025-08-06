@@ -13,27 +13,35 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-// Throttle utility (simple, avoids extra deps)
-function useThrottledCallback<T extends (...args: any[]) => void>(callback: T, delay: number): T {
+/**
+ * Throttle utility (simple, avoids extra deps)
+ * Preserves the input callback's parameter and return types.
+ */
+function useThrottledCallback<TArgs extends unknown[]>(
+  callback: (...args: TArgs) => unknown,
+  delay: number
+): (...args: TArgs) => void {
   const lastCall = useRef(0);
-  const timeout = useRef<NodeJS.Timeout | null>(null);
+  const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedCallback = useRef(callback);
   savedCallback.current = callback;
 
-  // @ts-ignore - Temporary ignore for complex callback typing during refactor
-  return useCallback(((...args: any[]) => {
+  return useCallback((...args: TArgs) => {
     const now = Date.now();
+    const invoke = () => {
+      lastCall.current = Date.now();
+      // We intentionally ignore the return value since throttled functions are fire-and-forget.
+      void savedCallback.current(...args);
+    };
+
     if (now - lastCall.current > delay) {
-      lastCall.current = now;
-      savedCallback.current(...args);
+      invoke();
     } else {
       if (timeout.current) clearTimeout(timeout.current);
-      timeout.current = setTimeout(() => {
-        lastCall.current = Date.now();
-        savedCallback.current(...args);
-      }, delay - (now - lastCall.current));
+      const remaining = Math.max(0, delay - (now - lastCall.current));
+      timeout.current = setTimeout(invoke, remaining);
     }
-  }) as T, [delay]);
+  }, [delay]);
 }
 import { View, Pressable, Alert, Platform } from 'react-native';
 import Animated, {
@@ -69,6 +77,27 @@ import { realtimeService } from '@/lib/services/realtimeService';
 import { Message, MessageReaction } from '@/lib/models/Message';
 import useWatermelon from '@/lib/hooks/useWatermelon';
 import { Q } from '@nozbe/watermelondb';
+
+// Type for WatermelonDB message creation callback
+interface MessageCreateRecord {
+  id: string;
+  threadId: string;
+  senderId: string;
+  content: string;
+  messageType: string;
+  attachments?: unknown[];
+  replyTo?: string;
+  reactions?: unknown[];
+  isEdited: boolean;
+  deliveredAt?: Date;
+  readAt?: Date;
+  isDeleted?: boolean;
+  lastSyncedAt?: Date;
+  sentAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // TypeScript interface for a plain message record from Supabase
 export interface MessageRecord {
   id: string;
@@ -76,9 +105,9 @@ export interface MessageRecord {
   sender_id: string;
   content: string;
   message_type: string;
-  attachments?: any[];
+  attachments?: unknown[];
   reply_to?: string;
-  reactions?: any[];
+  reactions?: unknown[];
   is_edited: boolean;
   delivered_at?: string | null;
   read_at?: string | null;
@@ -90,23 +119,26 @@ export interface MessageRecord {
 }
 
 // Type guard for MessageRecord
-function isMessageRecord(obj: any): obj is MessageRecord {
-  return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.id === 'string' &&
-    typeof obj.thread_id === 'string' &&
-    typeof obj.sender_id === 'string' &&
-    typeof obj.content === 'string' &&
-    typeof obj.message_type === 'string' &&
-    typeof obj.sent_at === 'string' &&
-    typeof obj.created_at === 'string' &&
-    typeof obj.updated_at === 'string'
+function isMessageRecord(obj: unknown): obj is MessageRecord {
+  if (!obj || typeof obj !== 'object') return false;
+  
+  const record = obj as Record<string, unknown>;
+  return !!(
+    typeof record.id === 'string' &&
+    typeof record.thread_id === 'string' &&
+    typeof record.sender_id === 'string' &&
+    typeof record.content === 'string' &&
+    typeof record.message_type === 'string' &&
+    typeof record.sent_at === 'string' &&
+    typeof record.created_at === 'string' &&
+    typeof record.updated_at === 'string'
   );
 }
 import { ConversationThread } from '@/lib/models/ConversationThread';
 import { UserPresence } from '@/lib/models/UserPresence';
 import supabase from '@/lib/supabase';
+import { useQuery, QueryErrorResetBoundary } from '@tanstack/react-query';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Types
 export interface DirectMessagingProps {
@@ -330,7 +362,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           {message.replyTo && (
             <View className="mb-2 p-2 bg-black/10 dark:bg-white/10 rounded-lg">
               <ThemedText variant="caption" className="opacity-70">
-                Replying to message
+                {'Replying to message'}
               </ThemedText>
             </View>
           )}
@@ -521,7 +553,7 @@ const MessageInput: React.FC<MessageInputProps> = React.memo(({
         <View className="flex-row items-center justify-between px-4 py-2 bg-neutral-50 dark:bg-neutral-800">
           <View className="flex-1">
             <ThemedText variant="caption" className="text-primary-500 font-medium">
-              Replying to
+              {'Replying to'}
             </ThemedText>
             <ThemedText variant="caption" className="text-neutral-600 dark:text-neutral-400" numberOfLines={1}>
               {replyingTo.content}
@@ -592,7 +624,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
   // State management
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, _setIsLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [otherUserPresence, setOtherUserPresence] = useState<UserPresence | null>(null);
@@ -600,8 +632,10 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
   const [conversation, setConversation] = useState<ConversationThread | null>(null);
 
   // Refs
-  const flashListRef = useRef<any>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const flashListRef = useRef<{ scrollToEnd: (options?: { animated?: boolean }) => void } | null>(null);
+  // In React Native, setTimeout returns a number on web and a NodeJS.Timeout in native typings.
+  // We store as ReturnType<typeof setTimeout> for cross-platform correctness.
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
 
   // Safe area insets
@@ -612,80 +646,110 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
     };
   }, []);
 
-  // Load initial data
+  // Data fetching - TanStack Query v5
+  const {
+    data: conversationData,
+    isLoading: isConversationLoading,
+  } = useQuery({
+    queryKey: ['conversation_thread', conversationId],
+    enabled: !!conversationId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('conversation_threads')
+        .select('*')
+        .eq('id', conversationId)
+        .single();
+      if (error) throw error;
+      return data as ConversationThread;
+    },
+    staleTime: 60_000,
+  });
+
+  const {
+    data: messagesData,
+    isLoading: isMessagesLoading,
+  } = useQuery({
+    queryKey: ['messages', conversationId, { limit: 50 }],
+    enabled: !!conversationId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('thread_id', conversationId)
+        .order('sent_at', { ascending: true })
+        .limit(50);
+      if (error) throw error;
+      return (data || []).map((r: MessageRecord) => ({
+        id: r.id,
+        threadId: r.thread_id,
+        senderId: r.sender_id,
+        content: r.content,
+        messageType: r.message_type,
+        attachments: r.attachments ?? [],
+        replyTo: r.reply_to ?? undefined,
+        reactions: (r.reactions ?? []) as MessageReaction[],
+        isEdited: r.is_edited,
+        deliveredAt: r.delivered_at ? new Date(r.delivered_at) : undefined,
+        readAt: r.read_at ? new Date(r.read_at) : undefined,
+        isDeleted: r.is_deleted ?? false,
+        lastSyncedAt: r.last_synced_at ? new Date(r.last_synced_at) : undefined,
+        sentAt: r.sent_at ? new Date(r.sent_at) : undefined,
+        createdAt: new Date(r.created_at),
+        updatedAt: new Date(r.updated_at),
+      })) as Message[];
+    },
+    staleTime: 10_000,
+  });
+
+  const {
+    data: presenceData,
+    isLoading: isPresenceLoading,
+  } = useQuery({
+    queryKey: ['user_presence', otherUserId],
+    enabled: !!otherUserId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_presence')
+        .select('*')
+        .eq('user_id', otherUserId)
+        .single();
+      if (error) throw error;
+      return data as UserPresence;
+    },
+    staleTime: 15_000,
+  });
+
+  // Sync query results to local component state used elsewhere
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setIsLoading(true);
+    if (conversationData) setConversation(conversationData);
+  }, [conversationData]);
 
-        // Load conversation details
-        const { data: conversationData, error: conversationError } = await supabase
-          .from('conversation_threads')
-          .select('*')
-          .eq('id', conversationId)
-          .single();
+  useEffect(() => {
+    if (messagesData) setMessages(messagesData);
+  }, [messagesData]);
 
-        if (conversationError) {
-          throw conversationError;
-        }
-
-        setConversation(conversationData);
-
-        // Load messages
-        const { data: messagesData, error: messagesError } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('thread_id', conversationId)
-          .order('sent_at', { ascending: true })
-          .limit(50);
-
-        if (messagesError) {
-          throw messagesError;
-        }
-
-        if (isMountedRef.current) {
-          setMessages(messagesData || []);
-        }
-
-        // Load other user's presence
-        const { data: presenceData } = await supabase
-          .from('user_presence')
-          .select('*')
-          .eq('user_id', otherUserId)
-          .single();
-
-        if (presenceData && isMountedRef.current) {
-          setOtherUserPresence(presenceData);
-        }
-
-      } catch (error) {
-        log.error('[DirectMessaging] Error loading initial data:', error);
-        globalErrorHandler(error as Error);
-      } finally {
-        if (isMountedRef.current) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadInitialData();
-  }, [conversationId, otherUserId]);
+  useEffect(() => {
+    if (presenceData) setOtherUserPresence(presenceData);
+  }, [presenceData]);
 
   // Set up real-time subscriptions
   useEffect(() => {
-    let conversationChannel: any = null;
-    let presenceChannel: any = null;
+    // Hold direct subscription handles and fallback cleanup functions.
+    let conversationHandle: { unsubscribe?: () => void } | null = null;
+    let presenceHandle: { unsubscribe?: () => void } | null = null;
+    let conversationCleanup: (() => void) | null = null;
+    let presenceCleanup: (() => void) | null = null;
 
     const setupRealtimeSubscriptions = async () => {
       try {
         // Subscribe to conversation messages
-        conversationChannel = await realtimeService.subscribeToConversation(
+        const convoSubOrFn = await realtimeService.subscribeToConversation(
           conversationId,
           {
             onNewMessage: async (message) => {
@@ -694,7 +758,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
                 await database.write(async () => {
                   const existing = await database.get('messages').find(message.id).catch(() => null);
                   if (existing) {
-                    await existing.update((msg: any) => {
+                    await existing.update((msg: MessageCreateRecord) => {
                       Object.assign(msg, {
                         threadId: message.thread_id,
                         senderId: message.sender_id,
@@ -714,7 +778,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
                       });
                     });
                   } else {
-                    await database.get('messages').create((msg: any) => {
+                    await database.get('messages').create((msg: MessageCreateRecord) => {
                       msg.id = message.id;
                       msg.threadId = message.thread_id;
                       msg.senderId = message.sender_id;
@@ -767,7 +831,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
                 await database.write(async () => {
                   const existing = await database.get('messages').find(message.id).catch(() => null);
                   if (existing) {
-                    await existing.update((msg: any) => {
+                    await existing.update((msg: MessageCreateRecord) => {
                       Object.assign(msg, {
                         threadId: message.thread_id,
                         senderId: message.sender_id,
@@ -787,7 +851,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
                       });
                     });
                   } else {
-                    await database.get('messages').create((msg: any) => {
+                    await database.get('messages').create((msg: MessageCreateRecord) => {
                       msg.id = message.id;
                       msg.threadId = message.thread_id;
                       msg.senderId = message.sender_id;
@@ -820,7 +884,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
               }
             },
             onTyping: (payload) => {
-              const typingPayload = payload.payload as any;
+              const typingPayload = payload.payload as { userId?: string; isTyping?: boolean };
               if (typingPayload?.userId !== currentUserId && isMountedRef.current) {
                 setOtherUserTyping(true);
 
@@ -839,8 +903,22 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
           }
         );
 
+        // Normalize conversation cleanup, prefer direct handle.unsubscribe when available
+        if (typeof convoSubOrFn === 'function') {
+          conversationCleanup = convoSubOrFn as () => void;
+        } else {
+          conversationHandle = convoSubOrFn as { unsubscribe?: () => void };
+          conversationCleanup = () => {
+            try {
+              conversationHandle?.unsubscribe?.();
+            } catch {
+              // Ignore unsubscribe errors
+            }
+          };
+        }
+
         // Subscribe to other user's presence
-        presenceChannel = await realtimeService.subscribe(
+        const presenceSubOrFn = await realtimeService.subscribe(
           {
             channelName: `presence:${otherUserId}`,
             table: 'user_presence',
@@ -855,6 +933,20 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
           }
         );
 
+        // Normalize presence cleanup, prefer direct handle.unsubscribe when available
+        if (typeof presenceSubOrFn === 'function') {
+          presenceCleanup = presenceSubOrFn as () => void;
+        } else {
+          presenceHandle = presenceSubOrFn as { unsubscribe?: () => void };
+          presenceCleanup = () => {
+            try {
+              presenceHandle?.unsubscribe?.();
+            } catch {
+              // Ignore unsubscribe errors
+            }
+          };
+        }
+
         log.info('[DirectMessaging] Real-time subscriptions established');
 
       } catch (error) {
@@ -867,11 +959,24 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
 
     // Cleanup subscriptions
     return () => {
-      if (conversationChannel) {
-        realtimeService.unsubscribe(`conversation:${conversationId}`);
+      try {
+        // Prefer direct unsubscribe on handles if available
+        if (conversationHandle?.unsubscribe) {
+          conversationHandle.unsubscribe();
+        } else {
+          conversationCleanup?.();
+        }
+      } catch {
+        // Ignore cleanup errors
       }
-      if (presenceChannel) {
-        realtimeService.unsubscribe(`presence:${otherUserId}`);
+      try {
+        if (presenceHandle?.unsubscribe) {
+          presenceHandle.unsubscribe();
+        } else {
+          presenceCleanup?.();
+        }
+      } catch {
+        // Ignore cleanup errors
       }
     };
   }, [conversationId, currentUserId, otherUserId]);
@@ -885,23 +990,35 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
     setInputText('');
     setReplyingTo(null);
 
-    // Create optimistic message
-    const optimisticMessage = {
+    // Create optimistic message data
+    const optimisticMessageData = {
       id: `temp_${Date.now()}`,
-      thread_id: conversationId,
-      sender_id: currentUserId,
+      threadId: conversationId,
+      senderId: currentUserId,
       content: messageText,
-      message_type: 'text',
-      reply_to: replyingTo?.id,
-      is_edited: false,
-      sent_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      messageType: 'text',
+      attachments: [],
+      replyTo: replyingTo?.id,
+      reactions: [],
+      isEdited: false,
+      deliveredAt: undefined,
+      readAt: undefined,
+      isDeleted: false,
+      lastSyncedAt: undefined,
+      sentAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      // Mock the computed properties and methods for UI display
+      isTextMessage: true,
+      hasAttachments: false,
+      isReply: !!replyingTo?.id,
+      hasReactions: false,
+      reactionCount: 0,
     };
 
     try {
-      // Add optimistic message to UI
-      setMessages(prev => [...prev, optimisticMessage as any]);
+      // Add optimistic message to UI - we'll cast it for display purposes
+      setMessages(prev => [...prev, optimisticMessageData as unknown as Message]);
 
       // Scroll to bottom
       setTimeout(() => {
@@ -929,7 +1046,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
       // Replace optimistic message with real message
       if (isMountedRef.current) {
         setMessages(prev =>
-          prev.map(m => m.id === optimisticMessage.id ? newMessage : m)
+          prev.map(m => m.id === optimisticMessageData.id ? newMessage : m)
         );
       }
 
@@ -959,7 +1076,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
 
       // Remove optimistic message on error
       if (isMountedRef.current) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+        setMessages(prev => prev.filter(m => m.id !== optimisticMessageData.id));
       }
 
       // Show error feedback
@@ -989,8 +1106,8 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Set new timeout to stop typing indicator
-    typingTimeoutRef.current = setTimeout(() => {
+  // Set new timeout to stop typing indicator
+  typingTimeoutRef.current = setTimeout(() => {
       if (isMountedRef.current) {
         setIsTyping(false);
 
@@ -1113,7 +1230,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
   // Memoized message list
   const messageList = useMemo(() => messages, [messages]);
 
-  if (isLoading) {
+  if (isConversationLoading || isMessagesLoading || isPresenceLoading) {
     return (
       <ThemedView className={`flex-1 items-center justify-center ${className}`}>
         <ThemedText variant="default" className="text-neutral-500">
@@ -1146,12 +1263,12 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
               <ThemedText variant="heading" className="font-semibold">
                 {conversation?.name || 'Direct Message'}
               </ThemedText>
-              {otherUserPresence && (
-                <OnlineStatus
-                  isOnline={otherUserPresence.isOnline}
-                  lastSeen={otherUserPresence.lastSeen}
-                />
-              )}
+            {otherUserPresence && (
+              <OnlineStatus
+                isOnline={otherUserPresence.isOnline}
+                lastSeen={otherUserPresence.lastSeen ? new Date(String(otherUserPresence.lastSeen)) : undefined}
+              />
+            )}
             </View>
           </View>
         </View>
@@ -1203,4 +1320,16 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
   );
 };
 
-export default DirectMessaging;
+const WrappedDirectMessaging: React.FC<DirectMessagingProps> = (props) => {
+  return (
+    <QueryErrorResetBoundary>
+      {({ reset: _reset }) => (
+        <ErrorBoundary>
+          <DirectMessaging {...props} />
+        </ErrorBoundary>
+      )}
+    </QueryErrorResetBoundary>
+  );
+};
+
+export default WrappedDirectMessaging;

@@ -82,23 +82,22 @@ import { databaseOptimizer, executeOptimizedQuery } from '../lib/utils/database-
 import { performanceTester, DEFAULT_TEST_CONFIG, runPerformanceTests } from '../lib/utils/performance-testing';
 import { useRealtimeResourceCleanup } from '../lib/hooks/useRealtimeResourceCleanup';
 
-// Mock Supabase
-type SupabaseChannelMock = {
-  send: jest.MockedFunction<(...args: any[]) => Promise<{ status: 'ok' }>>;
-  subscribe: jest.MockedFunction<(...args: any[]) => void>;
-  unsubscribe: jest.MockedFunction<(...args: any[]) => Promise<void>>;
-  presenceState: jest.MockedFunction<() => Record<string, unknown>>;
-  track: jest.MockedFunction<(...args: any[]) => Promise<{ status: 'ok' }>>;
-  untrack: jest.MockedFunction<(...args: any[]) => Promise<{ status: 'ok' }>>;
+import type { RealtimeChannel } from '@supabase/supabase-js';
+
+// Define a minimal channel interface compatible with optimizeConnection usage
+type TestRealtimeChannel = Pick<RealtimeChannel, 'send' | 'subscribe' | 'unsubscribe'> & {
+  presenceState: () => Record<string, unknown>;
+  track: (...args: any[]) => Promise<{ status: 'ok' }>;
+  untrack: (...args: any[]) => Promise<{ status: 'ok' }>;
 };
 
-const mockSupabaseChannel: SupabaseChannelMock = {
-  send: jest.fn(async () => ({ status: 'ok' })),
-  subscribe: jest.fn(() => {}),
-  unsubscribe: jest.fn(async () => undefined),
+const mockSupabaseChannel: TestRealtimeChannel = {
+  send: (jest.fn(async () => ({ status: 'ok' as const })) as unknown) as TestRealtimeChannel['send'],
+  subscribe: (jest.fn(() => {}) as unknown) as TestRealtimeChannel['subscribe'],
+  unsubscribe: (jest.fn(async () => undefined) as unknown) as TestRealtimeChannel['unsubscribe'],
   presenceState: jest.fn(() => ({})),
-  track: jest.fn(async () => ({ status: 'ok' })),
-  untrack: jest.fn(async () => ({ status: 'ok' })),
+  track: jest.fn(async () => ({ status: 'ok' as const })),
+  untrack: jest.fn(async () => ({ status: 'ok' as const })),
 };
 
 type QueryResult<T = unknown> = { data: T[] | null; error: unknown | null };
@@ -140,7 +139,7 @@ describe('Realtime Performance Optimization (ACF-T08.1)', () => {
     it('should optimize connection with pooling', async () => {
       const channelName = 'test_channel';
       
-      await realtimePerformanceOptimizer.optimizeConnection(channelName, mockSupabaseChannel as unknown as any);
+      await realtimePerformanceOptimizer.optimizeConnection(channelName, mockSupabaseChannel as unknown as RealtimeChannel);
       
       const poolStatus = realtimePerformanceOptimizer.getConnectionPoolStatus();
       expect(poolStatus.totalConnections).toBe(1);
@@ -154,8 +153,8 @@ describe('Realtime Performance Optimization (ACF-T08.1)', () => {
       for (let i = 0; i < 55; i++) { // Exceed MAX_POOL_SIZE of 50
         const p = realtimePerformanceOptimizer.optimizeConnection(
           `channel_${i}`,
-          mockSupabaseChannel as unknown as any
-        ) as unknown as Promise<void>;
+          mockSupabaseChannel as unknown as RealtimeChannel
+        );
         promises.push(p);
       }
       await Promise.all(promises);
@@ -167,7 +166,7 @@ describe('Realtime Performance Optimization (ACF-T08.1)', () => {
     it('should track connection health', async () => {
       const channelName = 'health_test_channel';
       
-      await realtimePerformanceOptimizer.optimizeConnection(channelName, mockSupabaseChannel as unknown as any);
+      await realtimePerformanceOptimizer.optimizeConnection(channelName, mockSupabaseChannel as unknown as RealtimeChannel);
       
       // Simulate health check interval
       jest.advanceTimersByTime(30000);
@@ -609,7 +608,7 @@ describe('Realtime Performance Optimization (ACF-T08.1)', () => {
       const channelName = 'high_throughput_test';
       
       // Optimize connection
-      await realtimePerformanceOptimizer.optimizeConnection(channelName, mockSupabaseChannel as unknown as any);
+      await realtimePerformanceOptimizer.optimizeConnection(channelName, mockSupabaseChannel as unknown as RealtimeChannel);
       
       // Send many messages rapidly
 const messagePromises: Array<Promise<unknown>> = [];
@@ -637,18 +636,12 @@ const messagePromises: Array<Promise<unknown>> = [];
       const channelName = 'failure_test';
       
       // Mock connection failure
-      const failingChannel: SupabaseChannelMock = {
+      const failingChannel: TestRealtimeChannel = {
         ...mockSupabaseChannel,
-        // Provide a precisely typed mock to avoid 'never' inference in strict TS
-        send: jest.fn(async () => { throw new Error('Connection failed'); }) as SupabaseChannelMock['send'],
-        subscribe: mockSupabaseChannel.subscribe,
-        unsubscribe: mockSupabaseChannel.unsubscribe,
-        presenceState: mockSupabaseChannel.presenceState,
-        track: mockSupabaseChannel.track,
-        untrack: mockSupabaseChannel.untrack,
+        send: jest.fn(async () => { throw new Error('Connection failed'); }) as unknown as TestRealtimeChannel['send'],
       };
       
-      await realtimePerformanceOptimizer.optimizeConnection(channelName, failingChannel as unknown as any);
+      await realtimePerformanceOptimizer.optimizeConnection(channelName, failingChannel as unknown as RealtimeChannel);
       
       // Try to send message
       await expect(

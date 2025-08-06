@@ -646,7 +646,7 @@ export class OfflineMessagingSyncManager {
           });
         } catch (error) {
           // Record doesn't exist, create new one
-          await collection.create((record: unknown) => {
+          await collection.create((record: any) => {
             record.id = message.id;
             record.conversationId = message.conversationId;
             record.content = message.content;

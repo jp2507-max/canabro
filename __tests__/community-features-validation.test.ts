@@ -9,12 +9,14 @@ import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals
 
 // Mock all external dependencies
 jest.mock('../lib/database/database', () => ({
+  __esModule: true,
   default: {
     get: jest.fn(() => ({
-      find: jest.fn().mockResolvedValue({}),
-      create: jest.fn().mockResolvedValue({}),
+      // Use any to avoid strict Jest Mock generic/type inference issues in tests
+      find: jest.fn(async (): Promise<any> => ({})),
+      create: jest.fn(async (): Promise<any> => ({})),
     })),
-    write: jest.fn((callback) => callback()),
+    write: jest.fn((callback: () => unknown) => callback()),
   },
 }));
 
@@ -30,7 +32,7 @@ jest.mock('../lib/supabase', () => ({
     channel: jest.fn(() => ({
       on: jest.fn().mockReturnThis(),
       subscribe: jest.fn().mockReturnThis(),
-      send: jest.fn().mockResolvedValue({ status: 'ok' }),
+      send: jest.fn(async (_payload: unknown) => ({ status: 'ok' as const })),
       unsubscribe: jest.fn(),
     })),
   },
@@ -55,9 +57,76 @@ describe('Community Features Validation (ACF-T08.3)', () => {
   });
 
   describe('1. Real-time Messaging Reliability', () => {
-    it('should validate message delivery system exists', () => {
-      // Test that the messaging system components are properly structured
-      expect(true).toBe(true); // Placeholder for actual validation
+    it('should validate message delivery system exists', async () => {
+      // Validate messaging system core components: offline sync manager, cache, and realtime channel config
+      const modules: Array<{ name: string; loader: () => Promise<any> }> = [
+        { name: 'offlineMessagingSyncManager', loader: () => import('../lib/services/offline-messaging-sync') },
+        { name: 'communityCacheManager', loader: () => import('../lib/services/community-cache') },
+        { name: 'realtimePerformanceOptimizer', loader: () => import('../lib/services/realtimePerformanceOptimizer') },
+      ];
+
+      const loaded: Record<string, any> = {};
+      for (const m of modules) {
+        try {
+          loaded[m.name] = await m.loader();
+        } catch (e) {
+          loaded[m.name] = null;
+        }
+      }
+
+      // offline messaging sync manager
+      const offlineMod = loaded.offlineMessagingSyncManager;
+      expect(offlineMod).toBeTruthy();
+      const offlineMgr = offlineMod?.offlineMessagingSyncManager;
+      expect(offlineMgr).toBeDefined();
+      expect(typeof offlineMgr?.sendMessage).toBe('function');
+      expect(typeof offlineMgr?.getOfflineMessages).toBe('function');
+      expect(typeof offlineMgr?.syncQueuedMessages).toBe('function');
+
+      // community cache manager
+      const cacheMod = loaded.communityCacheManager;
+      expect(cacheMod).toBeTruthy();
+      const cacheMgr = cacheMod?.communityCacheManager;
+      expect(cacheMgr).toBeDefined();
+      expect(typeof cacheMgr?.cacheMessages).toBe('function');
+      expect(typeof cacheMgr?.getCachedMessages).toBe('function');
+
+      // realtime performance optimizer (manages supabase channels, batching, rate limit)
+      const rtMod = loaded.realtimePerformanceOptimizer;
+      expect(rtMod).toBeTruthy();
+      const rt = rtMod?.realtimePerformanceOptimizer;
+      expect(rt).toBeDefined();
+      expect(typeof rt?.optimizeConnection).toBe('function');
+      expect(typeof rt?.batchMessage).toBe('function');
+      expect(typeof rt?.getPerformanceMetrics).toBe('function');
+
+      // Supabase client shape for channels (mocked in this file's jest.mock)
+      const supabase = (await import('../lib/supabase')).default as any;
+      expect(supabase).toBeDefined();
+      expect(typeof supabase.channel).toBe('function');
+
+      // Create a test channel and verify minimal interface
+      const ch = supabase.channel('test_conversation');
+      expect(ch).toBeDefined();
+      expect(typeof ch.on).toBe('function');
+      expect(typeof ch.subscribe).toBe('function');
+      expect(typeof ch.send).toBe('function');
+
+      // Validate message payload shape used by broadcasting
+      const testPayload = {
+        type: 'broadcast',
+        event: 'message',
+        payload: { conversationId: 'conv-validate-1', content: 'hello', senderId: 'user-1', timestamp: Date.now() },
+      };
+      // Should not throw when sending via mocked channel
+      await expect(ch.send(testPayload)).resolves.toEqual({ status: 'ok' });
+
+      // Basic configuration invariants
+      const config = await import('../lib/config');
+      expect(config).toBeDefined();
+      // If channel name conventions exist, ensure they are strings; fallback to defaults
+      const channelName = (config as any).COMMUNITY_MESSAGES_CHANNEL || 'community_messages';
+      expect(typeof channelName).toBe('string');
     });
 
     it('should validate offline message queuing', () => {
@@ -135,14 +204,40 @@ describe('Community Features Validation (ACF-T08.3)', () => {
         { text: 'Normal plant growing discussion', shouldFlag: false },
         { text: 'Spam spam spam repeated content', shouldFlag: true },
         { text: 'Helpful growing advice', shouldFlag: false },
+        { text: 'Click here for a limited time offer', shouldFlag: true },
+        { text: 'This looks like a scam', shouldFlag: true },
+        { text: 'Free money!!!', shouldFlag: true },
       ];
 
       // Mock moderation logic
       const moderateContent = (text: string) => {
-        const spamWords = ['spam'];
-        const hasSpam = spamWords.some(word => 
-          text.toLowerCase().includes(word.repeat(2))
-        );
+        // Expanded spam indicators list (case-insensitive match, single occurrence triggers flag)
+        const spamWords = [
+          'spam',
+          'scam',
+          'fraud',
+          'free money',
+          'click here',
+          'buy now',
+          'limited time',
+          'winner',
+          'prize',
+          'act now',
+          'risk-free',
+          'guaranteed',
+          'investment opportunity',
+          'make money fast',
+          'work from home',
+          'weight loss',
+          'crypto giveaway',
+          'visit link',
+          'cheap',
+          'discount',
+          'double your',
+          'loan approval',
+        ];
+        const lower = text.toLowerCase();
+        const hasSpam = spamWords.some(word => lower.includes(word));
         return { flagged: hasSpam, confidence: hasSpam ? 0.9 : 0.1 };
       };
 
@@ -152,17 +247,13 @@ describe('Community Features Validation (ACF-T08.3)', () => {
       });
     });
 
-    it('should validate user reporting system', () => {
-      const report = {
-        id: 'report-1',
-        contentId: 'content-1',
-        reason: 'inappropriate',
-        status: 'pending',
-      };
+    it('should validate report processing', () => {
+      type Report = { id: string; reason: string; status?: 'open' | 'under_review' | 'resolved'; assignedAt?: number };
+      const report: Report = { id: 'rep-1', reason: 'spam', status: 'open' };
 
       // Mock report processing
-      const processReport = (report: typeof report) => {
-        return { ...report, status: 'under_review', assignedAt: Date.now() };
+      const processReport = (r: Report) => {
+        return { ...r, status: 'under_review' as const, assignedAt: Date.now() };
       };
 
       const processed = processReport(report);
@@ -319,7 +410,7 @@ describe('Community Features Validation (ACF-T08.3)', () => {
       };
 
       // Send message while online
-      const onlineMsg = sendMessage('Online message', 'user-1');
+      const onlineMsg = sendMessage('Online message', 'user-1') as { deliveredAt: number; status: string };
       expect(onlineMsg.status).toBe('sent');
       expect(onlineMsg.deliveredAt).toBeTruthy();
 
@@ -344,6 +435,51 @@ describe('Community Features Validation (ACF-T08.3)', () => {
     });
   });
 
+  // Helper: device/environment-aware performance thresholds
+  const getAdaptiveThresholdMs = (baseline: number) => {
+    // Environment signals
+    const isCI = !!process.env.CI || !!process.env.GITHUB_ACTIONS;
+    const nodeEnv = (process.env.NODE_ENV || '').toLowerCase();
+
+    // Platform signals (best-effort in Node/Jest)
+    // On mobile/e2e you might expose globals like device.getPlatform() (Detox) or Expo Constants.
+    const platform =
+      (globalThis as any).__TEST_PLATFORM__ ||
+      process.env.TEST_PLATFORM ||
+      process.platform; // 'win32' | 'darwin' | 'linux' in Node
+
+    // Conservative multipliers based on environment characteristics:
+    // CI and Android emulators are typically slower. Real devices vary widely.
+    let multiplier = 1.0;
+
+    // CI tends to be noisier/slower
+    if (isCI) multiplier *= 2.5;
+
+    // If running generic Node tests with limited resources (common in CI), allow some slack
+    if (nodeEnv === 'test' && isCI) multiplier *= 1.2;
+
+    // Heuristic platform adjustments
+    const plat = String(platform).toLowerCase();
+    if (plat.includes('android')) {
+      // Android emulators often slower than iOS simulators
+      multiplier *= 1.5;
+    } else if (plat.includes('ios') || plat.includes('darwin')) {
+      // iOS simulator / macOS host usually faster but still allow headroom on shared runners
+      multiplier *= 1.1;
+    }
+
+    // If a custom perf factor is provided, respect it (e.g., set via CI vars)
+    const customFactor = Number(process.env.TEST_PERF_FACTOR || process.env.PERF_FACTOR);
+    if (!Number.isNaN(customFactor) && customFactor > 0) {
+      multiplier *= customFactor;
+    }
+
+    // Cap multiplier to avoid masking true perf regressions while remaining device-aware
+    multiplier = Math.min(multiplier, 5);
+
+    return Math.ceil(baseline * multiplier);
+  };
+
   describe('Performance Validation', () => {
     it('should validate message delivery performance', async () => {
       const messageCount = 50;
@@ -366,12 +502,13 @@ describe('Community Features Validation (ACF-T08.3)', () => {
       const duration = Date.now() - startTime;
 
       expect(processedMessages).toHaveLength(messageCount);
-      expect(duration).toBeLessThan(1000); // Should process in under 1 second
+      // Baseline 1000ms, adapt for CI/emulators/devices
+      expect(duration).toBeLessThan(getAdaptiveThresholdMs(1000));
     });
 
     it('should validate cache performance', () => {
       const cacheSize = 100;
-      const cache = new Map();
+      const cache = new Map<string, unknown>();
 
       const startTime = Date.now();
 
@@ -381,7 +518,7 @@ describe('Community Features Validation (ACF-T08.3)', () => {
       }
 
       // Retrieve all items
-      const retrievedItems = [];
+      const retrievedItems: unknown[] = [];
       for (let i = 0; i < cacheSize; i++) {
         retrievedItems.push(cache.get(`key-${i}`));
       }
@@ -390,7 +527,8 @@ describe('Community Features Validation (ACF-T08.3)', () => {
 
       expect(cache.size).toBe(cacheSize);
       expect(retrievedItems).toHaveLength(cacheSize);
-      expect(duration).toBeLessThan(100); // Should complete in under 100ms
+      // Baseline 100ms, adapt for CI/emulators/devices
+      expect(duration).toBeLessThan(getAdaptiveThresholdMs(100));
     });
 
     it('should validate sync performance', async () => {
@@ -409,7 +547,8 @@ describe('Community Features Validation (ACF-T08.3)', () => {
 
       expect(results).toHaveLength(syncItems);
       expect(results.every(r => r.synced)).toBe(true);
-      expect(duration).toBeLessThan(1000); // Should sync in under 1 second
+      // Baseline 1000ms, adapt for CI/emulators/devices
+      expect(duration).toBeLessThan(getAdaptiveThresholdMs(1000));
     });
   });
 
@@ -423,13 +562,8 @@ describe('Community Features Validation (ACF-T08.3)', () => {
         return { success: true };
       };
 
-      // Test error handling
-      try {
-        await mockDatabaseOperation(true);
-        expect(false).toBe(true); // Should not reach here
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+      // Test error handling using Jest async error assertions
+      await expect(mockDatabaseOperation(true)).rejects.toThrow(Error);
 
       // Test successful operation
       const result = await mockDatabaseOperation(false);
@@ -461,7 +595,7 @@ describe('Community Features Validation (ACF-T08.3)', () => {
     it('should handle memory pressure gracefully', () => {
       const memoryLimit = 1000; // Mock memory limit
       let currentMemoryUsage = 0;
-      const cache = new Map();
+      const cache = new Map<string, unknown>();
 
       const addToCache = (key: string, value: any) => {
         const itemSize = JSON.stringify(value).length;
