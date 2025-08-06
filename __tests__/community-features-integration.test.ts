@@ -173,7 +173,7 @@ describe('Community Features Integration Tests (ACF-T08.3)', () => {
                 };
 
                 // Verify message is cached
-                const cachedMessages = await (communityCacheManager.getCachedMessages(conversationId) as unknown as Promise<any[]>);
+                const cachedMessages = await communityCacheManager.getCachedMessages(conversationId);
                 expect(cachedMessages.some(msg => msg.id === messageId)).toBe(true);
             });
 
@@ -344,14 +344,15 @@ describe('Community Features Integration Tests (ACF-T08.3)', () => {
                     type: 'text',
                 };
 
+                // Use static import types to ensure type-safety on MessageCompressor usage
                 const { MessageCompressor } = await import('../lib/services/community-cache');
                 const compressed = MessageCompressor.compressMessage(largeMessage);
 
                 expect(compressed.compressed).toBe(true);
                 expect(compressed.content.length).toBeLessThan(largeMessage.content.length);
 
-                // Verify decompression works
-                const decompressed = MessageCompressor.decompressMessage(compressed as any);
+                // Verify decompression works with proper types
+                const decompressed = MessageCompressor.decompressMessage(compressed);
                 expect(decompressed.content).toBe(largeMessage.content);
             });
 
@@ -371,7 +372,7 @@ describe('Community Features Integration Tests (ACF-T08.3)', () => {
                 }));
 
                 const { MessageCompressor } = await import('../lib/services/community-cache');
-                const batch = MessageCompressor.createMessageBatch(messages as any, 'conv-batch-1');
+                const batch = MessageCompressor.createMessageBatch(messages, 'conv-batch-1');
 
                 expect(batch.messages).toHaveLength(50); // MAX_BATCH_SIZE
                 expect(batch.conversationId).toBe('conv-batch-1');
@@ -961,7 +962,7 @@ describe('Community Features Integration Tests (ACF-T08.3)', () => {
                 await communityCacheManager.cacheMessages('memory-test-conv', largeDataSet);
 
                 // Perform cleanup under memory pressure
-                await communityCacheManager.performIntelligentCleanup() as unknown as void;
+                await communityCacheManager.performIntelligentCleanup();
 
                 // System should remain stable
                 const stats = communityCacheManager.getCacheStats();

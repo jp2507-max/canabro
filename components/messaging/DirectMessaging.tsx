@@ -709,6 +709,70 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
     if (presenceData) setOtherUserPresence(presenceData);
   }, [presenceData]);
 
+  // Reusable upsert for WatermelonDB messages (DRY)
+  const upsertWatermelonMessage = useCallback(
+    async (message: unknown) => {
+      if (!isMessageRecord(message)) return;
+
+      await database.write(async () => {
+        const existing = await database.get('messages').find(message.id).catch(() => null);
+        if (existing) {
+          await existing.update((msg: MessageCreateRecord) => {
+            Object.assign(msg, {
+              threadId: message.thread_id,
+              senderId: message.sender_id,
+              content: message.content,
+              messageType: message.message_type,
+              attachments: message.attachments,
+              replyTo: message.reply_to,
+              reactions: message.reactions,
+              isEdited: message.is_edited,
+              deliveredAt: message.delivered_at ? new Date(message.delivered_at) : undefined,
+              readAt: message.read_at ? new Date(message.read_at) : undefined,
+              isDeleted: message.is_deleted,
+              lastSyncedAt: message.last_synced_at ? new Date(message.last_synced_at) : undefined,
+              sentAt: new Date(message.sent_at),
+              createdAt: new Date(message.created_at),
+              updatedAt: new Date(message.updated_at),
+            });
+          });
+        } else {
+          await database.get('messages').create((msg: MessageCreateRecord) => {
+            msg.id = message.id;
+            msg.threadId = message.thread_id;
+            msg.senderId = message.sender_id;
+            msg.content = message.content;
+            msg.messageType = message.message_type;
+            msg.attachments = message.attachments;
+            msg.replyTo = message.reply_to;
+            msg.reactions = message.reactions;
+            msg.isEdited = message.is_edited;
+            msg.deliveredAt = message.delivered_at ? new Date(message.delivered_at) : undefined;
+            msg.readAt = message.read_at ? new Date(message.read_at) : undefined;
+            msg.isDeleted = message.is_deleted;
+            msg.lastSyncedAt = message.last_synced_at ? new Date(message.last_synced_at) : undefined;
+            msg.sentAt = new Date(message.sent_at);
+            msg.createdAt = new Date(message.created_at);
+            msg.updatedAt = new Date(message.updated_at);
+          });
+        }
+      });
+
+      // Reload last 50 messages for this thread to sync UI
+      const updatedMessages = await database
+        .get('messages')
+        .query(
+          Q.where('thread_id', message.thread_id),
+          Q.sortBy('sent_at', Q.asc),
+          Q.take(50)
+        )
+        .fetch();
+
+      setMessages(updatedMessages);
+    },
+    [database]
+  );
+
   // Set up real-time subscriptions
   useEffect(() => {
     // Hold direct subscription handles and fallback cleanup functions.
@@ -725,60 +789,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
           {
             onNewMessage: async (message) => {
               if (isMountedRef.current && isMessageRecord(message)) {
-                // Upsert message into WatermelonDB
-                await database.write(async () => {
-                  const existing = await database.get('messages').find(message.id).catch(() => null);
-                  if (existing) {
-                    await existing.update((msg: MessageCreateRecord) => {
-                      Object.assign(msg, {
-                        threadId: message.thread_id,
-                        senderId: message.sender_id,
-                        content: message.content,
-                        messageType: message.message_type,
-                        attachments: message.attachments,
-                        replyTo: message.reply_to,
-                        reactions: message.reactions,
-                        isEdited: message.is_edited,
-                        deliveredAt: message.delivered_at ? new Date(message.delivered_at) : undefined,
-                        readAt: message.read_at ? new Date(message.read_at) : undefined,
-                        isDeleted: message.is_deleted,
-                        lastSyncedAt: message.last_synced_at ? new Date(message.last_synced_at) : undefined,
-                        sentAt: new Date(message.sent_at),
-                        createdAt: new Date(message.created_at),
-                        updatedAt: new Date(message.updated_at),
-                      });
-                    });
-                  } else {
-                    await database.get('messages').create((msg: MessageCreateRecord) => {
-                      msg.id = message.id;
-                      msg.threadId = message.thread_id;
-                      msg.senderId = message.sender_id;
-                      msg.content = message.content;
-                      msg.messageType = message.message_type;
-                      msg.attachments = message.attachments;
-                      msg.replyTo = message.reply_to;
-                      msg.reactions = message.reactions;
-                      msg.isEdited = message.is_edited;
-                      msg.deliveredAt = message.delivered_at ? new Date(message.delivered_at) : undefined;
-                      msg.readAt = message.read_at ? new Date(message.read_at) : undefined;
-                      msg.isDeleted = message.is_deleted;
-                      msg.lastSyncedAt = message.last_synced_at ? new Date(message.last_synced_at) : undefined;
-                      msg.sentAt = new Date(message.sent_at);
-                      msg.createdAt = new Date(message.created_at);
-                      msg.updatedAt = new Date(message.updated_at);
-                    });
-                  }
-                });
-
-                // Reload messages from DB
-                const updatedMessages = await database.get('messages')
-                  .query(
-                    Q.where('thread_id', message.thread_id),
-                    Q.sortBy('sent_at', Q.asc),
-                    Q.take(50)
-                  )
-                  .fetch();
-                setMessages(updatedMessages);
+                await upsertWatermelonMessage(message);
 
                 // Mark as read if not own message
                 if (message.sender_id !== currentUserId) {
@@ -798,60 +809,7 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
             },
             onMessageUpdate: async (message) => {
               if (isMountedRef.current && isMessageRecord(message)) {
-                // Upsert message into WatermelonDB
-                await database.write(async () => {
-                  const existing = await database.get('messages').find(message.id).catch(() => null);
-                  if (existing) {
-                    await existing.update((msg: MessageCreateRecord) => {
-                      Object.assign(msg, {
-                        threadId: message.thread_id,
-                        senderId: message.sender_id,
-                        content: message.content,
-                        messageType: message.message_type,
-                        attachments: message.attachments,
-                        replyTo: message.reply_to,
-                        reactions: message.reactions,
-                        isEdited: message.is_edited,
-                        deliveredAt: message.delivered_at ? new Date(message.delivered_at) : undefined,
-                        readAt: message.read_at ? new Date(message.read_at) : undefined,
-                        isDeleted: message.is_deleted,
-                        lastSyncedAt: message.last_synced_at ? new Date(message.last_synced_at) : undefined,
-                        sentAt: new Date(message.sent_at),
-                        createdAt: new Date(message.created_at),
-                        updatedAt: new Date(message.updated_at),
-                      });
-                    });
-                  } else {
-                    await database.get('messages').create((msg: MessageCreateRecord) => {
-                      msg.id = message.id;
-                      msg.threadId = message.thread_id;
-                      msg.senderId = message.sender_id;
-                      msg.content = message.content;
-                      msg.messageType = message.message_type;
-                      msg.attachments = message.attachments;
-                      msg.replyTo = message.reply_to;
-                      msg.reactions = message.reactions;
-                      msg.isEdited = message.is_edited;
-                      msg.deliveredAt = message.delivered_at ? new Date(message.delivered_at) : undefined;
-                      msg.readAt = message.read_at ? new Date(message.read_at) : undefined;
-                      msg.isDeleted = message.is_deleted;
-                      msg.lastSyncedAt = message.last_synced_at ? new Date(message.last_synced_at) : undefined;
-                      msg.sentAt = new Date(message.sent_at);
-                      msg.createdAt = new Date(message.created_at);
-                      msg.updatedAt = new Date(message.updated_at);
-                    });
-                  }
-                });
-
-                // Reload messages from DB
-                const updatedMessages = await database.get('messages')
-                  .query(
-                    Q.where('thread_id', message.thread_id),
-                    Q.sortBy('sent_at', Q.asc),
-                    Q.take(50)
-                  )
-                  .fetch();
-                setMessages(updatedMessages);
+                await upsertWatermelonMessage(message);
               }
             },
             onTyping: (payload) => {

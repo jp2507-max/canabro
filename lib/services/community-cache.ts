@@ -34,6 +34,16 @@ interface CompressedMessage {
   compressed: boolean;
 }
 
+export interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  conversationId?: string;
+  timestamp: number;
+  type: 'text' | 'image' | 'file';
+  status?: 'pending' | 'sent' | 'delivered' | 'read';
+}
+
 interface CacheableMessage {
   id: string;
   content: string;
@@ -220,7 +230,7 @@ export class CommunityCacheManager {
   /**
    * Retrieve cached messages with decompression
    */
-  async getCachedMessages(conversationId: string): Promise<CacheableMessage[]> {
+  async getCachedMessages(conversationId: string): Promise<Message[]> {
     try {
       const cacheKey = `messages_${conversationId}`;
 
@@ -249,7 +259,7 @@ export class CommunityCacheManager {
       // Decompress messages
       const decompressedMessages = batch.messages.map(msg => 
         MessageCompressor.decompressMessage(msg)
-      );
+      ) as Message[];
 
       log.debug('Messages retrieved from cache', {
         conversationId,
