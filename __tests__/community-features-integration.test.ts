@@ -843,7 +843,7 @@ describe('Community Features Integration Tests (ACF-T08.3)', () => {
                 await communitySyncIntegrationManager.handleNetworkChange(true, 'wifi');
 
                 // 7. Force sync
-                await (communitySyncIntegrationManager.forceSyncAll() as unknown as Promise<void>);
+                await communitySyncIntegrationManager.forceSyncAll();
 
                 // 8. Verify offline message is synced
                 const remainingOfflineMessages = await offlineMessagingSyncManager.getOfflineMessages(conversationId);
@@ -1058,7 +1058,7 @@ describe('Community Features Integration Tests (ACF-T08.3)', () => {
 
             // Force sync performance
             const forceSyncStartTime = Date.now();
-                await communitySyncIntegrationManager.forceSyncAll() as unknown as void;
+                await communitySyncIntegrationManager.forceSyncAll();
             const forceSyncDuration = Date.now() - forceSyncStartTime;
 
             // Force sync should complete under threshold (default 5000ms, configurable)

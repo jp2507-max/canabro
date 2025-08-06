@@ -13,36 +13,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-/**
- * Throttle utility (simple, avoids extra deps)
- * Preserves the input callback's parameter and return types.
- */
-function useThrottledCallback<TArgs extends unknown[]>(
-  callback: (...args: TArgs) => unknown,
-  delay: number
-): (...args: TArgs) => void {
-  const lastCall = useRef(0);
-  const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const savedCallback = useRef(callback);
-  savedCallback.current = callback;
-
-  return useCallback((...args: TArgs) => {
-    const now = Date.now();
-    const invoke = () => {
-      lastCall.current = Date.now();
-      // We intentionally ignore the return value since throttled functions are fire-and-forget.
-      void savedCallback.current(...args);
-    };
-
-    if (now - lastCall.current > delay) {
-      invoke();
-    } else {
-      if (timeout.current) clearTimeout(timeout.current);
-      const remaining = Math.max(0, delay - (now - lastCall.current));
-      timeout.current = setTimeout(invoke, remaining);
-    }
-  }, [delay]);
-}
+import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { View, Pressable, Alert, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -1124,8 +1095,8 @@ export const DirectMessaging: React.FC<DirectMessagingProps> = ({
     }, 2000);
   }, [isTyping, conversationId, currentUserId]);
 
-  // Throttle handleTyping to avoid excessive broadcasts
-  const throttledHandleTyping = useThrottledCallback(handleTyping, 1500);
+  // Debounce handleTyping to avoid excessive broadcasts (replaces custom throttle)
+  const throttledHandleTyping = useDebouncedCallback(handleTyping, 1500);
 
   // Handle message reactions
   const handleReaction = useCallback(async (messageId: string, emoji: string) => {
