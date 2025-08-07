@@ -24,6 +24,7 @@ A comprehensive reference of all custom utilities, hooks, and components in the 
 - **`performance-profiler.ts`** - Performance monitoring and profiling tools. Use for performance analysis.
 - **`perfLogger.ts`** - Performance logging utilities. Use for tracking performance metrics.
 - **`flashlist-performance.ts`** - Enhanced FlashList performance utilities for large datasets (10k+ items) with memory management, virtualization, and intelligent caching. Use for optimizing large message histories and feeds.
+- **`flashlist-v2-hooks.ts`** - FlashList v2 hook wrappers for state management in recycled components. Includes `useFlashListV2State`, `useFlashListLayout`, `useFlashListCombinedState`, and `useFlashListItemState` with enhanced TypeScript support and debugging capabilities. Use for managing component state in FlashList v2 items.
 - **`database-optimization.ts`** - Database optimization utilities with query performance analysis, index suggestions, and connection pooling. Use for database performance monitoring and optimization.
 - **`performance-testing.ts`** - Comprehensive performance testing suite for realtime features, FlashList performance, WebSocket connections, and memory usage. Use for performance validation and testing.
 
