@@ -12,6 +12,7 @@ import * as React from 'react';
 import { useCallback, useMemo, useRef, useEffect } from 'react';
 import type { FlashListProps, FlashListRef, ListRenderItemInfo } from '@shopify/flash-list';
 import { useSharedValue, runOnJS } from 'react-native-reanimated';
+import type { SharedValue } from 'react-native-reanimated';
 import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { log } from './logger';
 import { useAnimationCleanup } from '../animations/useAnimationCleanup';
@@ -394,6 +395,426 @@ export interface PerformanceMetrics extends V2PerformanceMetrics {
 }
 
 /**
+ * Modular hooks to split responsibilities of useFlashListV2Performance
+ *
+ * These smaller hooks allow consumers to import just the parts they need
+ * (memory management, performance monitoring, caching, scroll handlers)
+ * without pulling in the entire monolithic hook. The main hook below now
+ * composes these focused hooks.
+ */
+
+export type MemoryManagerAPI = {
+  memoryManagerRef: React.MutableRefObject<{
+    totalAllocated: number;
+    cacheAllocated: number;
+    pressureLevel: number;
+    lastPressureCheck: number;
+    cleanupHistory: { timestamp: number; freedMemory: number; reason: string }[];
+    cacheHitStats: { hits: number; misses: number; totalRequests: number; hitRate: number };
+    memoryPressureCallbacks: (() => void)[];
+  }>;
+  estimateMemoryUsage: () => number;
+  detectMemoryPressure: () => {
+    pressureLevel: number;
+    shouldCleanup: boolean;
+    cleanupReason: string;
+    currentMemory: number;
+    maxMemory: number;
+  };
+  performIntelligentCleanup: (reason: string, aggressiveness?: 'gentle' | 'moderate' | 'aggressive') => {
+    freedMemory: number;
+    cleanupTime: number;
+  };
+  updateCacheHitRate: (isHit: boolean) => number;
+};
+
+/**
+ * useFlashListMemoryManager
+ * - Encapsulates memory usage estimation, pressure detection, cleanup and cache hit stats
+ */
+export function useFlashListMemoryManager<T extends MessageListItem>(
+  data: T[],
+  config: FlashListV2PerformanceConfig,
+  refs: {
+    itemCacheRef?: React.MutableRefObject<Map<string, { item: T; renderedAt: number }>>;
+    prefetchCacheRef?: React.MutableRefObject<Set<string>>;
+  } = {}
+): MemoryManagerAPI {
+  const itemCache = refs.itemCacheRef ?? useRef<Map<string, { item: T; renderedAt: number }>>(new Map());
+  const prefetchCache = refs.prefetchCacheRef ?? useRef<Set<string>>(new Set());
+
+  const memoryManager = useRef({
+    totalAllocated: 0,
+    cacheAllocated: 0,
+    pressureLevel: 0,
+    lastPressureCheck: Date.now(),
+    cleanupHistory: [] as { timestamp: number; freedMemory: number; reason: string }[],
+    cacheHitStats: {
+      hits: 0,
+      misses: 0,
+      totalRequests: 0,
+      hitRate: 0,
+    },
+    memoryPressureCallbacks: [] as (() => void)[],
+  });
+
+  const updateCacheHitRate = useCallback((isHit: boolean) => {
+    const stats = memoryManager.current.cacheHitStats;
+    stats.totalRequests++;
+    if (isHit) {
+      stats.hits++;
+    } else {
+      stats.misses++;
+    }
+    const recentWeight = 0.1;
+    const currentHitRate = stats.hits / Math.max(stats.totalRequests, 1);
+    stats.hitRate = stats.hitRate * (1 - recentWeight) + currentHitRate * recentWeight;
+
+    if (stats.totalRequests > 100 && stats.totalRequests % 50 === 0) {
+      if (stats.hitRate < 0.3 && config.cacheStrategy === 'memory') {
+        log.warn('[FlashListV2Performance] Low cache hit rate detected. Consider switching to hybrid cache strategy.');
+      } else if (stats.hitRate > 0.8 && config.cacheStrategy === 'minimal') {
+        log.info('[FlashListV2Performance] High cache hit rate detected. Consider switching to memory cache strategy for better performance.');
+      }
+    }
+
+    return stats.hitRate;
+  }, [config.cacheStrategy]);
+
+  const estimateMemoryUsage = useCallback(() => {
+    let totalMemory = 0;
+    let cacheMemory = 0;
+
+    const renderedItems = Math.min(
+      data.length,
+      (config.windowSize || 10) * (config.maxToRenderPerBatch || 10)
+    );
+
+    const baseItemMemory = 0.08; // 80KB per item (base estimate)
+
+    let complexityMultiplier = 1.0;
+    if (data.length > 0) {
+      const sampleSize = Math.min(10, data.length);
+      let totalComplexity = 0;
+      for (let i = 0; i < sampleSize; i++) {
+        const item = data[i];
+        if (!item) continue;
+        let itemComplexity = 1.0;
+        if (typeof item.content === 'string' && item.content.length > 500) {
+          itemComplexity += 0.3;
+        }
+        if (Array.isArray(item.attachments) && item.attachments.length > 0) {
+          itemComplexity += item.attachments.length * 0.5;
+        }
+        if (Array.isArray(item.reactions) && item.reactions.length > 5) {
+          itemComplexity += 0.2;
+        }
+        totalComplexity += itemComplexity;
+      }
+      complexityMultiplier = totalComplexity / sampleSize;
+    }
+
+    const adjustedItemMemory = baseItemMemory * complexityMultiplier;
+    totalMemory += renderedItems * adjustedItemMemory;
+
+    if (config.enableIntelligentCaching) {
+      const cacheMemoryMultiplier = config.cacheStrategy === 'memory' ? 1.4 :
+        config.cacheStrategy === 'hybrid' ? 0.9 : 0.5;
+
+      let cacheItemMemory = 0;
+      itemCache.current.forEach(() => {
+        let itemMemory = adjustedItemMemory;
+        itemMemory += 0.01; // overhead per cached item
+        cacheItemMemory += itemMemory;
+      });
+
+      cacheMemory = cacheItemMemory * cacheMemoryMultiplier;
+      totalMemory += cacheMemory;
+    }
+
+    memoryManager.current.totalAllocated = totalMemory;
+    memoryManager.current.cacheAllocated = cacheMemory;
+
+    return totalMemory;
+  }, [data, config, itemCache]);
+
+  const detectMemoryPressure = useCallback(() => {
+    const currentMemory = memoryManager.current.totalAllocated;
+    const maxMemory = config.maxMemoryUsage || 50; // MB
+    const pressureThreshold = maxMemory * 0.8;
+    const criticalThreshold = maxMemory * 0.95;
+
+    let pressureLevel = 0;
+    let shouldCleanup = false;
+    let cleanupReason = '';
+
+    if (currentMemory > criticalThreshold) {
+      pressureLevel = 100;
+      shouldCleanup = true;
+      cleanupReason = 'Critical memory pressure detected';
+    } else if (currentMemory > pressureThreshold) {
+      pressureLevel = Math.min(((currentMemory - pressureThreshold) / (maxMemory - pressureThreshold)) * 100, 99);
+      shouldCleanup = pressureLevel > 70;
+      cleanupReason = 'High memory pressure detected';
+    } else {
+      pressureLevel = Math.max((currentMemory / pressureThreshold) * 50, 0);
+    }
+
+    memoryManager.current.pressureLevel = pressureLevel;
+    memoryManager.current.lastPressureCheck = Date.now();
+
+    return { pressureLevel, shouldCleanup, cleanupReason, currentMemory, maxMemory };
+  }, [config.maxMemoryUsage]);
+
+  const performIntelligentCleanup = useCallback((reason: string, aggressiveness: 'gentle' | 'moderate' | 'aggressive' = 'moderate') => {
+    const startTime = Date.now();
+    let freedMemory = 0;
+    if (!config.enableIntelligentCaching) {
+      return { freedMemory, cleanupTime: 0 };
+    }
+
+    const cacheEntries = Array.from(itemCache.current.entries());
+    const currentTime = Date.now();
+    // Ensure sortedEntries contains only valid [key, item] tuples
+    const sortedEntries = cacheEntries
+      .sort(([, a], [, b]) => (currentTime - a.renderedAt) - (currentTime - b.renderedAt))
+      .reverse()
+      .filter((entry): entry is [string, { item: T; renderedAt: number }] => {
+        return (
+          Array.isArray(entry) &&
+          typeof entry[0] === 'string' &&
+          entry[1] && typeof entry[1] === 'object' && typeof entry[1].renderedAt === 'number' && 'item' in entry[1]
+        );
+      });
+    if (sortedEntries.length !== cacheEntries.length) {
+      if (typeof console !== 'undefined') {
+        console.warn('[FlashListV2Performance] Invalid cache entry detected and filtered during cleanup.');
+      }
+    }
+
+    let entriesToRemove = 0;
+    switch (aggressiveness) {
+      case 'gentle': entriesToRemove = Math.floor(sortedEntries.length * 0.1); break;
+      case 'moderate': entriesToRemove = Math.floor(sortedEntries.length * 0.3); break;
+      case 'aggressive': entriesToRemove = Math.floor(sortedEntries.length * 0.6); break;
+    }
+
+    if (config.cacheStrategy === 'memory') {
+      const maxAge = aggressiveness === 'gentle' ? 120000 : aggressiveness === 'moderate' ? 60000 : 30000;
+      const expiredEntries = sortedEntries.filter(([, item]) => (currentTime - item.renderedAt) > maxAge);
+      entriesToRemove = Math.max(entriesToRemove, expiredEntries.length);
+    } else if (config.cacheStrategy === 'hybrid') {
+      entriesToRemove = Math.min(entriesToRemove, Math.floor(sortedEntries.length * 0.4));
+    } else if (config.cacheStrategy === 'minimal') {
+      entriesToRemove = Math.max(entriesToRemove, Math.floor(sortedEntries.length * 0.7));
+    }
+
+    for (let i = 0; i < Math.min(entriesToRemove, sortedEntries.length); i++) {
+      const entry = sortedEntries[i];
+      if (!entry) continue;
+      const [key] = entry;
+      if (key) {
+        freedMemory += 0.08;
+        itemCache.current.delete(key);
+      }
+    }
+
+    if (aggressiveness === 'aggressive') {
+      const prefetchSize = prefetchCache.current.size;
+      prefetchCache.current.clear();
+      freedMemory += prefetchSize * 0.01;
+    }
+
+    const cleanupTime = Date.now() - startTime;
+    memoryManager.current.cleanupHistory.push({ timestamp: currentTime, freedMemory, reason: `${reason} (${aggressiveness})` });
+    if (memoryManager.current.cleanupHistory.length > 10) {
+      memoryManager.current.cleanupHistory = memoryManager.current.cleanupHistory.slice(-10);
+    }
+
+    if (config.logMemoryUsage) {
+      log.info(`[FlashListV2Performance] Memory cleanup completed`, {
+        reason,
+        aggressiveness,
+        freedMemory: `${freedMemory.toFixed(2)}MB`,
+        cleanupTime: `${cleanupTime}ms`,
+        remainingCacheSize: itemCache.current.size,
+      });
+    }
+
+    return { freedMemory, cleanupTime };
+  }, [config, itemCache, prefetchCache]);
+
+  return {
+    memoryManagerRef: memoryManager,
+    estimateMemoryUsage,
+    detectMemoryPressure,
+    performIntelligentCleanup,
+    updateCacheHitRate,
+  };
+}
+
+export type CacheAPI<T extends MessageListItem> = {
+  createRenderItem: (originalRenderItem: FlashListProps<T>['renderItem']) => (info: ListRenderItemInfo<T>) => React.ReactElement | null;
+  clearCache: () => void;
+  itemCacheRef: React.MutableRefObject<Map<string, { item: T; renderedAt: number }>>;
+  prefetchCacheRef: React.MutableRefObject<Set<string>>;
+};
+
+/**
+ * useFlashListCache
+ * - Encapsulates caching logic and provides a renderItem wrapper and clearCache
+ */
+export function useFlashListCache<T extends MessageListItem>(
+  config: FlashListV2PerformanceConfig,
+  keyExtractor: (item: T, index: number) => string,
+  memory: MemoryManagerAPI,
+  refs: {
+    itemCacheRef?: React.MutableRefObject<Map<string, { item: T; renderedAt: number }>>;
+    prefetchCacheRef?: React.MutableRefObject<Set<string>>;
+  } = {}
+): CacheAPI<T> {
+  const itemCache = refs.itemCacheRef ?? useRef<Map<string, { item: T; renderedAt: number }>>(new Map());
+  const prefetchCache = refs.prefetchCacheRef ?? useRef<Set<string>>(new Set());
+
+  const createRenderItem = useCallback((originalRenderItem: FlashListProps<T>['renderItem']) => {
+    return (info: ListRenderItemInfo<T>) => {
+      if (!originalRenderItem) return null;
+      const { item, index } = info;
+      if (config.enableIntelligentCaching) {
+        const cacheKey = keyExtractor(item, index);
+        const cached = itemCache.current.get(cacheKey);
+        let cacheTimeout = config.cacheStrategy === 'memory' ? 90000 : config.cacheStrategy === 'hybrid' ? 45000 : 15000;
+        const pressureInfo = memory.detectMemoryPressure();
+        if (pressureInfo.pressureLevel > 70) {
+          cacheTimeout *= 0.5;
+        } else if (pressureInfo.pressureLevel < 30) {
+          cacheTimeout *= 1.5;
+        }
+        if (cached && Date.now() - cached.renderedAt < cacheTimeout) {
+          memory.updateCacheHitRate(true);
+          return originalRenderItem({ ...info, item: cached.item });
+        }
+        memory.updateCacheHitRate(false);
+        itemCache.current.set(cacheKey, { item, renderedAt: Date.now() });
+
+        const baseCacheSize = config.cacheStrategy === 'memory' ? (config.cacheSize || 200) : config.cacheStrategy === 'hybrid' ? (config.cacheSize || 100) : 50;
+        let dynamicCacheSize = baseCacheSize;
+        if (pressureInfo.pressureLevel > 80) dynamicCacheSize = Math.floor(baseCacheSize * 0.5);
+        else if (pressureInfo.pressureLevel > 50) dynamicCacheSize = Math.floor(baseCacheSize * 0.75);
+
+        if (itemCache.current.size > dynamicCacheSize) {
+          const cleanupAggressiveness = pressureInfo.pressureLevel > 80 ? 'aggressive' : pressureInfo.pressureLevel > 50 ? 'moderate' : 'gentle';
+          memory.performIntelligentCleanup('Cache size exceeded', cleanupAggressiveness);
+        }
+
+        if (pressureInfo.shouldCleanup) {
+          const cleanupAggressiveness = pressureInfo.pressureLevel > 90 ? 'aggressive' : 'moderate';
+          memory.performIntelligentCleanup(pressureInfo.cleanupReason, cleanupAggressiveness);
+        }
+      }
+      return originalRenderItem(info);
+    };
+  }, [config.enableIntelligentCaching, config.cacheStrategy, config.cacheSize, keyExtractor, memory]);
+
+  const clearCache = useCallback(() => {
+    itemCache.current.clear();
+    prefetchCache.current.clear();
+    log.info('[FlashListPerformance] Cache cleared');
+  }, []);
+
+  return { createRenderItem, clearCache, itemCacheRef: itemCache, prefetchCacheRef: prefetchCache };
+}
+
+export type ScrollHandlersAPI = {
+  onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  onScrollEnd: () => void;
+  scrollY: SharedValue<number>;
+  isScrolling: SharedValue<boolean>;
+};
+
+/**
+ * useFlashListScrollHandlers
+ * - Encapsulates scroll and scroll-end handlers with reanimated shared values
+ */
+export function useFlashListScrollHandlers<T extends MessageListItem>(
+  config: FlashListV2PerformanceConfig,
+  data: T[],
+  metricsRef: React.MutableRefObject<V2PerformanceMetrics>,
+  performanceMonitorRef: React.MutableRefObject<V2PerformanceMonitor>
+): ScrollHandlersAPI {
+  const scrollY = useSharedValue(0);
+  const isScrolling = useSharedValue(false);
+  const previousScrollPosition = useRef(0);
+  const previousScrollTime = useRef(Date.now());
+
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset } = event.nativeEvent;
+    const currentTime = Date.now();
+    const deltaY = contentOffset.y - previousScrollPosition.current;
+    const deltaTime = currentTime - previousScrollTime.current;
+    const scrollVelocity = deltaTime > 0 ? Math.abs(deltaY / deltaTime) * 1000 : 0;
+
+    scrollY.value = contentOffset.y;
+    isScrolling.value = true;
+
+    runOnJS(() => {
+      metricsRef.current.scrollPosition = contentOffset.y;
+      metricsRef.current.lastUpdate = currentTime;
+      if (config.trackRenderingPerformance) {
+        const scrollMetrics = performanceMonitorRef.current.recordScrollEvent(scrollVelocity);
+        const currentSmoothMetrics = metricsRef.current.renderingPerformance.smoothScrollMetrics;
+        metricsRef.current.renderingPerformance.smoothScrollMetrics = {
+          totalScrollEvents: currentSmoothMetrics.totalScrollEvents + 1,
+          smoothScrollEvents: scrollMetrics.isSmooth ? currentSmoothMetrics.smoothScrollEvents + 1 : currentSmoothMetrics.smoothScrollEvents,
+          smoothScrollPercentage: scrollMetrics.smoothScrollPercentage,
+          averageScrollVelocity: scrollMetrics.averageVelocity,
+          maxScrollVelocity: scrollMetrics.maxVelocity,
+        };
+      }
+    })();
+
+    previousScrollPosition.current = contentOffset.y;
+    previousScrollTime.current = currentTime;
+
+    if (config.enablePrefetching) {
+      const { layoutMeasurement } = event.nativeEvent;
+      const viewportHeight = layoutMeasurement.height;
+      const estimatedItemsInView = Math.ceil(viewportHeight / 80);
+      const currentIndex = Math.floor(contentOffset.y / 80);
+      const prefetchStart = Math.max(0, currentIndex - (config.prefetchDistance || 10));
+      const prefetchEnd = Math.min(data.length - 1, currentIndex + estimatedItemsInView + (config.prefetchDistance || 10));
+      runOnJS(() => {
+        for (let i = prefetchStart; i <= prefetchEnd; i++) {
+          const item = data[i];
+          if (item) {
+            // no-op placeholder for real prefetcher
+          }
+        }
+      })();
+    }
+  }, [config.enablePrefetching, config.prefetchDistance, config.trackRenderingPerformance, data, isScrolling, metricsRef, performanceMonitorRef, scrollY]);
+
+  const onScrollEnd = useCallback(() => {
+    isScrolling.value = false;
+  }, [isScrolling]);
+
+  return { onScroll, onScrollEnd, scrollY, isScrolling };
+}
+
+export type PerformanceMonitorAPI = {
+  performanceMonitorRef: React.MutableRefObject<V2PerformanceMonitor>;
+};
+
+/**
+ * useFlashListPerformanceMonitor
+ * - Provides a shared V2PerformanceMonitor instance as a ref
+ */
+export function useFlashListPerformanceMonitor(): PerformanceMonitorAPI {
+  const performanceMonitorRef = useRef<V2PerformanceMonitor>(new V2PerformanceMonitor());
+  return { performanceMonitorRef };
+}
+
+/**
  * V2-specific utility functions for automatic sizing optimization
  */
 
@@ -509,6 +930,45 @@ class V2PerformanceMonitor {
   private totalScrollEvents = 0;
   private smoothScrollEvents = 0;
   private maxHistorySize = 100;
+  private targetFrameRate = 60; // frames per second
+  private frameDropThresholdMultiplier = 1.5; // multiplier applied to target frame time
+  private smoothVelocityThreshold = 1000; // pixels per second
+
+  constructor(options?: {
+    targetFrameRate?: number;
+    maxHistorySize?: number;
+    smoothVelocityThreshold?: number;
+    frameDropThresholdMultiplier?: number;
+  }) {
+    if (options?.targetFrameRate && options.targetFrameRate > 0) {
+      this.targetFrameRate = options.targetFrameRate;
+    }
+    if (options?.maxHistorySize && options.maxHistorySize > 0) {
+      this.maxHistorySize = options.maxHistorySize;
+    }
+    if (options?.smoothVelocityThreshold && options.smoothVelocityThreshold > 0) {
+      this.smoothVelocityThreshold = options.smoothVelocityThreshold;
+    }
+    if (options?.frameDropThresholdMultiplier && options.frameDropThresholdMultiplier > 0) {
+      this.frameDropThresholdMultiplier = options.frameDropThresholdMultiplier;
+    }
+  }
+
+  setTargetFrameRate(rate: number): void {
+    if (rate > 0) {
+      this.targetFrameRate = rate;
+    }
+  }
+
+  setMaxHistorySize(size: number): void {
+    if (size > 0) {
+      this.maxHistorySize = size;
+      // Trim histories to fit new size
+      this.frameHistory = this.frameHistory.slice(-this.maxHistorySize);
+      this.scrollHistory = this.scrollHistory.slice(-this.maxHistorySize);
+      this.autoSizingHistory = this.autoSizingHistory.slice(-this.maxHistorySize);
+    }
+  }
 
   /**
    * Records a frame and detects if it was dropped
@@ -519,8 +979,8 @@ class V2PerformanceMonitor {
     frameDropRate: number;
   } {
     const currentTime = performance.now();
-    const targetFrameTime = 16.67; // 60fps target
-    const frameDropThreshold = targetFrameTime * 1.5; // 25ms threshold
+    const targetFrameTime = 1000 / this.targetFrameRate; // ms per frame at target rate
+    const frameDropThreshold = targetFrameTime * this.frameDropThresholdMultiplier; // configurable threshold
     
     const wasDropped = frameTime > frameDropThreshold;
     
@@ -564,7 +1024,7 @@ class V2PerformanceMonitor {
     maxVelocity: number;
   } {
     const currentTime = performance.now();
-    const smoothVelocityThreshold = 1000; // pixels per second
+    const smoothVelocityThreshold = this.smoothVelocityThreshold;
     const isSmooth = Math.abs(velocity) < smoothVelocityThreshold;
     
     this.totalScrollEvents++;
@@ -854,7 +1314,7 @@ export function useFlashListV2Performance<T extends MessageListItem>(
     viewportOptimizationScore: 0,
     dynamicSizingAccuracy: 95,
     renderingPerformance: {
-      averageFrameTime: 16.67, // 60fps baseline
+      averageFrameTime: 16.67,
       droppedFrames: 0,
       smoothScrollPercentage: 100,
       autoSizingLatency: 0,
@@ -885,27 +1345,8 @@ export function useFlashListV2Performance<T extends MessageListItem>(
     framePerformanceHistory: [],
   });
   
-  // Shared values for scroll tracking
-  const scrollY = useSharedValue(0);
-  const isScrolling = useSharedValue(false);
-  
-  // Cache for rendered items
-  const itemCache = useRef<Map<string, { item: T; renderedAt: number }>>(new Map());
-  const prefetchCache = useRef<Set<string>>(new Set());
-  
-  // Performance monitoring
   const performanceInterval = useRef<NodeJS.Timeout | null>(null);
-  const performanceMonitor = useRef<V2PerformanceMonitor>(new V2PerformanceMonitor());
-  
-  // Setup animation cleanup
-  useAnimationCleanup({
-    sharedValues: [scrollY, isScrolling],
-    onCleanup: () => {
-      if (performanceInterval.current) {
-        clearInterval(performanceInterval.current);
-      }
-    }
-  });
+  const { performanceMonitorRef } = useFlashListPerformanceMonitor();
   
   /**
    * Optimized getItemType for better virtualization (v2 compatible)
@@ -933,420 +1374,82 @@ export function useFlashListV2Performance<T extends MessageListItem>(
   /**
    * Enhanced V2 intelligent caching renderItem wrapper with memory management
    */
-  const createRenderItem = useCallback((originalRenderItem: FlashListProps<T>['renderItem']) => {
-    return (info: ListRenderItemInfo<T>) => {
-      const { item, index } = info;
-      
-      // V2 intelligent caching with enhanced memory management
-      if (config.enableIntelligentCaching) {
-        const cacheKey = keyExtractor(item, index);
-        const cached = itemCache.current.get(cacheKey);
-        
-        // Cache strategy based on config with dynamic timeout adjustment
-        let cacheTimeout = config.cacheStrategy === 'memory' ? 90000 : // 1.5 minutes
-                          config.cacheStrategy === 'hybrid' ? 45000 : // 45 seconds
-                          15000; // 15 seconds
-        
-        // Adjust timeout based on memory pressure
-        const pressureInfo = detectMemoryPressure();
-        if (pressureInfo.pressureLevel > 70) {
-          cacheTimeout *= 0.5; // Reduce timeout under pressure
-        } else if (pressureInfo.pressureLevel < 30) {
-          cacheTimeout *= 1.5; // Increase timeout when memory is available
-        }
-        
-        if (cached && (Date.now() - cached.renderedAt) < cacheTimeout) {
-          // Update cache hit rate with enhanced tracking
-          updateCacheHitRate(true);
-          metricsRef.current.cacheHitRate = memoryManager.current.cacheHitStats.hitRate;
-          
-          return originalRenderItem?.({ ...info, item: cached.item });
-        }
-        
-        // Cache miss - update hit rate
-        updateCacheHitRate(false);
-        metricsRef.current.cacheHitRate = memoryManager.current.cacheHitStats.hitRate;
-        
-        // Add to cache with v2 optimizations and memory awareness
-        itemCache.current.set(cacheKey, { item, renderedAt: Date.now() });
-        
-        // Enhanced cache size management with memory pressure awareness
-        const baseCacheSize = config.cacheStrategy === 'memory' ? (config.cacheSize || 200) :
-                             config.cacheStrategy === 'hybrid' ? (config.cacheSize || 100) : 50;
-        
-        // Adjust cache size based on memory pressure
-        let dynamicCacheSize = baseCacheSize;
-        if (pressureInfo.pressureLevel > 80) {
-          dynamicCacheSize = Math.floor(baseCacheSize * 0.5); // Reduce cache size under high pressure
-        } else if (pressureInfo.pressureLevel > 50) {
-          dynamicCacheSize = Math.floor(baseCacheSize * 0.75); // Moderate reduction
-        }
-        
-        if (itemCache.current.size > dynamicCacheSize) {
-          // Trigger intelligent cleanup instead of simple pruning
-          const cleanupAggressiveness = pressureInfo.pressureLevel > 80 ? 'aggressive' :
-                                       pressureInfo.pressureLevel > 50 ? 'moderate' : 'gentle';
-          
-          performIntelligentCleanup('Cache size exceeded', cleanupAggressiveness);
-        }
-        
-        // Proactive memory pressure cleanup
-        if (pressureInfo.shouldCleanup) {
-          const cleanupAggressiveness = pressureInfo.pressureLevel > 90 ? 'aggressive' : 'moderate';
-          performIntelligentCleanup(pressureInfo.cleanupReason, cleanupAggressiveness);
-        }
-      }
-      
-      return originalRenderItem?.(info);
-    };
-  }, [config.enableIntelligentCaching, config.cacheStrategy, config.cacheSize, keyExtractor]);
+  // Cache + Memory hooks will be wired below after memory manager is created
   
-  // Track previous scroll position for velocity calculation
-  const previousScrollPosition = useRef(0);
-  const previousScrollTime = useRef(Date.now());
-
-  /**
-   * Scroll event handler with performance optimization and monitoring
-   */
-  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset } = event.nativeEvent;
-    const currentTime = Date.now();
-    
-    // Calculate scroll velocity for performance monitoring
-    const deltaY = contentOffset.y - previousScrollPosition.current;
-    const deltaTime = currentTime - previousScrollTime.current;
-    const scrollVelocity = deltaTime > 0 ? Math.abs(deltaY / deltaTime) * 1000 : 0; // pixels per second
-    
-    // Update shared values for animations
-    scrollY.value = contentOffset.y;
-    isScrolling.value = true;
-    
-    // Update metrics and record scroll performance
-    runOnJS(() => {
-      metricsRef.current.scrollPosition = contentOffset.y;
-      metricsRef.current.lastUpdate = currentTime;
-      
-      // Record scroll performance if monitoring is enabled
-      if (config.trackRenderingPerformance) {
-        const scrollMetrics = performanceMonitor.current.recordScrollEvent(scrollVelocity);
-        
-        // Update metrics with scroll performance data
-        const currentSmoothMetrics = metricsRef.current.renderingPerformance.smoothScrollMetrics;
-        metricsRef.current.renderingPerformance.smoothScrollMetrics = {
-          totalScrollEvents: currentSmoothMetrics.totalScrollEvents + 1,
-          smoothScrollEvents: scrollMetrics.isSmooth ? currentSmoothMetrics.smoothScrollEvents + 1 : currentSmoothMetrics.smoothScrollEvents,
-          smoothScrollPercentage: scrollMetrics.smoothScrollPercentage,
-          averageScrollVelocity: scrollMetrics.averageVelocity,
-          maxScrollVelocity: scrollMetrics.maxVelocity,
-        };
-      }
-    })();
-    
-    // Update previous values for next calculation
-    previousScrollPosition.current = contentOffset.y;
-    previousScrollTime.current = currentTime;
-    
-    // V2 intelligent prefetching (no size estimates needed)
-    if (config.enablePrefetching) {
-      // V2: Use viewport-based prefetching instead of size estimates
-      const { layoutMeasurement } = event.nativeEvent;
-      const viewportHeight = layoutMeasurement.height;
-      const estimatedItemsInView = Math.ceil(viewportHeight / 80); // Conservative estimate
-      const currentIndex = Math.floor(contentOffset.y / 80);
-      
-      const prefetchStart = Math.max(0, currentIndex - (config.prefetchDistance || 10));
-      const prefetchEnd = Math.min(data.length - 1, currentIndex + estimatedItemsInView + (config.prefetchDistance || 10));
-      
-      runOnJS(() => {
-        for (let i = prefetchStart; i <= prefetchEnd; i++) {
-          const item = data[i];
-          if (item && !prefetchCache.current.has(item.id)) {
-            prefetchCache.current.add(item.id);
-            // V2: Trigger intelligent prefetch logic here if needed
-          }
-        }
-      })();
-    }
-  }, [config.enablePrefetching, config.prefetchDistance, config.trackRenderingPerformance, data, scrollY, isScrolling]);
-  
-  /**
-   * Scroll end handler
-   */
-  const onScrollEnd = useCallback(() => {
-    isScrolling.value = false;
-  }, [isScrolling]);
-  
-  /**
-   * Enhanced V2 memory management system with intelligent caching
-   */
-  const memoryManager = useRef({
-    totalAllocated: 0,
-    cacheAllocated: 0,
-    pressureLevel: 0, // 0-100 scale
-    lastPressureCheck: Date.now(),
-    cleanupHistory: [] as { timestamp: number; freedMemory: number; reason: string }[],
-    cacheHitStats: {
-      hits: 0,
-      misses: 0,
-      totalRequests: 0,
-      hitRate: 0,
-    },
-    memoryPressureCallbacks: [] as (() => void)[],
+  // Wire memory + cache properly
+  // Initialize cache first to get refs, then create memory manager with those refs
+  const tempCache = useRef<ReturnType<typeof useFlashListCache<T>> | null>(null);
+  if (tempCache.current === null) {
+    // bootstrap with internal refs, will be replaced after memory manager init
+    type BootstrapMemoryRef = React.MutableRefObject<{
+      totalAllocated: number;
+      cacheAllocated: number;
+      pressureLevel: number;
+      lastPressureCheck: number;
+      cleanupHistory: { timestamp: number; freedMemory: number; reason: string }[];
+      cacheHitStats: { hits: number; misses: number; totalRequests: number; hitRate: number };
+      memoryPressureCallbacks: (() => void)[];
+    }>;
+    const bootstrapRef: BootstrapMemoryRef = { current: {
+      totalAllocated: 0,
+      cacheAllocated: 0,
+      pressureLevel: 0,
+      lastPressureCheck: Date.now(),
+      cleanupHistory: [],
+      cacheHitStats: { hits: 0, misses: 0, totalRequests: 0, hitRate: 0 },
+      memoryPressureCallbacks: []
+    } };
+    tempCache.current = useFlashListCache<T>(config, keyExtractor, {
+      memoryManagerRef: bootstrapRef,
+      estimateMemoryUsage: () => 0,
+      detectMemoryPressure: () => ({ pressureLevel: 0, shouldCleanup: false, cleanupReason: '', currentMemory: 0, maxMemory: config.maxMemoryUsage || 50 }),
+      performIntelligentCleanup: () => ({ freedMemory: 0, cleanupTime: 0 }),
+      updateCacheHitRate: () => 0,
+    } as unknown as MemoryManagerAPI);
+  }
+  const bootstrapCache = tempCache.current;
+  const memory = useFlashListMemoryManager<T>(data, config, {
+    itemCacheRef: bootstrapCache.itemCacheRef,
+    prefetchCacheRef: bootstrapCache.prefetchCacheRef,
+  });
+  const cache = useFlashListCache<T>(config, keyExtractor, memory, {
+    itemCacheRef: bootstrapCache.itemCacheRef,
+    prefetchCacheRef: bootstrapCache.prefetchCacheRef,
   });
 
-  /**
-   * Cache hit rate monitoring and optimization
-   */
-  const updateCacheHitRate = useCallback((isHit: boolean) => {
-    const stats = memoryManager.current.cacheHitStats;
-    
-    stats.totalRequests++;
-    if (isHit) {
-      stats.hits++;
-    } else {
-      stats.misses++;
-    }
-    
-    // Calculate rolling hit rate (weighted towards recent requests)
-    const recentWeight = 0.1; // 10% weight for current request
-    const currentHitRate = stats.hits / stats.totalRequests;
-    stats.hitRate = (stats.hitRate * (1 - recentWeight)) + (currentHitRate * recentWeight);
-    
-    // Optimize cache strategy based on hit rate
-    if (stats.totalRequests > 100 && stats.totalRequests % 50 === 0) {
-      if (stats.hitRate < 0.3 && config.cacheStrategy === 'memory') {
-        log.warn('[FlashListV2Performance] Low cache hit rate detected. Consider switching to hybrid cache strategy.');
-      } else if (stats.hitRate > 0.8 && config.cacheStrategy === 'minimal') {
-        log.info('[FlashListV2Performance] High cache hit rate detected. Consider switching to memory cache strategy for better performance.');
+  // Scroll handlers
+  const { onScroll, onScrollEnd, scrollY, isScrolling } = useFlashListScrollHandlers<T>(
+    config,
+    data,
+    metricsRef,
+    performanceMonitorRef
+  );
+  
+  // Setup animation cleanup
+  useAnimationCleanup({
+    sharedValues: [scrollY, isScrolling],
+    onCleanup: () => {
+      if (performanceInterval.current) {
+        clearInterval(performanceInterval.current);
       }
     }
-    
-    return stats.hitRate;
-  }, [config.cacheStrategy]);
+  });
 
-  /**
-   * V2 memory usage estimation with enhanced tracking
-   */
-  const estimateMemoryUsage = useCallback(() => {
-    let totalMemory = 0;
-    let cacheMemory = 0;
-    
-    // V2: Estimate based on rendered items without size estimates
-    const renderedItems = Math.min(
-      data.length,
-      (config.windowSize || 10) * (config.maxToRenderPerBatch || 10)
-    );
-    
-    // V2: Use dynamic item memory footprint based on content analysis
-    const baseItemMemory = 0.08; // 80KB per item (base estimate)
-    
-    // Enhanced memory calculation based on item complexity
-    let complexityMultiplier = 1.0;
-    if (data.length > 0) {
-      const sampleSize = Math.min(10, data.length);
-      let totalComplexity = 0;
-      
-      for (let i = 0; i < sampleSize; i++) {
-        const item = data[i];
-        if (!item) continue;
-        
-        let itemComplexity = 1.0;
-        
-        // Analyze content complexity for memory estimation
-        if (typeof item.content === 'string' && item.content.length > 500) {
-          itemComplexity += 0.3; // Long text content
-        }
-        
-        if (Array.isArray(item.attachments) && item.attachments.length > 0) {
-          itemComplexity += item.attachments.length * 0.5; // Media attachments
-        }
-        
-        if (Array.isArray(item.reactions) && item.reactions.length > 5) {
-          itemComplexity += 0.2; // Many reactions
-        }
-        
-        totalComplexity += itemComplexity;
-      }
-      
-      complexityMultiplier = totalComplexity / sampleSize;
-    }
-    
-    const adjustedItemMemory = baseItemMemory * complexityMultiplier;
-    totalMemory += renderedItems * adjustedItemMemory;
-    
-    // Enhanced cache memory calculation with v2 optimizations
-    if (config.enableIntelligentCaching) {
-      const cacheMemoryMultiplier = config.cacheStrategy === 'memory' ? 1.4 :
-                                   config.cacheStrategy === 'hybrid' ? 0.9 : 0.5;
-      
-      // Calculate cache memory based on actual cached items
-      let cacheItemMemory = 0;
-      itemCache.current.forEach((_cachedItem) => {
-        // Estimate memory for cached item based on its content
-        let itemMemory = adjustedItemMemory;
-        
-        // Add overhead for cache metadata
-        itemMemory += 0.01; // 10KB overhead per cached item
-        
-        cacheItemMemory += itemMemory;
-      });
-      
-      cacheMemory = cacheItemMemory * cacheMemoryMultiplier;
-      totalMemory += cacheMemory;
-    }
-    
-    // Update memory manager state
-    memoryManager.current.totalAllocated = totalMemory;
-    memoryManager.current.cacheAllocated = cacheMemory;
-    
-    return totalMemory;
-  }, [data, config]);
-
-  /**
-   * Memory pressure detection and cleanup system
-   */
-  const detectMemoryPressure = useCallback(() => {
-    const currentMemory = memoryManager.current.totalAllocated;
-    const maxMemory = config.maxMemoryUsage || 50; // MB
-    const pressureThreshold = maxMemory * 0.8; // 80% threshold
-    const criticalThreshold = maxMemory * 0.95; // 95% critical threshold
-    
-    let pressureLevel = 0;
-    let shouldCleanup = false;
-    let cleanupReason = '';
-    
-    if (currentMemory > criticalThreshold) {
-      pressureLevel = 100;
-      shouldCleanup = true;
-      cleanupReason = 'Critical memory pressure detected';
-    } else if (currentMemory > pressureThreshold) {
-      pressureLevel = Math.min(((currentMemory - pressureThreshold) / (maxMemory - pressureThreshold)) * 100, 99);
-      shouldCleanup = pressureLevel > 70;
-      cleanupReason = 'High memory pressure detected';
-    } else {
-      pressureLevel = Math.max((currentMemory / pressureThreshold) * 50, 0);
-    }
-    
-    memoryManager.current.pressureLevel = pressureLevel;
-    memoryManager.current.lastPressureCheck = Date.now();
-    
-    return {
-      pressureLevel,
-      shouldCleanup,
-      cleanupReason,
-      currentMemory,
-      maxMemory,
-    };
-  }, [config.maxMemoryUsage]);
-
-  /**
-   * Intelligent cache cleanup with configurable strategies
-   */
-  const performIntelligentCleanup = useCallback((reason: string, aggressiveness: 'gentle' | 'moderate' | 'aggressive' = 'moderate') => {
-    const startTime = Date.now();
-    let freedMemory = 0;
-    
-    if (!config.enableIntelligentCaching) {
-      return { freedMemory, cleanupTime: 0 };
-    }
-    
-    const cacheEntries = Array.from(itemCache.current.entries());
-    const currentTime = Date.now();
-    
-    // Sort entries by age and access patterns
-    const sortedEntries = cacheEntries.sort(([, a], [, b]) => {
-      const ageA = currentTime - a.renderedAt;
-      const ageB = currentTime - b.renderedAt;
-      return ageB - ageA; // Oldest first
-    });
-    
-    let entriesToRemove = 0;
-    
-    // Determine cleanup aggressiveness
-    switch (aggressiveness) {
-      case 'gentle':
-        entriesToRemove = Math.floor(sortedEntries.length * 0.1); // Remove 10%
-        break;
-      case 'moderate':
-        entriesToRemove = Math.floor(sortedEntries.length * 0.3); // Remove 30%
-        break;
-      case 'aggressive':
-        entriesToRemove = Math.floor(sortedEntries.length * 0.6); // Remove 60%
-        break;
-    }
-    
-    // Apply cache strategy-specific cleanup rules
-    if (config.cacheStrategy === 'memory') {
-      // Memory strategy: Keep more recent items, remove older ones
-      const maxAge = aggressiveness === 'gentle' ? 120000 : // 2 minutes
-                     aggressiveness === 'moderate' ? 60000 : // 1 minute
-                     30000; // 30 seconds
-      
-      const expiredEntries = sortedEntries.filter(([, item]) => 
-        (currentTime - item.renderedAt) > maxAge
-      );
-      
-      entriesToRemove = Math.max(entriesToRemove, expiredEntries.length);
-    } else if (config.cacheStrategy === 'hybrid') {
-      // Hybrid strategy: Balance between age and frequency
-      // For now, use age-based cleanup with moderate settings
-      entriesToRemove = Math.min(entriesToRemove, Math.floor(sortedEntries.length * 0.4));
-    } else if (config.cacheStrategy === 'minimal') {
-      // Minimal strategy: Aggressive cleanup
-      entriesToRemove = Math.max(entriesToRemove, Math.floor(sortedEntries.length * 0.7));
-    }
-    
-    // Perform cleanup
-    for (let i = 0; i < Math.min(entriesToRemove, sortedEntries.length); i++) {
-      const entry = sortedEntries[i];
-      // Guard against undefined entries (should not happen due to loop bounds)
-      if (!entry) continue;
-      const [key, item] = entry;
-      if (key && item) {
-        // Estimate freed memory (rough calculation)
-        freedMemory += 0.08; // Base item memory
-        itemCache.current.delete(key);
-      }
-    }
-    
-    // Clear prefetch cache if aggressive cleanup
-    if (aggressiveness === 'aggressive') {
-      const prefetchSize = prefetchCache.current.size;
-      prefetchCache.current.clear();
-      freedMemory += prefetchSize * 0.01; // Estimate prefetch memory
-    }
-    
-    const cleanupTime = Date.now() - startTime;
-    
-    // Record cleanup history
-    memoryManager.current.cleanupHistory.push({
-      timestamp: currentTime,
-      freedMemory,
-      reason: `${reason} (${aggressiveness})`,
-    });
-    
-    // Keep only last 10 cleanup records
-    if (memoryManager.current.cleanupHistory.length > 10) {
-      memoryManager.current.cleanupHistory = memoryManager.current.cleanupHistory.slice(-10);
-    }
-    
-    if (config.logMemoryUsage) {
-      log.info(`[FlashListV2Performance] Memory cleanup completed`, {
-        reason,
-        aggressiveness,
-        freedMemory: `${freedMemory.toFixed(2)}MB`,
-        cleanupTime: `${cleanupTime}ms`,
-        remainingCacheSize: itemCache.current.size,
-      });
-    }
-    
-    return { freedMemory, cleanupTime };
-  }, [config]);
+  // Memory helpers from hook
+  const estimateMemoryUsage = memory.estimateMemoryUsage;
+  const detectMemoryPressure = memory.detectMemoryPressure;
+  const performIntelligentCleanup = memory.performIntelligentCleanup;
   
   /**
    * V2 Performance monitoring with automatic sizing optimizations
    */
+  // Track if deprecation warning has been logged to avoid console spam
+  const hasLoggedDeprecationWarning = useRef(false);
   useEffect(() => {
+    if (!hasLoggedDeprecationWarning.current) {
+      validateFlashListProps(config);
+      hasLoggedDeprecationWarning.current = true;
+    }
     if (config.enablePerformanceLogging || config.enableV2Metrics) {
       performanceInterval.current = setInterval(() => {
         const memoryUsage = estimateMemoryUsage();
@@ -1386,12 +1489,12 @@ export function useFlashListV2Performance<T extends MessageListItem>(
           renderEndTime,
           data.length,
           config,
-          performanceMonitor.current,
+          performanceMonitorRef.current,
           currentScrollVelocity
         );
         
         // Get comprehensive performance metrics from monitor
-        const performanceMetrics = performanceMonitor.current.getMetrics();
+        const performanceMetrics = performanceMonitorRef.current.getMetrics();
         
         metricsRef.current = {
           ...metricsRef.current,
@@ -1441,7 +1544,7 @@ export function useFlashListV2Performance<T extends MessageListItem>(
         }
         
         // Cache performance monitoring
-        const cacheStats = memoryManager.current.cacheHitStats;
+        const cacheStats = memory.memoryManagerRef.current.cacheHitStats;
         if (cacheStats.totalRequests > 0) {
           metricsRef.current.cacheHitRate = cacheStats.hitRate;
           
@@ -1450,8 +1553,8 @@ export function useFlashListV2Performance<T extends MessageListItem>(
             log.debug('[FlashListV2Performance] Cache performance:', {
               hitRate: `${(cacheStats.hitRate * 100).toFixed(1)}%`,
               totalRequests: cacheStats.totalRequests,
-              cacheSize: itemCache.current.size,
-              cacheMemory: `${memoryManager.current.cacheAllocated.toFixed(2)}MB`,
+              cacheSize: cache.itemCacheRef.current.size,
+              cacheMemory: `${memory.memoryManagerRef.current.cacheAllocated.toFixed(2)}MB`,
             });
           }
         }
@@ -1537,9 +1640,7 @@ export function useFlashListV2Performance<T extends MessageListItem>(
    * Cache management
    */
   const clearCache = useCallback(() => {
-    itemCache.current.clear();
-    prefetchCache.current.clear();
-    log.info('[FlashListPerformance] Cache cleared');
+    cache.clearCache();
   }, []);
   
   /**
@@ -1621,27 +1722,27 @@ export function useFlashListV2Performance<T extends MessageListItem>(
     metrics: {
       ...metricsRef.current,
       // Enhanced memory management metrics
-      memoryPressureLevel: memoryManager.current.pressureLevel,
-      cacheHitRate: memoryManager.current.cacheHitStats.hitRate,
-      cacheSize: itemCache.current.size,
-      cacheMemoryUsage: memoryManager.current.cacheAllocated,
-      cleanupHistory: memoryManager.current.cleanupHistory,
+      memoryPressureLevel: memory.memoryManagerRef.current.pressureLevel,
+      cacheHitRate: memory.memoryManagerRef.current.cacheHitStats.hitRate,
+      cacheSize: cache.itemCacheRef.current.size,
+      cacheMemoryUsage: memory.memoryManagerRef.current.cacheAllocated,
+      cleanupHistory: memory.memoryManagerRef.current.cleanupHistory,
     },
     scrollToIndex,
     scrollToTop,
     scrollToBottom,
     clearCache,
-    createRenderItem: createRenderItem as (originalRenderItem: FlashListProps<T>['renderItem']) => (info: ListRenderItemInfo<T>) => React.ReactElement | null,
+    createRenderItem: cache.createRenderItem as (originalRenderItem: FlashListProps<T>['renderItem']) => (info: ListRenderItemInfo<T>) => React.ReactElement | null,
     // Enhanced memory management functions
     memoryManager: {
-      getMemoryUsage: () => memoryManager.current.totalAllocated,
+      getMemoryUsage: () => memory.memoryManagerRef.current.totalAllocated,
       getMemoryPressure: () => detectMemoryPressure(),
       performCleanup: (aggressiveness: 'gentle' | 'moderate' | 'aggressive' = 'moderate') => 
         performIntelligentCleanup('Manual cleanup', aggressiveness),
-      getCacheStats: () => ({ ...memoryManager.current.cacheHitStats }),
-      getCleanupHistory: () => [...memoryManager.current.cleanupHistory],
+      getCacheStats: () => ({ ...memory.memoryManagerRef.current.cacheHitStats }),
+      getCleanupHistory: () => [...memory.memoryManagerRef.current.cleanupHistory],
       resetCacheStats: () => {
-        memoryManager.current.cacheHitStats = {
+        memory.memoryManagerRef.current.cacheHitStats = {
           hits: 0,
           misses: 0,
           totalRequests: 0,
@@ -1651,14 +1752,14 @@ export function useFlashListV2Performance<T extends MessageListItem>(
     },
     // V2 Performance monitoring controls
     performanceMonitor: {
-      getMetrics: () => performanceMonitor.current.getMetrics(),
-      reset: () => performanceMonitor.current.reset(),
+      getMetrics: () => performanceMonitorRef.current.getMetrics(),
+      reset: () => performanceMonitorRef.current.reset(),
       recordFrame: (frameTime: number, scrollVelocity?: number) => 
-        performanceMonitor.current.recordFrame(frameTime, scrollVelocity),
+        performanceMonitorRef.current.recordFrame(frameTime, scrollVelocity),
       recordScrollEvent: (velocity: number) => 
-        performanceMonitor.current.recordScrollEvent(velocity),
+        performanceMonitorRef.current.recordScrollEvent(velocity),
       recordAutoSizing: (sizingTime: number, accuracy: number) => 
-        performanceMonitor.current.recordAutoSizing(sizingTime, accuracy),
+        performanceMonitorRef.current.recordAutoSizing(sizingTime, accuracy),
     },
   };
 }

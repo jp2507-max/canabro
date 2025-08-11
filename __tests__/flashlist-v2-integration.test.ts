@@ -30,8 +30,8 @@ describe('FlashList v2 Integration Tests', () => {
           startRenderingFromBottom: false,
           animateAutoScrollToBottom: true,
         };
-        
-        if (config?.disabled) return undefined;
+        });
+        describe('Cross-Feature Integration Tests', () => {
         return { ...defaultConfig, ...config };
       };
 

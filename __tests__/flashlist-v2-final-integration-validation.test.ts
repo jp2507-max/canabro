@@ -618,56 +618,5 @@ describe('FlashList v2 Final Integration and Validation Tests', () => {
     });
   });
 
-  // Helper function to generate realistic test data
-  function generateRealWorldDataset(count: number): RealWorldMessageItem[] {
-    return Array.from({ length: count }, (_, i) => {
-      const hasAttachments = i % 5 === 0;
-      const hasReactions = i % 3 === 0;
-      const hasReplies = i % 7 === 0;
-      const messageType = ['text', 'image', 'video', 'system', 'notification'][i % 5] as any;
-      
-      return {
-        id: `msg-${i}`,
-        userId: `user-${i % 10}`,
-        content: `Message content ${i} - ${messageType === 'text' ? 'This is a longer text message with more content to test automatic sizing capabilities' : 'Short content'}`,
-        timestamp: Date.now() - (i * 60000),
-        type: messageType,
-        attachments: hasAttachments ? [{
-          id: `att-${i}`,
-          type: 'image',
-          url: `https://example.com/image-${i}.jpg`,
-          size: 1024 * (i % 10 + 1),
-        }] : undefined,
-        reactions: hasReactions ? [{
-          emoji: '👍',
-          userId: `user-${(i + 1) % 10}`,
-          timestamp: Date.now() - (i * 30000),
-        }] : undefined,
-        replies: hasReplies ? [{
-          id: `reply-${i}`,
-          userId: `user-${(i + 2) % 10}`,
-          content: `Reply to message ${i}`,
-          timestamp: Date.now() - (i * 15000),
-        }] : undefined,
-        _v2Metadata: {
-          complexity: hasAttachments || hasReplies ? 'high' : hasReactions ? 'medium' : 'low',
-          hasMedia: hasAttachments,
-          hasInteractions: hasReactions || hasReplies,
-          autoSizingHints: {
-            contentType: hasAttachments ? 'media' : hasReactions || hasReplies ? 'mixed' : 'text',
-            dynamicContent: hasReactions || hasReplies,
-            masonrySpan: hasAttachments ? 2 : 1,
-            recyclingType: `${messageType}-${hasAttachments ? 'media' : 'text'}`,
-            itemTypeHint: `message-${messageType}`,
-          },
-          v2Optimizations: {
-            enableAutoSizing: true,
-            preferredRecyclingPool: hasAttachments ? 'media-pool' : 'text-pool',
-            layoutComplexity: hasAttachments || hasReplies ? 'complex' : hasReactions ? 'moderate' : 'simple',
-            requiresDynamicSizing: hasReactions || hasReplies,
-          },
-        },
-      };
-    });
-  }
+  // ...existing code...
 });

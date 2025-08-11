@@ -17,7 +17,7 @@
  * ```
  */
 
-import { useRecyclingState, useLayoutState, useMappingHelper } from '@shopify/flash-list';
+import { useRecyclingState, useLayoutState } from '@shopify/flash-list';
 import { useCallback, useRef } from 'react';
 
 // Re-export FlashList v2 hooks for convenience
@@ -30,7 +30,7 @@ export interface FlashListV2StateConfig<T> {
   /** Initial state value */
   initialState: T;
   /** Dependencies array for state reset */
-  dependencies?: any[];
+  dependencies?: unknown[];
   /** Callback executed when state is reset */
   resetCallback?: () => void;
   /** Enable debug logging for state changes */
@@ -54,7 +54,7 @@ export interface FlashListV2StateConfig<T> {
  * const [isExpanded, setIsExpanded] = useFlashListV2State({
  *   initialState: false,
  *   dependencies: [item.id],
- *   resetCallback: () => console.log('State reset for new item'),
+ *   resetCallback: () => console.warn('State reset for new item'),
  *   debug: __DEV__
  * });
  * ```
@@ -70,7 +70,7 @@ export function useFlashListV2State<T>(
   // Enhanced reset callback with optional debugging
   const enhancedResetCallback = useCallback(() => {
     if (debugRef.current) {
-      console.log('[FlashListV2State] State reset triggered', {
+      console.warn('[FlashListV2State] State reset triggered', {
         dependencies,
         timestamp: new Date().toISOString()
       });
@@ -89,7 +89,7 @@ export function useFlashListV2State<T>(
   const enhancedSetState = useCallback((value: T | ((prevState: T) => T)) => {
     if (debugRef.current) {
       const newValue = typeof value === 'function' ? 'function' : value;
-      console.log('[FlashListV2State] State update', {
+      console.warn('[FlashListV2State] State update', {
         newValue,
         dependencies,
         timestamp: new Date().toISOString()
@@ -149,7 +149,7 @@ export function useFlashListLayout<T>(
   const enhancedSetState = useCallback((value: T | ((prevState: T) => T)) => {
     if (debugRef.current) {
       const newValue = typeof value === 'function' ? 'function' : value;
-      console.log('[FlashListLayout] Layout state update', {
+      console.warn('[FlashListLayout] Layout state update', {
         newValue,
         timestamp: new Date().toISOString()
       });
@@ -176,7 +176,7 @@ export function useFlashListLayout<T>(
  *   {
  *     initialState: { expanded: false, selected: false },
  *     dependencies: [item.id],
- *     resetCallback: () => console.log('Item recycled')
+ *     resetCallback: () => console.warn('Item recycled')
  *   },
  *   {
  *     initialState: 100, // height
@@ -223,18 +223,26 @@ export function useFlashListCombinedState<TRecycling, TLayout>(
  *   }),
  *   {
  *     debug: __DEV__,
- *     resetCallback: () => console.log('Item state reset')
+ *     resetCallback: () => console.warn('Item state reset')
  *   }
  * );
  * ```
  */
-export function useFlashListItemState<TItem extends Record<string, any>, TState>(
+// Minimal constraint for items whose fields may be tracked in dependencies
+type FlashListTrackableKeys = {
+  id?: unknown;
+  version?: unknown;
+  updatedAt?: unknown;
+  lastModified?: unknown;
+};
+
+export function useFlashListItemState<TItem extends FlashListTrackableKeys, TState>(
   item: TItem,
   initialStateFactory: (item: TItem) => TState,
   options: {
     debug?: boolean;
     resetCallback?: () => void;
-    customDependencies?: any[];
+    customDependencies?: readonly unknown[];
   } = {}
 ): [TState, (value: TState | ((prevState: TState) => TState)) => void, () => void] {
   const { debug = false, resetCallback, customDependencies = [] } = options;
@@ -255,10 +263,21 @@ export function useFlashListItemState<TItem extends Record<string, any>, TState>
     debug
   });
   
+  // Keep the latest factory in a ref to avoid unnecessary resetState callback
+  // recreations when callers define the factory inline. This ensures the
+  // resetState identity only depends on item identity and setState, while still
+  // using the most recent factory implementation.
+  // Note: If the factory is expensive to allocate, callers are encouraged to
+  // memoize it (e.g., with useCallback) to avoid per-render allocations.
+  const initialStateFactoryRef = useRef(initialStateFactory);
+  initialStateFactoryRef.current = initialStateFactory;
+
   // Provide a manual reset function
   const resetState = useCallback(() => {
-    setState(initialStateFactory(item));
-  }, [setState, initialStateFactory, item]);
+    // Intentionally read from ref so that inline factories do not cause
+    // resetState to be recreated unnecessarily.
+    setState(initialStateFactoryRef.current(item));
+  }, [setState, item]);
   
   return [state, setState, resetState];
 }
@@ -297,6 +316,6 @@ export interface FlashListV2ItemConfig<TItem extends FlashListV2Item, TState> {
   options?: {
     debug?: boolean;
     resetCallback?: () => void;
-    customDependencies?: any[];
+    customDependencies?: readonly unknown[];
   };
 }
