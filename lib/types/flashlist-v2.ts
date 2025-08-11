@@ -8,7 +8,7 @@
 // Core FlashList v2 config types
 export interface FlashListV2StateConfig<T> {
   initialState: T;
-  dependencies?: unknown[];
+  dependencies?: readonly unknown[];
   resetCallback?: () => void;
   debug?: boolean;
 }

@@ -86,8 +86,7 @@ applyTo: "**"
 - **Navigation**: File-based only; use dynamic segments and params; handle deep links.
 - **Accessibility**: Provide a11y roles/labels and screen-reader support.
 - **Mobile-first**: Test on iOS/Android, light/dark modes. Use safe area utilities.
-- **Internationalization**: Prefer `react-i18next`. Keep keys validated with the translation script.
- - **Internationalization**: Prefer `react-i18next`. All production UI must use `useTranslation()` keys; validate keys with the translation script.
+- **Internationalization**: Prefer `react-i18next`. All production UI must use `useTranslation()` keys; validate keys with the translation script.
 
 ## Monitoring and analytics
 - **Error monitoring**: Sentry RN configured as dependency. Prefer central logger `[lib/utils/logger.ts](mdc:lib/utils/logger.ts)` over raw `console.log`.

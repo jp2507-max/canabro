@@ -18,16 +18,14 @@
  */
 
 import { useRecyclingState, useLayoutState } from '@shopify/flash-list';
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type {
   FlashListV2StateConfig,
   FlashListLayoutConfig,
   FlashListV2StateReturn,
   FlashListLayoutReturn,
   FlashListCombinedStateReturn,
-  FlashListItemStateReturn,
-  FlashListV2Item,
-  FlashListV2ItemConfig
+  FlashListItemStateReturn
 } from '@/lib/types';
 import { log as logger } from '@/lib/utils/logger';
 
@@ -63,7 +61,7 @@ export { useRecyclingState, useLayoutState, useMappingHelper } from '@shopify/fl
  */
 export function useFlashListV2State<T>(
   config: FlashListV2StateConfig<T>
-): [T, (value: T | ((prevState: T) => T)) => void] {
+): FlashListV2StateReturn<T> {
   const { initialState, dependencies = [], resetCallback, debug = false } = config;
   
   const debugRef = useRef(debug);
@@ -133,7 +131,7 @@ export function useFlashListV2State<T>(
  */
 export function useFlashListLayout<T>(
   config: FlashListLayoutConfig<T>
-): [T, (value: T | ((prevState: T) => T)) => void] {
+): FlashListLayoutReturn<T> {
   const { initialState, debug = false } = config;
   
   const debugRef = useRef(debug);
@@ -188,7 +186,7 @@ export function useFlashListLayout<T>(
 export function useFlashListCombinedState<TRecycling, TLayout>(
   recyclingConfig: FlashListV2StateConfig<TRecycling>,
   layoutConfig: FlashListLayoutConfig<TLayout>
-) {
+): FlashListCombinedStateReturn<TRecycling, TLayout> {
   const recycling = useFlashListV2State(recyclingConfig);
   const layout = useFlashListLayout(layoutConfig);
   
@@ -241,17 +239,18 @@ export function useFlashListItemState<TItem extends FlashListTrackableKeys, TSta
     resetCallback?: () => void;
     customDependencies?: readonly unknown[];
   } = {}
-): [TState, (value: TState | ((prevState: TState) => TState)) => void, () => void] {
+): FlashListItemStateReturn<TState> {
   const { debug = false, resetCallback, customDependencies = [] } = options;
   
-  // Automatically track common item properties
-  const dependencies = [
-    item.id,
-    item.version,
-    item.updatedAt,
-    item.lastModified,
-    ...customDependencies
-  ].filter(dep => dep !== undefined);
+  // Automatically track common item properties (memoized to keep ref stable)
+  const dependencies = useMemo(
+    () =>
+      [item.id, item.version, item.updatedAt, item.lastModified, ...customDependencies].filter(
+        (dep) => dep !== undefined
+      ),
+    // Note: callers should pass a stable customDependencies array
+    [item.id, item.version, item.updatedAt, item.lastModified, customDependencies]
+  );
   
   const [state, setState] = useFlashListV2State({
     initialState: initialStateFactory(item),
