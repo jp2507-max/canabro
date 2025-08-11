@@ -2776,16 +2776,19 @@ export {
   useFlashListV2State,
   useFlashListLayout,
   useFlashListCombinedState,
-  useFlashListItemState,
-  type FlashListV2StateConfig,
-  type FlashListLayoutConfig,
-  type FlashListV2StateReturn,
-  type FlashListLayoutReturn,
-  type FlashListCombinedStateReturn,
-  type FlashListItemStateReturn,
-  type FlashListV2Item,
-  type FlashListV2ItemConfig
+  useFlashListItemState
 } from './flashlist-v2-hooks';
+
+export type {
+  FlashListV2StateConfig,
+  FlashListLayoutConfig,
+  FlashListV2StateReturn,
+  FlashListLayoutReturn,
+  FlashListCombinedStateReturn,
+  FlashListItemStateReturn,
+  FlashListV2Item,
+  FlashListV2ItemConfig
+} from '@/lib/types';
 
 // Export core FlashList v2 types for convenience
 export type { FlashListRef, FlashListProps } from '@shopify/flash-list';

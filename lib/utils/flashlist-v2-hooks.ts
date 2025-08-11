@@ -19,6 +19,17 @@
 
 import { useRecyclingState, useLayoutState } from '@shopify/flash-list';
 import { useCallback, useRef } from 'react';
+import type {
+  FlashListV2StateConfig,
+  FlashListLayoutConfig,
+  FlashListV2StateReturn,
+  FlashListLayoutReturn,
+  FlashListCombinedStateReturn,
+  FlashListItemStateReturn,
+  FlashListV2Item,
+  FlashListV2ItemConfig
+} from '@/lib/types';
+import { log as logger } from '@/lib/utils/logger';
 
 // Re-export FlashList v2 hooks for convenience
 export { useRecyclingState, useLayoutState, useMappingHelper } from '@shopify/flash-list';
@@ -26,16 +37,7 @@ export { useRecyclingState, useLayoutState, useMappingHelper } from '@shopify/fl
 /**
  * Configuration options for FlashList v2 state hooks
  */
-export interface FlashListV2StateConfig<T> {
-  /** Initial state value */
-  initialState: T;
-  /** Dependencies array for state reset */
-  dependencies?: unknown[];
-  /** Callback executed when state is reset */
-  resetCallback?: () => void;
-  /** Enable debug logging for state changes */
-  debug?: boolean;
-}
+// Types moved to '@/lib/types'
 
 /**
  * Hook wrapper around useRecyclingState with enhanced functionality
@@ -70,7 +72,7 @@ export function useFlashListV2State<T>(
   // Enhanced reset callback with optional debugging
   const enhancedResetCallback = useCallback(() => {
     if (debugRef.current) {
-      console.warn('[FlashListV2State] State reset triggered', {
+      logger.debug?.('[FlashListV2State] State reset triggered', {
         dependencies,
         timestamp: new Date().toISOString()
       });
@@ -89,7 +91,7 @@ export function useFlashListV2State<T>(
   const enhancedSetState = useCallback((value: T | ((prevState: T) => T)) => {
     if (debugRef.current) {
       const newValue = typeof value === 'function' ? 'function' : value;
-      console.warn('[FlashListV2State] State update', {
+      logger.debug?.('[FlashListV2State] State update', {
         newValue,
         dependencies,
         timestamp: new Date().toISOString()
@@ -104,12 +106,7 @@ export function useFlashListV2State<T>(
 /**
  * Configuration options for FlashList layout state hook
  */
-export interface FlashListLayoutConfig<T> {
-  /** Initial state value */
-  initialState: T;
-  /** Enable debug logging for layout changes */
-  debug?: boolean;
-}
+// Types moved to '@/lib/types'
 
 /**
  * Hook wrapper around useLayoutState with enhanced functionality
@@ -149,7 +146,7 @@ export function useFlashListLayout<T>(
   const enhancedSetState = useCallback((value: T | ((prevState: T) => T)) => {
     if (debugRef.current) {
       const newValue = typeof value === 'function' ? 'function' : value;
-      console.warn('[FlashListLayout] Layout state update', {
+      logger.debug?.('[FlashListLayout] Layout state update', {
         newValue,
         timestamp: new Date().toISOString()
       });
@@ -285,37 +282,16 @@ export function useFlashListItemState<TItem extends FlashListTrackableKeys, TSta
 /**
  * Type definitions for hook return values and configurations
  */
-export type FlashListV2StateReturn<T> = [T, (value: T | ((prevState: T) => T)) => void];
-export type FlashListLayoutReturn<T> = [T, (value: T | ((prevState: T) => T)) => void];
-export type FlashListCombinedStateReturn<TRecycling, TLayout> = {
-  recycling: FlashListV2StateReturn<TRecycling>;
-  layout: FlashListLayoutReturn<TLayout>;
-};
-export type FlashListItemStateReturn<TState> = [
-  TState,
-  (value: TState | ((prevState: TState) => TState)) => void,
-  () => void
-];
+// Types moved to '@/lib/types'
 
 // Configuration interfaces are already exported above, no need to re-export
 
 /**
  * Utility type for FlashList v2 item with enhanced metadata
  */
-export interface FlashListV2Item {
-  id: string;
-  [key: string]: unknown;
-}
+// Types moved to '@/lib/types'
 
 /**
  * Enhanced item state configuration for complex use cases
  */
-export interface FlashListV2ItemConfig<TItem extends FlashListV2Item, TState> {
-  item: TItem;
-  initialStateFactory: (item: TItem) => TState;
-  options?: {
-    debug?: boolean;
-    resetCallback?: () => void;
-    customDependencies?: readonly unknown[];
-  };
-}
+// Types moved to '@/lib/types'

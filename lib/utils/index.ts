@@ -30,15 +30,18 @@ export {
   useRecyclingState,
   useLayoutState,
   useMappingHelper,
-  type FlashListV2StateConfig,
-  type FlashListLayoutConfig,
-  type FlashListV2StateReturn,
-  type FlashListLayoutReturn,
-  type FlashListCombinedStateReturn,
-  type FlashListItemStateReturn,
-  type FlashListV2Item,
-  type FlashListV2ItemConfig
 } from './flashlist-v2-hooks';
+
+export type {
+  FlashListV2StateConfig,
+  FlashListLayoutConfig,
+  FlashListV2StateReturn,
+  FlashListLayoutReturn,
+  FlashListCombinedStateReturn,
+  FlashListItemStateReturn,
+  FlashListV2Item,
+  FlashListV2ItemConfig
+} from '@/lib/types';
 
 // Core FlashList v2 Types (re-exported for convenience)
 export type { FlashListRef, FlashListProps } from '@shopify/flash-list';

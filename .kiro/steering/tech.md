@@ -1,99 +1,115 @@
-# Canabro Technical Stack
+# CanaBro Mobile App Tech Stack & Engineering Rules (up to date)
 
-## Core Technologies
-- **Framework**: React Native 0.79 with Expo SDK 53
-- **Language**: TypeScript (strict mode)
-- **Navigation**: Expo Router v5 (file-based routing with deep linking support)
-- **State Management**: 
-  - Server state: TanStack Query v5 (`@tanstack/react-query`)
-  - Global client state: React Context + useReducer
-  - Local database: WatermelonDB
-- **Backend**: Supabase (auth, database, real-time, storage)
-- **Styling**: NativeWind v4 (Tailwind CSS for React Native)
-- **Forms**: React Hook Form with Zod validation
-- **Animations**: React Native Reanimated v3.19.0+ with automatic workletization
-- **Translations**: i18n for translations is a must
-- **Logs**: use our customlogger component
+## Tech stack (versions from [package.json](mdc:package.json))
+- **React**: 19.0.0
+- **React Native**: 0.79.5
+- **Expo SDK**: 53.0.20
+- **Expo Router**: ~5.1.3
+- **TypeScript**: ~5.8.3 (strict)
+- **NativeWind**: ^4.1.23 + **TailwindCSS**: ^3.4.0
+- **Reanimated**: ~3.19.0
+- **TanStack React Query**: ^5.x
+- **WatermelonDB**: ^0.28.0
+- **Supabase JS**: ^2.49.x
+- **React Hook Form**: ^7.55.x
+- **i18next / react-i18next**: ^25.x / ^15.x
+- **Sentry RN**: ^6.18.x
+- **Shopify FlashList**: ^2.0.0
 
-## Key Libraries
-- **Authentication**: Supabase Auth
-- **Storage**: Expo SecureStore, AsyncStorage, MMKV
-- **UI Components**: Custom themed components with NativeWind
-- **Animations**: React Native Reanimated v3.19.0+ (automatic workletization, no manual 'worklet' directives)
-- **Gestures**: React Native Gesture Handler
-- **Internationalization**: i18next, react-i18next
-- **Image Handling**: Expo Image, Camera, ImagePicker
-- **Date Handling**: dayjs with locale support via `lib/utils/date.ts`
-- **Performance**: @shopify/flash-list for virtualized lists
-- **Error Monitoring**: Sentry
+## Project architecture & navigation
+- **File-based routing** via Expo Router v5 under `app/` with grouped layouts.
+  - Root layouts: `[app/(app)/_layout.tsx](mdc:app/(app)/_layout.tsx)`, `[app/(auth)/_layout.tsx](mdc:app/(auth)/_layout.tsx)`, `[app/+not-found.tsx](mdc:app/+not-found.tsx)`
+- **Screen examples**: `app/(app)/(tabs)/index.tsx`, `app/(app)/plant/[id].tsx`, `app/(app)/(tabs)/calendar/index.tsx`.
+- **Structure convention** per screen file: main export, subcomponents, helpers, types.
 
-## Development Tools
-- **Linting**: ESLint
-- **Formatting**: Prettier
-- **Testing**: 
-  - Jest + React Native Testing Library for unit/integration tests
-  - Detox/Appium/Playwright for UI/E2E tests
-- **Build System**: Expo EAS Build with OTA updates
-- **CI/CD**: GitHub Actions with automated builds/tests
+## State, data, and sync
+- **Server state**: TanStack Query v5. Use clear, nested query keys and appropriate cache times.
+- **Local DB**: WatermelonDB used for offline-first data and relationships.
+  - Entrypoints: `[lib/database/database.ts](mdc:lib/database/database.ts)`, `[lib/models/schema.ts](mdc:lib/models/schema.ts)`
+- **Sync & services**: Supabase-backed synchronization and domain services.
+  - Examples: `[lib/services/sync/core-sync.ts](mdc:lib/services/sync/core-sync.ts)`, `[lib/contexts/DatabaseProvider.tsx](mdc:lib/contexts/DatabaseProvider.tsx)`, `[lib/contexts/SyncContext.tsx](mdc:lib/contexts/SyncContext.tsx)`
+- **Backend**: Supabase for auth, DB, realtime, and storage. CLI scripts are provided in `package.json`.
 
-## Common Commands
+## Styling and theming
+- **Only NativeWind v4**. No inline/hardcoded colors. Use semantic tokens.
+  - Theme sources: `[global.css](mdc:global.css)`, `[tailwind.config.js](mdc:tailwind.config.js)`, `[nativewind-env.d.ts](mdc:nativewind-env.d.ts)`
+- **Themed components**: Use `[components/ui/ThemedView.tsx](mdc:components/ui/ThemedView.tsx)` and `[components/ui/ThemedText.tsx](mdc:components/ui/ThemedText.tsx)` for app surfaces/typography.
+- **Safe areas**: Prefer classes `pt-safe`, `pb-safe`, `h-screen-safe` from `global.css`.
+- **Dark mode**: Use `dark:` variants; avoid conditional inline styles.
 
-### Development
-```bash
-# Start development server
-npx expo start
+## Animations
+- **Reanimated v3.19.0+** with automatic workletization for hooks.
+  - Still add `'worklet'` to: animation callback functions (e.g., third arg to `withSpring`/`withTiming`), imported/external functions used in worklets, conditional expressions that run on UI, and `runOnUI` bodies.
+  - Never access `.value` outside worklets. Cancel animations on unmount.
+  - Reuse via: `[lib/animations/index.ts](mdc:lib/animations/index.ts)` and other hooks under `lib/animations/`.
+  - Reference: [reanimated-best-practices.instructions.md](mdc:.github/instructions/reanimated-best-practices.instructions.md)
 
-# Linting and formatting
-npm run lint
-npm run lint:fix
-npm run format
-npm run format:check
-```
+## Key utilities and components
+- **Haptics**: `[lib/utils/haptics.ts](mdc:lib/utils/haptics.ts)`
+- **Image selection/upload**: `[lib/utils/image-picker.ts](mdc:lib/utils/image-picker.ts)`, `[lib/utils/upload-image.ts](mdc:lib/utils/upload-image.ts)`
+- **Keyboard**: `[components/keyboard/EnhancedKeyboardWrapper.tsx](mdc:components/keyboard/EnhancedKeyboardWrapper.tsx)`
+- **Enhanced inputs**: `[components/ui/EnhancedTextInput.tsx](mdc:components/ui/EnhancedTextInput.tsx)`
+- **Logging**: `[lib/utils/logger.ts](mdc:lib/utils/logger.ts)`; console statements are stripped in prod via Babel plugin
+- **Lists**: FlashList wrapper `[components/ui/FlashListWrapper.tsx](mdc:components/ui/FlashListWrapper.tsx)` and performance helpers `[lib/utils/flashlist-performance.ts](mdc:lib/utils/flashlist-performance.ts)`
+- **Utilities index**: `[lib/utils/index.ts](mdc:lib/utils/index.ts)`
+- **Custom components guidelines**: [custom-components.instructions.md](mdc:.github/instructions/custom-components.instructions.md)
 
-### Supabase
-We use the Supabase MCP tools for all Supabase operations including migrations, queries, and database management.
-```
+## Internationalization (i18n)
+- **Config**: `[lib/config/i18n.ts](mdc:lib/config/i18n.ts)`
+- **Translations**: `[lib/locales/en.json](mdc:lib/locales/en.json)`, `[lib/locales/de.json](mdc:lib/locales/de.json)`; additional namespaced files live under `lib/locales/en/*.json`
+- **Hooks**: `[lib/hooks/useTranslation.ts](mdc:lib/hooks/useTranslation.ts)`, `[lib/hooks/useI18n.ts](mdc:lib/hooks/useI18n.ts)`
+- **UI**: `[components/ui/LanguageToggle.tsx](mdc:components/ui/LanguageToggle.tsx)`
+- **Validation**: `npm run validate:translations` → `[scripts/validate-translations.js](mdc:scripts/validate-translations.js)`
+- **Rule**: All production user-facing strings must use translations. Do not use hardcoded literals in production code. Exceptions: test files (`**/__tests__/**`), scripts (`scripts/**`), and clearly dev-only components (e.g., `[components/ui/DebugPanel.tsx](mdc:components/ui/DebugPanel.tsx)`, `[components/DevModeIndicator.tsx](mdc:components/DevModeIndicator.tsx)`).
+- **Linting**: Enforce via `eslint-plugin-i18next` (see `eslint.config.mjs`). Disable only for allowed exceptions.
 
-## Performance Considerations
-- Use React.memo for component memoization
-- Implement virtualized lists with FlashList
-- Optimize image loading and processing
-- Use Reanimated v3.19.0+ animations with automatic workletization and proper cleanup on unmount
-- Implement proper keyboard handling with EnhancedKeyboardWrapper
-- Use safe area utilities (`pt-safe`, `h-screen-safe`) for all layouts
-- Optimize for Mobile Web Vitals
+## Developer workflows
+- **Build & release**: EAS Build configured in `[eas.json](mdc:eas.json)`. OTA via `expo-updates`.
+  - Common commands: `npm run android`, `npm run ios`, `npm run start`, `npm run prebuild`
+- **Type checks**: `npx tsc --noEmit`
+- **Lint/format**: `npm run lint`, `npm run lint:fix`, `npm run format`
+- **Testing**: Jest + RN Testing Library
+  - Commands: `npm test`, `npm run test:watch`, `npm run test:coverage`
+  - Examples live under `components/**/__tests__` and `lib/**/__tests__`
+- **Supabase dev**:
+  - Use Supabase MCP tools exclusively for migrations and database operations (DDL/DML), management, and queries. Do not use the Supabase CLI for applying migrations or executing SQL.
+- **Translations**: `npm run validate:translations` → `[scripts/validate-translations.js](mdc:scripts/validate-translations.js)`
+- **UI/UX audits**: `[scripts/ui-refinement-plan.md](mdc:scripts/ui-refinement-plan.md)`, `[scripts/design-audit-checklist.md](mdc:scripts/design-audit-checklist.md)`
 
-## Project-Specific Patterns
+## Patterns and conventions
+- **Data**: Use TanStack Query for all server state. Define stable query keys; prefer optimistic updates where safe. Add error boundaries for critical trees.
+- **Navigation**: File-based only; use dynamic segments and params; handle deep links.
+- **Accessibility**: Provide a11y roles/labels and screen-reader support.
+- **Mobile-first**: Test on iOS/Android, light/dark modes. Use safe area utilities.
+- **Internationalization**: Prefer `react-i18next`. Keep keys validated with the translation script.
+ - **Internationalization**: Prefer `react-i18next`. All production UI must use `useTranslation()` keys; validate keys with the translation script.
 
-### Styling
-- Only use NativeWind v4 for styling
-- Use semantic color tokens from `global.css`, never hardcoded colors
-- Use `dark:` prefixes for dark mode theming
-- Use `ThemedView` and `ThemedText` components for all custom UI
+## Monitoring and analytics
+- **Error monitoring**: Sentry RN configured as dependency. Prefer central logger `[lib/utils/logger.ts](mdc:lib/utils/logger.ts)` over raw `console.log`.
 
-### Animations
-- React Native Reanimated v3.19.0+ uses automatic workletization - no manual `'worklet'` directives needed
-- Never access `.value` outside worklets
-- Cancel animations on component unmount
-- Use custom hooks from `lib/animations/` for reusable patterns
+## Build/Release references and CI
+- **EAS Build profiles**: development/preview/production in `[eas.json](mdc:eas.json)`.
+- **Expo Updates**: Managed via `expo-updates` dependency for OTA updates.
+- **CI/CD**: Keep pipelines green; block merges on test failures. Pipeline docs/tasks live under `tasks/`.
 
-### Key Utilities
-- Haptics: `@/lib/utils/haptics`
-- Image handling: `@/lib/utils/image-picker.ts` and `@/lib/utils/upload-image.ts`
-- Keyboard: `@/components/keyboard/EnhancedKeyboardWrapper`
-- Text inputs: `@/components/ui/EnhancedTextInput`
+## Do and Don't quick rules for agents
+- **Do**: Reuse existing utilities/components before creating new ones.
+- **Do**: Use semantic color tokens and NativeWind classes; keep styles in JSX className, not inline.
+- **Do**: Break features into reusable modules with clear names and strict types.
+- **Do**: Reference files with `mdc:` links in rules and docs.
+- **Don't**: Hardcode colors/styles, duplicate logic, or access Reanimated shared values off the UI thread.
+- **Don't**: Assume APIs—verify with current docs (see below).
 
-## Development Rules
-1. Never duplicate logic—always check for existing utilities/components first
-2. Never hardcode colors or styles—use semantic tokens and NativeWind only
-3. **Reanimated v3.19.0+**: No need for manual `'worklet'` directives (automatic workletization), never access `.value` outside worklets
-4. All code must be fully optimized, DRY, and follow strict TypeScript
-5. Use interfaces for type definitions, never enums
-6. Structure files with main export, subcomponents, helpers, and types
-7. Ensure all components have accessibility props and support screen readers
+## Documentation & research
+- Prefer official docs and recent examples. When implementing or upgrading libraries, verify current APIs and breaking changes.
+- Use these workspace references:
+  - [Nativewind Theming Best Practices.instructions.md](mdc:.github/instructions/Nativewind Theming Best Practices.instructions.md)
+  - [reanimated-best-practices.instructions.md](mdc:.github/instructions/reanimated-best-practices.instructions.md)
+  - [custom-components.instructions.md](mdc:.github/instructions/custom-components.instructions.md)
+  - [Taskmaster Dev Workflow](mdc:.cursor/rules/taskmaster/dev_workflow.mdc)
+  - [Taskmaster Tooling Reference](mdc:.cursor/rules/taskmaster/taskmaster.mdc)
+  - [PRD](mdc:.taskmaster/docs/prd.txt)
+  - [Cursor Rules](mdc:.cursor/rules/cursor_rules.mdc)
 
-## Documentation & Research Rules
-8. **Always use Brave Search or Context7** to fetch the latest documentation when working with any library or technology
-9. **Never assume API knowledge** - always verify current syntax, best practices, and version-specific features
-10. **Check for breaking changes** and new features in library updates before implementation
-11. **Prioritize official documentation** and recent community examples over outdated information
+---
+If anything here drifts from the codebase, update this rule to stay source-of-truth and keep it under 500 lines.

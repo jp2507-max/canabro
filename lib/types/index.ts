@@ -29,12 +29,8 @@ export type {
   FlashListProps 
 } from '@shopify/flash-list';
 
-// FlashList v2 Performance and Hook Types
+// FlashList v2 Types (centralized)
 export type {
-  FlashListV2PerformanceConfig,
-  V2PerformanceMetrics,
-  MessageListItem,
-  DeprecatedPropWarning,
   FlashListV2StateConfig,
   FlashListLayoutConfig,
   FlashListV2StateReturn,
@@ -42,7 +38,15 @@ export type {
   FlashListCombinedStateReturn,
   FlashListItemStateReturn,
   FlashListV2Item,
-  FlashListV2ItemConfig,
+  FlashListV2ItemConfig
+} from './flashlist-v2';
+
+// FlashList v2 Performance and related types (re-exported)
+export type {
+  FlashListV2PerformanceConfig,
+  V2PerformanceMetrics,
+  MessageListItem,
+  DeprecatedPropWarning,
   // Legacy types for backward compatibility
   FlashListPerformanceConfig,
   PerformanceMetrics
