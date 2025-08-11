@@ -271,9 +271,13 @@ describe('Realtime Performance Optimization (ACF-T08.1)', () => {
 
     it('should provide performance presets for different use cases', () => {
       expect(FLASHLIST_PRESETS.LARGE_MESSAGE_HISTORY).toBeDefined();
+      // V2: estimatedItemSize is legacy prop for compatibility
       expect(FLASHLIST_PRESETS.LARGE_MESSAGE_HISTORY.estimatedItemSize).toBe(80);
       expect(FLASHLIST_PRESETS.LARGE_MESSAGE_HISTORY.maxMemoryUsage).toBe(30);
       expect(FLASHLIST_PRESETS.LARGE_MESSAGE_HISTORY.enableMemoryOptimization).toBe(true);
+      // V2: Check for new v2-specific props
+      expect(FLASHLIST_PRESETS.LARGE_MESSAGE_HISTORY.enableAutoSizing).toBe(true);
+      expect(FLASHLIST_PRESETS.LARGE_MESSAGE_HISTORY.maintainVisibleContentPosition).toBeDefined();
       
       expect(FLASHLIST_PRESETS.ACTIVITY_FEED).toBeDefined();
       expect(FLASHLIST_PRESETS.USER_LIST).toBeDefined();
@@ -309,10 +313,12 @@ describe('Realtime Performance Optimization (ACF-T08.1)', () => {
       );
 
       // Verify initial config coming from the hook
-      expect(result.current.flashListProps.estimatedItemSize).toBe(80);
+      // V2: estimatedItemSize is no longer in flashListProps (automatic sizing)
       expect(result.current.flashListProps.maxToRenderPerBatch).toBe(5);
       expect(result.current.flashListProps.windowSize).toBe(5);
       expect(result.current.flashListProps.removeClippedSubviews).toBe(true);
+      // V2: Check for new v2-specific props
+      expect(result.current.flashListProps.maintainVisibleContentPosition).toBeDefined();
 
       // Validate metrics shape and reasonable bounds
       expect(result.current.metrics.totalItems).toBe(testData.length);

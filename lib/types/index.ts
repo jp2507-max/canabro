@@ -23,6 +23,35 @@ export * from './diagnosis';
 // Location related types
 export * from './location';
 
+// FlashList v2 Types (re-exported for convenience)
+export type { 
+  FlashListRef, 
+  FlashListProps 
+} from '@shopify/flash-list';
+
+// FlashList v2 Types (centralized)
+export type {
+  FlashListV2StateConfig,
+  FlashListLayoutConfig,
+  FlashListV2StateReturn,
+  FlashListLayoutReturn,
+  FlashListCombinedStateReturn,
+  FlashListItemStateReturn,
+  FlashListV2Item,
+  FlashListV2ItemConfig
+} from './flashlist-v2';
+
+// FlashList v2 Performance and related types (re-exported)
+export type {
+  FlashListV2PerformanceConfig,
+  V2PerformanceMetrics,
+  MessageListItem,
+  DeprecatedPropWarning,
+  // Legacy types for backward compatibility
+  FlashListPerformanceConfig,
+  PerformanceMetrics
+} from '../utils/flashlist-performance';
+
 /**
  * Common response interface for API calls
  */
