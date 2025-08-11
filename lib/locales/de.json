@@ -124,6 +124,8 @@
       "cannabisType": "Cannabis-Typ",
       "growthStage": "Wachstumsstadium",
       "location": "Standort",
+      "hemisphere": "Hemisphäre",
+      "environment": "Umgebung (optional)",
       "lightConditions": "Lichtverhältnisse",
       "growingMedium": "Anbaumedium",
       "notes": "Notizen (Optional)",
@@ -165,6 +167,12 @@
       "basement": "Keller",
       "garage": "Garage",
       "closet": "Schrank"
+    },
+    "confirm": {
+      "plantTypeTitle": "Pflanzentyp auswählen",
+      "plantTypeMessage": "Wir konnten den Pflanzentyp für diese Sorte nicht erkennen. Bitte wählen Sie einen:",
+      "photoperiod": "Photoperiode",
+      "autoflower": "Autoflower"
     }
   },
   "metricsForm": {

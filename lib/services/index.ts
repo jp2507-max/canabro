@@ -1,3 +1,14 @@
+export { StrainProcessingService } from './StrainProcessingService';
+export type {
+  ProcessedStrainData,
+  CultivationProfile,
+  SeasonalWindow,
+  TimeRangeDays,
+  YieldProfile,
+  YieldCategory,
+  YieldUnit,
+} from './StrainProcessingService';
+
 /**
  * Background Processing Services - Index
  * 

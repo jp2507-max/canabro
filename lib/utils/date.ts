@@ -15,6 +15,16 @@ dayjs.extend(timezone);
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
+// Default timezone for plant scheduling context (Europe/Berlin)
+try {
+  const tz: any = (dayjs as unknown as { tz?: { setDefault?: (tz: string) => void } }).tz;
+  if (tz && typeof tz.setDefault === 'function') {
+    tz.setDefault('Europe/Berlin');
+  }
+} catch {
+  // ignore if plugin not available in some environments
+}
+
 /**
  * Add days to a date
  */

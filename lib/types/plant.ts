@@ -93,6 +93,22 @@ export interface Plant {
   light_condition?: LightCondition;
   location_description?: string; // Kept as string to allow custom descriptions, or use PlantGrowLocation enum
   // If using PlantGrowLocation enum strictly: location_description?: PlantGrowLocation;
+
+  // Normalized strain-based scheduling fields (system-owned)
+  plant_type?: 'photoperiod' | 'autoflower' | 'unknown';
+  baseline_kind?: 'flip' | 'germination';
+  baseline_date?: string; // ISO date string
+  environment?: 'indoor' | 'outdoor' | 'greenhouse';
+  hemisphere?: 'N' | 'S';
+  predicted_flower_min_days?: number;
+  predicted_flower_max_days?: number;
+  predicted_harvest_start?: string; // ISO date string
+  predicted_harvest_end?: string;   // ISO date string
+  schedule_confidence?: number; // 0..1
+  yield_unit?: 'g_per_plant' | 'g_per_m2';
+  yield_min?: number;
+  yield_max?: number;
+  yield_category?: 'low' | 'medium' | 'high' | 'unknown';
 }
 
 /**

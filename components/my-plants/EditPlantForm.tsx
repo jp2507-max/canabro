@@ -23,6 +23,7 @@ import Animated from 'react-native-reanimated';
 
 // ✅ Type imports
 import { RawStrainApiResponse } from '@/lib/types/weed-db';
+import { preparePlantPredictions } from '@/lib/services/StrainIntegrationService';
 import { Strain } from '@/lib/data/strains';
 
 // ✅ Reanimated v3 minimal import - using custom animation hooks for better performance
@@ -883,6 +884,40 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       }
 
       if (result) {
+        // Recompute predictions if we have a selected raw strain
+        try {
+          if (selectedStrain && database) {
+            const plantedISO = updatePayload.plantedDate;
+            const locationDesc = updatePayload.locationDescription;
+            const predictions = preparePlantPredictions(selectedStrain, {
+              plantedDateISO: plantedISO,
+              locationDescription: locationDesc,
+            });
+            const plantRecordLatest = await database.get('plants').find(plant.id);
+            await database.action(async () => {
+              await plantRecordLatest.update((p) => {
+                const pr = p as unknown as Plant;
+                pr.plantType = predictions.plantType;
+                pr.environment = predictions.environment;
+                pr.hemisphere = predictions.hemisphere;
+                pr.baselineKind = predictions.baseline.kind;
+                pr.baselineDate = new Date(predictions.baseline.date);
+                pr.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
+                pr.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
+                pr.predictedHarvestStart = predictions.predictedHarvestStart ?? undefined;
+                pr.predictedHarvestEnd = predictions.predictedHarvestEnd ?? undefined;
+                pr.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
+                pr.yieldUnit = predictions.yieldUnit ?? undefined;
+                pr.yieldMin = predictions.yieldMin ?? undefined;
+                pr.yieldMax = predictions.yieldMax ?? undefined;
+                pr.yieldCategory = predictions.yieldCategory ?? undefined;
+              });
+            });
+          }
+        } catch (e) {
+          console.warn('[EditPlantForm] Prediction recompute skipped:', e);
+        }
+
         console.log('[EditPlantForm] Plant updated successfully');
         Alert.alert(t('editPlantForm:alerts.successTitle'), t('editPlantForm:alerts.successMessage'));
         if (onUpdateSuccess) onUpdateSuccess();
@@ -1158,7 +1193,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             <ThemedView>
               <StrainAutocomplete
                 initialStrainName={value || ''}
-                onStrainSelect={(strainObj: RawStrainApiResponse | null) => {
+                 onStrainSelect={(strainObj: RawStrainApiResponse | null) => {
                   if (strainObj) {
                     // Set the strain name in the form
                     onChange(strainObj.name);

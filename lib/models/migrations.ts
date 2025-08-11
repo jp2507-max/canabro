@@ -850,6 +850,31 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 35: Add normalized strain-based scheduling fields to plants
+    {
+      toVersion: 35,
+      steps: [
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'plant_type', type: 'string', isOptional: true },
+            { name: 'baseline_kind', type: 'string', isOptional: true },
+            { name: 'baseline_date', type: 'number', isOptional: true },
+            { name: 'environment', type: 'string', isOptional: true },
+            { name: 'hemisphere', type: 'string', isOptional: true },
+            { name: 'predicted_flower_min_days', type: 'number', isOptional: true },
+            { name: 'predicted_flower_max_days', type: 'number', isOptional: true },
+            { name: 'predicted_harvest_start', type: 'number', isOptional: true },
+            { name: 'predicted_harvest_end', type: 'number', isOptional: true },
+            { name: 'schedule_confidence', type: 'number', isOptional: true },
+            { name: 'yield_unit', type: 'string', isOptional: true },
+            { name: 'yield_min', type: 'number', isOptional: true },
+            { name: 'yield_max', type: 'number', isOptional: true },
+            { name: 'yield_category', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

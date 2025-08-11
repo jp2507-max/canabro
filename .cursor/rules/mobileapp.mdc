@@ -101,6 +101,9 @@ alwaysApply: true
 - **Do**: Use semantic color tokens and NativeWind classes; keep styles in JSX className, not inline.
 - **Do**: Break features into reusable modules with clear names and strict types.
 - **Do**: Reference files with `mdc:` links in rules and docs.
+- **Do**: Fetch fresh info via Brave Search + Context7 MCP when recency matters.
+
+- **Don’t**: Guess about current versions/APIs; verify with MCP first.
 - **Don't**: Hardcode colors/styles, duplicate logic, or access Reanimated shared values off the UI thread.
 - **Don't**: Assume APIs—verify with current docs (see below).
 

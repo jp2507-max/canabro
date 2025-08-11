@@ -74,6 +74,22 @@ export class Plant extends Model {
   @field('trim_weight') trimWeight?: number;
   @date('harvest_date') harvestDate?: Date;
 
+  // Normalized strain-based scheduling fields
+  @text('plant_type') plantType?: string; // 'photoperiod' | 'autoflower' | 'unknown'
+  @text('baseline_kind') baselineKind?: string; // 'flip' | 'germination'
+  @date('baseline_date') baselineDate?: Date;
+  @text('environment') environment?: string; // 'indoor' | 'outdoor' | 'greenhouse'
+  @text('hemisphere') hemisphere?: string; // 'N' | 'S'
+  @field('predicted_flower_min_days') predictedFlowerMinDays?: number;
+  @field('predicted_flower_max_days') predictedFlowerMaxDays?: number;
+  @date('predicted_harvest_start') predictedHarvestStart?: Date;
+  @date('predicted_harvest_end') predictedHarvestEnd?: Date;
+  @field('schedule_confidence') scheduleConfidence?: number;
+  @text('yield_unit') yieldUnit?: string; // 'g_per_plant' | 'g_per_m2'
+  @field('yield_min') yieldMin?: number;
+  @field('yield_max') yieldMax?: number;
+  @text('yield_category') yieldCategory?: string; // 'low' | 'medium' | 'high' | 'unknown'
+
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;

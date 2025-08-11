@@ -258,6 +258,8 @@
       "cannabisType": "Cannabis Type",
       "growthStage": "Growth Stage",
       "location": "Location",
+      "hemisphere": "Hemisphere",
+      "environment": "Environment (optional)",
       "lightConditions": "Light Conditions",
       "growingMedium": "Growing Medium",
       "notes": "Notes (Optional)",
@@ -299,6 +301,12 @@
       "basement": "Basement",
       "garage": "Garage",
       "closet": "Closet"
+    },
+    "confirm": {
+      "plantTypeTitle": "Select plant type",
+      "plantTypeMessage": "We could not detect the plant type for this strain. Please select one:",
+      "photoperiod": "Photoperiod",
+      "autoflower": "Autoflower"
     }
   },
   "metricsForm": {
@@ -573,6 +581,15 @@
   "failureMessage": "Failed to apply template to {{count}} plant",
   "failureMessage_other": "Failed to apply template to {{count}} plants"
     }
+  },
+  "alerts": {
+    "userNotAuthenticated": "User not authenticated or database not available.",
+    "plantAddedSuccess": "Plant added successfully!",
+    "plantAddError": "Failed to add plant. Please try again.",
+    "resetFailed": "Failed to reset database. Please try again.",
+    "noUserSession": "No user session found",
+    "cleanupFailed": "Cleanup failed: {{message}}",
+    "resetNotNeeded": "Database reset not needed or could not be completed."
   },
   "tasks": {
     "taskType": "Task Type",

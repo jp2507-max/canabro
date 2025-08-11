@@ -10,16 +10,21 @@
 - ✅ **Plant Model** (`lib/models/Plant.ts`) - Already has strain relationship fields
 - ✅ **Strain Search Service** (`lib/services/strain-search.service.ts`) - Intelligent strain search with caching
 
-- [ ] 0. Database & type normalization (do first)
-  - Add normalized fields/enums to **Supabase** + **WatermelonDB**:
-    - `plant_type ('photoperiod'|'autoflower'|'unknown')`
-    - `flower_min_days`, `flower_max_days`; `auto_min_days`, `auto_max_days`
-    - `yield_*_unit ('g_per_plant'|'g_per_m2')`, `yield_*_min`, `yield_*_max`, `yield_*_category`
-    - `baseline_kind ('flip'|'germination')`, `baseline_date`
-    - `environment ('indoor'|'outdoor'|'greenhouse')`, `hemisphere ('N'|'S')`
-    - `predicted_harvest_start`, `predicted_harvest_end`, `schedule_confidence`
-  - Write a migration/backfill for existing plants (set defaults).
-  - _Requirements: 1.1, 1.2, 2.1, 6.1_
+ - [x] 0. Database & type normalization (do first)
+   - Add normalized fields/enums to **Supabase** + **WatermelonDB** (kept in lockstep) and mirror in **TypeScript** types:
+     - `plant_type ('photoperiod'|'autoflower'|'unknown')`
+     - `baseline_kind ('flip'|'germination')`, `baseline_date`
+     - `environment ('indoor'|'outdoor'|'greenhouse')`, `hemisphere ('N'|'S')`
+     - `predicted_flower_min_days`, `predicted_flower_max_days`
+     - `predicted_harvest_start`, `predicted_harvest_end`, `schedule_confidence`
+     - `yield_unit ('g_per_plant'|'g_per_m2')`, `yield_min`, `yield_max`, `yield_category ('low'|'medium'|'high'|'unknown')`
+   - Acceptance:
+     - Migrations are idempotent and do not break existing CRUD.
+     - Range constraints enforced (`min ≤ max`, non-negative); basic indexes exist on `plant_type`, `environment`.
+     - Predictions are system-owned and stored on `plants` (not user-editable).
+     - WatermelonDB schema version bumped with matching columns; TS types updated.
+   - Write a safe backfill for existing plants (leave new fields null where unknown; no breaking defaults).
+   - _Requirements: 1.1, 1.2, 2.1, 6.1_
 
 - [ ] 1. StrainProcessingService (parser + normalization)
   - Implement regex parsers:
@@ -32,37 +37,38 @@
   - Cache normalized profiles (24h TTL) and memoize parser by API id + version.
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 2. Data models
-- [ ] 2.1 StrainProfile (WatermelonDB)
-  - Schema for normalized data (cultivation, genetics, ranges/enums, confidence).
-  - Index by `api_id`, `name`.
-  - _Requirements: 1.1, 6.4_
+ - [x] 2. Data models
+ - [ ] 2.1 StrainProfile (WatermelonDB) — Phase 2 (optional)
+   - Schema for normalized data (cultivation, genetics, ranges/enums, confidence).
+   - Index by `api_id`, `name`.
+   - Note: can be deferred; current phase relies on existing `strains` table plus per-plant predicted fields.
+   - _Requirements: 1.1, 6.4_
 
-- [ ] 2.2 Plant model extensions
+- [x] 2.2 Plant model extensions
   - Store only **references** and predictions; do **not** hard-code intervals here.
-  - Fields: `strain_profile_id`, `plant_type`, `environment`, `hemisphere`, `baseline_kind/date`,
-    `predicted_harvest_start/end`, `schedule_confidence`, `predicted_flower_min/max_days`,
+  - Fields: `strain_id` (reference), `plant_type`, `environment`, `hemisphere`, `baseline_kind/date`,
+    `predicted_flower_min/max_days`, `predicted_harvest_start/end`, `schedule_confidence`,
     `yield_unit/min/max/category`.
   - _Requirements: 1.2, 1.5, 6.1_
 
-- [ ] 2.3 PlantStrainData (per-plant adaptations)
-  - Customizations (overrides), learning data, notes.
-  - Relationships: Plant ↔ StrainProfile ↔ PlantStrainData.
-  - _Requirements: 1.4, 6.2, 6.4_
+- [ ] 2.3 PlantStrainData (per-plant adaptations) — Phase 2 (optional)
+   - Customizations (overrides), learning data, notes.
+   - Relationships: Plant ↔ StrainProfile ↔ PlantStrainData.
+   - _Requirements: 1.4, 6.2, 6.4_
 
-- [ ] 3. StrainIntegrationService
-- [ ] 3.1 Core integration
+- [x] 3. StrainIntegrationService
+- [x] 3.1 Core integration
   - Plant creation: bind normalized strain; set environment, hemisphere, baseline.
   - Detect photoperiod vs autoflower (fallback to user confirm if unknown).
   - **REUSE**: Extend existing `AddPlantForm.tsx` and `EditPlantForm.tsx` with strain integration
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 3.2 Cultivation profile generator
+- [x] 3.2 Cultivation profile generator
   - Parse **to days**, normalize yields/height, difficulty enums, indoor/outdoor flags.
   - **REUSE**: Build on existing strain API parsing in `strain-search.service.ts`
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 3.3 Baseline & locale
+- [x] 3.3 Baseline & locale
   - Photoperiod: `flip + flower_min/max_days`; Autoflower: `germination + auto_min/max_days`.
   - Default TZ **Europe/Berlin**; hemisphere detection with override.
   - **REUSE**: Extend existing date utilities in `lib/utils/date.ts`
