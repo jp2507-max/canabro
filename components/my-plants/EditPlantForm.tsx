@@ -1229,6 +1229,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                   }
                 }}
                 placeholder={t('editPlantForm:placeholders.strain')}
+                showCultivationPreview
+                confirmOnSelect={false}
               />
               {error && (
                 <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>

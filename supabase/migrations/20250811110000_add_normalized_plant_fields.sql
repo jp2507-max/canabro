@@ -14,11 +14,17 @@ ALTER TABLE public.plants
   ADD COLUMN IF NOT EXISTS predicted_flower_max_days integer,
   ADD COLUMN IF NOT EXISTS predicted_harvest_start timestamptz,
   ADD COLUMN IF NOT EXISTS predicted_harvest_end timestamptz,
-  ADD COLUMN IF NOT EXISTS schedule_confidence numeric,
+  ADD COLUMN IF NOT EXISTS schedule_confidence numeric(3,2),
   ADD COLUMN IF NOT EXISTS yield_unit text,
-  ADD COLUMN IF NOT EXISTS yield_min numeric,
-  ADD COLUMN IF NOT EXISTS yield_max numeric,
+  ADD COLUMN IF NOT EXISTS yield_min numeric(10,2),
+  ADD COLUMN IF NOT EXISTS yield_max numeric(10,2),
   ADD COLUMN IF NOT EXISTS yield_category text;
+
+-- Ensure fixed precision for numeric fields even if columns pre-existed (idempotent-safe)
+ALTER TABLE public.plants
+  ALTER COLUMN schedule_confidence TYPE numeric(3,2) USING schedule_confidence::numeric(3,2),
+  ALTER COLUMN yield_min TYPE numeric(10,2) USING yield_min::numeric(10,2),
+  ALTER COLUMN yield_max TYPE numeric(10,2) USING yield_max::numeric(10,2);
 
 -- Enumerated value constraints (idempotent)
 DO $$ BEGIN
@@ -49,6 +55,14 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
   ALTER TABLE public.plants
     ADD CONSTRAINT chk_plants_yield_category CHECK (yield_category IS NULL OR yield_category IN ('low','medium','high','unknown'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Require yield_unit when either yield_min or yield_max is set (idempotent)
+DO $$ BEGIN
+  ALTER TABLE public.plants
+    ADD CONSTRAINT chk_plants_yield_requires_unit CHECK (
+      (yield_min IS NULL AND yield_max IS NULL) OR yield_unit IS NOT NULL
+    );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Numeric bounds & ranges (idempotent)

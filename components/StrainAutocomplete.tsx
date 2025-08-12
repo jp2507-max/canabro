@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Haptics from '@/lib/utils/haptics';
 import { debounce } from 'lodash-es';
+import { strainIndexService } from '@/lib/services/strain-index.service';
 import { useColorScheme } from 'nativewind';
 import React, {
   useState,
@@ -26,6 +27,8 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
+import StrainConfirmationModal from '@/components/strains/StrainConfirmationModal';
+import { preparePlantPredictions } from '@/lib/services/StrainIntegrationService';
 
 import ThemedText from './ui/ThemedText';
 import { EnhancedTextInput } from './ui/EnhancedTextInput';
@@ -46,6 +49,9 @@ interface StrainAutocompleteProps {
   onBlur?: () => void;
   onSubmitEditing?: () => void;
   returnKeyType?: 'search' | 'next' | 'done' | 'go' | 'send';
+  showCultivationPreview?: boolean; // Task 6.1
+  confirmOnSelect?: boolean; // Task 6.2
+  plantedDateISO?: string; // optional context for predictions
 }
 
 // Ref interface for focus control
@@ -127,12 +133,20 @@ const AnimatedLoadingIndicator: React.FC<{
 };
 
 // Animated suggestion item with optimized animations
+type SuggestionPreview = {
+  flowering?: string;
+  difficulty?: string;
+  yieldText?: string;
+  harvest?: string;
+};
+
 const AnimatedSuggestionItem: React.FC<{
   strain: RawStrainApiResponse;
   onSelect: (strain: RawStrainApiResponse) => void;
   getSourceLabel: (source?: string) => string;
   index: number;
-}> = ({ strain, onSelect, getSourceLabel, index }) => {
+  preview?: SuggestionPreview | null;
+}> = ({ strain, onSelect, getSourceLabel, index, preview }) => {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
@@ -218,6 +232,38 @@ const AnimatedSuggestionItem: React.FC<{
               {strain.type}
             </ThemedText>
           )}
+          {preview && (
+            <View className="mt-1 flex-row flex-wrap">
+              {preview.flowering ? (
+                <View className="mr-1 mb-1 rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-700">
+                  <ThemedText className="text-[10px] text-neutral-700 dark:text-neutral-200">
+                    {preview.flowering}
+                  </ThemedText>
+                </View>
+              ) : null}
+              {preview.difficulty ? (
+                <View className="mr-1 mb-1 rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-700">
+                  <ThemedText className="text-[10px] text-neutral-700 dark:text-neutral-200">
+                    {preview.difficulty}
+                  </ThemedText>
+                </View>
+              ) : null}
+              {preview.yieldText ? (
+                <View className="mr-1 mb-1 rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-700">
+                  <ThemedText className="text-[10px] text-neutral-700 dark:text-neutral-200">
+                    {preview.yieldText}
+                  </ThemedText>
+                </View>
+              ) : null}
+              {preview.harvest ? (
+                <View className="mr-1 mb-1 rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-700">
+                  <ThemedText className="text-[10px] text-neutral-700 dark:text-neutral-200">
+                    {preview.harvest}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </View>
+          )}
         </View>
         <View className={`rounded-lg px-2 py-1 ${getSourceBadgeClass(strain._source)}`}>
           <ThemedText className={`text-xs font-medium ${getSourceTextClass(strain._source)}`}>
@@ -244,6 +290,9 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
       onBlur,
       onSubmitEditing,
       returnKeyType = 'search',
+      showCultivationPreview = true,
+      confirmOnSelect = true,
+      plantedDateISO,
     },
     ref
   ): React.JSX.Element => {
@@ -251,6 +300,8 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
     const [searchTerm, setSearchTerm] = useState<string>(initialStrainName);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(searchTerm);
     const [isFocused, setIsFocused] = useState<boolean>(false);
+    const [pendingSelection, setPendingSelection] = useState<RawStrainApiResponse | null>(null);
+    const [confirmVisible, setConfirmVisible] = useState<boolean>(false);
 
     // Enhanced keyboard handling for single search input
     const searchInputRef = useRef<TextInput>(null);
@@ -324,6 +375,9 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
           `[StrainAutocomplete] Searching for "${debouncedSearchTerm}" using intelligent search`
         );
 
+        // Ensure local index is fresh in the background for snappy UX
+        strainIndexService.ensureFresh().catch(() => {});
+
         const results = await searchStrainsIntelligent(debouncedSearchTerm, limit);
 
         Logger.debug(
@@ -365,9 +419,14 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
         `[StrainAutocomplete] Strain selected: ${strain.name} (API ID: ${strain.api_id})`
       );
       setSearchTerm(strain.name);
-      onStrainSelect(strain);
-      setIsFocused(false);
-      Keyboard.dismiss();
+      if (confirmOnSelect) {
+        setPendingSelection(strain);
+        setConfirmVisible(true);
+      } else {
+        onStrainSelect(strain);
+        setIsFocused(false);
+        Keyboard.dismiss();
+      }
 
       // Success haptic feedback
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -395,6 +454,7 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
     };
 
     return (
+      <>
       <Animated.View
         style={[containerStyle, containerAnimatedStyle]}
         className="relative z-10 w-full">
@@ -459,19 +519,48 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
               </Animated.View>
             )}
 
-            <ScrollView
+              <ScrollView
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               className="max-h-52">
-              {strainData.map((item, index) => (
-                <AnimatedSuggestionItem
-                  key={item.api_id || `strain-${index}`}
-                  strain={item}
-                  onSelect={handleSelectStrain}
-                  getSourceLabel={getSourceLabel}
-                  index={index}
-                />
-              ))}
+              {strainData.map((item, index) => {
+                const preview = showCultivationPreview
+                  ? (() => {
+                      try {
+                        const preds = preparePlantPredictions(item, {
+                          plantedDateISO: plantedDateISO || new Date().toISOString(),
+                        });
+                        const flowering =
+                          preds.predictedFlowerMinDays !== null && preds.predictedFlowerMaxDays !== null
+                            ? `${preds.predictedFlowerMinDays}-${preds.predictedFlowerMaxDays}d`
+                            : undefined;
+                        const yieldText =
+                          preds.yieldMin !== null && preds.yieldMax !== null && preds.yieldUnit
+                            ? preds.yieldUnit === 'g_per_plant'
+                              ? `${preds.yieldMin}-${preds.yieldMax} g/plant`
+                              : `${preds.yieldMin}-${preds.yieldMax} g/m²`
+                            : undefined;
+                        const harvest = preds.predictedHarvestStart && preds.predictedHarvestEnd
+                          ? `${new Date(preds.predictedHarvestStart).toLocaleDateString()} → ${new Date(preds.predictedHarvestEnd).toLocaleDateString()}`
+                          : undefined;
+                        const difficulty = (item.growDifficulty || item.difficulty) as string | undefined;
+                        return { flowering, yieldText, harvest, difficulty } as SuggestionPreview;
+                      } catch {
+                        return null;
+                      }
+                    })()
+                  : null;
+                return (
+                  <AnimatedSuggestionItem
+                    key={item.api_id || `strain-${index}`}
+                    strain={item}
+                    onSelect={handleSelectStrain}
+                    getSourceLabel={getSourceLabel}
+                    index={index}
+                    preview={preview}
+                  />
+                );
+              })}
             </ScrollView>
           </Animated.View>
         )}
@@ -495,6 +584,27 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
             </Animated.View>
           )}
       </Animated.View>
+      {/* Confirmation Modal (Task 6.2) */}
+      {confirmOnSelect && (
+        <StrainConfirmationModal
+          visible={confirmVisible}
+          strain={pendingSelection}
+          plantedDateISO={plantedDateISO}
+          onClose={() => {
+            setConfirmVisible(false);
+            setPendingSelection(null);
+          }}
+          onConfirm={({ predictions }) => {
+            // We only pass the raw strain back up for now; callers can compute predictions too
+            onStrainSelect(pendingSelection);
+            setConfirmVisible(false);
+            setPendingSelection(null);
+            setIsFocused(false);
+            Keyboard.dismiss();
+          }}
+        />
+      )}
+    </>
     );
   }
 );

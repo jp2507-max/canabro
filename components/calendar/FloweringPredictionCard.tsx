@@ -102,6 +102,27 @@ const ConfidenceBadge: React.FC<{ level: 'low' | 'medium' | 'high' }> = ({ level
   );
 };
 
+// Formats the predicted yield range with units and optional category label.
+// Extracted from JSX to improve readability and maintainability.
+function formatYieldRange(yieldInfo: NonNullable<FloweringPrediction['yield']>): string {
+  const { unit, min, max, category } = yieldInfo;
+  const unitLabel = unit === 'g_per_m2' ? 'g/m²' : 'g/plant';
+
+  let range: string;
+  if (min != null && max != null) {
+    range = `${min}–${max} ${unitLabel}`;
+  } else if (min != null) {
+    range = `${min}+ ${unitLabel}`;
+  } else if (max != null) {
+    range = `up to ${max} ${unitLabel}`;
+  } else {
+    range = `unknown ${unitLabel}`;
+  }
+
+  const categorySuffix = category && category !== 'unknown' ? ` • ${category}` : '';
+  return `${range}${categorySuffix}`;
+}
+
 export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = ({
   plant,
   onPredictionUpdate,
@@ -283,13 +304,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
                 Yield expectation:
               </Text>
               <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
-                {(() => {
-                  const { unit, min, max, category } = prediction.yield!;
-                  const unitLabel = unit === 'g_per_m2' ? 'g/m²' : 'g/plant';
-                  const range = min != null && max != null ? `${min}–${max} ${unitLabel}` : min != null ? `${min}+ ${unitLabel}` : max != null ? `up to ${max} ${unitLabel}` : `unknown ${unitLabel}`;
-                  const cat = category && category !== 'unknown' ? ` • ${category}` : '';
-                  return `${range}${cat}`;
-                })()}
+                {formatYieldRange(prediction.yield!)}
               </Text>
             </View>
           )}

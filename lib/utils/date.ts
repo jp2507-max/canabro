@@ -9,6 +9,9 @@ import timezone from 'dayjs/plugin/timezone';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 
+// Default timezone used across the app
+export const DEFAULT_TZ = 'Europe/Berlin';
+
 // Initialize dayjs plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -17,13 +20,14 @@ dayjs.extend(localizedFormat);
 
 // Default timezone for plant scheduling context (Europe/Berlin)
 try {
-  const tz: any = (dayjs as unknown as { tz?: { setDefault?: (tz: string) => void } }).tz;
-  if (tz && typeof tz.setDefault === 'function') {
-    tz.setDefault('Europe/Berlin');
-  }
+  // Use optional chaining so this safely no-ops if the timezone plugin isn't loaded
+  dayjs.tz.setDefault(DEFAULT_TZ);
 } catch {
   // ignore if plugin not available in some environments
 }
+
+// Re-export configured dayjs so consumers can keep using the familiar API
+export default dayjs;
 
 /**
  * Add days to a date
@@ -65,7 +69,7 @@ export function isSameDay(date1: Date, date2: Date): boolean {
  */
 export function isWithinInterval(date: Date, start: Date, end: Date): boolean {
   const target = dayjs(date);
-  return target.isAfter(dayjs(start)) && target.isBefore(dayjs(end));
+  return !target.isBefore(dayjs(start)) && !target.isAfter(dayjs(end));
 }
 
 /**
@@ -146,26 +150,29 @@ export function formatLocaleDate(
   date: Date, 
   options: string | { format?: string; language?: string } = 'en-US'
 ): string {
+  // If a string is provided, treat it as a language code and use default format
   if (typeof options === 'string') {
-    return dayjs(date).format('MMM D, YYYY');
+    const language = options;
+    return dayjs(date).locale(language).format('MMM D, YYYY');
   }
-  
-  const { format = 'MMM D, YYYY', language = 'en-US' } = options;
-  return dayjs(date).format(format);
+
+  const { format = 'MMM D, YYYY', language = 'en' } = options;
+  return dayjs(date).locale(language).format(format);
 }
 
 /**
  * Check if a date is valid for scheduling (not in the past)
  */
 export function isValidScheduleDate(date: Date, minMinutesInFuture: number = 0): boolean {
-  const now = new Date();
-  const targetTime = new Date(date.getTime() + (minMinutesInFuture * 60 * 1000));
-  return dayjs(targetTime).isAfter(dayjs(now));
+  const now = dayjs();
+  const target = dayjs(date).add(minMinutesInFuture, 'minute');
+  return target.isAfter(now);
 }
 
 /**
  * Add days to date and return new Date
  */
 export function addDaysToDate(date: Date, days: number): Date {
-  return dayjs(date).add(days, 'day').toDate();
+  // Alias maintained for backwards compatibility
+  return addDays(date, days);
 }

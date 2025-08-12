@@ -153,6 +153,46 @@ export function validateStrainData(data: ProcessedStrainData): { valid: boolean;
   return { valid: errors.length === 0, errors };
 }
 
+/**
+ * Returns true if any numeric cultivation range exists that could drive a schedule.
+ */
+export function hasCultivationRangeData(cultivation: CultivationProfile): boolean {
+  const d = cultivation.floweringDays;
+  const a = cultivation.autoSeedToHarvestDays;
+  const hasDays =
+    (d && d.minDays !== null && d.maxDays !== null) ||
+    (a && a.minDays !== null && a.maxDays !== null);
+  return Boolean(hasDays) || Boolean(cultivation.harvestWindow);
+}
+
+/**
+ * Generic, conservative cultivation profile used as a fallback when parsing fails
+ * or data is incomplete. Values are intentionally broad with low confidence.
+ */
+export function buildGenericCultivationProfile(): CultivationProfile {
+  const genericDays: TimeRangeDays = {
+    minDays: 56, // ~8 weeks
+    maxDays: 70, // ~10 weeks
+    source: 'inferred',
+    confidence: 0.4,
+  };
+  const genericYield: YieldProfile = {
+    unit: null,
+    min: null,
+    max: null,
+    category: 'unknown',
+    confidence: 0.3,
+  };
+  return {
+    floweringDays: genericDays,
+    autoSeedToHarvestDays: null,
+    harvestWindow: null,
+    yieldIndoor: genericYield,
+    yieldOutdoor: genericYield,
+    growthDifficulty: 'unknown',
+  };
+}
+
 // --- Parsing helpers ---
 
 function getStringField(obj: Record<string, unknown>, keys: string[]): string | null {

@@ -172,7 +172,26 @@
       "plantTypeTitle": "Pflanzentyp auswählen",
       "plantTypeMessage": "Wir konnten den Pflanzentyp für diese Sorte nicht erkennen. Bitte wählen Sie einen:",
       "photoperiod": "Photoperiode",
-      "autoflower": "Autoflower"
+      "autoflower": "Autoflower",
+      "baselineTitle": "Basisdatum",
+      "baselineMessage": "Für Photoperioden-Sorten basiert der Zeitplan auf dem Umstellungsdatum (Flip). Wir verwenden vorerst das Pflanzdatum, bis Sie es später anpassen."
+    }
+    ,
+    "preview": {
+      "title": "Zeitplanvorschau",
+      "flowering": "Blüte: {{min}}-{{max}}T",
+      "harvest": "Ernte: ~{{start}} → {{end}}",
+      "yieldM2": "Ertrag: {{min}}-{{max}} g/m²",
+      "yieldPlant": "Ertrag: {{min}}-{{max}} g/Pflanze",
+      "confidence": "Konfidenz: {{c}}"
+    },
+    "experience": {
+      "beginner": "Anfänger",
+      "intermediate": "Fortgeschritten",
+      "advanced": "Experte"
+    },
+    "fields": {
+      "experienceLevel": "Erfahrungsstufe"
     }
   },
   "metricsForm": {
@@ -396,6 +415,28 @@
       "flushing": "Spülung"
     }
   },
+  "calendar": {
+    "screen": {
+      "no_tasks_scheduled": "Keine Aufgaben geplant",
+      "tap_to_add_task": "Tippen Sie auf die + Schaltfläche, um Ihre erste Aufgabe für diesen Tag hinzuzufügen",
+      "loading_tasks": "Aufgaben werden geladen...",
+      "add_task_button": "Aufgabe hinzufügen",
+      "group_by_strain": "Nach Sorte gruppieren",
+      "group_on": "Gruppierung: Sorte (aus)",
+      "group_off": "Gruppierung: Sorte (ein)",
+      "open_analytics": "Analytik öffnen",
+      "analytics": "Analytik",
+      "compare_strains": "Sorten vergleichen"
+    },
+    "strain_banner": {
+      "title": "Sorten-Meilensteine heute",
+      "within_window": "{{countStrains}} Sorte(n) im Fenster • {{countTasks}} zugehörige Aufgabe(n)"
+    },
+    "analytics": {
+      "title": "Kalender-Analytik",
+      "close": "Schließen"
+    }
+  },
   "forms": {
     "placeholders": {
       "selectStrain": "Wählen Sie eine Sorte zum Testen",
@@ -532,6 +573,45 @@
     "tryDifferentSpelling": "Versuchen Sie eine andere Schreibweise oder weniger Zeichen.",
     "searchStrain": "Sorte suchen",
     "typeToSearch": "Zum Suchen tippen..."
+  },
+  "guidance": {
+    "preview": {
+      "difficulty": "Schwierigkeit: {{d}}"
+    },
+    "genetics": {
+      "indica": {
+        "default": "Indica: kompakter Wuchs; Kronendach für Luftstrom offen halten.",
+        "flowering": "Indica: Luftfeuchtigkeit überwachen, um Schimmel an dichten Blüten zu verhindern."
+      },
+      "sativa": {
+        "default": "Sativa: höhere Lichttoleranz; Höhe und Abstand überwachen.",
+        "pre_flower": "Sativa: mit Stretch rechnen; Training/Stützen früh planen."
+      },
+      "hybrid": {
+        "default": "Hybrid: Training und Düngung ausbalancieren; Elterneigenschaften beobachten."
+      },
+      "cbd": {
+        "default": "CBD-dominant: gesundes Wachstum priorisieren statt hoher EC-Werte."
+      }
+    },
+    "difficulty": {
+      "easy": {
+        "watering": "Anfänger: erst gießen, wenn die obere Erdschicht trocken ist.",
+        "feeding": "Anfänger: mit 50% Nährstoffstärke starten; auf Verbrennungen achten.",
+        "inspection": "Anfänger: täglicher Kurzcheck auf Schädlinge oder Schlappheit genügt.",
+        "default": "Anfänger: Schritte einfach halten und Pflanze nicht überarbeiten."
+      },
+      "medium": {
+        "training": "Fortgeschritten: LST/SCROG schrittweise anwenden, um Stress zu vermeiden.",
+        "default": "Fortgeschritten: Plan befolgen und anhand der Pflanzenreaktion anpassen."
+      },
+      "hard": {
+        "feeding": "Experte: EC/PPM und pH bei jeder Düngung exakt nachverfolgen.",
+        "inspection": "Experte: Trichome, VPD prüfen und auf Mikro-Stress achten.",
+        "defoliation": "Experte: konservativ entlauben, um Ertragsverluste zu vermeiden.",
+        "default": "Experte: Toleranzen verengen; Änderungen protokollieren, um Drift zu vermeiden."
+      }
+    }
   },
   "diagnosis": {
     "title": "Pflanzenarzt",

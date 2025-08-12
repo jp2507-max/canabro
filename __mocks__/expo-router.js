@@ -9,20 +9,20 @@ const createMockFunction =
         return noop;
       };
 
-export const useRouter = () => ({
-  push: createMockFunction(),
-  replace: createMockFunction(),
-  back: createMockFunction(),
-  prefetch: createMockFunction(),
-});
-
-// New aggregated router object to mirror expo-router's named export
+// New aggregated router object to mirror expo-router's named export.
+// Important: create shared mock functions so tests can reliably spy on them.
 export const router = {
   push: createMockFunction(),
   replace: createMockFunction(),
   back: createMockFunction(),
   prefetch: createMockFunction(),
+  // Added common APIs to align with router usage in code/tests
+  setParams: createMockFunction(),
+  canGoBack: createMockFunction(),
 };
+
+// Return the shared router instance (not fresh functions each call)
+export const useRouter = () => router;
 
 export const useLocalSearchParams = () => ({});
 export const useSearchParams = () => ({});

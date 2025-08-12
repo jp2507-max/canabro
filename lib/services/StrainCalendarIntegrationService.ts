@@ -293,10 +293,14 @@ export class StrainCalendarIntegrationService {
       }
 
       // Attach simple actual vs predicted if actual harvest exists
-      if (plant.harvestDate instanceof Date && !isNaN(plant.harvestDate.getTime())) {
-        const delta = Math.round((plant.harvestDate.getTime() - harvestDate.getTime()) / (1000 * 60 * 60 * 24));
+      const actualHarvest = plant.harvestDate;
+      const isValidActual = actualHarvest instanceof Date && !isNaN(actualHarvest.getTime());
+      const isValidPredicted = harvestDate instanceof Date && !isNaN(harvestDate.getTime());
+
+      if (isValidActual && isValidPredicted) {
+        const delta = Math.round((actualHarvest.getTime() - harvestDate.getTime()) / (1000 * 60 * 60 * 24));
         prediction.actualVsPredicted = {
-          actualHarvestDate: plant.harvestDate,
+          actualHarvestDate: actualHarvest,
           deltaHarvestDays: delta,
         };
       }

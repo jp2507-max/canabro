@@ -12,7 +12,43 @@ export * from './plant';
 export * from './diary';
 
 // Community related types
-export * from './community';
+// Avoid re-exporting Environment to prevent conflict with plant.Environment
+export { COMMUNITY_ANIMATION_CONFIG, COMMUNITY_SCALE_VALUES } from './community';
+export type {
+  PostAuthor,
+  PostData,
+  PostType,
+  CommunityGrowthStage,
+  PostCategory,
+  Post,
+  LegacyPost,
+  Comment,
+  UsePostsParams,
+  CommentWithLikeStatus,
+  Like,
+  Follow,
+  CreatePostData,
+  CreatePostCommentData,
+  Activity, // enum ActivityType is exported below as value
+  PostFilter,
+  PostFilterConfig,
+  QuestionCategory,
+  CommunityGrowingMedium,
+  // Environment intentionally omitted
+  ContentType,
+  CommunityQuestion,
+  CommunityPlantShare,
+  QuestionFilters,
+  PlantShareFilters,
+  CreateQuestionData,
+  CreatePlantShareData,
+  CreateAnswerData,
+  CreatePlantShareCommentData,
+  PostActionHandlers,
+  PostActionState,
+  BasePostItemProps,
+} from './community';
+export { ActivityType } from './community';
 
 // Strain related types
 export * from './strain';

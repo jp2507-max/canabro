@@ -101,6 +101,30 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// ETag cache (in-memory + persisted for session)
+const etagStoreKey = 'weeddb-etags';
+let etagStore: Record<string, string> | null = null;
+
+async function loadEtagStore(): Promise<Record<string, string>> {
+  if (etagStore) return etagStore;
+  try {
+    const raw = await AsyncStorage.getItem(etagStoreKey);
+    etagStore = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    etagStore = {};
+  }
+  return etagStore!;
+}
+
+async function saveEtagStore(): Promise<void> {
+  if (!etagStore) return;
+  try {
+    await AsyncStorage.setItem(etagStoreKey, JSON.stringify(etagStore));
+  } catch {
+    // ignore
+  }
+}
+
 // --- Caching Utilities ---
 interface CacheEntry<T> {
   data: T;
@@ -484,14 +508,27 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
   }
 
   try {
+    // Prepare ETag conditional headers
+    const etags = await loadEtagStore();
+    const etagKey = `/strains:${JSON.stringify(formattedParams)}`;
+    const ifNoneMatch = etags[etagKey];
+
     logger.log(`[DEBUG] Fetching strains with params:`, formattedParams);
     const response = await requestWithRetry<
       AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>
     >(() =>
       axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', {
         params: formattedParams,
+        headers: ifNoneMatch ? { 'If-None-Match': ifNoneMatch } : undefined,
+        validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
       })
     );
+
+    // Handle 304 Not Modified
+    if (response.status === 304 && cachedData) {
+      logger.log('[DEBUG] 304 Not Modified - serving cached list');
+      return { data: cachedData, isFromCache: true };
+    }
 
     const rawStrains = Array.isArray(response.data)
       ? (response.data as RawStrainApiResponse[])
@@ -512,6 +549,12 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
     logger.log(`[DEBUG] Mapped ${mappedStrains.length} strains successfully`);
 
     await saveToCache(cacheKey, mappedStrains);
+    // Persist ETag for this query
+    const newEtag = response.headers?.etag || response.headers?.ETag;
+    if (newEtag) {
+      etags[etagKey] = newEtag as string;
+      await saveEtagStore();
+    }
     return { data: mappedStrains, isFromCache: false };
   } catch (error) {
     logger.error('Error fetching strains:', error);
@@ -557,14 +600,24 @@ async function fetchStrainsPaginated(params: StrainFilterParams): Promise<Pagina
   }
 
   try {
+    const etags = await loadEtagStore();
+    const etagKey = `/strains:paginated:${JSON.stringify(formattedParams)}`;
+    const ifNoneMatch = etags[etagKey];
     logger.log(`[DEBUG] Fetching paginated strains with params:`, formattedParams);
     const response = await requestWithRetry<
       AxiosResponse<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>
     >(() =>
       axiosInstance.get<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>('/strains', {
         params: formattedParams,
+        headers: ifNoneMatch ? { 'If-None-Match': ifNoneMatch } : undefined,
+        validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
       })
     );
+
+    if (response.status === 304 && cachedData) {
+      logger.log('[DEBUG] 304 Not Modified - serving cached paginated data');
+      return { data: cachedData, isFromCache: true };
+    }
 
     // Handle different response formats
     let paginatedData: PaginatedResponse<Strain>;
@@ -631,6 +684,11 @@ async function fetchStrainsPaginated(params: StrainFilterParams): Promise<Pagina
     logger.log(`[DEBUG] Mapped ${paginatedData.items.length} strains successfully (page ${paginatedData.page}/${paginatedData.total_pages})`);
 
     await saveToCache(cacheKey, paginatedData);
+    const newEtag = response.headers?.etag || response.headers?.ETag;
+    if (newEtag) {
+      etags[etagKey] = newEtag as string;
+      await saveEtagStore();
+    }
     return { data: paginatedData, isFromCache: false };
   } catch (error) {
     logger.error('Error fetching paginated strains:', error);

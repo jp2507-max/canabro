@@ -306,7 +306,26 @@
       "plantTypeTitle": "Select plant type",
       "plantTypeMessage": "We could not detect the plant type for this strain. Please select one:",
       "photoperiod": "Photoperiod",
-      "autoflower": "Autoflower"
+      "autoflower": "Autoflower",
+      "baselineTitle": "Baseline date",
+      "baselineMessage": "For photoperiod strains, the schedule is based on the flip date. We will use the planted date until you adjust it later."
+    }
+    ,
+    "preview": {
+      "title": "Schedule preview",
+      "flowering": "Flowering: {{min}}-{{max}}d",
+      "harvest": "Harvest: ~{{start}} → {{end}}",
+      "yieldM2": "Yield: {{min}}-{{max}} g/m²",
+      "yieldPlant": "Yield: {{min}}-{{max}} g/plant",
+      "confidence": "Confidence: {{c}}"
+    },
+    "experience": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "fields": {
+      "experienceLevel": "Experience level"
     }
   },
   "metricsForm": {
@@ -812,7 +831,25 @@
       "no_tasks_scheduled": "No tasks scheduled",
       "tap_to_add_task": "Tap the + button to add your first task for this day",
       "loading_tasks": "Loading tasks...",
-      "add_task_button": "Add Task"
+      "add_task_button": "Add Task",
+      "group_by_strain": "Group by strain",
+      "group_on": "Grouping: strain (off)",
+      "group_off": "Grouping: strain (on)",
+      "open_analytics": "Open analytics",
+      "analytics": "Analytics"
+    }
+  },
+  "calendar": {
+    "strain_banner": {
+      "title": "Strain milestones today",
+      "within_window": "{{countStrains}} strain(s) within window • {{countTasks}} related task(s)"
+    },
+    "analytics": {
+      "title": "Calendar Analytics",
+      "close": "Close"
+    },
+    "screen": {
+      "compare_strains": "Compare strains"
     }
   },
   "profile": {
@@ -944,6 +981,45 @@
     "tryDifferentSpelling": "Try a different spelling or fewer characters.",
     "searchStrain": "Search Strain",
     "typeToSearch": "Type to search..."
+  },
+  "guidance": {
+    "preview": {
+      "difficulty": "Difficulty: {{d}}"
+    },
+    "genetics": {
+      "indica": {
+        "default": "Indica: compact growth; keep canopy open for airflow.",
+        "flowering": "Indica: watch humidity to prevent mold in dense buds."
+      },
+      "sativa": {
+        "default": "Sativa: higher light tolerance; monitor height and distance.",
+        "pre_flower": "Sativa: expect stretch; plan training/support early."
+      },
+      "hybrid": {
+        "default": "Hybrid: balance training and feeding; observe parent traits."
+      },
+      "cbd": {
+        "default": "CBD-dominant: prioritize healthy growth over high EC levels."
+      }
+    },
+    "difficulty": {
+      "easy": {
+        "watering": "Beginner: water only when top soil is dry to the touch.",
+        "feeding": "Beginner: start at 50% nutrient strength; watch for burn.",
+        "inspection": "Beginner: quick daily check for pests or droop is enough.",
+        "default": "Beginner: keep steps simple and avoid overworking the plant."
+      },
+      "medium": {
+        "training": "Intermediate: apply LST/SCROG gradually to avoid stress.",
+        "default": "Intermediate: follow schedule and adjust based on plant response."
+      },
+      "hard": {
+        "feeding": "Advanced: track EC/PPM and pH precisely each feeding.",
+        "inspection": "Advanced: check trichomes, VPD, and look for micro-stress.",
+        "defoliation": "Advanced: defoliate conservatively to avoid yield loss.",
+        "default": "Advanced: tighten tolerances; log changes to avoid drift."
+      }
+    }
   },
   "devMode": {
     "indicator": "DEV MODE",

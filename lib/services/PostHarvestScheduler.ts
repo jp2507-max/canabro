@@ -6,6 +6,8 @@ import { addDays } from '../utils/date';
 import { generateUuid } from '../utils/uuid';
 import { getDatabase } from '../database/database';
 import { Database, Q, Model } from '@nozbe/watermelondb';
+import { LearningService } from './LearningService';
+import { FEATURE_FLAGS } from '../config/featureFlags';
 
 export interface PostHarvestTask {
   taskType: 'drying' | 'curing' | 'trimming' | 'weighing' | 'storage' | 'cleanup' | 'data_recording';
@@ -273,6 +275,11 @@ export class PostHarvestScheduler {
 
       // Schedule post-harvest tasks
       await this.schedulePostHarvestTasks(plant, harvestData.harvestDate);
+      
+      // Trigger learning loop (feature-flagged) to adjust future schedules for same-strain plants
+      if (FEATURE_FLAGS.learningLoop) {
+        await LearningService.applyLearningToFutureSchedules(plant);
+      }
       
       log.info(`[PostHarvestScheduler] Successfully marked plant ${plant.id} as harvested and scheduled post-harvest tasks`);
     } catch (error) {

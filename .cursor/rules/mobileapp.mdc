@@ -68,6 +68,15 @@ alwaysApply: true
 - **Rule**: All production user-facing strings must use translations. Do not use hardcoded literals in production code. Exceptions: test files (`**/__tests__/**`), scripts (`scripts/**`), and clearly dev-only components (e.g., `[components/ui/DebugPanel.tsx](mdc:components/ui/DebugPanel.tsx)`, `[components/DevModeIndicator.tsx](mdc:components/DevModeIndicator.tsx)`).
 - **Linting**: Enforce via `eslint-plugin-i18next` (see `eslint.config.mjs`). Disable only for allowed exceptions.
 
+### Strict i18n (always-on)
+
+- **No inline strings**: All user-facing copy must come from i18n keys in production components/services.
+- **Namespacing**: Add keys under clear namespaces (e.g., `guidance.*`, `tasks.*`). Prefer existing namespaces before adding new.
+- **Dual-language updates**: For new features, update both `[lib/locales/en.json](mdc:lib/locales/en.json)` and `[lib/locales/de.json](mdc:lib/locales/de.json)` in the same edit.
+- **Placeholders**: Keep variables as placeholders in translations (e.g., `{{count}}`, `{{date}}`).
+- **Validation**: Run `npm run validate:translations` pre-commit to ensure key parity and no missing strings.
+- **Dev-only exceptions**: Edge cases and dev-only strings must be confined to dev components or clearly commented.
+
 ## Developer workflows
 - **Build & release**: EAS Build configured in `[eas.json](mdc:eas.json)`. OTA via `expo-updates`.
   - Common commands: `npm run android`, `npm run ios`, `npm run start`, `npm run prebuild`

@@ -5,6 +5,7 @@ import {
   convertWdbStrainToRawApi,
   convertSupabaseStrainToRawApi,
 } from './sync/strain-sync.service';
+import { strainIndexService } from './strain-index.service';
 import { Strain as WDBStrainModel } from '../models/Strain';
 import { SupabaseStrain } from '../types/supabase';
 import { RawStrainApiResponse } from '../types/weed-db';
@@ -77,20 +78,30 @@ async function searchWithBreadthFirst(
     // 1. Get some local results first (fast)
     log.info(`[StrainSearchService] Fetching local results for short query "${query}"`);
 
-    // Search WatermelonDB
+    // A) Try indexed search for instant suggestions
+    const indexed = await strainIndexService.search(query, localLimit).catch(() => []);
+    indexed.forEach((s) => {
+      if (s.api_id && !foundApiIds.has(s.api_id) && combinedResults.length < localLimit) {
+        combinedResults.push(s);
+        foundApiIds.add(s.api_id);
+        sources.local++;
+      }
+    });
+
+    // B) Top up with WatermelonDB exact/partial
     const wdbResults = await searchStrainsInWatermelonDB(query).catch((error) => {
       log.warn(`[StrainSearchService] WatermelonDB search failed:`, error);
       return [] as WDBStrainModel[];
     });
 
-    // Search Supabase
+    // C) Search Supabase
     const supabaseResults = await searchStrainsInSupabase(query, localLimit).catch((error) => {
       log.warn(`[StrainSearchService] Supabase search failed:`, error);
       return [] as SupabaseStrain[];
     });
     // Add local results with dynamic quota allocation
-    let remaining = localLimit;
-    wdbResults.slice(0, remaining).forEach((wdbStrain) => {
+    let remaining = localLimit - sources.local;
+    wdbResults.slice(0, Math.max(0, remaining)).forEach((wdbStrain) => {
       // WatermelonDB model may expose either api_id or apiId depending on sync origin
       const apiId = (wdbStrain as Partial<{ api_id: string; apiId: string }>).api_id
         ?? (wdbStrain as Partial<{ api_id: string; apiId: string }>).apiId;
@@ -167,7 +178,22 @@ async function searchWithLocalFirst(
   const combinedResults: RawStrainApiResponse[] = [];
 
   try {
-    // 1. Search local WatermelonDB first
+    // 1. Indexed search first for instant suggestions
+    log.info(`[StrainSearchService] Searching local index for "${query}"`);
+    const indexed = await strainIndexService.search(query, limit).catch(() => []);
+    indexed.forEach((s) => {
+      if (s.api_id && !foundApiIds.has(s.api_id) && combinedResults.length < limit) {
+        combinedResults.push(s);
+        foundApiIds.add(s.api_id);
+        sources.local++;
+      }
+    });
+
+    if (combinedResults.length >= limit) {
+      return { strains: combinedResults.slice(0, limit), sources, hasMore: true };
+    }
+
+    // 2. Search local WatermelonDB next
     log.info(`[StrainSearchService] Searching WatermelonDB for "${query}"`);
     const wdbResults = await searchStrainsInWatermelonDB(query).catch((error) => {
       log.warn(`[StrainSearchService] WatermelonDB search failed:`, error);
@@ -196,7 +222,7 @@ async function searchWithLocalFirst(
       };
     }
 
-    // 2. Search Supabase if needed
+    // 3. Search Supabase if needed
     const remaining = limit - combinedResults.length;
     log.info(`[StrainSearchService] Need ${remaining} more results, searching Supabase`);
 
@@ -221,7 +247,7 @@ async function searchWithLocalFirst(
       return { strains: combinedResults.slice(0, limit), sources, hasMore: true };
     }
 
-    // 3. Only search external API if we still need more results
+    // 4. Only search external API if we still need more results
     const stillRemaining = limit - combinedResults.length;
     if (stillRemaining > 0) {
       log.info(`[StrainSearchService] Need ${stillRemaining} more results, searching external API`);

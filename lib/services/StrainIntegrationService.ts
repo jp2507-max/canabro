@@ -6,13 +6,15 @@ import {
   type ProcessedStrainData,
   type TimeRangeDays,
   type YieldProfile,
+  hasCultivationRangeData,
+  buildGenericCultivationProfile,
 } from './StrainProcessingService';
 import { addDays } from '../utils/date';
+import { log } from '../utils/logger';
+import * as Sentry from '@sentry/react-native';
 
-export type PlantType = 'photoperiod' | 'autoflower' | 'unknown';
-export type BaselineKind = 'flip' | 'germination';
-export type Environment = 'indoor' | 'outdoor' | 'greenhouse';
-export type Hemisphere = 'N' | 'S';
+import type { PlantType, BaselineKind, Environment, Hemisphere, YieldUnit, YieldCategory } from '../types/plant';
+export type { PlantType, BaselineKind, Environment, Hemisphere } from '../types/plant';
 
 export interface BaselineInfo {
   kind: BaselineKind;
@@ -29,10 +31,10 @@ export interface StrainPredictions {
   predictedHarvestStart: Date | null;
   predictedHarvestEnd: Date | null;
   scheduleConfidence: number | null;
-  yieldUnit: 'g_per_plant' | 'g_per_m2' | null;
+  yieldUnit: YieldUnit | null;
   yieldMin: number | null;
   yieldMax: number | null;
-  yieldCategory: 'low' | 'medium' | 'high' | 'unknown';
+  yieldCategory: YieldCategory;
 }
 
 export interface PreparePlantPredictionsInput {
@@ -51,14 +53,13 @@ function coerceDate(dateISO: string | Date | undefined | null): Date {
 }
 
 export function inferPlantType(raw: RawStrainApiResponse): PlantType {
-  const 
-    typeStr = (raw.floweringType || raw.flowering_type || raw.type || '')
+  const typeStr = (raw.floweringType || raw.flowering_type || raw.type || '')
       ?.toString()
       .toLowerCase();
   if (typeStr.includes('auto')) return 'autoflower';
   if (typeStr.includes('photo') || typeStr.includes('photoperiod')) return 'photoperiod';
   // Fallback to flags if present
-  if ((raw as any).isAutoFlower === true || (raw as any).is_auto_flower === true) {
+  if (raw.isAutoFlower === true || raw.is_auto_flower === true) {
     return 'autoflower';
   }
   return 'unknown';
@@ -161,7 +162,12 @@ export function preparePlantPredictions(
   input: PreparePlantPredictionsInput
 ): StrainPredictions {
   const processed: ProcessedStrainData = getProcessedStrain(raw);
-  const cultivation = extractCultivationData(processed);
+  let cultivation = extractCultivationData(processed);
+
+  // 11.1 Validation + generic profiles: fallback to generic profile when no usable data
+  if (!hasCultivationRangeData(cultivation)) {
+    cultivation = buildGenericCultivationProfile();
+  }
 
   const plantType = input.plantTypeOverride ?? inferPlantType(raw);
   const environment = inferEnvironment(input.locationDescription, input.preferredEnvironment);
@@ -177,7 +183,7 @@ export function preparePlantPredictions(
   );
   const y = pickYieldForEnvironment(environment, cultivation);
 
-  return {
+  const predictions: StrainPredictions = {
     plantType,
     environment,
     hemisphere,
@@ -192,6 +198,21 @@ export function preparePlantPredictions(
     yieldMax: y?.max ?? null,
     yieldCategory: y?.category ?? 'unknown',
   };
+
+  // Telemetry: parser version + confidence for diagnostics
+  try {
+    log.info('[StrainIntegrationService] Predictions prepared', {
+      parserVersion: processed.metadata?.parserVersion,
+      scheduleConfidence: predictions.scheduleConfidence,
+      plantType,
+      environment,
+    });
+  } catch (err) {
+    Sentry.captureException(err);
+    log.warn('[StrainIntegrationService] Telemetry logging failed', err);
+  }
+
+  return predictions;
 }
 
 export default {

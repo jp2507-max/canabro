@@ -48,6 +48,7 @@ export class PlantTask extends Model {
   @text('status') status!: string;
   @text('notification_id') notificationId?: string;
   @text('user_id') userId!: string;
+  @field('is_deleted') isDeleted?: boolean;
   
   // New task management fields
   @text('priority') priority?: 'low' | 'medium' | 'high' | 'critical';
@@ -196,6 +197,14 @@ export class PlantTask extends Model {
   @writer async updateEstimatedDuration(minutes: number) {
     await this.update((task) => {
       task.estimatedDuration = minutes;
+    });
+  }
+
+  @writer async markAsDeleted() {
+    await this.update((task) => {
+      task.isDeleted = true;
+      task.status = 'deleted';
+      task.notificationId = undefined;
     });
   }
 

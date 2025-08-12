@@ -115,92 +115,92 @@
   - **REUSE**: Extend existing `StrainScheduleComparison.tsx` component
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 6. StrainAutocomplete + preview
-- [ ] 6.1 Preview chips
+- [x] 6. StrainAutocomplete + preview
+- [x] 6.1 Preview chips
   - Show flowering (days), difficulty, yield, harvest window; cached.
   - **REUSE**: Enhance existing `StrainAutocomplete.tsx` with cultivation preview
   - _Requirements: 1.1, 2.1, 4.1_
 
-- [ ] 6.2 Confirmation dialog
+- [x] 6.2 Confirmation dialog
   - Preview schedule; set/confirm baseline & environment; show confidence badges.
   - **REUSE**: Create modal similar to existing `TaskActions.tsx` pattern
   - _Requirements: 1.2, 2.3, 4.2_
 
-- [ ] 7. Plant creation form
-- [ ] 7.1 Integrate strain data
+- [x] 7. Plant creation form
+- [x] 7.1 Integrate strain data
   - Auto-populate fields; validate; ask for missing baseline/conflicts.
   - **REUSE**: Enhance existing `AddPlantForm.tsx` with strain integration
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 7.2 Customization options
+- [x] 7.2 Customization options
   - Environmental overrides, experience level; preview updates live.
   - **REUSE**: Build on existing form patterns in `EditPlantForm.tsx`
   - _Requirements: 1.5, 2.3, 3.1_
 
-- [ ] 8. Guidance system
-- [ ] 8.1 Difficulty-based guidance
+- [x] 8. Guidance system
+- [x] 8.1 Difficulty-based guidance
   - Beginner copy for Easy; advanced monitoring & warnings for Hard.
   - **REUSE**: Extend existing task description system with strain-specific content
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 8.2 Genetics-based tips
+- [x] 8.2 Genetics-based tips
   - Indica/sativa/hybrid growth patterns; lineage display; env prefs.
   - **REUSE**: Build on existing strain display components
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ] 9. Learning & feedback
-- [ ] 9.1 Actual vs predicted
+- [x] 9. Learning & feedback
+- [x] 9.1 Actual vs predicted
   - Record `actual_flower_days`, `actual_yield`, quality; compute error metrics.
   - **REUSE**: Extend existing plant metrics and harvest tracking
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 9.2 Recommendations
+- [x] 9.2 Recommendations
   - Success patterns per strain; suggest similar strains; compatibility scoring.
   - **REUSE**: Build on existing strain search and filtering system
   - _Requirements: 6.4, 6.5_
 
-- [ ] 10. Calendar & dashboards
-- [ ] 10.1 Calendar enhancements
+- [x] 10. Calendar & dashboards
+- [x] 10.1 Calendar enhancements
   - Show strain milestones/windows; compare view; task grouping by strain.
   - **REUSE**: Extend existing `StrainCalendarIntegration.tsx` and calendar views
   - _Requirements: 1.4, 5.1, 5.2_
 
-- [ ] 10.2 Analytics dashboard
+- [x] 10.2 Analytics dashboard
   - Prediction accuracy, completion by difficulty, per-strain performance.
   - **REUSE**: Build on existing task analytics and plant metrics system
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 11. Error handling & fallbacks
-- [ ] 11.1 Validation + generic profiles
+- [x] 11. Error handling & fallbacks
+- [x] 11.1 Validation + generic profiles
   - Strict validation; graceful fallback to generic templates; conflict banners.
   - **REUSE**: Build on existing error handling patterns in strain search service
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 11.2 Partial data mode
+- [x] 11.2 Partial data mode
   - Manual inputs when parsing fails; allow manual scheduling as last resort.
   - **REUSE**: Extend existing form validation and error states
   - _Requirements: 1.4, 1.5_
 
-- [ ] 12. Testing
-- [ ] 12.1 Unit tests
+- [x] 12. Testing
+- [x] 12.1 Unit tests
   - Parser fixtures (weeks/days/seasonal/yield); intersection/conflict;
     photoperiod/auto baseline calculators; task generator.
   - **REUSE**: Build on existing test patterns in strain and task services
   - _Requirements: All_
 
-- [ ] 12.2 Integration/E2E
+- [x] 12.2 Integration/E2E
   - Strain selection → plant creation → schedule; calendar integration;
     learning loop writeback; offline/online sync.
   - **REUSE**: Extend existing integration tests for plant and task workflows
   - _Requirements: All_
 
-- [ ] 13. Performance & caching
+- [x] 13. Performance & caching
   - Debounced indexed search; local index for ~2k strains; on-demand details.
   - ETag/version-aware refresh; background sync; offline-first.
   - **REUSE**: Build on existing caching in strain search service
   - _Requirements: non-functional_
 
-- [ ] 14. Telemetry & feature flags
+- [x] 14. Telemetry & feature flags
   - Log parser version, template version, confidence; Sentry for failures.
   - Feature flags for dark period/flush tasks, learning loop, advanced tips.
   - **REUSE**: Extend existing logging and error tracking systems
