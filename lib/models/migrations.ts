@@ -875,6 +875,21 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 36: Add idempotency & strain metadata fields to plant_tasks
+    {
+      toVersion: 36,
+      steps: [
+        addColumns({
+          table: 'plant_tasks',
+          columns: [
+            { name: 'source', type: 'string', isOptional: true },
+            { name: 'locked', type: 'boolean', isOptional: true },
+            { name: 'template_version', type: 'number', isOptional: true },
+            { name: 'strain_metadata', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

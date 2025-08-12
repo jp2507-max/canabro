@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 35, // Bumped to 35 for intelligent strain-based normalization fields on plants
+  version: 36, // Bumped to 36 to add idempotency & strain metadata fields on plant_tasks
   tables: [
     tableSchema({
       name: 'profiles',
@@ -210,6 +210,11 @@ export default appSchema({
         { name: 'parent_task_id', type: 'string', isOptional: true },
         { name: 'sequence_number', type: 'number', isOptional: true },
         { name: 'environmental_conditions', type: 'string', isOptional: true }, // JSON string
+        // Idempotency & strain metadata
+        { name: 'source', type: 'string', isOptional: true, isIndexed: true }, // 'auto' | 'manual'
+        { name: 'locked', type: 'boolean', isOptional: true },
+        { name: 'template_version', type: 'number', isOptional: true },
+        { name: 'strain_metadata', type: 'string', isOptional: true }, // JSON: { difficulty, harvestWindow, strainId }
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },
       ],

@@ -291,6 +291,23 @@ export const StrainScheduleComparison: React.FC<StrainScheduleComparisonProps> =
             />
           </View>
 
+          {/* Compatibility Flags */}
+          {comparison.conflicts && comparison.conflicts.length > 0 && (
+            <View className="bg-warning/10 dark:bg-warning-dark/10 rounded-xl p-4 mb-4">
+              <Text className="text-lg font-semibold text-warning dark:text-warning-dark mb-3">
+                Compatibility Flags
+              </Text>
+              {comparison.conflicts.map((c, i) => (
+                <View key={i} className="flex-row items-start mb-2">
+                  <View className="w-2 h-2 bg-warning dark:bg-warning-dark rounded-full mt-2 mr-3" />
+                  <Text className="text-sm text-on-surface dark:text-on-surface-dark flex-1">
+                    {c}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Optimization Recommendations */}
           {comparison.recommendations.length > 0 && (
             <View className="bg-surface dark:bg-surface-dark rounded-xl p-4 mb-4">

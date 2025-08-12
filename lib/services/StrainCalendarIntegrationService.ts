@@ -58,8 +58,23 @@ export interface FloweringPrediction {
   expectedFloweringStart: Date;
   expectedFloweringEnd: Date;
   expectedHarvestDate: Date;
+  /** Optional explicit harvest window when available */
+  harvestWindowStart?: Date;
+  harvestWindowEnd?: Date;
   confidenceLevel: 'low' | 'medium' | 'high';
   factors: string[];
+  /** Optional yield expectations when normalized on plant */
+  yield?: {
+    unit: 'g_per_plant' | 'g_per_m2';
+    min?: number;
+    max?: number;
+    category?: 'low' | 'medium' | 'high' | 'unknown';
+  };
+  /** Optional accuracy when actuals exist */
+  actualVsPredicted?: {
+    actualHarvestDate?: Date;
+    deltaHarvestDays?: number; // positive if actual later
+  };
 }
 
 export interface StrainTemplateRecommendation {
@@ -80,6 +95,7 @@ export interface StrainScheduleComparison {
     harvestDate: number; // days difference
     totalCycle: number; // days difference
   };
+  conflicts?: string[]; // environment/difficulty conflicts
   recommendations: string[];
 }
 
@@ -194,17 +210,64 @@ export class StrainCalendarIntegrationService {
       const plantedDate = new Date(plant.plantedDate);
       const currentStage = plant.growthStage as GrowthStage;
       
-      // Calculate expected flowering start based on strain and current stage
-      const { floweringStart, confidenceLevel, factors } = this.calculateFloweringStart(
-        plantedDate,
-        currentStage,
-        strainData
-      );
+      // Prefer normalized per-plant baseline and prediction fields when present
+      const baselineDate: Date | undefined = plant.baselineDate ?? undefined;
+      const baselineKind: string | undefined = plant.baselineKind ?? undefined;
+      const minDays = plant.predictedFlowerMinDays ?? undefined;
+      const maxDays = plant.predictedFlowerMaxDays ?? undefined;
+      const persistedHarvestStart = plant.predictedHarvestStart ?? undefined;
+      const persistedHarvestEnd = plant.predictedHarvestEnd ?? undefined;
 
-      // Calculate flowering end and harvest dates
-      const floweringDuration = strainData.floweringTime * 7; // Convert weeks to days
-      const floweringEnd = addDays(floweringStart, floweringDuration);
-      const harvestDate = addDays(floweringEnd, 7); // Add 1 week for harvest preparation
+      let floweringStart: Date;
+      let floweringEnd: Date;
+      let harvestDate: Date;
+      let harvestWindowStart: Date | undefined;
+      let harvestWindowEnd: Date | undefined;
+      const factors: string[] = [];
+      let confidenceLevel: 'low' | 'medium' | 'high' = 'medium';
+
+      if (baselineDate && typeof minDays === 'number' && typeof maxDays === 'number') {
+        // Baseline-aware calculation
+        if (baselineKind === 'flip') {
+          floweringStart = baselineDate;
+          factors.push('Photoperiod baseline (flip) provided');
+        } else {
+          // germination baseline or unknown → approximate flowering start at baseline + veg buffer
+          floweringStart = addDays(baselineDate, 14);
+          factors.push('Germination baseline provided; assuming ~2 weeks to pre-flower');
+        }
+        floweringEnd = addDays(floweringStart, maxDays);
+        harvestWindowStart = addDays(floweringStart, minDays);
+        harvestWindowEnd = floweringEnd;
+        harvestDate = harvestWindowEnd;
+        confidenceLevel = 'high';
+        factors.push(`Strain days range: ${minDays}-${maxDays} days`);
+      } else if (persistedHarvestStart || persistedHarvestEnd) {
+        // Use persisted window if available
+        floweringStart = this.calculateFloweringStart(plantedDate, currentStage, strainData).floweringStart;
+        floweringEnd = addDays(floweringStart, (strainData.floweringTime || 8) * 7);
+        harvestWindowStart = persistedHarvestStart ?? undefined;
+        harvestWindowEnd = persistedHarvestEnd ?? undefined;
+        harvestDate = (harvestWindowEnd || harvestWindowStart || floweringEnd);
+        confidenceLevel = 'high';
+        factors.push('Using persisted harvest window');
+      } else {
+        // Fallback to heuristic based on strain data
+        const base = this.calculateFloweringStart(plantedDate, currentStage, strainData);
+        floweringStart = base.floweringStart;
+        floweringEnd = addDays(floweringStart, (strainData.floweringTime || 8) * 7);
+        harvestDate = addDays(floweringEnd, 7);
+        confidenceLevel = base.confidenceLevel;
+        factors.push(...base.factors);
+      }
+
+      // Map numeric schedule confidence if present on model
+      if (typeof plant.scheduleConfidence === 'number') {
+        if (plant.scheduleConfidence >= 0.9) confidenceLevel = 'high';
+        else if (plant.scheduleConfidence >= 0.6) confidenceLevel = 'medium';
+        else confidenceLevel = 'low';
+        factors.push(`Schedule confidence: ${(plant.scheduleConfidence * 100).toFixed(0)}%`);
+      }
 
       const prediction: FloweringPrediction = {
         plantId: plant.id,
@@ -213,9 +276,30 @@ export class StrainCalendarIntegrationService {
         expectedFloweringStart: floweringStart,
         expectedFloweringEnd: floweringEnd,
         expectedHarvestDate: harvestDate,
+        harvestWindowStart,
+        harvestWindowEnd,
         confidenceLevel,
         factors,
       };
+
+      // Attach yield expectations if normalized on plant
+      if (plant.yieldUnit) {
+        prediction.yield = {
+          unit: plant.yieldUnit,
+          min: plant.yieldMin ?? undefined,
+          max: plant.yieldMax ?? undefined,
+          category: plant.yieldCategory ?? undefined,
+        };
+      }
+
+      // Attach simple actual vs predicted if actual harvest exists
+      if (plant.harvestDate instanceof Date && !isNaN(plant.harvestDate.getTime())) {
+        const delta = Math.round((plant.harvestDate.getTime() - harvestDate.getTime()) / (1000 * 60 * 60 * 24));
+        prediction.actualVsPredicted = {
+          actualHarvestDate: plant.harvestDate,
+          deltaHarvestDays: delta,
+        };
+      }
 
       log.info(`[StrainCalendar] Flowering prediction completed for ${plant.name}`);
       return prediction;
@@ -256,11 +340,23 @@ export class StrainCalendarIntegrationService {
       // Generate optimization recommendations
       const recommendations = this.generateOptimizationRecommendations(strainDataA, strainDataB);
 
+      const conflicts: string[] = [];
+
+      // Basic conflict detection (difficulty-type heuristics)
+      if (strainDataA.type !== strainDataB.type) {
+        conflicts.push('Different strain types may require different environments and training.');
+      }
+      if ((strainDataA.growDifficulty === 'hard' && strainDataB.growDifficulty !== 'hard') ||
+          (strainDataB.growDifficulty === 'hard' && strainDataA.growDifficulty !== 'hard')) {
+        conflicts.push('Mixed difficulty levels can complicate scheduling and monitoring.');
+      }
+
       const comparison: StrainScheduleComparison = {
         strainA: strainDataA,
         strainB: strainDataB,
         taskFrequencyDifferences,
         timelineDifferences,
+        conflicts: conflicts.length ? conflicts : undefined,
         recommendations,
       };
 

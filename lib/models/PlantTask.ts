@@ -60,6 +60,16 @@ export class PlantTask extends Model {
   @field('sequence_number') sequenceNumber?: number;
   @json('environmental_conditions', (json) => json) environmentalConditions?: EnvironmentalConditions;
   @text('escalation_start_time') escalationStartTime?: string; // ISO string for escalation tracking
+  // Idempotency & strain metadata
+  @text('source') source?: 'auto' | 'manual';
+  @field('locked') locked?: boolean;
+  @field('template_version') templateVersion?: number;
+  @json('strain_metadata', (json) => json)
+  strainMetadata?: {
+    difficulty?: 'easy' | 'medium' | 'hard';
+    harvestWindow?: { start?: string; end?: string }; // ISO strings
+    strainId?: string;
+  };
   
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;

@@ -74,8 +74,8 @@
   - **REUSE**: Extend existing date utilities in `lib/utils/date.ts`
   - _Requirements: 1.2, 1.4, 5.3_
 
-- [ ] 4. Strain-based task scheduling
-- [ ] 4.1 StrainTaskGenerator
+- [x] 4. Strain-based task scheduling
+- [x] 4.1 StrainTaskGenerator
   - Generate tasks from predicted windows; anchor tasks:
     - Flush (optional): `harvest.start - 10d`
     - Pre-harvest checks: `harvest.start - 7d`
@@ -84,32 +84,32 @@
   - **REUSE**: Extend existing `PlantTaskIntegration.ts` and `TaskAutomationService.ts`
   - _Requirements: 1.1, 1.2, 3.1_
 
-- [ ] 4.2 Idempotency & user edits
+- [x] 4.2 Idempotency & user edits
   - Extend PlantTask with `source ('auto'|'manual')`, `locked (bool)`, `template_version`.
   - Regeneration updates only `source='auto' && locked=false`.
   - Triggers: baseline/env/strain change or template version bump.
   - **REUSE**: Build on existing PlantTask model and completion system
   - _Requirements: 1.5, 5.3_
 
-- [ ] 4.3 Integrate with TaskReminderEngine
+- [x] 4.3 Integrate with TaskReminderEngine
   - Strain metadata on tasks; prioritization aware of windows & difficulty.
   - **REUSE**: Extend existing `TaskReminderEngine.ts` with strain-specific logic
   - _Requirements: 1.3, 1.4, 1.5_
 
-- [ ] 5. Predictions & comparison
-- [ ] 5.1 Harvest windows
+- [x] 5. Predictions & comparison
+- [x] 5.1 Harvest windows
   - Compute window (not single date) from baseline + days or seasonal mapping.
   - Confidence shown; outdoor seasonal uses hemisphere/year mapping.
   - **REUSE**: Extend existing `FloweringPredictionCard.tsx` with enhanced predictions
   - _Requirements: 1.4, 2.1, 2.2_
 
-- [ ] 5.2 Yield expectations
+- [x] 5.2 Yield expectations
   - Normalize per-unit; aggregate only when units & environments match.
   - Track actual vs predicted at harvest.
   - **REUSE**: Build on existing plant metrics tracking system
   - _Requirements: 2.1, 2.2, 6.1_
 
-- [ ] 5.3 Compare strains
+- [x] 5.3 Compare strains
   - Comparative timelines, conflict flags (env incompatibilities).
   - Simple optimization suggestions (staggered planting).
   - **REUSE**: Extend existing `StrainScheduleComparison.tsx` component

@@ -16,8 +16,17 @@ export const useRouter = () => ({
   prefetch: createMockFunction(),
 });
 
+// New aggregated router object to mirror expo-router's named export
+export const router = {
+  push: createMockFunction(),
+  replace: createMockFunction(),
+  back: createMockFunction(),
+  prefetch: createMockFunction(),
+};
+
 export const useLocalSearchParams = () => ({});
 export const useSearchParams = () => ({});
+export const useGlobalSearchParams = () => ({});
 
 export const Link = React.forwardRef(function Link(props, ref) {
   const { children, ...rest } = props || {};
@@ -33,16 +42,21 @@ Stack.Screen = () => null;
 export const Tabs = ({ children }) => React.createElement(React.Fragment, null, children);
 Tabs.Screen = () => null;
 
+export const Slot = ({ children }) => React.createElement(React.Fragment, null, children);
+
 export const Redirect = () => null;
 export const Href = () => null;
 
 const defaultExport = {
   useRouter,
+  router,
   Link,
   useLocalSearchParams,
   useSearchParams,
+  useGlobalSearchParams,
   Stack,
   Tabs,
+  Slot,
   Redirect,
   Href,
 };

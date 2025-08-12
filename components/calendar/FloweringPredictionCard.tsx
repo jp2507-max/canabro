@@ -245,12 +245,20 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
           />
           
           <PredictionStage
-            title="Harvest Ready"
-            date={prediction.expectedHarvestDate}
+            title={prediction.harvestWindowStart && prediction.harvestWindowEnd ? 'Harvest Window (end)' : 'Harvest Ready'}
+            date={prediction.harvestWindowEnd || prediction.expectedHarvestDate}
             isActive={currentStage === 'harvest'}
             isCompleted={false}
             daysUntil={harvestDaysUntil}
           />
+
+          {prediction.harvestWindowStart && prediction.harvestWindowEnd && (
+            <View className="mt-2">
+              <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
+                Window: {formatDate(prediction.harvestWindowStart)} – {formatDate(prediction.harvestWindowEnd)}
+              </Text>
+            </View>
+          )}
 
           {/* Factors affecting prediction */}
           {prediction.factors.length > 0 && (
@@ -266,6 +274,38 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
                   • {factor}
                 </Text>
               ))}
+            </View>
+          )}
+
+          {prediction.yield && (
+            <View className="mt-4 pt-3 border-t border-outline/10 dark:border-outline-dark/10">
+              <Text className="text-xs font-medium text-on-surface-variant dark:text-on-surface-variant-dark mb-2">
+                Yield expectation:
+              </Text>
+              <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
+                {(() => {
+                  const { unit, min, max, category } = prediction.yield!;
+                  const unitLabel = unit === 'g_per_m2' ? 'g/m²' : 'g/plant';
+                  const range = min != null && max != null ? `${min}–${max} ${unitLabel}` : min != null ? `${min}+ ${unitLabel}` : max != null ? `up to ${max} ${unitLabel}` : `unknown ${unitLabel}`;
+                  const cat = category && category !== 'unknown' ? ` • ${category}` : '';
+                  return `${range}${cat}`;
+                })()}
+              </Text>
+            </View>
+          )}
+
+          {prediction.actualVsPredicted && (
+            <View className="mt-3">
+              <Text className="text-xs font-medium text-on-surface-variant dark:text-on-surface-variant-dark mb-1">
+                Actual vs Predicted:
+              </Text>
+              <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
+                {prediction.actualVsPredicted.deltaHarvestDays === 0
+                  ? 'Harvest matched prediction'
+                  : prediction.actualVsPredicted.deltaHarvestDays! > 0
+                  ? `Harvest ${prediction.actualVsPredicted.deltaHarvestDays} days later`
+                  : `Harvest ${Math.abs(prediction.actualVsPredicted.deltaHarvestDays!)} days earlier`}
+              </Text>
             </View>
           )}
         </View>
