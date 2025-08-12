@@ -76,10 +76,7 @@ export function parseStrainData(api: RawStrainApiResponse): ProcessedStrainData 
   const name = sanitizeString(api.name || '');
   const genetics = typeof api.genetics === 'string' ? sanitizeString(api.genetics) : null;
 
-  const floweringDays = intersectTimeRanges(
-    parseWeeksOrDaysToDays(api.floweringTime),
-    parseWeeksOrDaysToDays(api.fromSeedToHarvest) // may be used mainly for auto; treated as separate too
-  );
+  const floweringDays = parseWeeksOrDaysToDays(api.floweringTime);
 
   const autoSeedToHarvestDays = parseWeeksOrDaysToDays(api.fromSeedToHarvest);
 
@@ -109,6 +106,17 @@ export function parseStrainData(api: RawStrainApiResponse): ProcessedStrainData 
   };
 
   return processed;
+}
+
+/**
+ * Returns the last UTC day (28..31) of a given month in a given year.
+ * month1to12 is 1 for January through 12 for December.
+ */
+function getLastDayOfMonth(year: number, month1to12: number): number {
+  const safeMonth = Math.max(1, Math.min(12, Math.trunc(month1to12)));
+  // Using day = 0 returns the last day of the previous month; with month set to 1..12,
+  // this yields the last day of the intended month in 1..12.
+  return new Date(Date.UTC(Math.trunc(year), safeMonth, 0)).getUTCDate();
 }
 
 /**
@@ -378,11 +386,14 @@ export function parseSeasonalHarvestWindow(value?: string | null): SeasonalWindo
 
   if (typeof second === 'number') {
     // e.g., End of September/October -> start at first month period start, end at second month period end
+    const periodEndDay = period === 'early' ? 10 : period === 'mid' ? 20 : 31;
+    const referenceYear = new Date().getUTCFullYear();
+    const clampedEndDay = Math.min(periodEndDay, getLastDayOfMonth(referenceYear, second));
     return {
       startMonth: first,
       startDay: dayRange.start,
       endMonth: second,
-      endDay: period === 'early' ? 10 : period === 'mid' ? 20 : 31,
+      endDay: clampedEndDay,
       confidence: 0.6,
     };
   }

@@ -109,6 +109,7 @@ export interface RawStrainApiResponse {
   floweringTime?: string | number | null; // e.g., "8-9 weeks", "55-65 days", 60
   fromSeedToHarvest?: string | null; // Added for autoflowers, e.g., "9-10 weeks"
   floweringType?: string | null; // e.g., "Photoperiod", "Autoflower"
+  flowering_type?: string | null; // snake_case variant seen in some sources
   growDifficulty?: string | null; // e.g., "Easy", "Medium", "Hard"
   yieldIndoor?: string | null; // e.g., "400-500g/m²"
   yieldOutdoor?: string | null; // e.g., "600g/plant"

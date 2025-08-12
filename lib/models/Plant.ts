@@ -12,6 +12,14 @@ import {
 } from '@nozbe/watermelondb/decorators';
 
 import { DiaryEntry } from './DiaryEntry';
+import type {
+  PlantType,
+  BaselineKind,
+  Environment,
+  Hemisphere,
+  YieldUnit,
+  YieldCategory,
+} from '../types/plant';
 import { Strain } from './Strain'; // Import Strain model
 import { PlantPhoto } from './PlantPhoto';
 import { PlantMetrics } from './PlantMetrics';
@@ -75,20 +83,20 @@ export class Plant extends Model {
   @date('harvest_date') harvestDate?: Date;
 
   // Normalized strain-based scheduling fields
-  @text('plant_type') plantType?: string; // 'photoperiod' | 'autoflower' | 'unknown'
-  @text('baseline_kind') baselineKind?: string; // 'flip' | 'germination'
+  @text('plant_type') plantType?: PlantType; // 'photoperiod' | 'autoflower' | 'unknown'
+  @text('baseline_kind') baselineKind?: BaselineKind; // 'flip' | 'germination'
   @date('baseline_date') baselineDate?: Date;
-  @text('environment') environment?: string; // 'indoor' | 'outdoor' | 'greenhouse'
-  @text('hemisphere') hemisphere?: string; // 'N' | 'S'
+  @text('environment') environment?: Environment; // 'indoor' | 'outdoor' | 'greenhouse'
+  @text('hemisphere') hemisphere?: Hemisphere; // 'N' | 'S'
   @field('predicted_flower_min_days') predictedFlowerMinDays?: number;
   @field('predicted_flower_max_days') predictedFlowerMaxDays?: number;
   @date('predicted_harvest_start') predictedHarvestStart?: Date;
   @date('predicted_harvest_end') predictedHarvestEnd?: Date;
   @field('schedule_confidence') scheduleConfidence?: number;
-  @text('yield_unit') yieldUnit?: string; // 'g_per_plant' | 'g_per_m2'
+  @text('yield_unit') yieldUnit?: YieldUnit; // 'g_per_plant' | 'g_per_m2'
   @field('yield_min') yieldMin?: number;
   @field('yield_max') yieldMax?: number;
-  @text('yield_category') yieldCategory?: string; // 'low' | 'medium' | 'high' | 'unknown'
+  @text('yield_category') yieldCategory?: YieldCategory; // 'low' | 'medium' | 'high' | 'unknown'
 
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;

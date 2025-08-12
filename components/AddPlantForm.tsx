@@ -27,6 +27,8 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { z } from 'zod';
+import * as Sentry from '@sentry/react-native';
+import { log as logger } from '@/lib/utils/logger';
 
 import { StrainAutocomplete, StrainAutocompleteRef } from './StrainAutocomplete';
 
@@ -244,7 +246,7 @@ const safeFormatDate = (date: Date | string | undefined, formatString: string = 
       ? format(parsedDate, formatString)
       : format(new Date(), formatString);
   } catch (error) {
-    console.warn('[AddPlantForm] Error formatting date:', error);
+    logger.warn('[AddPlantForm] Error formatting date', { error });
     return format(new Date(), formatString);
   }
 };
@@ -1143,10 +1145,11 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         plantTypeOverrideRef.current = inferredType as PlantType;
       }
 
-      console.log('Strain sync successful for:', selectedRawStrain.name);
+      logger.info('[AddPlantForm] Strain sync successful', { strainName: selectedRawStrain.name });
     } catch (error) {
       const e = error as Error;
-      console.error('[AddPlantForm] Strain Sync Error:', e);
+      logger.error('[AddPlantForm] Strain Sync Error', e);
+      Sentry.captureException(e);
       const classification = classifyStrainSyncError(e, t);
       if (classification.shouldShowToUser) {
         setSyncError(classification.userMessage || 'An unexpected error occurred.');
@@ -1272,9 +1275,10 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         notes: data.notes ?? undefined,
       };
 
-      await database.write(async () => {
+      // Capture created plant instance so we can update directly later
+      const createdPlant = await database.write(async () => {
         const plantsCollection = database.get<PlantModel>('plants');
-        await plantsCollection.create((plant: PlantModel) => {
+        const created = await plantsCollection.create((plant: PlantModel) => {
           plant.userId = plantData.userId;
           plant.name = plantData.name;
           plant.strainId = plantData.strainId;
@@ -1303,6 +1307,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             /* noop: initial predictions require raw strain; enrichment happens post-create */
           }
         });
+        return created;
       });
 
       // After create, enrich with predictions if we still have form state strain raw object
@@ -1327,33 +1332,33 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             preferredEnvironment: environmentOverrideRef.current,
           });
 
+          // Update the created plant directly; ensure Date objects for @date fields
           await database.write(async () => {
-            const plantsCollection = database.get<PlantModel>('plants');
-            // find latest created plant by name and user; in real flow we should keep ref
-            const newPlants = await plantsCollection.query().fetch();
-            const created = newPlants.find((p) => p.name === plantData.name && p.userId === plantData.userId);
-            if (created) {
-              await created.update((p) => {
-                p.plantType = predictions.plantType;
-                p.environment = predictions.environment;
-                p.hemisphere = predictions.hemisphere;
-                p.baselineKind = predictions.baseline.kind;
-                p.baselineDate = new Date(predictions.baseline.date);
-                p.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
-                p.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
-                p.predictedHarvestStart = predictions.predictedHarvestStart ?? undefined;
-                p.predictedHarvestEnd = predictions.predictedHarvestEnd ?? undefined;
-                p.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
-                p.yieldUnit = predictions.yieldUnit ?? undefined;
-                p.yieldMin = predictions.yieldMin ?? undefined;
-                p.yieldMax = predictions.yieldMax ?? undefined;
-                p.yieldCategory = predictions.yieldCategory ?? undefined;
-              });
-            }
+            await createdPlant.update((p) => {
+              p.plantType = predictions.plantType;
+              p.environment = predictions.environment;
+              p.hemisphere = predictions.hemisphere;
+              p.baselineKind = predictions.baseline.kind;
+              p.baselineDate = new Date(predictions.baseline.date);
+              p.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
+              p.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
+              p.predictedHarvestStart = predictions.predictedHarvestStart
+                ? new Date(predictions.predictedHarvestStart)
+                : undefined;
+              p.predictedHarvestEnd = predictions.predictedHarvestEnd
+                ? new Date(predictions.predictedHarvestEnd)
+                : undefined;
+              p.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
+              p.yieldUnit = predictions.yieldUnit ?? undefined;
+              p.yieldMin = predictions.yieldMin ?? undefined;
+              p.yieldMax = predictions.yieldMax ?? undefined;
+              p.yieldCategory = predictions.yieldCategory ?? undefined;
+            });
           });
         }
       } catch (e) {
-        console.warn('[AddPlantForm] Prediction enrichment skipped:', e);
+        logger.warn('[AddPlantForm] Prediction enrichment skipped', e);
+        Sentry.captureException(e);
       }
 
       Alert.alert(t('common.success'), t('alerts.plantAddedSuccess'), [
@@ -1366,7 +1371,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         },
       ]);
     } catch (error) {
-      console.error('Error adding plant:', error);
+      logger.error('[AddPlantForm] Error adding plant', error);
+      Sentry.captureException(error);
   Alert.alert(t('common.error'), t('alerts.plantAddError'));
     } finally {
       setIsSubmitting(false);

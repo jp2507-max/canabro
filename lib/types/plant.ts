@@ -26,6 +26,14 @@ export type GrowthStage = typeof GROWTH_STAGES[keyof typeof GROWTH_STAGES];
  */
 export const GROWTH_STAGES_ARRAY: GrowthStage[] = Object.values(GROWTH_STAGES);
 
+// Shared union types for normalized strain-based scheduling fields
+export type PlantType = 'photoperiod' | 'autoflower' | 'unknown';
+export type BaselineKind = 'flip' | 'germination';
+export type Environment = 'indoor' | 'outdoor' | 'greenhouse';
+export type Hemisphere = 'N' | 'S';
+export type YieldUnit = 'g_per_plant' | 'g_per_m2';
+export type YieldCategory = 'low' | 'medium' | 'high' | 'unknown';
+
 // Added Enums (moved from AddPlantForm.tsx)
 export enum PlantGrowLocation {
   GrowTent = 'Grow Tent',
@@ -95,20 +103,20 @@ export interface Plant {
   // If using PlantGrowLocation enum strictly: location_description?: PlantGrowLocation;
 
   // Normalized strain-based scheduling fields (system-owned)
-  plant_type?: 'photoperiod' | 'autoflower' | 'unknown';
-  baseline_kind?: 'flip' | 'germination';
+  plant_type?: PlantType;
+  baseline_kind?: BaselineKind;
   baseline_date?: string; // ISO date string
-  environment?: 'indoor' | 'outdoor' | 'greenhouse';
-  hemisphere?: 'N' | 'S';
+  environment?: Environment;
+  hemisphere?: Hemisphere;
   predicted_flower_min_days?: number;
   predicted_flower_max_days?: number;
   predicted_harvest_start?: string; // ISO date string
   predicted_harvest_end?: string;   // ISO date string
   schedule_confidence?: number; // 0..1
-  yield_unit?: 'g_per_plant' | 'g_per_m2';
+  yield_unit?: YieldUnit;
   yield_min?: number;
   yield_max?: number;
-  yield_category?: 'low' | 'medium' | 'high' | 'unknown';
+  yield_category?: YieldCategory;
 }
 
 /**

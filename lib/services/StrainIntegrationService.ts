@@ -94,8 +94,9 @@ function pickDaysRange(
 function computeHarvestDates(
   baseline: BaselineInfo,
   env: Environment,
-  cultivation: CultivationProfile
-): { start: Date | null; end: Date | null } {
+  cultivation: CultivationProfile,
+  hemisphere: Hemisphere
+): { start: Date | null; end: Date | null; confidence: number | null } {
   // Indoor/greenhouse: prefer day ranges from baseline date
   const baselineDate = baseline.date;
 
@@ -108,19 +109,30 @@ function computeHarvestDates(
     return {
       start: addDays(baselineDate, primaryRange.minDays),
       end: addDays(baselineDate, primaryRange.maxDays),
+      confidence: null, // confidence handled by caller from days range
     };
   }
 
   // For outdoor without numeric range, fallback to seasonal window if present
   if (env === 'outdoor' && cultivation.harvestWindow) {
     const year = baselineDate.getFullYear();
-    const { startMonth, startDay, endMonth, endDay } = cultivation.harvestWindow;
-    const start = new Date(Date.UTC(year, startMonth - 1, startDay));
-    const end = new Date(Date.UTC(year, endMonth - 1, endDay));
-    return { start, end };
+    const { startMonth, startDay, endMonth, endDay, confidence } = cultivation.harvestWindow;
+
+    // Shift months for southern hemisphere by ~6 months
+    const shiftMonth = (m: number, shiftBy: number) => ((m - 1 + shiftBy) % 12 + 12) % 12 + 1;
+    const sMonth = hemisphere === 'S' ? shiftMonth(startMonth, 6) : startMonth;
+    const eMonth = hemisphere === 'S' ? shiftMonth(endMonth, 6) : endMonth;
+
+    const start = new Date(Date.UTC(year, sMonth - 1, startDay));
+    // If window wraps into next year (e.g., Nov -> Feb), move end year forward
+    const wrapsYear = eMonth < sMonth || (eMonth === sMonth && endDay < startDay);
+    const endYear = wrapsYear ? year + 1 : year;
+    const end = new Date(Date.UTC(endYear, eMonth - 1, endDay));
+
+    return { start, end, confidence };
   }
 
-  return { start: null, end: null };
+  return { start: null, end: null, confidence: null };
 }
 
 function pickYieldForEnvironment(
@@ -157,7 +169,12 @@ export function preparePlantPredictions(
   const baseline = calculateBaseline(plantType, input.plantedDateISO);
 
   const { range, confidence } = pickDaysRange(plantType, cultivation);
-  const { start, end } = computeHarvestDates(baseline, environment, cultivation);
+  const { start, end, confidence: seasonalConfidence } = computeHarvestDates(
+    baseline,
+    environment,
+    cultivation,
+    hemisphere
+  );
   const y = pickYieldForEnvironment(environment, cultivation);
 
   return {
@@ -169,7 +186,7 @@ export function preparePlantPredictions(
     predictedFlowerMaxDays: range?.maxDays ?? null,
     predictedHarvestStart: start,
     predictedHarvestEnd: end,
-    scheduleConfidence: confidence ?? null,
+    scheduleConfidence: confidence ?? seasonalConfidence ?? null,
     yieldUnit: y?.unit ?? null,
     yieldMin: y?.min ?? null,
     yieldMax: y?.max ?? null,

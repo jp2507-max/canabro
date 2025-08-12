@@ -20,6 +20,8 @@ import {
   Pressable,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import * as Sentry from '@sentry/react-native';
+import { log as logger } from '@/lib/utils/logger';
 
 // ✅ Type imports
 import { RawStrainApiResponse } from '@/lib/types/weed-db';
@@ -904,8 +906,12 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                 pr.baselineDate = new Date(predictions.baseline.date);
                 pr.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
                 pr.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
-                pr.predictedHarvestStart = predictions.predictedHarvestStart ?? undefined;
-                pr.predictedHarvestEnd = predictions.predictedHarvestEnd ?? undefined;
+                pr.predictedHarvestStart = predictions.predictedHarvestStart
+                  ? new Date(predictions.predictedHarvestStart)
+                  : undefined;
+                pr.predictedHarvestEnd = predictions.predictedHarvestEnd
+                  ? new Date(predictions.predictedHarvestEnd)
+                  : undefined;
                 pr.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
                 pr.yieldUnit = predictions.yieldUnit ?? undefined;
                 pr.yieldMin = predictions.yieldMin ?? undefined;
@@ -915,7 +921,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             });
           }
         } catch (e) {
-          console.warn('[EditPlantForm] Prediction recompute skipped:', e);
+          logger.warn('[EditPlantForm] Prediction recompute skipped:', e);
+          Sentry.captureException(e);
         }
 
         console.log('[EditPlantForm] Plant updated successfully');
