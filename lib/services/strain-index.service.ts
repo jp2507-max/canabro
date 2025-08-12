@@ -88,6 +88,46 @@ export class StrainIndexService {
     }
   }
 
+  /**
+   * Build an index map from a list of WatermelonDB strains with duplicate api_id filtering.
+   */
+  private buildIndexFromStrains(
+    wdbStrains: WDBStrainModel[]
+  ): { byPrefix: Record<string, IndexedStrain[]>; duplicateSkips: number } {
+    const byPrefix: Record<string, IndexedStrain[]> = {};
+    const seenApiIds = new Set<string>();
+    let duplicateSkips = 0;
+
+    for (const s of wdbStrains) {
+      // Prefer typed properties; fall back to legacy shape api_id if present
+      const legacy = s as WDBStrainModel & { api_id?: string };
+      const rawApiId = s.apiId ?? legacy.api_id; // keep compatibility with both shapes
+      const name = s.name ?? '';
+      if (!rawApiId || !name) continue;
+
+      const apiId = String(rawApiId);
+      if (seenApiIds.has(apiId)) {
+        duplicateSkips++;
+        log.debug('[StrainIndex] Skipping duplicate api_id', { api_id: apiId, name });
+        continue;
+      }
+      seenApiIds.add(apiId);
+
+      const item: IndexedStrain = {
+        api_id: apiId,
+        name: String(name),
+        type: (s.type ?? null) as string | null,
+        growDifficulty: (s.growDifficulty ?? null) as string | null,
+      };
+      const p = prefixOf(item.name);
+      if (!p) continue;
+      if (!byPrefix[p]) byPrefix[p] = [];
+      byPrefix[p].push(item);
+    }
+
+    return { byPrefix, duplicateSkips };
+  }
+
   /** Build index from WatermelonDB; safe to call multiple times */
   async buildIndex(): Promise<void> {
     if (this.building) return;
@@ -96,36 +136,7 @@ export class StrainIndexService {
     try {
       log.info('[StrainIndex] Building local strain index from WatermelonDB...');
       const wdbStrains = await getAllStrainsFromWatermelonDB();
-      const byPrefix: Record<string, IndexedStrain[]> = {};
-      const seenApiIds = new Set<string>();
-      let duplicateSkips = 0;
-
-      for (const s of wdbStrains) {
-        // Prefer typed properties; fall back to legacy shape api_id if present
-        const legacy = s as WDBStrainModel & { api_id?: string };
-        const rawApiId = s.apiId ?? legacy.api_id;
-        const name = s.name ?? '';
-        if (!rawApiId || !name) continue;
-
-        const apiId = String(rawApiId);
-        if (seenApiIds.has(apiId)) {
-          duplicateSkips++;
-          log.debug('[StrainIndex] Skipping duplicate api_id during build', { api_id: apiId, name });
-          continue;
-        }
-        seenApiIds.add(apiId);
-
-        const item: IndexedStrain = {
-          api_id: apiId,
-          name: String(name),
-          type: (s.type ?? null) as string | null,
-          growDifficulty: (s.growDifficulty ?? null) as string | null,
-        };
-        const p = prefixOf(item.name);
-        if (!p) continue;
-        if (!byPrefix[p]) byPrefix[p] = [];
-        byPrefix[p].push(item);
-      }
+      const { byPrefix, duplicateSkips } = this.buildIndexFromStrains(wdbStrains);
 
       this.index = {
         byPrefix,
@@ -215,23 +226,7 @@ export class StrainIndexService {
         .subscribe({
           next: (records: WDBStrainModel[]) => {
             try {
-              const byPrefix: Record<string, IndexedStrain[]> = {};
-              for (const s of records) {
-                const legacy = s as WDBStrainModel & { api_id?: string };
-                const apiId = s.apiId ?? legacy.api_id;
-                const name = s.name ?? '';
-                if (!apiId || !name) continue;
-                const item: IndexedStrain = {
-                  api_id: String(apiId),
-                  name: String(name),
-                  type: (s.type ?? null) as string | null,
-                  growDifficulty: (s.growDifficulty ?? null) as string | null,
-                };
-                const p = prefixOf(item.name);
-                if (!p) continue;
-                if (!byPrefix[p]) byPrefix[p] = [];
-                byPrefix[p].push(item);
-              }
+              const { byPrefix, duplicateSkips } = this.buildIndexFromStrains(records);
               this.index = {
                 byPrefix,
                 count: Object.values(byPrefix).reduce((acc, arr) => acc + arr.length, 0),
@@ -239,6 +234,9 @@ export class StrainIndexService {
                 updatedAt: Date.now(),
               };
               this.saveIndexToStorage();
+              if (duplicateSkips > 0) {
+                log.debug('[StrainIndex] AutoSync skipped duplicate api_id entries', { skippedDuplicates: duplicateSkips });
+              }
             } catch (e) {
               log.warn('[StrainIndex] Failed to update index from change set', e);
             }
@@ -249,7 +247,7 @@ export class StrainIndexService {
       this.unsubscribeFn = () => {
         try {
           sub.unsubscribe();
-        } catch (err) {
+        } catch (_err) {
           // noop
         }
         this.unsubscribeFn = null;
