@@ -56,6 +56,24 @@ describe('WeedDbService mapping - flowering_type snake_case', () => {
     expect(result?.floweringType).toBe('photoperiod');
     expect((result as any).flowering_type).toBeUndefined();
   });
+
+  it('omits floweringType when flowering_type is missing', async () => {
+    getSpy.mockResolvedValue({
+      data: [
+        {
+          api_id: 'api-3',
+          name: 'No FT Test',
+          // flowering_type intentionally omitted
+        },
+      ],
+    } as any);
+
+    const result = await WeedDbService.getById('api-3');
+
+    expect(result).not.toBeNull();
+    expect(result?.floweringType).toBeUndefined();
+    expect((result as any).flowering_type).toBeUndefined();
+  });
 });
 
 

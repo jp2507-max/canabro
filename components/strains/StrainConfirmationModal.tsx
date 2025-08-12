@@ -25,6 +25,16 @@ import {
 import { RawStrainApiResponse } from '@/lib/types/weed-db';
 import { normalizeDifficultyString } from '@/lib/services/GuidanceService';
 
+// Local helper types to safely read difficulty from different possible keys
+type StrainWithDifficultyAliases = RawStrainApiResponse & {
+  grow_difficulty?: string | null;
+  difficulty?: string | null;
+};
+
+function getRawDifficulty(s: StrainWithDifficultyAliases | null | undefined): string | null | undefined {
+  return s?.growDifficulty ?? s?.grow_difficulty ?? s?.difficulty;
+}
+
 type ConfirmSettings = {
   environment: Environment;
   hemisphere: Hemisphere;
@@ -79,7 +89,8 @@ export default function StrainConfirmationModal({
 
   const difficultyLabel = useMemo(() => {
     if (!strain) return null;
-    const d = normalizeDifficultyString((strain as any).growDifficulty || (strain as any).grow_difficulty || (strain as any).difficulty);
+    const raw = getRawDifficulty(strain);
+    const d = normalizeDifficultyString(raw);
     return d === 'unknown' ? null : d;
   }, [strain]);
 

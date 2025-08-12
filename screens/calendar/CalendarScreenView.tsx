@@ -194,7 +194,7 @@ function CalendarScreenView({
                     className="px-3 py-2 rounded-md bg-neutral-100 dark:bg-neutral-800"
                   >
                     <ThemedText className="text-sm text-neutral-800 dark:text-neutral-200">
-                      {groupByStrain ? t('calendar.screen.group_off', 'Grouping: strain (on)') : t('calendar.screen.group_on', 'Grouping: strain (off)')}
+                      {groupByStrain ? t('calendar.screen.group_on', 'Grouping: strain (on)') : t('calendar.screen.group_off', 'Grouping: strain (off)')}
                     </ThemedText>
                   </Pressable>
 

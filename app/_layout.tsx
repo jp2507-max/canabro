@@ -23,6 +23,10 @@ import { SplashScreenController } from '../components/ui/SplashScreenController'
 import '../lib/types/react-query';
 import '../global.css';
 import * as Sentry from '@sentry/react-native';
+// Ensure dayjs timezone plugin is initialized early in the app lifecycle
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+dayjs.extend(timezone);
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,

@@ -32,7 +32,7 @@ export const StrainMilestoneBanner: React.FC<StrainMilestoneBannerProps> = ({ da
       const end = parseISO(win.end);
       if (!start || !end) continue;
 
-      if (isWithinInterval(date, start, end) || date >= start && date <= end) {
+      if (isWithinInterval(date, start, end)) {
         strainIdsInWindow.add(strainId);
         totalTasksInWindow += 1;
       }

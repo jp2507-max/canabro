@@ -23,12 +23,15 @@ jest.mock('../../data/strains', () => ({
 }));
 
 describe('StrainTaskGenerator', () => {
-  const basePlant: Partial<Plant> = {
+  const basePlant: Partial<Plant> & {
+    predictedHarvestStart: Date;
+    predictedHarvestEnd: Date;
+  } = {
     id: 'plant-1',
     userId: 'user-1',
     strainId: 'strain-1',
-    predictedHarvestStart: new Date('2025-06-15') as any,
-    predictedHarvestEnd: new Date('2025-06-25') as any,
+    predictedHarvestStart: new Date('2025-06-15'),
+    predictedHarvestEnd: new Date('2025-06-25'),
   };
 
   beforeEach(() => {
@@ -41,7 +44,12 @@ describe('StrainTaskGenerator', () => {
     });
     expect(tasks.length).toBeGreaterThanOrEqual(2); // pre-harvest + default optional flush/dark depending on flags
     // Ensure strain metadata and source are set
-    expect((tasks[0] as any).strainMetadata).toBeDefined();
+    const firstTask = tasks[0] as any;
+    expect(firstTask.strainMetadata).toBeDefined();
+    expect(firstTask.strainMetadata.difficulty).toBe('medium');
+    expect(firstTask.strainMetadata.harvestWindow).toBeDefined();
+    expect(firstTask.strainMetadata.strainId).toBe('strain-1');
+    expect(firstTask.source).toBe('auto');
   });
 
   it('respects optional toggles (disable flush, enable dark period)', async () => {
@@ -61,12 +69,12 @@ describe('StrainTaskGenerator', () => {
     getStrainById.mockReturnValue({ id: 'strain-1', name: 'S', growDifficulty: 'Easy' });
     const tasks = await StrainTaskGenerator.generateAnchoredTasks(basePlant as Plant);
     const preHarvest = tasks.find((t: any) => t.title.includes('Pre-harvest'))!;
-    const harvestStart = new Date(basePlant.predictedHarvestStart as any);
-    // Easy (0.8x) -> offset -7 * 0.8 ≈ -6 days
-    const expectedMin = new Date(harvestStart);
-    expectedMin.setDate(expectedMin.getDate() - 7); // baseline -7
-    const actualOffsetDays = Math.round((new Date(preHarvest.dueDate).getTime() - harvestStart.getTime()) / (1000*60*60*24));
-    expect(actualOffsetDays).toBeLessThanOrEqual(-5); // allow rounding tolerance
+    const harvestStart = new Date(basePlant.predictedHarvestStart);
+    // For easy difficulty (0.8x multiplier), -7 days becomes approximately -6 days
+    const actualOffsetDays = Math.round(
+      (new Date(preHarvest.dueDate).getTime() - harvestStart.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    expect(actualOffsetDays).toBe(-6);
   });
 
   it('regenerate deletes auto, unlocked and recreates anchors', async () => {

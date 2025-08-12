@@ -21,10 +21,65 @@ ALTER TABLE public.plants
   ADD COLUMN IF NOT EXISTS yield_category text;
 
 -- Ensure fixed precision for numeric fields even if columns pre-existed (idempotent-safe)
-ALTER TABLE public.plants
-  ALTER COLUMN schedule_confidence TYPE numeric(3,2) USING schedule_confidence::numeric(3,2),
-  ALTER COLUMN yield_min TYPE numeric(10,2) USING yield_min::numeric(10,2),
-  ALTER COLUMN yield_max TYPE numeric(10,2) USING yield_max::numeric(10,2);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'plants'
+      AND column_name = 'schedule_confidence'
+      AND (
+        data_type <> 'numeric'
+        OR numeric_precision <> 3
+        OR numeric_scale <> 2
+      )
+  ) THEN
+    ALTER TABLE public.plants
+      ALTER COLUMN schedule_confidence TYPE numeric(3,2)
+      USING schedule_confidence::numeric(3,2);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'plants'
+      AND column_name = 'yield_min'
+      AND (
+        data_type <> 'numeric'
+        OR numeric_precision <> 10
+        OR numeric_scale <> 2
+      )
+  ) THEN
+    ALTER TABLE public.plants
+      ALTER COLUMN yield_min TYPE numeric(10,2)
+      USING yield_min::numeric(10,2);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'plants'
+      AND column_name = 'yield_max'
+      AND (
+        data_type <> 'numeric'
+        OR numeric_precision <> 10
+        OR numeric_scale <> 2
+      )
+  ) THEN
+    ALTER TABLE public.plants
+      ALTER COLUMN yield_max TYPE numeric(10,2)
+      USING yield_max::numeric(10,2);
+  END IF;
+END $$;
 
 -- Enumerated value constraints (idempotent)
 DO $$ BEGIN

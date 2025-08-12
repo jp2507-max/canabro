@@ -1154,27 +1154,39 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       // Ask for plant type if unknown; otherwise set override to inferred
       const inferredType = StrainIntegrationService.inferPlantType(selectedRawStrain);
       if (inferredType === 'unknown') {
-        Alert.alert(
-          t('addPlantForm.confirm.plantTypeTitle', 'Select plant type'),
-          t(
+        // Await the user's choice to improve UX and ensure schedule preview uses the selected type
+        const chosenType: PlantType = await new Promise((resolve) => {
+          const message = `${t(
             'addPlantForm.confirm.plantTypeMessage',
             'We could not detect the plant type for this strain. Please select one:'
-          ),
-          [
-            {
-              text: t('addPlantForm.confirm.photoperiod', 'Photoperiod'),
-              onPress: () => {
-                plantTypeOverrideRef.current = 'photoperiod';
+          )}\n\n${t(
+            'addPlantForm.confirm.plantTypeHelp',
+            'Photoperiod plants flower after you change light schedule (12/12). Autoflowers switch to flowering on their own regardless of light.'
+          )}`;
+          Alert.alert(
+            t('addPlantForm.confirm.plantTypeTitle', 'Select plant type'),
+            message,
+            [
+              {
+                text: t('addPlantForm.confirm.photoperiod', 'Photoperiod'),
+                style: 'default',
+                onPress: () => resolve('photoperiod'),
               },
-            },
-            {
-              text: t('addPlantForm.confirm.autoflower', 'Autoflower'),
-              onPress: () => {
-                plantTypeOverrideRef.current = 'autoflower';
+              {
+                text: t('addPlantForm.confirm.autoflower', 'Autoflower'),
+                style: 'default',
+                onPress: () => resolve('autoflower'),
               },
-            },
-          ]
-        );
+            ],
+            {
+              cancelable: true,
+              onDismiss: () => resolve('photoperiod'), // sensible default
+            }
+          );
+        });
+        plantTypeOverrideRef.current = chosenType;
+        // Refresh preview with the selected type
+        setSelectedStrainTick((v) => v + 1);
       } else {
         plantTypeOverrideRef.current = inferredType as PlantType;
         if (plantTypeOverrideRef.current === 'photoperiod') {

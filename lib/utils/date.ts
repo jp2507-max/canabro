@@ -19,12 +19,8 @@ dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
 // Default timezone for plant scheduling context (Europe/Berlin)
-try {
-  // Use optional chaining so this safely no-ops if the timezone plugin isn't loaded
-  dayjs.tz.setDefault(DEFAULT_TZ);
-} catch {
-  // ignore if plugin not available in some environments
-}
+// Use optional chaining so this safely no-ops if the timezone plugin isn't loaded
+dayjs.tz?.setDefault(DEFAULT_TZ);
 
 // Re-export configured dayjs so consumers can keep using the familiar API
 export default dayjs;

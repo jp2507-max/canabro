@@ -1,5 +1,6 @@
 import { RawStrainApiResponse } from '../types/weed-db';
 import { sanitizeString } from '../utils/data-parsing';
+import type { YieldUnit, YieldCategory } from '../types/plant';
 
 /**
  * StrainProcessingService
@@ -7,8 +8,6 @@ import { sanitizeString } from '../utils/data-parsing';
  * Provides confidence scoring and a 24h in-memory cache keyed by api_id + parser version.
  */
 
-export type YieldUnit = 'g_per_plant' | 'g_per_m2';
-export type YieldCategory = 'low' | 'medium' | 'high' | 'unknown';
 
 export interface TimeRangeDays {
   minDays: number | null;
@@ -223,7 +222,7 @@ export function parseWeeksOrDaysToDays(value?: string | number | null): TimeRang
       const min = parseInt(minStr, 10);
       const max = parseInt(maxStr, 10);
       if (isFinite(min) && isFinite(max)) {
-      return { minDays: min, maxDays: max, source: 'days', confidence: 0.95 };
+        return { minDays: min, maxDays: max, source: 'days', confidence: 0.95 };
       }
     }
   }

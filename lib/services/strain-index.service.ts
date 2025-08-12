@@ -53,6 +53,8 @@ export class StrainIndexService {
   private static instance: StrainIndexService;
   private index: StrainIndex | null = null;
   private building = false;
+  private buildAttempts = 0;
+  private lastBuildError: Error | null = null;
   private unsubscribeFn: (() => void) | null = null;
 
   static getInstance(): StrainIndexService {
@@ -90,6 +92,7 @@ export class StrainIndexService {
   async buildIndex(): Promise<void> {
     if (this.building) return;
     this.building = true;
+    this.buildAttempts++;
     try {
       log.info('[StrainIndex] Building local strain index from WatermelonDB...');
       const wdbStrains = await getAllStrainsFromWatermelonDB();
@@ -122,8 +125,18 @@ export class StrainIndexService {
       };
       this.saveIndexToStorage();
       log.info('[StrainIndex] Build complete', { entries: this.index.count });
+      this.buildAttempts = 0;
+      this.lastBuildError = null;
     } catch (error) {
       log.error('[StrainIndex] Build failed', error);
+      this.lastBuildError = error as Error;
+      // Retry with exponential backoff if under attempt limit
+      if (this.buildAttempts < 3) {
+        const delayMs = Math.pow(2, this.buildAttempts) * 1000;
+        setTimeout(() => {
+          this.buildIndex().catch((e) => log.warn('[StrainIndex] Retry build failed', e));
+        }, delayMs);
+      }
     } finally {
       this.building = false;
     }
@@ -245,6 +258,19 @@ export class StrainIndexService {
     this.loadIndexFromStorage();
     if (!this.index) return { count: 0, updatedAt: null, version: INDEX_VERSION };
     return { count: this.index.count, updatedAt: this.index.updatedAt, version: this.index.version };
+  }
+
+  /** Build diagnostics */
+  getBuildAttempts(): number {
+    return this.buildAttempts;
+  }
+
+  getLastBuildError(): Error | null {
+    return this.lastBuildError;
+  }
+
+  isBuilding(): boolean {
+    return this.building;
   }
 }
 

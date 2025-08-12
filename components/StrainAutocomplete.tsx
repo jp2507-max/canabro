@@ -375,8 +375,15 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
           `[StrainAutocomplete] Searching for "${debouncedSearchTerm}" using intelligent search`
         );
 
-        // Ensure local index is fresh in the background for snappy UX
-        strainIndexService.ensureFresh().catch(() => {});
+        // Ensure local index is fresh before searching
+        try {
+          await strainIndexService.ensureFresh();
+        } catch (e) {
+          Logger.warn('[StrainAutocomplete] Failed to ensure fresh strain index before search', {
+            error: e,
+          });
+          throw e;
+        }
 
         const results = await searchStrainsIntelligent(debouncedSearchTerm, limit);
 
@@ -594,7 +601,7 @@ export const StrainAutocomplete = forwardRef<StrainAutocompleteRef, StrainAutoco
             setConfirmVisible(false);
             setPendingSelection(null);
           }}
-          onConfirm={({ predictions }) => {
+          onConfirm={() => {
             // We only pass the raw strain back up for now; callers can compute predictions too
             onStrainSelect(pendingSelection);
             setConfirmVisible(false);

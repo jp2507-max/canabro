@@ -1,5 +1,5 @@
 import { Q } from '@nozbe/watermelondb';
-import { differenceInDays } from '../utils/date';
+import { differenceInDays, startOfDay, isValid as isValidDate } from '../utils/date';
 import { log } from '../utils/logger';
 
 import { Plant } from '../models/Plant';
@@ -84,10 +84,45 @@ export class LearningService {
     const predictedMinDays = plant.predictedFlowerMinDays ?? undefined;
     const predictedMaxDays = plant.predictedFlowerMaxDays ?? undefined;
     const baselineDate = plant.baselineDate ?? undefined;
-    const actualDays = baselineDate ? differenceInDays(plant.harvestDate, baselineDate) : undefined;
+
+    // Validate and normalize dates to day boundary before diffing
+    let actualDays: number | undefined;
+    if (baselineDate && isValidDate(baselineDate) && isValidDate(plant.harvestDate)) {
+      const baseDay = startOfDay(baselineDate);
+      const harvestDay = startOfDay(plant.harvestDate);
+
+      if (baseDay.getTime() > harvestDay.getTime()) {
+        // Inverted range; flag anomaly and skip computing negative diffs
+        log.warn('[LearningService] baselineDate is after harvestDate; skipping actualDays computation', {
+          plantId: plant.id,
+          baselineDate: baselineDate?.toISOString?.(),
+          harvestDate: plant.harvestDate?.toISOString?.(),
+        });
+        actualDays = undefined; // Domain: treat as unknown; adjust to 0 if needed later
+      } else {
+        actualDays = differenceInDays(harvestDay, baseDay);
+      }
+    } else if (baselineDate) {
+      // baseline present but invalid; log and treat as unknown
+      if (!isValidDate(baselineDate) || !isValidDate(plant.harvestDate)) {
+        log.warn('[LearningService] Invalid baseline or harvest date; skipping actualDays computation', {
+          plantId: plant.id,
+          baselineDate,
+          harvestDate: plant.harvestDate,
+        });
+      }
+      actualDays = undefined;
+    } else {
+      actualDays = undefined;
+    }
 
     let errorDaysFromRange: number | undefined;
-    if (actualDays != null && predictedMinDays != null && predictedMaxDays != null) {
+    if (
+      actualDays != null &&
+      actualDays >= 0 &&
+      predictedMinDays != null &&
+      predictedMaxDays != null
+    ) {
       if (actualDays < predictedMinDays) {
         errorDaysFromRange = predictedMinDays - actualDays;
       } else if (actualDays > predictedMaxDays) {
@@ -103,11 +138,16 @@ export class LearningService {
     const actualDate = plant.harvestDate;
 
     let errorDaysFromWindow: number | undefined;
-    if (predictedStart && predictedEnd) {
-      if (actualDate < predictedStart) {
-        errorDaysFromWindow = differenceInDays(predictedStart, actualDate);
-      } else if (actualDate > predictedEnd) {
-        errorDaysFromWindow = differenceInDays(actualDate, predictedEnd);
+    // Normalize to day boundary if available and valid to avoid timezone off-by-one
+    const startDay = predictedStart && isValidDate(predictedStart) ? startOfDay(predictedStart) : undefined;
+    const endDay = predictedEnd && isValidDate(predictedEnd) ? startOfDay(predictedEnd) : undefined;
+    const actualDay = startOfDay(actualDate);
+
+    if (startDay && endDay) {
+      if (actualDay < startDay) {
+        errorDaysFromWindow = differenceInDays(startDay, actualDay);
+      } else if (actualDay > endDay) {
+        errorDaysFromWindow = differenceInDays(actualDay, endDay);
       } else {
         errorDaysFromWindow = 0;
       }
@@ -213,15 +253,49 @@ export class LearningService {
   }
 
   // --- helpers ---
-  private static async calculateAverageMetric(plant: Plant, field: keyof PlantMetrics): Promise<number | undefined> {
+  private static async calculateAverageMetric(
+    plant: Plant,
+    field: keyof PlantMetrics
+  ): Promise<number | undefined> {
     try {
       const metrics = await plant.plantMetrics.extend(Q.sortBy('recorded_at', Q.desc)).fetch();
-      const values = metrics
-        .map((m) => (m as PlantMetrics)[field] as unknown as number)
-        .filter((v) => typeof v === 'number' && !isNaN(v));
-      if (values.length === 0) return undefined;
-      return values.reduce((s, v) => s + v, 0) / values.length;
-    } catch {
+
+      const validatedValues: number[] = [];
+      for (const metric of metrics) {
+        const raw: unknown = (metric as unknown as Record<string, unknown>)[
+          field as unknown as string
+        ];
+
+        if (raw == null) {
+          continue; // skip null/undefined
+        }
+
+        if (typeof raw === 'number' && Number.isFinite(raw)) {
+          validatedValues.push(raw);
+          continue;
+        }
+
+        // Allow numeric strings intentionally; convert explicitly
+        if (typeof raw === 'string') {
+          const parsed = Number(raw);
+          if (Number.isFinite(parsed)) {
+            validatedValues.push(parsed);
+            continue;
+          }
+        }
+        // Non-numeric values are skipped
+      }
+
+      if (validatedValues.length === 0) return undefined;
+      const sum = validatedValues.reduce((acc, val) => acc + val, 0);
+      return sum / validatedValues.length;
+    } catch (error) {
+      // Avoid swallowing unexpected errors silently; log context
+      log.error('[LearningService] Failed to calculate average metric', {
+        plantId: plant.id,
+        field,
+        error,
+      });
       return undefined;
     }
   }

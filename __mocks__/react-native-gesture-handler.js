@@ -32,9 +32,6 @@ function createChainableGesture() {
     chainable[name] = () => chainable;
   });
 
-  chainable.run = createNoop;
-  chainable.build = () => chainable;
-
   // Be very permissive: any unknown method should be chainable as well
   const proxy = new Proxy(chainable, {
     get(target, prop) {
@@ -44,6 +41,10 @@ function createChainableGesture() {
       return () => proxy;
     },
   });
+
+  // Ensure mid-chain calls to run/build keep the chain alive
+  chainable.run = () => proxy;
+  chainable.build = () => proxy;
 
   return proxy;
 }
@@ -75,6 +76,11 @@ export const LongPressGestureHandler = NoopWrapper;
 export const FlingGestureHandler = NoopWrapper;
 export const NativeViewGestureHandler = NoopWrapper;
 export const GestureHandlerRootView = NoopWrapper;
+// Legacy components commonly imported by third-party libs
+export const Swipeable = NoopWrapper;
+export const DrawerLayout = NoopWrapper;
+export const RectButton = NoopWrapper;
+export const BorderlessButton = NoopWrapper;
 
 export const State = {
   UNDETERMINED: 0,
@@ -104,6 +110,10 @@ const defaultExport = {
   FlingGestureHandler,
   NativeViewGestureHandler,
   GestureHandlerRootView,
+  Swipeable,
+  DrawerLayout,
+  RectButton,
+  BorderlessButton,
   State,
   Directions,
   gestureHandlerRootHOC,

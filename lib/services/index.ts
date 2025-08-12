@@ -5,9 +5,10 @@ export type {
   SeasonalWindow,
   TimeRangeDays,
   YieldProfile,
-  YieldCategory,
-  YieldUnit,
 } from './StrainProcessingService';
+
+// Re-export yield types from canonical source
+export type { YieldCategory, YieldUnit } from '../types/plant';
 
 /**
  * Background Processing Services - Index

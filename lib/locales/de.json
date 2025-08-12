@@ -171,6 +171,7 @@
     "confirm": {
       "plantTypeTitle": "Pflanzentyp auswählen",
       "plantTypeMessage": "Wir konnten den Pflanzentyp für diese Sorte nicht erkennen. Bitte wählen Sie einen:",
+        "plantTypeHelp": "Photoperioden-Pflanzen beginnen zu blühen, nachdem Sie den Lichtzyklus (12/12) umstellen. Autoflower blühen automatisch unabhängig von der Beleuchtung.",
       "photoperiod": "Photoperiode",
       "autoflower": "Autoflower",
       "baselineTitle": "Basisdatum",

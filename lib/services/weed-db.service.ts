@@ -525,9 +525,57 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
     );
 
     // Handle 304 Not Modified
-    if (response.status === 304 && cachedData) {
-      logger.log('[DEBUG] 304 Not Modified - serving cached list');
-      return { data: cachedData, isFromCache: true };
+    if (response.status === 304) {
+      if (cachedData) {
+        logger.log('[DEBUG] 304 Not Modified - serving cached list');
+        return { data: cachedData, isFromCache: true };
+      }
+
+      // Fallback: No cached data available but received 304. Perform a full fetch without conditional headers.
+      logger.warn('[WARN] 304 received with no cached data. Performing fallback full fetch.');
+      try {
+        const freshResponse = await requestWithRetry<
+          AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>
+        >(() =>
+          axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', {
+            params: formattedParams,
+            // Remove conditional headers to force a fresh response
+            validateStatus: (s) => s >= 200 && s < 300,
+          })
+        );
+
+        const freshRawStrains = Array.isArray(freshResponse.data)
+          ? (freshResponse.data as RawStrainApiResponse[])
+          : Array.isArray((freshResponse.data as ApiResponseArray)?.data)
+            ? ((freshResponse.data as ApiResponseArray).data as RawStrainApiResponse[])
+            : [];
+
+        const freshParsed = StrainArraySchema.safeParse(freshRawStrains);
+        if (!freshParsed.success) {
+          logger.error('Strain API fallback response validation failed:', freshParsed.error);
+          return { data: [], isFromCache: false, error: 'Invalid API response' };
+        }
+
+        const freshMapped: Strain[] = freshParsed.data.map(mapWeedDbStrain);
+        await saveToCache(cacheKey, freshMapped);
+
+        // Persist (possibly new) ETag for this query
+        const freshEtag = freshResponse.headers?.etag || freshResponse.headers?.ETag;
+        if (freshEtag) {
+          etags[etagKey] = freshEtag as string;
+          await saveEtagStore();
+        }
+
+        logger.log(`[DEBUG] Fallback full fetch succeeded with ${freshMapped.length} strains`);
+        return { data: freshMapped, isFromCache: false };
+      } catch (fallbackError) {
+        logger.error('Fallback full fetch after 304 failed:', fallbackError);
+        return {
+          data: [],
+          isFromCache: false,
+          error: fallbackError instanceof Error ? fallbackError.message : 'Fallback fetch failed',
+        };
+      }
     }
 
     const rawStrains = Array.isArray(response.data)
