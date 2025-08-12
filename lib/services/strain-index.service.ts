@@ -97,16 +97,26 @@ export class StrainIndexService {
       log.info('[StrainIndex] Building local strain index from WatermelonDB...');
       const wdbStrains = await getAllStrainsFromWatermelonDB();
       const byPrefix: Record<string, IndexedStrain[]> = {};
+      const seenApiIds = new Set<string>();
+      let duplicateSkips = 0;
 
       for (const s of wdbStrains) {
         // Prefer typed properties; fall back to legacy shape api_id if present
         const legacy = s as WDBStrainModel & { api_id?: string };
-        const apiId = s.apiId ?? legacy.api_id;
+        const rawApiId = s.apiId ?? legacy.api_id;
         const name = s.name ?? '';
-        if (!apiId || !name) continue;
+        if (!rawApiId || !name) continue;
+
+        const apiId = String(rawApiId);
+        if (seenApiIds.has(apiId)) {
+          duplicateSkips++;
+          log.debug('[StrainIndex] Skipping duplicate api_id during build', { api_id: apiId, name });
+          continue;
+        }
+        seenApiIds.add(apiId);
 
         const item: IndexedStrain = {
-          api_id: String(apiId),
+          api_id: apiId,
           name: String(name),
           type: (s.type ?? null) as string | null,
           growDifficulty: (s.growDifficulty ?? null) as string | null,
@@ -124,7 +134,7 @@ export class StrainIndexService {
         updatedAt: Date.now(),
       };
       this.saveIndexToStorage();
-      log.info('[StrainIndex] Build complete', { entries: this.index.count });
+      log.info('[StrainIndex] Build complete', { entries: this.index.count, skippedDuplicates: duplicateSkips });
       this.buildAttempts = 0;
       this.lastBuildError = null;
     } catch (error) {

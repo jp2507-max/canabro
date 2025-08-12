@@ -25,14 +25,22 @@ import {
 import { RawStrainApiResponse } from '@/lib/types/weed-db';
 import { normalizeDifficultyString } from '@/lib/services/GuidanceService';
 
-// Local helper types to safely read difficulty from different possible keys
-type StrainWithDifficultyAliases = RawStrainApiResponse & {
-  grow_difficulty?: string | null;
-  difficulty?: string | null;
-};
-
-function getRawDifficulty(s: StrainWithDifficultyAliases | null | undefined): string | null | undefined {
-  return s?.growDifficulty ?? s?.grow_difficulty ?? s?.difficulty;
+// Safely read difficulty across possible vendor key variants without unsafe casts
+function getRawDifficulty(s: RawStrainApiResponse | null | undefined): string | null | undefined {
+  if (!s) return undefined;
+  if (typeof s.growDifficulty === 'string' || s.growDifficulty === null) {
+    return s.growDifficulty;
+  }
+  const asRecord = s as Record<string, unknown>;
+  const snakeCase = asRecord['grow_difficulty'];
+  if (typeof snakeCase === 'string' || snakeCase === null) {
+    return snakeCase as string | null;
+  }
+  const alt = asRecord['difficulty'];
+  if (typeof alt === 'string' || alt === null) {
+    return alt as string | null;
+  }
+  return undefined;
 }
 
 type ConfirmSettings = {

@@ -828,19 +828,6 @@
       "complete_button_label": "Mark task as completed",
       "complete_button_hint": "Tap to complete this task"
     },
-    "screen": {
-      "no_tasks_scheduled": "No tasks scheduled",
-      "tap_to_add_task": "Tap the + button to add your first task for this day",
-      "loading_tasks": "Loading tasks...",
-      "add_task_button": "Add Task",
-      "group_by_strain": "Group by strain",
-      "group_on": "Grouping: strain (off)",
-      "group_off": "Grouping: strain (on)",
-      "open_analytics": "Open analytics",
-      "analytics": "Analytics"
-    }
-  },
-  "calendar": {
     "strain_banner": {
       "title": "Strain milestones today",
       "within_window": "{{countStrains}} strain(s) within window • {{countTasks}} related task(s)"
@@ -850,6 +837,15 @@
       "close": "Close"
     },
     "screen": {
+      "no_tasks_scheduled": "No tasks scheduled",
+      "tap_to_add_task": "Tap the + button to add your first task for this day",
+      "loading_tasks": "Loading tasks...",
+      "add_task_button": "Add Task",
+      "group_by_strain": "Group by strain",
+      "group_on": "Grouping: strain (off)",
+      "group_off": "Grouping: strain (on)",
+      "open_analytics": "Open analytics",
+      "analytics": "Analytics",
       "compare_strains": "Compare strains"
     }
   },

@@ -117,6 +117,8 @@ function CalendarScreenView({
     return Array.from(ids);
   }, [sortedTasks]);
 
+  const [strainIdA = '', strainIdB = ''] = uniqueStrainIds;
+
   const renderTaskItem = useCallback(
     ({ item }: { item: PlantTask }) => {
       return (
@@ -273,8 +275,8 @@ function CalendarScreenView({
         {showCompare && uniqueStrainIds.length >= 2 && (
           <Modal visible={showCompare} animationType="slide" onRequestClose={() => setShowCompare(false)}>
             <StrainScheduleComparison
-              strainIdA={uniqueStrainIds[0] as string}
-              strainIdB={uniqueStrainIds[1] as string}
+              strainIdA={strainIdA}
+              strainIdB={strainIdB}
               onClose={() => setShowCompare(false)}
             />
           </Modal>

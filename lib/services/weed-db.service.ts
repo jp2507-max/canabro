@@ -662,9 +662,102 @@ async function fetchStrainsPaginated(params: StrainFilterParams): Promise<Pagina
       })
     );
 
-    if (response.status === 304 && cachedData) {
-      logger.log('[DEBUG] 304 Not Modified - serving cached paginated data');
-      return { data: cachedData, isFromCache: true };
+    if (response.status === 304) {
+      if (cachedData) {
+        logger.log('[DEBUG] 304 Not Modified - serving cached paginated data');
+        return { data: cachedData, isFromCache: true };
+      }
+
+      // Fallback: No cached data available but received 304. Perform a full fetch without conditional headers.
+      logger.warn('[WARN] 304 received with no cached paginated data. Performing fallback full fetch.');
+      try {
+        const freshResponse = await requestWithRetry<
+          AxiosResponse<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>
+        >(() =>
+          axiosInstance.get<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>('/strains', {
+            params: formattedParams,
+            // Remove conditional headers to force a fresh response
+            validateStatus: (s) => s >= 200 && s < 300,
+          })
+        );
+
+        let fallbackPaginated: PaginatedResponse<Strain>;
+
+        if (
+          freshResponse.data &&
+          typeof freshResponse.data === 'object' &&
+          'items' in freshResponse.data &&
+          'total_count' in freshResponse.data
+        ) {
+          const raw = (freshResponse.data as { items: RawStrainApiResponse[] }).items;
+          const parsed = StrainArraySchema.safeParse(raw);
+          if (!parsed.success) {
+            logger.error('Strain API fallback paginated response validation failed:', parsed.error);
+            return {
+              data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 },
+              isFromCache: false,
+              error: 'Invalid API response',
+            };
+          }
+          const mapped: Strain[] = parsed.data.map(mapWeedDbStrain);
+          const body = freshResponse.data as {
+            total_count: number; page: number; page_size: number; total_pages: number;
+          };
+          fallbackPaginated = {
+            items: mapped,
+            total_count: body.total_count,
+            page: body.page,
+            page_size: body.page_size,
+            total_pages: body.total_pages,
+          };
+        } else {
+          const raw = Array.isArray(freshResponse.data)
+            ? (freshResponse.data as RawStrainApiResponse[])
+            : 'data' in (freshResponse.data as ApiResponseArray) && Array.isArray((freshResponse.data as ApiResponseArray).data)
+              ? ((freshResponse.data as ApiResponseArray).data as RawStrainApiResponse[])
+              : [];
+          const parsed = StrainArraySchema.safeParse(raw);
+          if (!parsed.success) {
+            logger.error('Strain API fallback array response validation failed:', parsed.error);
+            return {
+              data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 },
+              isFromCache: false,
+              error: 'Invalid API response',
+            };
+          }
+          const mapped: Strain[] = parsed.data.map(mapWeedDbStrain);
+          const totalCount = mapped.length;
+          const startIndex = (page - 1) * pageSize;
+          const endIndex = startIndex + pageSize;
+          const items = mapped.slice(startIndex, endIndex);
+          const totalPages = Math.ceil(totalCount / pageSize);
+          fallbackPaginated = {
+            items,
+            total_count: totalCount,
+            page,
+            page_size: pageSize,
+            total_pages: totalPages,
+          };
+        }
+
+        await saveToCache(cacheKey, fallbackPaginated);
+        const freshEtag = freshResponse.headers?.etag || freshResponse.headers?.ETag;
+        if (freshEtag) {
+          etags[etagKey] = freshEtag as string;
+          await saveEtagStore();
+        }
+        logger.log(
+          `[DEBUG] Fallback full fetch for paginated data succeeded with ${fallbackPaginated.items.length} items (page ${fallbackPaginated.page}/${fallbackPaginated.total_pages})`
+        );
+        return { data: fallbackPaginated, isFromCache: false };
+      } catch (fallbackError) {
+        logger.error('Fallback full fetch after 304 for paginated data failed:', fallbackError);
+        return {
+          data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 },
+          isFromCache: false,
+          error: fallbackError instanceof Error ? fallbackError.message : 'Fallback fetch failed',
+        };
+      }
     }
 
     // Handle different response formats

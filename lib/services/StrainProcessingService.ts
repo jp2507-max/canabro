@@ -55,19 +55,38 @@ export interface ProcessedStrainData {
 
 const PARSER_VERSION = '1.0.0';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+const MAX_CACHE_ENTRIES = 1000; // upper bound to prevent unbounded memory growth
 
 type CacheEntry = { data: ProcessedStrainData; ts: number };
 const cache = new Map<string, CacheEntry>();
 
 export function getProcessedStrain(api: RawStrainApiResponse): ProcessedStrainData {
   const key = `${api.api_id || api.id || api.name}:${PARSER_VERSION}`;
+  const now = Date.now();
   const cached = cache.get(key);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
-    return cached.data;
+  if (cached) {
+    // Respect TTL and implement LRU on access
+    if (now - cached.ts < CACHE_TTL_MS) {
+      // Move to end (most recently used) by re-inserting
+      cache.delete(key);
+      cache.set(key, cached);
+      return cached.data;
+    }
+    // Expired: remove stale entry
+    cache.delete(key);
   }
 
   const data = parseStrainData(api);
-  cache.set(key, { data, ts: Date.now() });
+
+  // Evict least-recently-used (oldest) entry if at capacity
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    const firstKey = cache.keys().next().value as string | undefined;
+    if (typeof firstKey === 'string') {
+      cache.delete(firstKey);
+    }
+  }
+
+  cache.set(key, { data, ts: now });
   return data;
 }
 
