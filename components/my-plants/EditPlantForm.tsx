@@ -864,67 +864,65 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       console.log('[EditPlantForm] Final update payload:', JSON.stringify(updatePayload, null, 2)); // Execute the plant update in the database
       const plantRecord = await database?.get('plants').find(plant.id);
       let result = false;
+
+      // Prepare predictions (if applicable) using the just-computed update payload
+      let predictions: ReturnType<typeof preparePlantPredictions> | null = null;
+      if (selectedStrain) {
+        try {
+          predictions = preparePlantPredictions(selectedStrain, {
+            plantedDateISO: updatePayload.plantedDate,
+            locationDescription: updatePayload.locationDescription,
+          });
+        } catch (e) {
+          logger.warn('[EditPlantForm] Prediction recompute skipped:', e);
+          Sentry.captureException(e);
+        }
+      }
+
       if (plantRecord) {
         await database?.action(async () => {
           await plantRecord.update((p) => {
-            // Cast p to Plant to access fields
-            const plantRecord = p as unknown as Plant;
-            plantRecord.name = updatePayload.name;
-            plantRecord.strain = updatePayload.strainNameDisplay;
-            plantRecord.strainId = updatePayload.strainIdToSet;
-            plantRecord.plantedDate = updatePayload.plantedDate;
-            plantRecord.growthStage = updatePayload.growthStage;
-            plantRecord.notes = updatePayload.notes || '';
-            plantRecord.imageUrl = updatePayload.imageUrl;
-            plantRecord.cannabisType = updatePayload.cannabisType;
-            plantRecord.growMedium = updatePayload.growMedium;
-            plantRecord.lightCondition = updatePayload.lightCondition;
-            plantRecord.locationDescription = updatePayload.locationDescription;
+            const pr = p as unknown as Plant;
+            // Primary fields
+            pr.name = updatePayload.name;
+            pr.strain = updatePayload.strainNameDisplay;
+            pr.strainId = updatePayload.strainIdToSet;
+            pr.plantedDate = updatePayload.plantedDate;
+            pr.growthStage = updatePayload.growthStage;
+            pr.notes = updatePayload.notes || '';
+            pr.imageUrl = updatePayload.imageUrl;
+            pr.cannabisType = updatePayload.cannabisType;
+            pr.growMedium = updatePayload.growMedium;
+            pr.lightCondition = updatePayload.lightCondition;
+            pr.locationDescription = updatePayload.locationDescription;
+
+            // Derived prediction fields (if we computed them)
+            if (predictions) {
+              pr.plantType = predictions.plantType;
+              pr.environment = predictions.environment;
+              pr.hemisphere = predictions.hemisphere;
+              pr.baselineKind = predictions.baseline.kind;
+              pr.baselineDate = new Date(predictions.baseline.date);
+              pr.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
+              pr.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
+              pr.predictedHarvestStart = predictions.predictedHarvestStart
+                ? new Date(predictions.predictedHarvestStart)
+                : undefined;
+              pr.predictedHarvestEnd = predictions.predictedHarvestEnd
+                ? new Date(predictions.predictedHarvestEnd)
+                : undefined;
+              pr.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
+              pr.yieldUnit = predictions.yieldUnit ?? undefined;
+              pr.yieldMin = predictions.yieldMin ?? undefined;
+              pr.yieldMax = predictions.yieldMax ?? undefined;
+              pr.yieldCategory = predictions.yieldCategory ?? undefined;
+            }
           });
         });
         result = true;
       }
 
       if (result) {
-        // Recompute predictions if we have a selected raw strain
-        try {
-          if (selectedStrain && database) {
-            const plantedISO = updatePayload.plantedDate;
-            const locationDesc = updatePayload.locationDescription;
-            const predictions = preparePlantPredictions(selectedStrain, {
-              plantedDateISO: plantedISO,
-              locationDescription: locationDesc,
-            });
-            const plantRecordLatest = await database.get('plants').find(plant.id);
-            await database.action(async () => {
-              await plantRecordLatest.update((p) => {
-                const pr = p as unknown as Plant;
-                pr.plantType = predictions.plantType;
-                pr.environment = predictions.environment;
-                pr.hemisphere = predictions.hemisphere;
-                pr.baselineKind = predictions.baseline.kind;
-                pr.baselineDate = new Date(predictions.baseline.date);
-                pr.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
-                pr.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
-                pr.predictedHarvestStart = predictions.predictedHarvestStart
-                  ? new Date(predictions.predictedHarvestStart)
-                  : undefined;
-                pr.predictedHarvestEnd = predictions.predictedHarvestEnd
-                  ? new Date(predictions.predictedHarvestEnd)
-                  : undefined;
-                pr.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
-                pr.yieldUnit = predictions.yieldUnit ?? undefined;
-                pr.yieldMin = predictions.yieldMin ?? undefined;
-                pr.yieldMax = predictions.yieldMax ?? undefined;
-                pr.yieldCategory = predictions.yieldCategory ?? undefined;
-              });
-            });
-          }
-        } catch (e) {
-          logger.warn('[EditPlantForm] Prediction recompute skipped:', e);
-          Sentry.captureException(e);
-        }
-
         console.log('[EditPlantForm] Plant updated successfully');
         Alert.alert(t('editPlantForm:alerts.successTitle'), t('editPlantForm:alerts.successMessage'));
         if (onUpdateSuccess) onUpdateSuccess();

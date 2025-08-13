@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  cancelAnimation,
   runOnJS,
 } from 'react-native-reanimated';
 
@@ -13,6 +14,7 @@ import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { OptimizedIcon } from '@/components/ui/OptimizedIcon';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   type Environment,
@@ -53,7 +55,7 @@ type ConfirmSettings = {
 export interface StrainConfirmationModalProps {
   visible: boolean;
   strain: RawStrainApiResponse | null;
-  plantedDateISO?: string;
+  plantedDateISO?: string | null;
   defaultEnvironment?: Environment;
   defaultHemisphere?: Hemisphere;
   onClose: () => void;
@@ -117,6 +119,13 @@ export default function StrainConfirmationModal({
       modalTranslateY.value = withTiming(height, { duration: 250 });
       modalScale.value = withTiming(0.95, { duration: 250 });
     }
+
+    // Cleanup: cancel any running animations on dependency change/unmount
+    return () => {
+      cancelAnimation(backdropOpacity);
+      cancelAnimation(modalTranslateY);
+      cancelAnimation(modalScale);
+    };
   }, [visible, height, backdropOpacity, modalTranslateY, modalScale]);
 
   const backdropAnimatedStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
@@ -151,7 +160,8 @@ export default function StrainConfirmationModal({
         <Animated.View className="flex-1 bg-black/50" style={backdropAnimatedStyle} />
       </GestureDetector>
 
-      <GestureDetector gesture={Gesture.Pan()
+      <SafeAreaView className="flex-1" edges={['top', 'bottom']}>
+        <GestureDetector gesture={Gesture.Pan()
         .onUpdate((e) => {
           'worklet';
           if (e.translationY > 0) modalTranslateY.value = e.translationY;
@@ -166,9 +176,9 @@ export default function StrainConfirmationModal({
             modalTranslateY.value = withSpring(0, { damping: 20, stiffness: 220 });
           }
         })}>
-        <AnimatedPressable
-          className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white p-6 dark:bg-neutral-900"
-          style={modalAnimatedStyle}>
+          <AnimatedPressable
+            className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white p-6 pb-safe dark:bg-neutral-900"
+            style={modalAnimatedStyle}>
           {/* Handle */}
           <ThemedView className="mb-4 items-center">
             <ThemedView className="h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700" />
@@ -259,6 +269,10 @@ export default function StrainConfirmationModal({
                     <Pressable
                       key={env}
                       onPress={() => setEnvironment(env)}
+                      accessibilityRole="button"
+                      accessible={true}
+                      accessibilityLabel={`${t('strains.preview.environment', 'Environment')}: ${t(env, env)}`}
+                      accessibilityState={{ selected: environment === env }}
                       className={`rounded-full px-3 py-1 ${environment === env ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-700'}`}>
                       <ThemedText className={environment === env ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'}>
                         {env}
@@ -275,28 +289,32 @@ export default function StrainConfirmationModal({
                     <Pressable
                       key={h}
                       onPress={() => setHemisphere(h)}
-                      className={`rounded-full px-3 py-1 ${hemisphere === h ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-700'}`}>
-                      <ThemedText className={hemisphere === h ? 'text-white' : 'text-neutral-900 dark:text-neutral-100'}>
+                      accessibilityRole="button"
+                      accessible={true}
+                      accessibilityLabel={`${t('strains.preview.hemisphere', 'Hemisphere')}: ${h === 'N' ? t('strains.preview.northern', 'Northern') : t('strains.preview.southern', 'Southern')}`}
+                      accessibilityState={{ selected: hemisphere === h }}
+                      className={`rounded-full px-3 py-1 ${hemisphere === h ? 'bg-primary dark:bg-primary-dark' : 'bg-surface dark:bg-surface-dark'}`}>
+                      <ThemedText className={hemisphere === h ? 'text-on-primary dark:text-on-primary-dark' : 'text-on-surface dark:text-on-surface-dark'}>
                         {h}
                       </ThemedText>
                     </Pressable>
                   ))}
                 </ThemedView>
               </ThemedView>
-
               {/* Footer buttons */}
               <ThemedView className="mt-2 flex-row justify-end space-x-3">
                 <Pressable onPress={onClose} className="rounded-xl bg-neutral-200 px-4 py-3 dark:bg-neutral-800">
                   <ThemedText className="text-neutral-900 dark:text-neutral-100">{t('common.cancel', 'Cancel')}</ThemedText>
                 </Pressable>
-                <Pressable onPress={handleConfirm} className="rounded-xl bg-primary-500 px-4 py-3">
-                  <ThemedText className="font-medium text-white">{t('common.confirm', 'Confirm')}</ThemedText>
+                <Pressable onPress={handleConfirm} className="rounded-xl bg-primary px-4 py-3 dark:bg-primary-dark">
+                  <ThemedText className="font-medium text-on-primary dark:text-on-primary-dark">{t('common.confirm', 'Confirm')}</ThemedText>
                 </Pressable>
               </ThemedView>
             </>
           )}
-        </AnimatedPressable>
-      </GestureDetector>
+          </AnimatedPressable>
+        </GestureDetector>
+      </SafeAreaView>
     </Modal>
   );
 }

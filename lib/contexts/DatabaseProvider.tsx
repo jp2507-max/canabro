@@ -168,14 +168,6 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           console.log('[DeltaSync] Running initial strain delta sync');
           await deltaSyncStrains();
         }
-        // Prewarm strain index and start AutoSync subscription
-        try {
-          console.log('[StrainIndex] Ensuring local index is fresh and starting AutoSync');
-          await strainIndexService.ensureFresh();
-          strainIndexService.startAutoSync();
-        } catch (e) {
-          console.warn('[StrainIndex] Prewarm/AutoSync startup failed', e);
-        }
       } catch (err) {
         console.warn('[DeltaSync] Initial strain delta sync failed', err);
       }
@@ -315,7 +307,18 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       syncSetupDoneRef.current = true;
 
       // Perform initial sync
-      sync();
+      sync().then(() => {
+        // Prewarm strain index and start AutoSync subscription after initial sync
+        (async () => {
+          try {
+            console.log('[StrainIndex] Ensuring local index is fresh and starting AutoSync');
+            await strainIndexService.ensureFresh();
+            strainIndexService.startAutoSync();
+          } catch (e) {
+            console.warn('[StrainIndex] Prewarm/AutoSync startup failed', e);
+          }
+        })();
+      });
 
       // Set up periodic sync with a reasonable interval (5 minutes = 300,000ms)
       console.log('[DatabaseProvider] Setting up periodic sync interval (5 minutes)...');

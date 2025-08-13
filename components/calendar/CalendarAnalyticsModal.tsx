@@ -15,7 +15,7 @@ export const CalendarAnalyticsModal: React.FC<CalendarAnalyticsModalProps> = ({ 
   const { t } = useTranslation();
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
       <ThemedView className="flex-1 bg-white dark:bg-neutral-900 pt-safe h-screen-safe">
         {/* Header */}
         <View className="p-4 border-b border-neutral-200 dark:border-neutral-700 flex-row items-center justify-between">

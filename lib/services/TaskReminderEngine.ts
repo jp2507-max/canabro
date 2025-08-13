@@ -96,13 +96,18 @@ export class TaskReminderEngine {
                 // ✅ REUSE: Notification batching logic
                 // Prefer higher priority for tasks inside harvest window
                 const enriched = userTasks.map((t) => {
+                    // broader match for harvest-related tasks; respect word boundaries and variations
+                    const isHarvestRelated = /\b(pre[ -]?harvest|harvest|flush|dark(?: ?period)?)\b/i.test(t.taskTitle);
                     return {
                         ...t,
-                        // lightweight signal: if title mentions pre-harvest/harvest, consider higher priority
-                        priority: /harvest|pre-harvest|flush|dark/i.test(t.taskTitle)
-                          ? 'high'
-                          : t.priority,
-                    } as TaskNotificationConfig;
+                        // Preserve existing 'critical'; otherwise upgrade harvest-related tasks to 'high'
+                        priority:
+                            t.priority === 'critical'
+                                ? t.priority
+                                : isHarvestRelated
+                                ? 'high'
+                                : t.priority,
+                    };
                 });
 
                 const batches = await this.createNotificationBatches(enriched, activityPattern);

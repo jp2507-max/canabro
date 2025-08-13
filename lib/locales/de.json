@@ -129,7 +129,8 @@
       "lightConditions": "Lichtverhältnisse",
       "growingMedium": "Anbaumedium",
       "notes": "Notizen (Optional)",
-      "plantedDate": "Pflanzdatum"
+       "plantedDate": "Pflanzdatum",
+       "experienceLevel": "Erfahrungsstufe"
     },
     "buttons": {
       "camera": "Kamera",
@@ -191,9 +192,7 @@
       "intermediate": "Fortgeschritten",
       "advanced": "Experte"
     },
-    "fields": {
-      "experienceLevel": "Erfahrungsstufe"
-    }
+    
   },
   "metricsForm": {
     "healthStep": {
@@ -614,7 +613,7 @@
       }
     }
   },
-  "diagnosis": {
+  "diagnosis_intro": {
     "title": "Pflanzenarzt",
     "takePhotoDescription": "Mache ein klares Foto deiner Pflanze und lasse die KI es analysieren.",
     "aiDiagnosis": "KI-Diagnose",
@@ -678,137 +677,7 @@
       }
     }
   },
-  "community": {
-    "segment": {
-      "all": "Alle Beiträge",
-      "questions": "Fragen",
-      "plant_shares": "Pflanzenteilungen"
-    },
-    "accessibility": {
-      "filterBy": "Filtern nach {{segment}}"
-    },
-    "emptyState": {
-      "offlineTitle": "Community ist offline",
-      "offlineDescription": "Verbinde dich mit dem Internet, um Beiträge zu sehen und mit der Community zu interagieren.",
-      "noPostsTitle": "Noch keine Beiträge",
-      "noPostsDescription": "Sei der Erste, der seine Pflanzen teilt oder eine Frage stellt!"
-    },
-    "createPostModal": {
-      "title": "Erstellen",
-      "sharePlantTitle": "Pflanze teilen",
-      "sharePlantDescription": "Teile Fotos und Updates deiner Pflanzen",
-      "askQuestionTitle": "Frage stellen",
-      "askQuestionDescription": "Hole dir Hilfe von der Community bei Anbauproblemen"
-    },
-    "deletePostModal": {
-      "title": "{{type}} löschen?",
-      "message": "Dieser {{type}} wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-      "cancel": "Abbrechen",
-      "delete": "Löschen",
-      "deleting": "Wird gelöscht...",
-      "types": {
-        "post": "Beitrag",
-        "comment": "Kommentar",
-        "question": "Frage",
-        "plantShare": "Pflanzenteilung"
-      }
-    },
-    "postTypeHeader": {
-      "question": "Frage",
-      "plantShare": "Pflanzenteilung",
-      "post": "Beitrag",
-      "answered": "Beantwortet",
-      "unanswered": "Unbeantwortet",
-      "careTips": "Pflegetipps"
-    },
-    "postAuthorRow": {
-      "you": "Du",
-      "privacyOptions": {
-        "everyone": "Jeder",
-        "followers": "Follower",
-        "private": "Privat"
-      },
-      "accessibility": {
-        "userAvatar": "{{userName}}s Avatar",
-        "privacySetting": "Privatsphäre-Einstellung: {{privacy}}",
-        "privacyHint": "Tippen, um Privatsphäre-Einstellungen zu ändern",
-        "setPrivacy": "Privatsphäre auf {{privacy}} setzen"
-      }
-    },
-    "postItem": {
-      "unknownUser": "Unbekannter Benutzer",
-      "userFallback": "Benutzer {{id}}"
-    },
-    "commentItem": {
-      "unknownUser": "Unbekannter Benutzer",
-      "you": "Du",
-      "reply": "Antworten",
-      "deleteDialogTitle": "Kommentar löschen?",
-      "deleteDialogMessage": "Dieser Kommentar wird dauerhaft gelöscht.",
-      "deleteError": "Der Kommentar konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
-    },
-    "time": {
-      "unknown": "Unbekannte Zeit",
-      "invalid": "Ungültige Zeit",
-      "s": "s",
-      "m": "m",
-      "h": "h",
-      "d": "t",
-      "w": "w",
-      "y": "j"
-    },
-    "communitySegmentedControl": {
-      "all": "Alle",
-      "questions": "Fragen",
-      "plant_shares": "Pflanzenteilungen",
-      "accessibility": {
-        "filterLabel": "Beiträge nach Kategorie filtern"
-      }
-    },
-    "questionPostItem": {
-      "anonymousUser": "Anonymer Benutzer",
-      "solved": "Gelöst",
-      "urgent": "Dringend",
-      "answers": "{{count}} Antworten",
-      "answers_one": "{{count}} Antwort",
-      "accessibility": {
-        "questionBy": "Frage: {{title}} von {{displayName}}",
-        "viewQuestion": "Frage ansehen: {{title}}",
-        "viewProfile": "Profil von {{name}} ansehen",
-        "viewProfileHint": "Doppeltippen, um das Benutzerprofil anzuzeigen",
-        "viewImage": "Fragebild ansehen",
-        "viewImageHint": "Doppeltippen, um das Bild im Vollbildmodus anzuzeigen",
-        "viewAnswers": "Antworten ansehen",
-        "deleteQuestion": "Frage löschen"
-      }
-    },
-    "growthStage": {
-      "seedling": "Sämling",
-      "vegetative": "Wachstum",
-      "flowering": "Blüte",
-      "fruiting": "Fruchtbildung",
-      "harvest": "Ernte",
-      "dormant": "Ruhend"
-    },
-    "commentModal": {
-      "inputPlaceholder": "Kommentar hinzufügen...",
-      "attachPhotoTitle": "Foto anhängen",
-      "attachPhotoMessage": "Wähle eine Option:",
-      "takePhoto": "Foto aufnehmen...",
-      "chooseFromLibrary": "Aus Bibliothek wählen...",
-      "cancel": "Abbrechen",
-      "removeImage": "Bild entfernen",
-      "attachPhoto": "Foto anhängen",
-      "sendComment": "Kommentar senden",
-      "failedToTakePhoto": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
-      "failedToPickImage": "Bild konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
-      "failedToAddComment": "Kommentar konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
-      "failedToAddCommentPostMissing": "Kommentar konnte nicht hinzugefügt werden. Der zugehörige Beitrag existiert möglicherweise nicht mehr.",
-      "commentAddedWarning": "Kommentar hinzugefügt, konnte aber nicht sofort angezeigt werden.",
-      "commentPotentialWarningTitle": "Warnung",
-      "commentPotentialWarningMessage": "Kommentar wurde möglicherweise erstellt, konnte aber nicht sofort angezeigt werden."
-    }
-  },
+  // Merged duplicate community blocks below into the comprehensive one at the end of the file
   "auth": {
     "login": {
       "emailPlaceholder": "E-Mail",

@@ -29,7 +29,7 @@ export type {
   Follow,
   CreatePostData,
   CreatePostCommentData,
-  Activity, // enum ActivityType is exported below as value
+  Activity, 
   PostFilter,
   PostFilterConfig,
   QuestionCategory,
@@ -48,7 +48,7 @@ export type {
   PostActionState,
   BasePostItemProps,
 } from './community';
-export { ActivityType } from './community';
+export type { ActivityType } from './community';
 
 // Strain related types
 export * from './strain';

@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import ThemedView from '@/components/ui/ThemedView';
 import ThemedText from '@/components/ui/ThemedText';
 import { PlantTask } from '@/lib/models/PlantTask';
-import { isWithinInterval, parseISO } from '@/lib/utils/date';
+import { isWithinInterval, parseISO, isValid } from '@/lib/utils/date';
 
 interface StrainMilestoneBannerProps {
   date: Date;
@@ -30,7 +29,7 @@ export const StrainMilestoneBanner: React.FC<StrainMilestoneBannerProps> = ({ da
 
       const start = parseISO(win.start);
       const end = parseISO(win.end);
-      if (!start || !end) continue;
+      if (!isValid(start) || !isValid(end)) continue;
 
       if (isWithinInterval(date, start, end)) {
         strainIdsInWindow.add(strainId);
@@ -48,19 +47,26 @@ export const StrainMilestoneBanner: React.FC<StrainMilestoneBannerProps> = ({ da
   if (!summary.show) return null;
 
   return (
-    <ThemedView className="mx-4 mt-3 mb-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-3">
-      <ThemedText className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
-        {t('calendar.strain_banner.title', 'Strain milestones today')}
+    <ThemedView
+      accessible
+      accessibilityLabel={`${t('calendar.strain_banner.title')} — ${t('calendar.strain_banner.within_window', {
+        countStrains: summary.strains,
+        countTasks: summary.tasks,
+      })}`}
+      className="mx-4 mt-3 mb-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-3 transition-colors animate-fade-in">
+      <ThemedText
+        accessibilityRole="header"
+        className="mb-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100 transition-colors">
+        {t('calendar.strain_banner.title')}
       </ThemedText>
-      <View className="flex-row items-center justify-between">
-        <ThemedText className="text-xs text-neutral-700 dark:text-neutral-300">
+      <ThemedView accessibilityRole="text" className="flex-row items-center justify-between">
+        <ThemedText className="text-xs text-neutral-700 dark:text-neutral-300 transition-colors">
           {t('calendar.strain_banner.within_window', {
             countStrains: summary.strains,
             countTasks: summary.tasks,
-            defaultValue: '{{countStrains}} strain(s) within window • {{countTasks}} related task(s)'
           })}
         </ThemedText>
-      </View>
+      </ThemedView>
     </ThemedView>
   );
 };

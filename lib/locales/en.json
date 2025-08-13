@@ -263,7 +263,8 @@
       "lightConditions": "Light Conditions",
       "growingMedium": "Growing Medium",
       "notes": "Notes (Optional)",
-      "plantedDate": "Planted Date"
+      "plantedDate": "Planted Date",
+      "experienceLevel": "Experience level"
     },
     "buttons": {
       "camera": "Camera",
@@ -325,9 +326,6 @@
       "intermediate": "Intermediate",
       "advanced": "Advanced"
     },
-    "fields": {
-      "experienceLevel": "Experience level"
-    }
   },
   "metricsForm": {
     "healthStep": {
@@ -1610,12 +1608,6 @@
       "unfollowFailed": "Failed to unfollow user",
       "loadFeedFailed": "Failed to load feed",
       "tryAgain": "Please try again"
-    },
-    "filters": {
-      "all": "All",
-      "plants": "Plants",
-      "strains": "Strains",
-      "achievements": "Achievements"
     },
     "notifications": {
       "newFollower": "New Follower",

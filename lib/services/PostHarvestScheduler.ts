@@ -5,9 +5,10 @@ import { log } from '../utils/logger';
 import { addDays } from '../utils/date';
 import { generateUuid } from '../utils/uuid';
 import { getDatabase } from '../database/database';
-import { Database, Q, Model } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { LearningService } from './LearningService';
 import { FEATURE_FLAGS } from '../config/featureFlags';
+import * as Sentry from '@sentry/react-native';
 
 export interface PostHarvestTask {
   taskType: 'drying' | 'curing' | 'trimming' | 'weighing' | 'storage' | 'cleanup' | 'data_recording';
@@ -278,7 +279,12 @@ export class PostHarvestScheduler {
       
       // Trigger learning loop (feature-flagged) to adjust future schedules for same-strain plants
       if (FEATURE_FLAGS.learningLoop) {
-        await LearningService.applyLearningToFutureSchedules(plant);
+        try {
+          await LearningService.applyLearningToFutureSchedules(plant);
+        } catch (err) {
+          log.error(`[PostHarvestScheduler] Learning step failed:`, err);
+          try { Sentry.captureException(err); } catch (_) { /* noop if Sentry not initialized in tests */ }
+        }
       }
       
       log.info(`[PostHarvestScheduler] Successfully marked plant ${plant.id} as harvested and scheduled post-harvest tasks`);

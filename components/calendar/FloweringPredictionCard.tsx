@@ -61,7 +61,7 @@ const PredictionStage: React.FC<PredictionStageProps> = ({
     <Animated.View style={animatedStyle} className="flex-row items-center mb-3">
       {/* Status indicator */}
       <View className={`w-3 h-3 rounded-full ${getStatusColor()} mr-3`} />
-      
+
       {/* Content */}
       <View className="flex-1">
         <Text className="text-sm font-medium text-on-surface dark:text-on-surface-dark">
@@ -137,14 +137,14 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
     try {
       setLoading(true);
       setError(null);
-      
+
       log.info(`[FloweringPrediction] Loading prediction for plant ${plant.name}`);
-      
+
       const result = await StrainCalendarIntegrationService.predictFloweringAndHarvest(plant);
-      
+
       setPrediction(result);
       onPredictionUpdate?.(result);
-      
+
       if (result) {
         log.info(`[FloweringPrediction] Prediction loaded for ${plant.name}`);
       } else {
@@ -164,7 +164,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
 
   const getCurrentStage = (): 'vegetative' | 'flowering' | 'harvest' => {
     if (!prediction) return 'vegetative';
-    
+
     const now = new Date();
     if (now >= prediction.expectedHarvestDate) return 'harvest';
     if (now >= prediction.expectedFloweringStart) return 'flowering';
@@ -216,6 +216,17 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
   const floweringDaysUntil = getDaysUntil(prediction.expectedFloweringStart);
   const harvestDaysUntil = getDaysUntil(prediction.expectedHarvestDate);
 
+  // Safely compute title/date for harvest stage to avoid relying on possibly-null values.
+  const hasHarvestWindow = Boolean(
+    prediction.harvestWindowStart && prediction.harvestWindowEnd
+  );
+  const safeTitle = hasHarvestWindow
+    ? 'Harvest Window (end)'
+    : (prediction.expectedHarvestDate ? 'Harvest Ready' : '');
+  // Prefer harvestWindowEnd, fall back to expectedHarvestDate, finally a sensible default (now)
+  // so that consumers expecting a Date still receive one.
+  const safeDate = (prediction.harvestWindowEnd ?? prediction.expectedHarvestDate) ?? new Date();
+
   return (
     <View className="bg-surface dark:bg-surface-dark rounded-xl p-4 mb-4 border border-outline/20 dark:border-outline-dark/20">
       {/* Header */}
@@ -234,7 +245,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
               {prediction.strainName}
             </Text>
           </View>
-          
+
           <View className="flex-row items-center space-x-2">
             <ConfidenceBadge level={prediction.confidenceLevel} />
             {compact && (
@@ -256,7 +267,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
             isCompleted={currentStage !== 'vegetative'}
             daysUntil={floweringDaysUntil}
           />
-          
+
           <PredictionStage
             title="Flowering End"
             date={prediction.expectedFloweringEnd}
@@ -264,10 +275,10 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
             isCompleted={currentStage === 'harvest'}
             daysUntil={getDaysUntil(prediction.expectedFloweringEnd)}
           />
-          
+
           <PredictionStage
-            title={prediction.harvestWindowStart && prediction.harvestWindowEnd ? 'Harvest Window (end)' : 'Harvest Ready'}
-            date={prediction.harvestWindowEnd || prediction.expectedHarvestDate}
+            title={safeTitle}
+            date={safeDate}
             isActive={currentStage === 'harvest'}
             isCompleted={false}
             daysUntil={harvestDaysUntil}
@@ -304,7 +315,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
                 Yield expectation:
               </Text>
               <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
-                {formatYieldRange(prediction.yield!)}
+                {formatYieldRange(prediction.yield)}
               </Text>
             </View>
           )}
@@ -315,11 +326,13 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
                 Actual vs Predicted:
               </Text>
               <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
-                {prediction.actualVsPredicted.deltaHarvestDays === 0
-                  ? 'Harvest matched prediction'
-                  : prediction.actualVsPredicted.deltaHarvestDays! > 0
-                  ? `Harvest ${prediction.actualVsPredicted.deltaHarvestDays} days later`
-                  : `Harvest ${Math.abs(prediction.actualVsPredicted.deltaHarvestDays!)} days earlier`}
+                {(() => {
+                  const delta = prediction.actualVsPredicted.deltaHarvestDays;
+                  if (delta == null) return 'Harvest data unavailable';
+                  if (delta === 0) return 'Harvest matched prediction';
+                  if (delta > 0) return `Harvest ${delta} days later`;
+                  return `Harvest ${Math.abs(delta)} days earlier`;
+                })()}
               </Text>
             </View>
           )}

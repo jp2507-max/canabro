@@ -293,14 +293,32 @@ export const StrainScheduleComparison: React.FC<StrainScheduleComparisonProps> =
 
           {/* Compatibility Flags */}
           {comparison.conflicts && comparison.conflicts.length > 0 && (
-            <View className="bg-warning/10 dark:bg-warning-dark/10 rounded-xl p-4 mb-4">
-              <Text className="text-lg font-semibold text-warning dark:text-warning-dark mb-3">
+            <View
+              className="bg-warning/10 dark:bg-warning-dark/10 rounded-xl p-4 mb-4"
+              accessibilityRole="list"
+              accessibilityLabel="Compatibility flags"
+            >
+              <Text
+                className="text-lg font-semibold text-warning dark:text-warning-dark mb-3"
+                accessibilityRole="header"
+              >
                 Compatibility Flags
               </Text>
               {comparison.conflicts.map((c, i) => (
-                <View key={i} className="flex-row items-start mb-2">
-                  <View className="w-2 h-2 bg-warning dark:bg-warning-dark rounded-full mt-2 mr-3" />
-                  <Text className="text-sm text-on-surface dark:text-on-surface-dark flex-1">
+                <View
+                  key={i}
+                  className="flex-row items-start mb-2"
+                  accessible
+                  accessibilityLabel={c}
+                >
+                  <View
+                    className="w-2 h-2 bg-warning dark:bg-warning-dark rounded-full mt-2 mr-3"
+                    accessible={false}
+                  />
+                  <Text
+                    className="text-sm text-on-surface dark:text-on-surface-dark flex-1"
+                    accessibilityRole="text"
+                  >
                     {c}
                   </Text>
                 </View>

@@ -51,7 +51,7 @@ interface StrainAutocompleteProps {
   returnKeyType?: 'search' | 'next' | 'done' | 'go' | 'send';
   showCultivationPreview?: boolean; // Task 6.1
   confirmOnSelect?: boolean; // Task 6.2
-  plantedDateISO?: string; // optional context for predictions
+  plantedDateISO?: string | null; // optional context for predictions
 }
 
 // Ref interface for focus control

@@ -213,6 +213,9 @@ export function buildGenericCultivationProfile(): CultivationProfile {
 
 // --- Parsing helpers ---
 
+const MAX_DAYS = 200; // sensible upper bound to guard malformed data
+const MAX_WEEKS = 30; // guard upper bound for week-based inputs
+
 function getStringField(obj: Record<string, unknown>, keys: string[]): string | null {
   for (const key of keys) {
     const value = obj[key];
@@ -240,7 +243,14 @@ export function parseWeeksOrDaysToDays(value?: string | number | null): TimeRang
     if (minStr !== undefined && maxStr !== undefined) {
       const min = parseInt(minStr, 10);
       const max = parseInt(maxStr, 10);
-      if (isFinite(min) && isFinite(max)) {
+      if (
+        isFinite(min) &&
+        isFinite(max) &&
+        min >= 0 &&
+        max >= 0 &&
+        min <= max &&
+        max <= MAX_DAYS
+      ) {
         return { minDays: min, maxDays: max, source: 'days', confidence: 0.95 };
       }
     }
@@ -252,7 +262,9 @@ export function parseWeeksOrDaysToDays(value?: string | number | null): TimeRang
     const dStr = singleDays[1];
     if (dStr !== undefined) {
       const d = parseInt(dStr, 10);
-      if (isFinite(d)) return { minDays: d, maxDays: d, source: 'days', confidence: 0.9 };
+      if (isFinite(d) && d >= 0 && d <= MAX_DAYS) {
+        return { minDays: d, maxDays: d, source: 'days', confidence: 0.9 };
+      }
     }
   }
 
@@ -264,7 +276,14 @@ export function parseWeeksOrDaysToDays(value?: string | number | null): TimeRang
     if (wminStr !== undefined && wmaxStr !== undefined) {
       const wmin = parseInt(wminStr, 10);
       const wmax = parseInt(wmaxStr, 10);
-      if (isFinite(wmin) && isFinite(wmax)) {
+      if (
+        isFinite(wmin) &&
+        isFinite(wmax) &&
+        wmin >= 0 &&
+        wmax >= 0 &&
+        wmin <= wmax &&
+        wmax <= MAX_WEEKS
+      ) {
         return {
           minDays: wmin * 7,
           maxDays: wmax * 7,
@@ -281,17 +300,26 @@ export function parseWeeksOrDaysToDays(value?: string | number | null): TimeRang
     const wStr = singleWeeks[1];
     if (wStr !== undefined) {
       const w = parseInt(wStr, 10);
-      if (isFinite(w)) return { minDays: w * 7, maxDays: w * 7, source: 'weeks', confidence: 0.9 };
+      if (isFinite(w) && w >= 0 && w <= MAX_WEEKS) {
+        return { minDays: w * 7, maxDays: w * 7, source: 'weeks', confidence: 0.9 };
+      }
     }
   }
 
   // pure number heuristic
   if (/^\d+$/.test(str)) {
     const n = parseInt(str, 10);
-    if (n > 30) {
-      return { minDays: n, maxDays: n, source: 'days', confidence: 0.6 };
+    if (n >= 0) {
+      if (n > 30) {
+        if (n <= MAX_DAYS) {
+          return { minDays: n, maxDays: n, source: 'days', confidence: 0.6 };
+        }
+      } else {
+        if (n <= MAX_WEEKS) {
+          return { minDays: n * 7, maxDays: n * 7, source: 'weeks', confidence: 0.6 };
+        }
+      }
     }
-    return { minDays: n * 7, maxDays: n * 7, source: 'weeks', confidence: 0.6 };
   }
 
   return null;
@@ -465,6 +493,20 @@ export function parseSeasonalHarvestWindow(value?: string | null): SeasonalWindo
   };
 }
 
+// Maps textual period to an inclusive day range within a month.
+function periodToDayRange(period: 'early' | 'mid' | 'end' | null): { start: number; end: number } {
+  switch (period) {
+    case 'early':
+      return { start: 1, end: 10 };
+    case 'mid':
+      return { start: 11, end: 20 };
+    case 'end':
+      return { start: 21, end: 31 };
+    default:
+      return { start: 1, end: 31 };
+  }
+}
+
 function extractMonths(input: string): number[] {
   const MONTHS: Record<string, number> = {
     january: 1,
@@ -511,21 +553,7 @@ function extractMonths(input: string): number[] {
       if (typeof monthNum === 'number') found.push(monthNum);
     });
   }
-  // de-duplicate and cap to 2 months
-  return Array.from(new Set(found)).slice(0, 2);
-}
-
-function periodToDayRange(period: 'early' | 'mid' | 'end' | null): { start: number; end: number } {
-  switch (period) {
-    case 'early':
-      return { start: 1, end: 10 };
-    case 'mid':
-      return { start: 11, end: 20 };
-    case 'end':
-      return { start: 21, end: 31 };
-    default:
-      return { start: 1, end: 31 };
-  }
+  return found;
 }
 
 function normalizeDifficulty(value?: string | null): 'easy' | 'medium' | 'hard' | 'unknown' {

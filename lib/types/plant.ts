@@ -27,12 +27,24 @@ export type GrowthStage = typeof GROWTH_STAGES[keyof typeof GROWTH_STAGES];
 export const GROWTH_STAGES_ARRAY: GrowthStage[] = Object.values(GROWTH_STAGES);
 
 // Shared union types for normalized strain-based scheduling fields
-export type PlantType = 'photoperiod' | 'autoflower' | 'unknown';
-export type BaselineKind = 'flip' | 'germination';
-export type Environment = 'indoor' | 'outdoor' | 'greenhouse';
-export type Hemisphere = 'N' | 'S';
-export type YieldUnit = 'g_per_plant' | 'g_per_m2';
-export type YieldCategory = 'low' | 'medium' | 'high' | 'unknown';
+// Define as runtime arrays + derived string literal unions for safer checks
+export const PLANT_TYPES = ['photoperiod', 'autoflower', 'unknown'] as const;
+export type PlantType = typeof PLANT_TYPES[number];
+
+export const BASELINE_KINDS = ['flip', 'germination'] as const;
+export type BaselineKind = typeof BASELINE_KINDS[number];
+
+export const ENVIRONMENTS = ['indoor', 'outdoor', 'greenhouse'] as const;
+export type Environment = typeof ENVIRONMENTS[number];
+
+export const HEMISPHERES = ['N', 'S'] as const;
+export type Hemisphere = typeof HEMISPHERES[number];
+
+export const YIELD_UNITS = ['g_per_plant', 'g_per_m2'] as const;
+export type YieldUnit = typeof YIELD_UNITS[number];
+
+export const YIELD_CATEGORIES = ['low', 'medium', 'high', 'unknown'] as const;
+export type YieldCategory = typeof YIELD_CATEGORIES[number];
 
 // Added Enums (moved from AddPlantForm.tsx)
 export enum PlantGrowLocation {

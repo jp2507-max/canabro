@@ -209,15 +209,17 @@ export interface CreatePostCommentData {
 /**
  * User activity types
  */
-export enum ActivityType {
-  POST = 'post',
-  COMMENT = 'comment',
-  LIKE = 'like',
-  FOLLOW = 'follow',
-  PLANT_UPDATE = 'plant_update',
-  DIARY_ENTRY = 'diary_entry',
-  ACHIEVEMENT = 'achievement',
-}
+export const ACTIVITY_TYPE = {
+  POST: 'post',
+  COMMENT: 'comment',
+  LIKE: 'like',
+  FOLLOW: 'follow',
+  PLANT_UPDATE: 'plant_update',
+  DIARY_ENTRY: 'diary_entry',
+  ACHIEVEMENT: 'achievement',
+} as const;
+
+export type ActivityType = typeof ACTIVITY_TYPE[keyof typeof ACTIVITY_TYPE];
 
 /**
  * User activity interface for activity feed

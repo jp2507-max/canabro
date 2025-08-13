@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler, useWatch } from 'react-hook-form';
 import {
   TextInput,
   Alert,
@@ -479,6 +479,13 @@ const BasicInfoStep: React.FC<
   const nameInputRef = useRef<TextInput>(null);
   const strainInputRef = useRef<StrainAutocompleteRef>(null);
 
+  // Read planted date from form and derive ISO string if valid
+  const plantedDateFromForm = useWatch({ control, name: 'planted_date' });
+  const plantedDateISO =
+    plantedDateFromForm instanceof Date && isValid(plantedDateFromForm)
+      ? plantedDateFromForm.toISOString()
+      : undefined;
+
   // Register refs with parent component
   React.useEffect(() => {
     if (inputRefs[0] && nameInputRef.current) {
@@ -534,7 +541,7 @@ const BasicInfoStep: React.FC<
               onFocus={() => onInputFocus?.(1)}
               showCultivationPreview
               confirmOnSelect
-              plantedDateISO={new Date().toISOString()}
+              plantedDateISO={plantedDateISO}
               returnKeyType="next"
               onSubmitEditing={() => {
                 // Move to next step since this is the last focusable input
@@ -1102,7 +1109,9 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         ? CannabisType.Ruderalis
         : undefined;
       if (mapped) setValue('cannabis_type', mapped, { shouldValidate: true });
-    } catch {}
+    } catch (e) {
+      // Non-fatal: unable to infer cannabis type from strain string
+    }
     setIsSyncingStrain(true);
     setSyncError(null);
 
@@ -1349,19 +1358,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           plant.locationDescription = plantData.locationDescription || '';
           plant.imageUrl = plantData.imageUrl ?? undefined;
           plant.notes = plantData.notes || undefined;
-
-          // Strain-based predictions (Task 3.1 Core integration)
-          try {
-            const selectedStrain: RawStrainApiResponse | null = null; // At this point we only have id/name; predictions need raw strain
-            // If we had cached the selected raw strain during selection, we could pass it here.
-            // Fallback: skip if no strain selected
-            if (plantData.strainId && plantData.strain) {
-              // Minimal prediction using name-only is not possible; rely on prior selection cache stored on form
-              // We keep this block defensive and no-op if no cached raw strain was set earlier
-            }
-          } catch (e) {
-            /* noop: initial predictions require raw strain; enrichment happens post-create */
-          }
+          
         });
         return created;
       });
@@ -1577,21 +1574,23 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       const raw = lastSelectedRawStrainRef.current;
       if (!raw) return null;
       const preds = preparePlantPredictions(raw, {
-        plantedDateISO: plantedDateWatch ? (plantedDateWatch as Date).toISOString() : new Date().toISOString(),
+        plantedDateISO: plantedDateWatch
+          ? (plantedDateWatch as Date).toISOString()
+          : new Date().toISOString(),
         locationDescription: locationDescWatch || undefined,
         plantTypeOverride: plantTypeOverrideRef.current,
         hemisphereOverride: hemisphereOverrideRef.current,
         preferredEnvironment: environmentOverrideRef.current,
       });
       return preds;
-    } catch {
+    } catch (error) {
+      logger.warn('[AddPlantForm] Failed to generate schedule preview', error);
       return null;
     }
   }, [selectedStrainTick, plantedDateWatch, locationDescWatch]);
 
   return (
-    <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
-      {/* Header */}
+    <>
       <ThemedView className="border-b border-neutral-200 bg-white px-4 py-6 dark:border-neutral-700 dark:bg-neutral-800">
         <ThemedView className="mb-4 flex-row items-center justify-between">
           <AnimatedButton onPress={() => router.back()} variant="tertiary" className="h-10 w-10">
@@ -1778,6 +1777,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           )}
         </ThemedView>
       </ThemedView>
-    </ThemedView>
+    </>
   );
 }
+
+export default AddPlantForm;
