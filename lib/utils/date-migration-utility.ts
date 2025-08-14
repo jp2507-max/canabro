@@ -50,53 +50,50 @@ export async function migratePlantDates(database: Database): Promise<void> {
     log.info(`Found ${plants.length} plants to migrate`);
 
     let migratedCount = 0;
-    let errorCount = 0;
 
     await database.write(async () => {
       for (const plant of plants) {
-        try {
-          // Get current raw data to access string date fields
-          const rawRecord = plant._raw as PlantRawRecord;
-          
-          let needsUpdate = false;
-          const updates: Partial<PlantRawRecord> = {};
+        // Get current raw data to access string date fields
+        const rawRecord = plant._raw as PlantRawRecord;
+        
+        let needsUpdate = false;
+        const updates: Partial<PlantRawRecord> = {};
 
-          // Migrate planted_date -> planted_date_ts
-          if (rawRecord.planted_date && !rawRecord.planted_date_ts) {
-            const timestamp = parseStringDateToTimestamp(rawRecord.planted_date);
-            if (timestamp !== null) {
-              updates.planted_date_ts = timestamp;
-              needsUpdate = true;
+        // Migrate planted_date -> planted_date_ts
+        if (rawRecord.planted_date && !rawRecord.planted_date_ts) {
+          const timestamp = parseStringDateToTimestamp(rawRecord.planted_date);
+          if (timestamp !== null) {
+            updates.planted_date_ts = timestamp;
+            needsUpdate = true;
+          }
+        }
+
+        // Migrate expected_harvest_date -> expected_harvest_date_ts
+        if (rawRecord.expected_harvest_date && !rawRecord.expected_harvest_date_ts) {
+          const timestamp = parseStringDateToTimestamp(rawRecord.expected_harvest_date);
+          if (timestamp !== null) {
+            updates.expected_harvest_date_ts = timestamp;
+            needsUpdate = true;
+          }
+        }
+
+        if (needsUpdate) {
+          await plant.update((p: Plant) => {
+            // Map database column names to model property names and assign directly
+            // to ensure WatermelonDB change tracking works properly
+            if (updates.planted_date_ts !== undefined) {
+              p.plantedDateTs = updates.planted_date_ts;
             }
-          }
-
-          // Migrate expected_harvest_date -> expected_harvest_date_ts
-          if (rawRecord.expected_harvest_date && !rawRecord.expected_harvest_date_ts) {
-            const timestamp = parseStringDateToTimestamp(rawRecord.expected_harvest_date);
-            if (timestamp !== null) {
-              updates.expected_harvest_date_ts = timestamp;
-              needsUpdate = true;
+            if (updates.expected_harvest_date_ts !== undefined) {
+              p.expectedHarvestDateTs = updates.expected_harvest_date_ts;
             }
-          }
-
-          if (needsUpdate) {
-            await plant.update((p: Plant) => {
-              Object.assign(p._raw, updates);
-            });
-            migratedCount++;
-          }
-        } catch (error) {
-          log.error(`Failed to migrate plant ${plant.id}:`, error);
-          errorCount++;
+          });
+          migratedCount++;
         }
       }
     });
 
-    log.info(`Plant date migration completed: ${migratedCount} migrated, ${errorCount} errors`);
-    
-    if (errorCount > 0) {
-      log.warn(`${errorCount} plants failed to migrate - check logs for details`);
-    }
+    log.info(`Plant date migration completed: ${migratedCount} plants migrated successfully`);
   } catch (error) {
     log.error('Plant date migration failed:', error);
     throw error;
