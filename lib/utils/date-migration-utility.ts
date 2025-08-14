@@ -27,6 +27,28 @@ function parseStringDateToTimestamp(dateString: string): number | null {
   }
 
   try {
+    // Detect plain YYYY-MM-DD (no time/timezone) and parse as UTC midnight to avoid TZ drift
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+    if (match) {
+      const y = Number(match[1]);
+      const m = Number(match[2]);
+      const d = Number(match[3]);
+      if (
+        !Number.isFinite(y) ||
+        !Number.isFinite(m) ||
+        !Number.isFinite(d) ||
+        m < 1 ||
+        m > 12 ||
+        d < 1 ||
+        d > 31
+      ) {
+        log.warn(`Invalid YYYY-MM-DD date string: ${dateString}`);
+        return null;
+      }
+      return Date.UTC(y, m - 1, d);
+    }
+
+    // For strings with time or full ISO with timezone, rely on Date parsing
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       log.warn(`Invalid date string: ${dateString}`);
@@ -109,10 +131,16 @@ export async function needsDateMigration(database: Database): Promise<boolean> {
     
     // Check if any plants have string dates but missing timestamp equivalents
     for (const plant of plants) {
-      const raw = plant._raw as PlantRawRecord;
+      // Use typed fields instead of _raw. Trim strings and explicitly check null/undefined for timestamps
+      const plantedDateStr = (plant.plantedDate ?? '').trim();
+      const expectedHarvestDateStr = (plant.expectedHarvestDate ?? '').trim();
+
+      const plantedDateTs = plant.plantedDateTs;
+      const expectedHarvestDateTs = plant.expectedHarvestDateTs;
+
       if (
-        (raw.planted_date && !raw.planted_date_ts) ||
-        (raw.expected_harvest_date && !raw.expected_harvest_date_ts)
+        (plantedDateStr !== '' && plantedDateTs == null) ||
+        (expectedHarvestDateStr !== '' && expectedHarvestDateTs == null)
       ) {
         return true;
       }
@@ -141,8 +169,18 @@ export async function getDateMigrationStats(database: Database): Promise<{
     
     for (const plant of plants) {
       const raw = plant._raw as PlantRawRecord;
-      const hasStringDates = raw.planted_date || raw.expected_harvest_date;
-      const hasTimestamps = raw.planted_date_ts || raw.expected_harvest_date_ts;
+      // Explicit presence checks
+      const plantedDateStr = typeof raw.planted_date === 'string' ? raw.planted_date.trim() : '';
+      const expectedHarvestDateStr =
+        typeof raw.expected_harvest_date === 'string' ? raw.expected_harvest_date.trim() : '';
+
+      const plantedTsPresent =
+        typeof raw.planted_date_ts === 'number' && !Number.isNaN(raw.planted_date_ts);
+      const expectedTsPresent =
+        typeof raw.expected_harvest_date_ts === 'number' && !Number.isNaN(raw.expected_harvest_date_ts);
+
+      const hasStringDates = plantedDateStr !== '' || expectedHarvestDateStr !== '';
+      const hasTimestamps = plantedTsPresent || expectedTsPresent;
       
       if (hasStringDates && hasTimestamps) {
         migrated++;
