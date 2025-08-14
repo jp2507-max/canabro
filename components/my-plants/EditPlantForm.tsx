@@ -20,9 +20,12 @@ import {
   Pressable,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import * as Sentry from '@sentry/react-native';
+import { log as logger } from '@/lib/utils/logger';
 
 // ✅ Type imports
 import { RawStrainApiResponse } from '@/lib/types/weed-db';
+import { preparePlantPredictions } from '@/lib/services/StrainIntegrationService';
 import { Strain } from '@/lib/data/strains';
 
 // ✅ Reanimated v3 minimal import - using custom animation hooks for better performance
@@ -861,22 +864,59 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
       console.log('[EditPlantForm] Final update payload:', JSON.stringify(updatePayload, null, 2)); // Execute the plant update in the database
       const plantRecord = await database?.get('plants').find(plant.id);
       let result = false;
+
+      // Prepare predictions (if applicable) using the just-computed update payload
+      let predictions: ReturnType<typeof preparePlantPredictions> | null = null;
+      if (selectedStrain) {
+        try {
+          predictions = preparePlantPredictions(selectedStrain, {
+            plantedDateISO: updatePayload.plantedDate,
+            locationDescription: updatePayload.locationDescription,
+          });
+        } catch (e) {
+          logger.warn('[EditPlantForm] Prediction recompute skipped:', e);
+          Sentry.captureException(e);
+        }
+      }
+
       if (plantRecord) {
         await database?.action(async () => {
           await plantRecord.update((p) => {
-            // Cast p to Plant to access fields
-            const plantRecord = p as unknown as Plant;
-            plantRecord.name = updatePayload.name;
-            plantRecord.strain = updatePayload.strainNameDisplay;
-            plantRecord.strainId = updatePayload.strainIdToSet;
-            plantRecord.plantedDate = updatePayload.plantedDate;
-            plantRecord.growthStage = updatePayload.growthStage;
-            plantRecord.notes = updatePayload.notes || '';
-            plantRecord.imageUrl = updatePayload.imageUrl;
-            plantRecord.cannabisType = updatePayload.cannabisType;
-            plantRecord.growMedium = updatePayload.growMedium;
-            plantRecord.lightCondition = updatePayload.lightCondition;
-            plantRecord.locationDescription = updatePayload.locationDescription;
+            const pr = p as unknown as Plant;
+            // Primary fields
+            pr.name = updatePayload.name;
+            pr.strain = updatePayload.strainNameDisplay;
+            pr.strainId = updatePayload.strainIdToSet;
+            pr.plantedDate = updatePayload.plantedDate;
+            pr.growthStage = updatePayload.growthStage;
+            pr.notes = updatePayload.notes || '';
+            pr.imageUrl = updatePayload.imageUrl;
+            pr.cannabisType = updatePayload.cannabisType;
+            pr.growMedium = updatePayload.growMedium;
+            pr.lightCondition = updatePayload.lightCondition;
+            pr.locationDescription = updatePayload.locationDescription;
+
+            // Derived prediction fields (if we computed them)
+            if (predictions) {
+              pr.plantType = predictions.plantType;
+              pr.environment = predictions.environment;
+              pr.hemisphere = predictions.hemisphere;
+              pr.baselineKind = predictions.baseline.kind;
+              pr.baselineDate = new Date(predictions.baseline.date);
+              pr.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
+              pr.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
+              pr.predictedHarvestStart = predictions.predictedHarvestStart
+                ? new Date(predictions.predictedHarvestStart)
+                : undefined;
+              pr.predictedHarvestEnd = predictions.predictedHarvestEnd
+                ? new Date(predictions.predictedHarvestEnd)
+                : undefined;
+              pr.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
+              pr.yieldUnit = predictions.yieldUnit ?? undefined;
+              pr.yieldMin = predictions.yieldMin ?? undefined;
+              pr.yieldMax = predictions.yieldMax ?? undefined;
+              pr.yieldCategory = predictions.yieldCategory ?? undefined;
+            }
           });
         });
         result = true;
@@ -1158,7 +1198,7 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
             <ThemedView>
               <StrainAutocomplete
                 initialStrainName={value || ''}
-                onStrainSelect={(strainObj: RawStrainApiResponse | null) => {
+                 onStrainSelect={(strainObj: RawStrainApiResponse | null) => {
                   if (strainObj) {
                     // Set the strain name in the form
                     onChange(strainObj.name);
@@ -1187,6 +1227,8 @@ export default function EditPlantForm({ plant, onUpdateSuccess }: EditPlantFormP
                   }
                 }}
                 placeholder={t('editPlantForm:placeholders.strain')}
+                showCultivationPreview
+                confirmOnSelect={false}
               />
               {error && (
                 <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>

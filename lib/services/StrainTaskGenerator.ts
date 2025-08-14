@@ -1,0 +1,253 @@
+import { database } from '../models';
+import { Plant } from '../models/Plant';
+import { PlantTask } from '../models/PlantTask';
+import { addDays } from '../utils/date';
+import { generateUuid } from '../utils/uuid';
+import { TaskType } from '../types/taskTypes';
+import { getStrainById } from '../data/strains';
+import { FEATURE_FLAGS } from '../config/featureFlags';
+import * as Sentry from '@sentry/react-native';
+import { log } from '../utils/logger';
+import { Q } from '@nozbe/watermelondb';
+
+export interface GenerateStrainTasksInput {
+  templateVersion?: number;
+  enableFlush?: boolean;
+  enableDarkPeriod?: boolean;
+}
+
+type Difficulty = 'easy' | 'medium' | 'hard';
+
+function difficultyMultiplier(d: Difficulty | undefined): number {
+  switch (d) {
+    case 'easy':
+      return 0.8;
+    case 'hard':
+      return 1.2;
+    default:
+      return 1.0;
+  }
+}
+
+function safeDate(input: unknown): Date | undefined {
+  if (input === null || input === undefined) {
+    return undefined;
+  }
+
+  let candidate: Date;
+
+  if (input instanceof Date) {
+    candidate = input;
+  } else if (typeof input === 'string' || typeof input === 'number') {
+    candidate = new Date(input);
+  } else {
+    return undefined;
+  }
+
+  return isNaN(candidate.getTime()) ? undefined : candidate;
+}
+
+export class StrainTaskGenerator {
+  static async generateAnchoredTasks(
+    plant: Plant,
+    opts: GenerateStrainTasksInput = {}
+  ): Promise<PlantTask[]> {
+    const tasks: PlantTask[] = [];
+
+    const harvestStart = safeDate(plant.predictedHarvestStart);
+    const harvestEnd = safeDate(plant.predictedHarvestEnd);
+
+    // Derive difficulty from strain metadata when available
+    let diff: Difficulty | undefined;
+    if (plant.strainId) {
+      const strain = getStrainById(plant.strainId);
+      const raw = strain?.growDifficulty?.toLowerCase();
+      if (raw === 'easy') diff = 'easy';
+      else if (raw === 'hard') diff = 'hard';
+      else if (raw === 'moderate' || raw === 'medium') diff = 'medium';
+    }
+
+    if (!harvestStart) {
+      return tasks;
+    }
+
+    // Load existing auto tasks for this plant to avoid duplicates (idempotency)
+    let existingIndex: Set<string>;
+    try {
+      const existing = await database
+        .get<PlantTask>('plant_tasks')
+        .query(
+          Q.where('plant_id', plant.id),
+          Q.where('source', 'auto')
+        )
+        .fetch();
+      existingIndex = new Set(
+        existing.map((t) => `${t.taskType}|${new Date(t.dueDate).toDateString()}`)
+      );
+    } catch (err) {
+      // Gracefully handle DB read errors so generation can continue
+      try {
+        log.error('[StrainTaskGenerator] Failed to load existing auto tasks', {
+          plantId: plant.id,
+          error: err,
+        });
+      } catch (_) {
+        // Fallback if custom logger is unavailable
+        console.error('[StrainTaskGenerator] Failed to load existing auto tasks', err);
+      }
+      const hub = (
+        Sentry as unknown as { getCurrentHub?: () => { getClient?: () => unknown } }
+      ).getCurrentHub?.();
+      if (hub?.getClient?.()) {
+        Sentry.captureException(err);
+      }
+      existingIndex = new Set();
+    }
+
+    const anchors: Array<{
+      offsetDays: number;
+      title: string;
+      type: TaskType;
+      optional?: boolean;
+      description?: string;
+    }> = [
+      { offsetDays: -10, title: 'Flush (optional)', type: 'flushing', optional: true },
+      { offsetDays: -7, title: 'Pre-harvest checks', type: 'inspection' },
+      { offsetDays: -2, title: 'Dark period (optional)', type: 'inspection', optional: true },
+    ];
+
+    // Feature-flagged optional anchors; opts can override flags
+    const enableFlush = opts.enableFlush ?? FEATURE_FLAGS.flushTask;
+    const enableDark = opts.enableDarkPeriod ?? FEATURE_FLAGS.darkPeriodTask;
+
+    const multiplier = difficultyMultiplier(diff);
+
+    await database.write(async () => {
+      for (const a of anchors) {
+        try {
+          if (a.optional && a.title.includes('Flush') && !enableFlush) continue;
+          if (a.optional && a.title.includes('Dark') && !enableDark) continue;
+
+          const due = addDays(harvestStart, Math.round(a.offsetDays * multiplier));
+          const dedupeKey = `${a.type}|${due.toDateString()}`;
+          if (existingIndex.has(dedupeKey)) {
+            continue;
+          }
+
+          const task = await database.get<PlantTask>('plant_tasks').create((t: Partial<PlantTask>) => {
+            // Required fields
+            t.taskId = `${plant.id}-${a.type}-${due.toISOString()}-${generateUuid()}`;
+            t.plantId = plant.id;
+            t.title = a.title;
+            t.taskType = a.type;
+            t.dueDate = due.toISOString();
+            t.status = 'pending';
+            t.userId = plant.userId;
+            t.priority = a.type === 'inspection' ? 'high' : 'medium';
+            t.autoGenerated = true;
+            t.source = 'auto';
+            t.locked = false;
+
+            // Optional fields
+            t.templateVersion = (opts.templateVersion ?? FEATURE_FLAGS.templateVersion) ?? undefined;
+            t.strainMetadata = {
+              difficulty: diff,
+              harvestWindow: {
+                start: harvestStart?.toISOString(),
+                end: harvestEnd?.toISOString(),
+              },
+              strainId: plant.strainId ?? undefined,
+            };
+            // Only set description if present on the anchor
+            if (a.description) {
+              t.description = a.description;
+            }
+          });
+          tasks.push(task);
+
+          // Telemetry: log anchor creation with parser/template/confidence hints
+          log.info('[StrainTaskGenerator] Created anchored task', {
+            plantId: plant.id,
+            taskType: a.type,
+            dueDate: task.dueDate,
+            difficulty: diff,
+            templateVersion: task.templateVersion,
+          });
+        } catch (err) {
+          log.error('[StrainTaskGenerator] Failed creating anchored task', err);
+          {
+            const hub = (
+              Sentry as unknown as { getCurrentHub?: () => { getClient?: () => unknown } }
+            ).getCurrentHub?.();
+            if (hub?.getClient?.()) {
+              Sentry.captureException(err);
+            }
+          }
+        }
+      }
+    });
+
+    return tasks;
+  }
+
+  /**
+   * Update only auto-generated, unlocked tasks when regenerating for the plant.
+   */
+  static async regenerateForPlant(
+    plant: Plant,
+    opts: GenerateStrainTasksInput = {}
+  ): Promise<{ updated: number; created: number }> {
+    const collection = database.get<PlantTask>('plant_tasks');
+    const candidate = await collection
+      .query(
+        Q.where('plant_id', plant.id),
+        Q.where('source', 'auto'),
+        Q.where('locked', false)
+      )
+      .fetch();
+
+    // Simple strategy: delete candidates and recreate for now
+    try {
+      await database.write(async () => {
+        for (const t of candidate) {
+          await t.markAsDeleted();
+        }
+      });
+    } catch (err) {
+      // Log with rich context and surface the error to callers
+      try {
+        log.error('[StrainTaskGenerator] Failed batch delete before regeneration', {
+          plantId: plant.id,
+          candidateCount: candidate.length,
+          candidateTaskIds: candidate.map((c) => c.taskId),
+          error:
+            err instanceof Error
+              ? { message: err.message, stack: err.stack }
+              : { message: String(err) },
+        });
+      } catch (_) {
+        // no-op: ensure we never throw from logging
+      }
+      {
+        const hub = (
+          Sentry as unknown as { getCurrentHub?: () => { getClient?: () => unknown } }
+        ).getCurrentHub?.();
+        if (hub?.getClient?.()) {
+          Sentry.captureException(err);
+        }
+      }
+      throw err; // rethrow so callers can handle failure explicitly
+    }
+
+    const createdTasks = await this.generateAnchoredTasks(plant, {
+      enableFlush: opts.enableFlush ?? FEATURE_FLAGS.flushTask,
+      enableDarkPeriod: opts.enableDarkPeriod ?? FEATURE_FLAGS.darkPeriodTask,
+      templateVersion: opts.templateVersion ?? FEATURE_FLAGS.templateVersion,
+    });
+    return { updated: 0, created: createdTasks.length };
+  }
+}
+
+export default StrainTaskGenerator;
+
+

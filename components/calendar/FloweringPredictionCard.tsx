@@ -61,7 +61,7 @@ const PredictionStage: React.FC<PredictionStageProps> = ({
     <Animated.View style={animatedStyle} className="flex-row items-center mb-3">
       {/* Status indicator */}
       <View className={`w-3 h-3 rounded-full ${getStatusColor()} mr-3`} />
-      
+
       {/* Content */}
       <View className="flex-1">
         <Text className="text-sm font-medium text-on-surface dark:text-on-surface-dark">
@@ -102,6 +102,27 @@ const ConfidenceBadge: React.FC<{ level: 'low' | 'medium' | 'high' }> = ({ level
   );
 };
 
+// Formats the predicted yield range with units and optional category label.
+// Extracted from JSX to improve readability and maintainability.
+function formatYieldRange(yieldInfo: NonNullable<FloweringPrediction['yield']>): string {
+  const { unit, min, max, category } = yieldInfo;
+  const unitLabel = unit === 'g_per_m2' ? 'g/m²' : 'g/plant';
+
+  let range: string;
+  if (min != null && max != null) {
+    range = `${min}–${max} ${unitLabel}`;
+  } else if (min != null) {
+    range = `${min}+ ${unitLabel}`;
+  } else if (max != null) {
+    range = `up to ${max} ${unitLabel}`;
+  } else {
+    range = `unknown ${unitLabel}`;
+  }
+
+  const categorySuffix = category && category !== 'unknown' ? ` • ${category}` : '';
+  return `${range}${categorySuffix}`;
+}
+
 export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = ({
   plant,
   onPredictionUpdate,
@@ -116,14 +137,14 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
     try {
       setLoading(true);
       setError(null);
-      
+
       log.info(`[FloweringPrediction] Loading prediction for plant ${plant.name}`);
-      
+
       const result = await StrainCalendarIntegrationService.predictFloweringAndHarvest(plant);
-      
+
       setPrediction(result);
       onPredictionUpdate?.(result);
-      
+
       if (result) {
         log.info(`[FloweringPrediction] Prediction loaded for ${plant.name}`);
       } else {
@@ -143,7 +164,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
 
   const getCurrentStage = (): 'vegetative' | 'flowering' | 'harvest' => {
     if (!prediction) return 'vegetative';
-    
+
     const now = new Date();
     if (now >= prediction.expectedHarvestDate) return 'harvest';
     if (now >= prediction.expectedFloweringStart) return 'flowering';
@@ -195,6 +216,17 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
   const floweringDaysUntil = getDaysUntil(prediction.expectedFloweringStart);
   const harvestDaysUntil = getDaysUntil(prediction.expectedHarvestDate);
 
+  // Safely compute title/date for harvest stage to avoid relying on possibly-null values.
+  const hasHarvestWindow = Boolean(
+    prediction.harvestWindowStart && prediction.harvestWindowEnd
+  );
+  const safeTitle = hasHarvestWindow
+    ? 'Harvest Window (end)'
+    : (prediction.expectedHarvestDate ? 'Harvest Ready' : '');
+  // Prefer harvestWindowEnd, fall back to expectedHarvestDate, finally a sensible default (now)
+  // so that consumers expecting a Date still receive one.
+  const safeDate = (prediction.harvestWindowEnd ?? prediction.expectedHarvestDate) ?? new Date();
+
   return (
     <View className="bg-surface dark:bg-surface-dark rounded-xl p-4 mb-4 border border-outline/20 dark:border-outline-dark/20">
       {/* Header */}
@@ -213,7 +245,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
               {prediction.strainName}
             </Text>
           </View>
-          
+
           <View className="flex-row items-center space-x-2">
             <ConfidenceBadge level={prediction.confidenceLevel} />
             {compact && (
@@ -235,7 +267,7 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
             isCompleted={currentStage !== 'vegetative'}
             daysUntil={floweringDaysUntil}
           />
-          
+
           <PredictionStage
             title="Flowering End"
             date={prediction.expectedFloweringEnd}
@@ -243,14 +275,22 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
             isCompleted={currentStage === 'harvest'}
             daysUntil={getDaysUntil(prediction.expectedFloweringEnd)}
           />
-          
+
           <PredictionStage
-            title="Harvest Ready"
-            date={prediction.expectedHarvestDate}
+            title={safeTitle}
+            date={safeDate}
             isActive={currentStage === 'harvest'}
             isCompleted={false}
             daysUntil={harvestDaysUntil}
           />
+
+          {prediction.harvestWindowStart && prediction.harvestWindowEnd && (
+            <View className="mt-2">
+              <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
+                Window: {formatDate(prediction.harvestWindowStart)} – {formatDate(prediction.harvestWindowEnd)}
+              </Text>
+            </View>
+          )}
 
           {/* Factors affecting prediction */}
           {prediction.factors.length > 0 && (
@@ -266,6 +306,34 @@ export const FloweringPredictionCard: React.FC<FloweringPredictionCardProps> = (
                   • {factor}
                 </Text>
               ))}
+            </View>
+          )}
+
+          {prediction.yield && (
+            <View className="mt-4 pt-3 border-t border-outline/10 dark:border-outline-dark/10">
+              <Text className="text-xs font-medium text-on-surface-variant dark:text-on-surface-variant-dark mb-2">
+                Yield expectation:
+              </Text>
+              <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
+                {formatYieldRange(prediction.yield)}
+              </Text>
+            </View>
+          )}
+
+          {prediction.actualVsPredicted && (
+            <View className="mt-3">
+              <Text className="text-xs font-medium text-on-surface-variant dark:text-on-surface-variant-dark mb-1">
+                Actual vs Predicted:
+              </Text>
+              <Text className="text-xs text-on-surface-variant dark:text-on-surface-variant-dark">
+                {(() => {
+                  const delta = prediction.actualVsPredicted.deltaHarvestDays;
+                  if (delta == null) return 'Harvest data unavailable';
+                  if (delta === 0) return 'Harvest matched prediction';
+                  if (delta > 0) return `Harvest ${delta} days later`;
+                  return `Harvest ${Math.abs(delta)} days earlier`;
+                })()}
+              </Text>
             </View>
           )}
         </View>

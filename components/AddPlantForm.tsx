@@ -2,12 +2,12 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { format, isValid } from '@/lib/utils/date';
+import { format, isValid, addDays } from '@/lib/utils/date';
 import { router } from 'expo-router';
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { takePhoto, selectFromGallery } from '@/lib/utils/image-picker';
-import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler, useWatch } from 'react-hook-form';
 import {
   TextInput,
   Alert,
@@ -27,6 +27,8 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { z } from 'zod';
+import * as Sentry from '@sentry/react-native';
+import { log as logger } from '@/lib/utils/logger';
 
 import { StrainAutocomplete, StrainAutocompleteRef } from './StrainAutocomplete';
 
@@ -58,6 +60,12 @@ import supabase from '../lib/supabase';
 import { uploadPlantGalleryImage } from '../lib/utils/upload-image';
 import { GrowthStage, GROWTH_STAGES_ARRAY, LightCondition, GrowMedium, CannabisType } from '../lib/types/plant';
 import { RawStrainApiResponse } from '../lib/types/weed-db';
+import StrainIntegrationService, {
+  preparePlantPredictions,
+  type PlantType,
+  type Environment as EnvOverride,
+  type Hemisphere as HemiOverride,
+} from '../lib/services/StrainIntegrationService';
 import { createGrowthStageValidator } from '../lib/validation';
 
 interface PlantFormProps {
@@ -238,7 +246,7 @@ const safeFormatDate = (date: Date | string | undefined, formatString: string = 
       ? format(parsedDate, formatString)
       : format(new Date(), formatString);
   } catch (error) {
-    console.warn('[AddPlantForm] Error formatting date:', error);
+    logger.warn('[AddPlantForm] Error formatting date', { error });
     return format(new Date(), formatString);
   }
 };
@@ -471,6 +479,13 @@ const BasicInfoStep: React.FC<
   const nameInputRef = useRef<TextInput>(null);
   const strainInputRef = useRef<StrainAutocompleteRef>(null);
 
+  // Read planted date from form and derive ISO string if valid
+  const plantedDateFromForm = useWatch({ control, name: 'planted_date' });
+  const plantedDateISO =
+    plantedDateFromForm instanceof Date && isValid(plantedDateFromForm)
+      ? plantedDateFromForm.toISOString()
+      : undefined;
+
   // Register refs with parent component
   React.useEffect(() => {
     if (inputRefs[0] && nameInputRef.current) {
@@ -524,6 +539,9 @@ const BasicInfoStep: React.FC<
               initialStrainName={value || ''}
               placeholder={t('addPlantForm.placeholders.strain')}
               onFocus={() => onInputFocus?.(1)}
+              showCultivationPreview
+              confirmOnSelect
+              plantedDateISO={plantedDateISO}
               returnKeyType="next"
               onSubmitEditing={() => {
                 // Move to next step since this is the last focusable input
@@ -622,6 +640,10 @@ const LocationStep: React.FC<
     inputRefs?: React.RefObject<TextInput | null>[];
     _currentInputIndex?: number;
     onInputFocus?: (index: number) => void;
+    onHemisphereChange?: (hemi: HemiOverride) => void;
+    onEnvironmentChange?: (env: EnvOverride) => void;
+    initialHemisphere?: HemiOverride;
+    initialEnvironment?: EnvOverride;
   }
 > = ({
   control,
@@ -631,10 +653,18 @@ const LocationStep: React.FC<
   inputRefs = [],
   _currentInputIndex = 0,
   onInputFocus,
+  onHemisphereChange,
+  onEnvironmentChange,
+  initialHemisphere = 'N',
+  initialEnvironment,
 }) => {
   const { t } = useTranslation();
   const [customLocation, setCustomLocation] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [selectedHemisphere, setSelectedHemisphere] = useState<HemiOverride>(initialHemisphere);
+  const [selectedEnvironment, setSelectedEnvironment] = useState<EnvOverride | undefined>(
+    initialEnvironment
+  );
 
   const customLocationRef = useRef<TextInput>(null);
 
@@ -737,6 +767,60 @@ const LocationStep: React.FC<
                 </AnimatedButton>
               </ThemedView>
             )}
+
+            {/* Hemisphere Override */}
+            <ThemedView className="mt-2">
+              <ThemedText variant="heading" className="mb-2 text-base">
+                {t('addPlantForm.fields.hemisphere', 'Hemisphere')}
+              </ThemedText>
+              <ThemedView className="flex-row space-x-2">
+                {(['N', 'S'] as HemiOverride[]).map((hemi) => (
+                  <AnimatedSelectionButton
+                    key={hemi}
+                    onPress={() => {
+                      setSelectedHemisphere(hemi);
+                      onHemisphereChange?.(hemi);
+                    }}
+                    selected={selectedHemisphere === hemi}>
+                    <ThemedText
+                      className={
+                        selectedHemisphere === hemi
+                          ? 'font-medium text-white'
+                          : 'text-neutral-900 dark:text-neutral-100'
+                      }>
+                      {hemi}
+                    </ThemedText>
+                  </AnimatedSelectionButton>
+                ))}
+              </ThemedView>
+            </ThemedView>
+
+            {/* Environment Override (optional) */}
+            <ThemedView className="mt-3">
+              <ThemedText variant="heading" className="mb-2 text-base">
+                {t('addPlantForm.fields.environment', 'Environment (optional)')}
+              </ThemedText>
+              <ThemedView className="flex-row flex-wrap gap-2">
+                {(['indoor', 'outdoor', 'greenhouse'] as EnvOverride[]).map((env) => (
+                  <AnimatedSelectionButton
+                    key={env}
+                    onPress={() => {
+                      setSelectedEnvironment(env);
+                      onEnvironmentChange?.(env);
+                    }}
+                    selected={selectedEnvironment === env}>
+                    <ThemedText
+                      className={
+                        selectedEnvironment === env
+                          ? 'font-medium text-white'
+                          : 'text-neutral-900 dark:text-neutral-100'
+                      }>
+                      {env}
+                    </ThemedText>
+                  </AnimatedSelectionButton>
+                ))}
+              </ThemedView>
+            </ThemedView>
 
             {error && (
               <ThemedText className="text-status-danger mt-1 text-xs">{error.message}</ThemedText>
@@ -948,6 +1032,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     formState: { errors },
     setValue,
     getValues,
+    watch,
     trigger,
   } = useForm<PlantFormData>({
     resolver: zodResolver(getPlantFormSchema(t)),
@@ -982,6 +1067,41 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     })();
   }, [currentStepIndex, progress]);
 
+  // Keep last selected raw strain for prediction enrichment without polluting RHF types
+  const lastSelectedRawStrainRef = useRef<RawStrainApiResponse | null>(null);
+  const plantTypeOverrideRef = useRef<PlantType | undefined>(undefined);
+  const hemisphereOverrideRef = useRef<HemiOverride | undefined>(undefined);
+  const environmentOverrideRef = useRef<EnvOverride | undefined>(undefined);
+  const [selectedStrainTick, setSelectedStrainTick] = useState(0);
+  type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>('intermediate');
+  // Task 11.2: Partial data mode (manual scheduling as last resort)
+  const [manualScheduleEnabled, setManualScheduleEnabled] = useState(false);
+  const [manualMinDays, setManualMinDays] = useState<string>('');
+  const [manualMaxDays, setManualMaxDays] = useState<string>('');
+
+  const manualDays = React.useMemo(() => {
+    // Trim inputs and reject empty values
+    const trimmedMin = manualMinDays.trim();
+    const trimmedMax = manualMaxDays.trim();
+    
+    if (trimmedMin === '' || trimmedMax === '') return null;
+    
+    // Parse with parseInt and verify as integers
+    const min = parseInt(trimmedMin, 10);
+    const max = parseInt(trimmedMax, 10);
+    
+    // Verify both values are valid integers (not NaN and are integers)
+    if (!Number.isInteger(min) || Number.isNaN(min)) return null;
+    if (!Number.isInteger(max) || Number.isNaN(max)) return null;
+    
+    // Enforce non-negative range and min <= max
+    if (min < 0 || max < 0) return null;
+    if (min > max) return null;
+    
+    return { min, max };
+  }, [manualMinDays, manualMaxDays]);
+
   const handleStrainSelectionAndSync = async (selectedRawStrain: RawStrainApiResponse | null) => {
     if (!selectedRawStrain) {
       setValue('strain', '', { shouldValidate: true });
@@ -990,6 +1110,22 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
     }
 
     setValue('strain', selectedRawStrain.name, { shouldValidate: true });
+    // Task 7.1: Auto-fill cannabis type from strain when possible
+    try {
+      const typeStr = (selectedRawStrain.type || '').toString().toLowerCase();
+      const mapped = typeStr.includes('indica')
+        ? CannabisType.Indica
+        : typeStr.includes('sativa')
+        ? CannabisType.Sativa
+        : typeStr.includes('hybrid')
+        ? CannabisType.Hybrid
+        : typeStr.includes('ruderalis')
+        ? CannabisType.Ruderalis
+        : undefined;
+      if (mapped) setValue('cannabis_type', mapped, { shouldValidate: true });
+    } catch (e) {
+      // Non-fatal: unable to infer cannabis type from strain string
+    }
     setIsSyncingStrain(true);
     setSyncError(null);
 
@@ -1034,11 +1170,80 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
       // Store the strain ID in the form for later use when creating the plant
       setValue('strain_id', watermelonStrainId, { shouldValidate: false });
+      // Store raw strain in ref for predictions after create
+      lastSelectedRawStrainRef.current = selectedRawStrain;
+      setSelectedStrainTick((v) => v + 1);
 
-      console.log('Strain sync successful for:', selectedRawStrain.name);
+      // Ask for plant type if unknown; otherwise set override to inferred
+      const inferredType = StrainIntegrationService.inferPlantType(selectedRawStrain);
+      if (inferredType === 'unknown') {
+        // Await the user's choice to improve UX and ensure schedule preview uses the selected type
+        const chosenType: PlantType = await new Promise((resolve) => {
+          let isSettled = false;
+          
+          const safeResolve = (type: PlantType) => {
+            if (!isSettled) {
+              isSettled = true;
+              resolve(type);
+            }
+          };
+
+          const message = `${t(
+            'addPlantForm.confirm.plantTypeMessage',
+            'We could not detect the plant type for this strain. Please select one:'
+          )}\n\n${t(
+            'addPlantForm.confirm.plantTypeHelp',
+            'Photoperiod plants flower after you change light schedule (12/12). Autoflowers switch to flowering on their own regardless of light.'
+          )}`;
+          
+          Alert.alert(
+            t('addPlantForm.confirm.plantTypeTitle', 'Select plant type'),
+            message,
+            [
+              {
+                text: t('addPlantForm.confirm.photoperiod', 'Photoperiod'),
+                style: 'default',
+                onPress: () => safeResolve('photoperiod'),
+              },
+              {
+                text: t('addPlantForm.confirm.autoflower', 'Autoflower'),
+                style: 'default',
+                onPress: () => safeResolve('autoflower'),
+              },
+              {
+                text: t('common.cancel', 'Cancel'),
+                style: 'cancel',
+                onPress: () => safeResolve('photoperiod'), // default to photoperiod on cancel
+              },
+            ],
+            {
+              cancelable: true,
+              onDismiss: () => safeResolve('photoperiod'), // sensible default
+            }
+          );
+        });
+        plantTypeOverrideRef.current = chosenType;
+        // Refresh preview with the selected type
+        setSelectedStrainTick((v) => v + 1);
+      } else {
+        plantTypeOverrideRef.current = inferredType as PlantType;
+        if (plantTypeOverrideRef.current === 'photoperiod') {
+          // Inform baseline assumption for photoperiod (flip date defaults to planted date)
+          Alert.alert(
+            t('addPlantForm.confirm.baselineTitle', 'Baseline date'),
+            t(
+              'addPlantForm.confirm.baselineMessage',
+              'For photoperiod strains, the schedule is based on the flip date. We will use the planted date until you adjust it later.'
+            )
+          );
+        }
+      }
+
+      logger.info('[AddPlantForm] Strain sync successful', { strainName: selectedRawStrain.name });
     } catch (error) {
       const e = error as Error;
-      console.error('[AddPlantForm] Strain Sync Error:', e);
+      logger.error('[AddPlantForm] Strain Sync Error', e);
+      Sentry.captureException(e);
       const classification = classifyStrainSyncError(e, t);
       if (classification.shouldShowToUser) {
         setSyncError(classification.userMessage || 'An unexpected error occurred.');
@@ -1164,9 +1369,10 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         notes: data.notes ?? undefined,
       };
 
-      await database.write(async () => {
+      // Capture created plant instance so we can update directly later
+      const createdPlant = await database.write(async () => {
         const plantsCollection = database.get<PlantModel>('plants');
-        await plantsCollection.create((plant: PlantModel) => {
+        const created = await plantsCollection.create((plant: PlantModel) => {
           plant.userId = plantData.userId;
           plant.name = plantData.name;
           plant.strainId = plantData.strainId;
@@ -1181,8 +1387,61 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           plant.locationDescription = plantData.locationDescription || '';
           plant.imageUrl = plantData.imageUrl ?? undefined;
           plant.notes = plantData.notes || undefined;
+          
         });
+        return created;
       });
+
+      // After create, enrich with predictions if we still have form state strain raw object
+      try {
+        const plantedISO = plantData.plantedDate;
+        const locationDesc = plantData.locationDescription;
+        // Retrieve last selected raw strain from ref if available
+        const lastRawStrain = lastSelectedRawStrainRef.current;
+        const inferredType = lastRawStrain
+          ? StrainIntegrationService.inferPlantType(lastRawStrain)
+          : 'unknown';
+        let plantTypeOverride: PlantType | undefined = plantTypeOverrideRef.current;
+        if (lastRawStrain && inferredType === 'unknown' && !plantTypeOverride) {
+          plantTypeOverride = 'photoperiod';
+        }
+        if (lastRawStrain && database) {
+          const predictions = preparePlantPredictions(lastRawStrain, {
+            plantedDateISO: plantedISO,
+            locationDescription: locationDesc || undefined,
+            plantTypeOverride,
+            hemisphereOverride: hemisphereOverrideRef.current,
+            preferredEnvironment: environmentOverrideRef.current,
+          });
+
+          // Update the created plant directly; ensure Date objects for @date fields
+          await database.write(async () => {
+            await createdPlant.update((p) => {
+              p.plantType = predictions.plantType;
+              p.environment = predictions.environment;
+              p.hemisphere = predictions.hemisphere;
+              p.baselineKind = predictions.baseline.kind;
+              p.baselineDate = new Date(predictions.baseline.date);
+              p.predictedFlowerMinDays = predictions.predictedFlowerMinDays ?? undefined;
+              p.predictedFlowerMaxDays = predictions.predictedFlowerMaxDays ?? undefined;
+              p.predictedHarvestStart = predictions.predictedHarvestStart
+                ? new Date(predictions.predictedHarvestStart)
+                : undefined;
+              p.predictedHarvestEnd = predictions.predictedHarvestEnd
+                ? new Date(predictions.predictedHarvestEnd)
+                : undefined;
+              p.scheduleConfidence = predictions.scheduleConfidence ?? undefined;
+              p.yieldUnit = predictions.yieldUnit ?? undefined;
+              p.yieldMin = predictions.yieldMin ?? undefined;
+              p.yieldMax = predictions.yieldMax ?? undefined;
+              p.yieldCategory = predictions.yieldCategory ?? undefined;
+            });
+          });
+        }
+      } catch (e) {
+        logger.warn('[AddPlantForm] Prediction enrichment skipped', e);
+        Sentry.captureException(e);
+      }
 
       Alert.alert(t('common.success'), t('alerts.plantAddedSuccess'), [
         {
@@ -1194,7 +1453,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
         },
       ]);
     } catch (error) {
-      console.error('Error adding plant:', error);
+      logger.error('[AddPlantForm] Error adding plant', error);
+      Sentry.captureException(error);
   Alert.alert(t('common.error'), t('alerts.plantAddError'));
     } finally {
       setIsSubmitting(false);
@@ -1286,12 +1546,46 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             inputRefs={inputRefs.current as React.RefObject<TextInput>[]}
             _inputClasses={inputClasses}
             _placeholderTextColor={placeholderTextColor}
+            onHemisphereChange={(h) => {
+              hemisphereOverrideRef.current = h;
+            }}
+            onEnvironmentChange={(e) => {
+              environmentOverrideRef.current = e;
+            }}
+            initialHemisphere={hemisphereOverrideRef.current}
+            initialEnvironment={environmentOverrideRef.current}
           />
         );
       case 'lighting':
         return <LightingStep {...commonProps} />;
       case 'details':
-        return <DetailsStep {...enhancedProps} inputRefs={inputRefs.current as React.RefObject<TextInput>[]} />;
+        return (
+          <>
+            <DetailsStep
+              {...enhancedProps}
+              inputRefs={inputRefs.current as React.RefObject<TextInput>[]}
+            />
+            {/* Task 7.2: Experience level selector (UI-only customization for guidance density) */}
+            <ThemedView className="mt-6 space-y-2">
+              <ThemedText variant="heading" className="mb-2 text-base">
+                {t('addPlantForm.fields.experienceLevel', 'Experience level')}
+              </ThemedText>
+              <ThemedView className="flex-row space-x-2">
+                {(['beginner','intermediate','advanced'] as const).map((lvl) => (
+                  <AnimatedSelectionButton
+                    key={lvl}
+                    onPress={() => setExperienceLevel(lvl)}
+                    selected={experienceLevel === lvl}
+                  >
+                    <ThemedText className={experienceLevel === lvl ? 'font-medium text-white' : 'text-neutral-900 dark:text-neutral-100'}>
+                      {t(`addPlantForm.experience.${lvl}`, lvl.charAt(0).toUpperCase() + lvl.slice(1))}
+                    </ThemedText>
+                  </AnimatedSelectionButton>
+                ))}
+              </ThemedView>
+            </ThemedView>
+          </>
+        );
       case 'dates':
         return <DatesStep {...commonProps} />;
       default:
@@ -1301,9 +1595,31 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const currentStep = FORM_STEPS[currentStepIndex];
 
+  // Task 7.1: Live schedule preview based on selected strain and overrides
+  const plantedDateWatch = watch('planted_date');
+  const locationDescWatch = watch('location_description');
+  const schedulePreview = React.useMemo(() => {
+    try {
+      const raw = lastSelectedRawStrainRef.current;
+      if (!raw) return null;
+      const preds = preparePlantPredictions(raw, {
+        plantedDateISO: plantedDateWatch
+          ? (plantedDateWatch as Date).toISOString()
+          : new Date().toISOString(),
+        locationDescription: locationDescWatch || undefined,
+        plantTypeOverride: plantTypeOverrideRef.current,
+        hemisphereOverride: hemisphereOverrideRef.current,
+        preferredEnvironment: environmentOverrideRef.current,
+      });
+      return preds;
+    } catch (error) {
+      logger.warn('[AddPlantForm] Failed to generate schedule preview', error);
+      return null;
+    }
+  }, [selectedStrainTick, plantedDateWatch, locationDescWatch]);
+
   return (
-    <ThemedView className="flex-1 bg-neutral-50 dark:bg-neutral-900">
-      {/* Header */}
+    <>
       <ThemedView className="border-b border-neutral-200 bg-white px-4 py-6 dark:border-neutral-700 dark:bg-neutral-800">
         <ThemedView className="mb-4 flex-row items-center justify-between">
           <AnimatedButton onPress={() => router.back()} variant="tertiary" className="h-10 w-10">
@@ -1356,6 +1672,97 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             </ThemedView>
 
             {renderCurrentStep()}
+
+            {(FORM_STEPS[currentStepIndex]?.id === 'basicInfo' || FORM_STEPS[currentStepIndex]?.id === 'location') && schedulePreview && (
+              <ThemedView className="mt-6 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-800">
+                <ThemedText className="mb-2 text-base font-medium">
+                  {t('addPlantForm.preview.title', 'Schedule preview')}
+                </ThemedText>
+                {typeof schedulePreview.scheduleConfidence === 'number' && schedulePreview.scheduleConfidence < 0.5 && (
+                  <ThemedView className="mb-3 rounded-lg bg-amber-100 p-3 dark:bg-amber-900/30">
+                    <ThemedText className="text-xs text-amber-900 dark:text-amber-200">
+                      {t('addPlantForm.preview.lowConfidence', 'Using a generic schedule due to limited strain data. You can enter dates manually later.')}
+                    </ThemedText>
+                  </ThemedView>
+                )}
+                <ThemedView className="mb-2 flex-row flex-wrap">
+                  {schedulePreview.predictedFlowerMinDays !== null && schedulePreview.predictedFlowerMaxDays !== null && (
+                    <ThemedView className="mr-2 mb-2 rounded-full bg-neutral-200 px-3 py-1 dark:bg-neutral-700">
+                      <ThemedText className="text-xs text-neutral-900 dark:text-neutral-100">
+                        {t('addPlantForm.preview.flowering', { defaultValue: 'Flowering: {{min}}-{{max}}d', min: schedulePreview.predictedFlowerMinDays, max: schedulePreview.predictedFlowerMaxDays })}
+                      </ThemedText>
+                    </ThemedView>
+                  )}
+                  {schedulePreview.predictedHarvestStart && schedulePreview.predictedHarvestEnd && (
+                    <ThemedView className="mr-2 mb-2 rounded-full bg-neutral-200 px-3 py-1 dark:bg-neutral-700">
+                      <ThemedText className="text-xs text-neutral-900 dark:text-neutral-100">
+                        {t('addPlantForm.preview.harvest', { defaultValue: 'Harvest: ~{{start}} → {{end}}', start: new Date(schedulePreview.predictedHarvestStart).toLocaleDateString(), end: new Date(schedulePreview.predictedHarvestEnd).toLocaleDateString() })}
+                      </ThemedText>
+                    </ThemedView>
+                  )}
+                  {schedulePreview.yieldMin !== null && schedulePreview.yieldMax !== null && schedulePreview.yieldUnit && (
+                    <ThemedView className="mr-2 mb-2 rounded-full bg-neutral-200 px-3 py-1 dark:bg-neutral-700">
+                      <ThemedText className="text-xs text-neutral-900 dark:text-neutral-100">
+                        {schedulePreview.yieldUnit === 'g_per_m2'
+                          ? t('addPlantForm.preview.yieldM2', { defaultValue: 'Yield: {{min}}-{{max}} g/m²', min: schedulePreview.yieldMin, max: schedulePreview.yieldMax })
+                          : t('addPlantForm.preview.yieldPlant', { defaultValue: 'Yield: {{min}}-{{max}} g/plant', min: schedulePreview.yieldMin, max: schedulePreview.yieldMax })}
+                      </ThemedText>
+                    </ThemedView>
+                  )}
+                </ThemedView>
+                {typeof schedulePreview.scheduleConfidence === 'number' && (
+                  <ThemedText variant="muted" className="text-xs">
+                    {t('addPlantForm.preview.confidence', { defaultValue: 'Confidence: {{c}}', c: Math.round(schedulePreview.scheduleConfidence * 100) + '%' })}
+                  </ThemedText>
+                )}
+
+                {/* Manual schedule fallback controls (Task 11.2) */}
+                <ThemedView className="mt-4">
+                  <AnimatedButton
+                    onPress={() => setManualScheduleEnabled((v) => !v)}
+                    variant="tertiary"
+                    className="mb-3">
+                    <OptimizedIcon name="settings" size={16} className="mr-2 text-neutral-900 dark:text-neutral-100" />
+                    <ThemedText className="text-neutral-900 dark:text-neutral-100">
+                      {manualScheduleEnabled
+                        ? t('addPlantForm.manualSchedule.hide', 'Hide manual schedule')
+                        : t('addPlantForm.manualSchedule.show', 'Enter schedule manually (fallback)')}
+                    </ThemedText>
+                  </AnimatedButton>
+
+                  {manualScheduleEnabled && (
+                    <ThemedView>
+                      <ThemedText variant="muted" className="mb-2 text-xs">
+                        {t('addPlantForm.manualSchedule.help', 'If parsing fails, set flowering duration manually. We will compute an approximate harvest window from your planted date.')}
+                      </ThemedText>
+                      <ThemedView className="flex-row gap-3">
+                        <EnhancedTextInput
+                          value={manualMinDays}
+                          onChangeText={setManualMinDays}
+                          placeholder={t('addPlantForm.manualSchedule.minDays', 'Min days')}
+                          keyboardType="numeric"
+                          className="flex-1"
+                          leftIcon="timer-outline"
+                        />
+                        <EnhancedTextInput
+                          value={manualMaxDays}
+                          onChangeText={setManualMaxDays}
+                          placeholder={t('addPlantForm.manualSchedule.maxDays', 'Max days')}
+                          keyboardType="numeric"
+                          className="flex-1"
+                          leftIcon="timer-outline"
+                        />
+                      </ThemedView>
+                      {!manualDays && (manualMinDays.length > 0 || manualMaxDays.length > 0) && (
+                        <ThemedText className="mt-1 text-xs text-status-danger">
+                          {t('addPlantForm.manualSchedule.validation', 'Both min and max must be integers (whole numbers) with min ≤ max and non-negative values.')}
+                        </ThemedText>
+                      )}
+                    </ThemedView>
+                  )}
+                </ThemedView>
+              </ThemedView>
+            )}
           </Animated.View>
         </ScrollView>
       </EnhancedKeyboardWrapper>
@@ -1399,6 +1806,8 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
           )}
         </ThemedView>
       </ThemedView>
-    </ThemedView>
+    </>
   );
 }
+
+export default AddPlantForm;

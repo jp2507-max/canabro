@@ -94,7 +94,23 @@ export class TaskReminderEngine {
                 const activityPattern = await this.getUserActivityPattern(userId);
 
                 // ✅ REUSE: Notification batching logic
-                const batches = await this.createNotificationBatches(userTasks, activityPattern);
+                // Prefer higher priority for tasks inside harvest window
+                const enriched = userTasks.map((t) => {
+                    // broader match for harvest-related tasks; respect word boundaries and variations
+                    const isHarvestRelated = /\b(pre[ -]?harvest|harvest|flush|dark(?: ?period)?)\b/i.test(t.taskTitle);
+                    return {
+                        ...t,
+                        // Preserve existing 'critical'; otherwise upgrade harvest-related tasks to 'high'
+                        priority:
+                            t.priority === 'critical'
+                                ? t.priority
+                                : isHarvestRelated
+                                ? 'high'
+                                : t.priority,
+                    };
+                });
+
+                const batches = await this.createNotificationBatches(enriched, activityPattern);
 
                 // Schedule each batch
                 for (const batch of batches) {

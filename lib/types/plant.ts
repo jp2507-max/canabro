@@ -26,6 +26,26 @@ export type GrowthStage = typeof GROWTH_STAGES[keyof typeof GROWTH_STAGES];
  */
 export const GROWTH_STAGES_ARRAY: GrowthStage[] = Object.values(GROWTH_STAGES);
 
+// Shared union types for normalized strain-based scheduling fields
+// Define as runtime arrays + derived string literal unions for safer checks
+export const PLANT_TYPES = ['photoperiod', 'autoflower', 'unknown'] as const;
+export type PlantType = typeof PLANT_TYPES[number];
+
+export const BASELINE_KINDS = ['flip', 'germination'] as const;
+export type BaselineKind = typeof BASELINE_KINDS[number];
+
+export const ENVIRONMENTS = ['indoor', 'outdoor', 'greenhouse'] as const;
+export type Environment = typeof ENVIRONMENTS[number];
+
+export const HEMISPHERES = ['N', 'S'] as const;
+export type Hemisphere = typeof HEMISPHERES[number];
+
+export const YIELD_UNITS = ['g_per_plant', 'g_per_m2'] as const;
+export type YieldUnit = typeof YIELD_UNITS[number];
+
+export const YIELD_CATEGORIES = ['low', 'medium', 'high', 'unknown'] as const;
+export type YieldCategory = typeof YIELD_CATEGORIES[number];
+
 // Added Enums (moved from AddPlantForm.tsx)
 export enum PlantGrowLocation {
   GrowTent = 'Grow Tent',
@@ -93,6 +113,22 @@ export interface Plant {
   light_condition?: LightCondition;
   location_description?: string; // Kept as string to allow custom descriptions, or use PlantGrowLocation enum
   // If using PlantGrowLocation enum strictly: location_description?: PlantGrowLocation;
+
+  // Normalized strain-based scheduling fields (system-owned)
+  plant_type?: PlantType;
+  baseline_kind?: BaselineKind;
+  baseline_date?: string; // ISO date string
+  environment?: Environment;
+  hemisphere?: Hemisphere;
+  predicted_flower_min_days?: number;
+  predicted_flower_max_days?: number;
+  predicted_harvest_start?: string; // ISO date string
+  predicted_harvest_end?: string;   // ISO date string
+  schedule_confidence?: number; // 0..1
+  yield_unit?: YieldUnit;
+  yield_min?: number;
+  yield_max?: number;
+  yield_category?: YieldCategory;
 }
 
 /**

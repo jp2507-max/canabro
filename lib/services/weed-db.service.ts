@@ -101,6 +101,30 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// ETag cache (in-memory + persisted for session)
+const etagStoreKey = 'weeddb-etags';
+let etagStore: Record<string, string> | null = null;
+
+async function loadEtagStore(): Promise<Record<string, string>> {
+  if (etagStore) return etagStore;
+  try {
+    const raw = await AsyncStorage.getItem(etagStoreKey);
+    etagStore = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    etagStore = {};
+  }
+  return etagStore!;
+}
+
+async function saveEtagStore(): Promise<void> {
+  if (!etagStore) return;
+  try {
+    await AsyncStorage.setItem(etagStoreKey, JSON.stringify(etagStore));
+  } catch {
+    // ignore
+  }
+}
+
 // --- Caching Utilities ---
 interface CacheEntry<T> {
   data: T;
@@ -484,14 +508,75 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
   }
 
   try {
+    // Prepare ETag conditional headers
+    const etags = await loadEtagStore();
+    const etagKey = `/strains:${JSON.stringify(formattedParams)}`;
+    const ifNoneMatch = etags[etagKey];
+
     logger.log(`[DEBUG] Fetching strains with params:`, formattedParams);
     const response = await requestWithRetry<
       AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>
     >(() =>
       axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', {
         params: formattedParams,
+        headers: ifNoneMatch ? { 'If-None-Match': ifNoneMatch } : undefined,
+        validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
       })
     );
+
+    // Handle 304 Not Modified
+    if (response.status === 304) {
+      if (cachedData) {
+        logger.log('[DEBUG] 304 Not Modified - serving cached list');
+        return { data: cachedData, isFromCache: true };
+      }
+
+      // Fallback: No cached data available but received 304. Perform a full fetch without conditional headers.
+      logger.warn('[WARN] 304 received with no cached data. Performing fallback full fetch.');
+      try {
+        const freshResponse = await requestWithRetry<
+          AxiosResponse<RawStrainApiResponse[] | ApiResponseArray>
+        >(() =>
+          axiosInstance.get<RawStrainApiResponse[] | ApiResponseArray>('/strains', {
+            params: formattedParams,
+            // Remove conditional headers to force a fresh response
+            validateStatus: (s) => s >= 200 && s < 300,
+          })
+        );
+
+        const freshRawStrains = Array.isArray(freshResponse.data)
+          ? (freshResponse.data as RawStrainApiResponse[])
+          : Array.isArray((freshResponse.data as ApiResponseArray)?.data)
+            ? ((freshResponse.data as ApiResponseArray).data as RawStrainApiResponse[])
+            : [];
+
+        const freshParsed = StrainArraySchema.safeParse(freshRawStrains);
+        if (!freshParsed.success) {
+          logger.error('Strain API fallback response validation failed:', freshParsed.error);
+          return { data: [], isFromCache: false, error: 'Invalid API response' };
+        }
+
+        const freshMapped: Strain[] = freshParsed.data.map(mapWeedDbStrain);
+        await saveToCache(cacheKey, freshMapped);
+
+        // Persist (possibly new) ETag for this query
+        const freshEtag = freshResponse.headers?.etag || freshResponse.headers?.ETag;
+        if (freshEtag) {
+          etags[etagKey] = freshEtag as string;
+          await saveEtagStore();
+        }
+
+        logger.log(`[DEBUG] Fallback full fetch succeeded with ${freshMapped.length} strains`);
+        return { data: freshMapped, isFromCache: false };
+      } catch (fallbackError) {
+        logger.error('Fallback full fetch after 304 failed:', fallbackError);
+        return {
+          data: [],
+          isFromCache: false,
+          error: fallbackError instanceof Error ? fallbackError.message : 'Fallback fetch failed',
+        };
+      }
+    }
 
     const rawStrains = Array.isArray(response.data)
       ? (response.data as RawStrainApiResponse[])
@@ -512,6 +597,12 @@ async function fetchStrains(params: StrainFilterParams): Promise<CachedResponse<
     logger.log(`[DEBUG] Mapped ${mappedStrains.length} strains successfully`);
 
     await saveToCache(cacheKey, mappedStrains);
+    // Persist ETag for this query
+    const newEtag = response.headers?.etag || response.headers?.ETag;
+    if (newEtag) {
+      etags[etagKey] = newEtag as string;
+      await saveEtagStore();
+    }
     return { data: mappedStrains, isFromCache: false };
   } catch (error) {
     logger.error('Error fetching strains:', error);
@@ -557,14 +648,117 @@ async function fetchStrainsPaginated(params: StrainFilterParams): Promise<Pagina
   }
 
   try {
+    const etags = await loadEtagStore();
+    const etagKey = `/strains:paginated:${JSON.stringify(formattedParams)}`;
+    const ifNoneMatch = etags[etagKey];
     logger.log(`[DEBUG] Fetching paginated strains with params:`, formattedParams);
     const response = await requestWithRetry<
       AxiosResponse<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>
     >(() =>
       axiosInstance.get<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>('/strains', {
         params: formattedParams,
+        headers: ifNoneMatch ? { 'If-None-Match': ifNoneMatch } : undefined,
+        validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
       })
     );
+
+    if (response.status === 304) {
+      if (cachedData) {
+        logger.log('[DEBUG] 304 Not Modified - serving cached paginated data');
+        return { data: cachedData, isFromCache: true };
+      }
+
+      // Fallback: No cached data available but received 304. Perform a full fetch without conditional headers.
+      logger.warn('[WARN] 304 received with no cached paginated data. Performing fallback full fetch.');
+      try {
+        const freshResponse = await requestWithRetry<
+          AxiosResponse<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>
+        >(() =>
+          axiosInstance.get<{ items: RawStrainApiResponse[]; total_count: number; page: number; page_size: number; total_pages: number; } | RawStrainApiResponse[] | ApiResponseArray>('/strains', {
+            params: formattedParams,
+            // Remove conditional headers to force a fresh response
+            validateStatus: (s) => s >= 200 && s < 300,
+          })
+        );
+
+        let fallbackPaginated: PaginatedResponse<Strain>;
+
+        if (
+          freshResponse.data &&
+          typeof freshResponse.data === 'object' &&
+          'items' in freshResponse.data &&
+          'total_count' in freshResponse.data
+        ) {
+          const raw = (freshResponse.data as { items: RawStrainApiResponse[] }).items;
+          const parsed = StrainArraySchema.safeParse(raw);
+          if (!parsed.success) {
+            logger.error('Strain API fallback paginated response validation failed:', parsed.error);
+            return {
+              data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 },
+              isFromCache: false,
+              error: 'Invalid API response',
+            };
+          }
+          const mapped: Strain[] = parsed.data.map(mapWeedDbStrain);
+          const body = freshResponse.data as {
+            total_count: number; page: number; page_size: number; total_pages: number;
+          };
+          fallbackPaginated = {
+            items: mapped,
+            total_count: body.total_count,
+            page: body.page,
+            page_size: body.page_size,
+            total_pages: body.total_pages,
+          };
+        } else {
+          const raw = Array.isArray(freshResponse.data)
+            ? (freshResponse.data as RawStrainApiResponse[])
+            : 'data' in (freshResponse.data as ApiResponseArray) && Array.isArray((freshResponse.data as ApiResponseArray).data)
+              ? ((freshResponse.data as ApiResponseArray).data as RawStrainApiResponse[])
+              : [];
+          const parsed = StrainArraySchema.safeParse(raw);
+          if (!parsed.success) {
+            logger.error('Strain API fallback array response validation failed:', parsed.error);
+            return {
+              data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 },
+              isFromCache: false,
+              error: 'Invalid API response',
+            };
+          }
+          const mapped: Strain[] = parsed.data.map(mapWeedDbStrain);
+          const totalCount = mapped.length;
+          const startIndex = (page - 1) * pageSize;
+          const endIndex = startIndex + pageSize;
+          const items = mapped.slice(startIndex, endIndex);
+          const totalPages = Math.ceil(totalCount / pageSize);
+          fallbackPaginated = {
+            items,
+            total_count: totalCount,
+            page,
+            page_size: pageSize,
+            total_pages: totalPages,
+          };
+        }
+
+        await saveToCache(cacheKey, fallbackPaginated);
+        const freshEtag = freshResponse.headers?.etag || freshResponse.headers?.ETag;
+        if (freshEtag) {
+          etags[etagKey] = freshEtag as string;
+          await saveEtagStore();
+        }
+        logger.log(
+          `[DEBUG] Fallback full fetch for paginated data succeeded with ${fallbackPaginated.items.length} items (page ${fallbackPaginated.page}/${fallbackPaginated.total_pages})`
+        );
+        return { data: fallbackPaginated, isFromCache: false };
+      } catch (fallbackError) {
+        logger.error('Fallback full fetch after 304 for paginated data failed:', fallbackError);
+        return {
+          data: { items: [], total_count: 0, page: 1, page_size: pageSize, total_pages: 0 },
+          isFromCache: false,
+          error: fallbackError instanceof Error ? fallbackError.message : 'Fallback fetch failed',
+        };
+      }
+    }
 
     // Handle different response formats
     let paginatedData: PaginatedResponse<Strain>;
@@ -631,6 +825,11 @@ async function fetchStrainsPaginated(params: StrainFilterParams): Promise<Pagina
     logger.log(`[DEBUG] Mapped ${paginatedData.items.length} strains successfully (page ${paginatedData.page}/${paginatedData.total_pages})`);
 
     await saveToCache(cacheKey, paginatedData);
+    const newEtag = response.headers?.etag || response.headers?.ETag;
+    if (newEtag) {
+      etags[etagKey] = newEtag as string;
+      await saveEtagStore();
+    }
     return { data: paginatedData, isFromCache: false };
   } catch (error) {
     logger.error('Error fetching paginated strains:', error);

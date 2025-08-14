@@ -28,7 +28,7 @@
   - Entrypoints: `[lib/database/database.ts](mdc:lib/database/database.ts)`, `[lib/models/schema.ts](mdc:lib/models/schema.ts)`
 - **Sync & services**: Supabase-backed synchronization and domain services.
   - Examples: `[lib/services/sync/core-sync.ts](mdc:lib/services/sync/core-sync.ts)`, `[lib/contexts/DatabaseProvider.tsx](mdc:lib/contexts/DatabaseProvider.tsx)`, `[lib/contexts/SyncContext.tsx](mdc:lib/contexts/SyncContext.tsx)`
-- **Backend**: Supabase for auth, DB, realtime, and storage. CLI scripts are provided in `package.json`.
+- **Backend**: Supabase for auth, DB, realtime, and storage. Use Supabase MCP to see tables and apply migrations
 
 ## Styling and theming
 - **Only NativeWind v4**. No inline/hardcoded colors. Use semantic tokens.
@@ -63,6 +63,15 @@
 - **Rule**: All production user-facing strings must use translations. Do not use hardcoded literals in production code. Exceptions: test files (`**/__tests__/**`), scripts (`scripts/**`), and clearly dev-only components (e.g., `[components/ui/DebugPanel.tsx](mdc:components/ui/DebugPanel.tsx)`, `[components/DevModeIndicator.tsx](mdc:components/DevModeIndicator.tsx)`).
 - **Linting**: Enforce via `eslint-plugin-i18next` (see `eslint.config.mjs`). Disable only for allowed exceptions.
 
+### Strict i18n (always-on)
+
+- **No inline strings**: All user-facing copy must come from i18n keys in production components/services.
+- **Namespacing**: Add keys under clear namespaces (e.g., `guidance.*`, `tasks.*`). Prefer existing namespaces before adding new.
+- **Dual-language updates**: For new features, update both `[lib/locales/en.json](mdc:lib/locales/en.json)` and `[lib/locales/de.json](mdc:lib/locales/de.json)` in the same edit.
+- **Placeholders**: Keep variables as placeholders in translations (e.g., `{{count}}`, `{{date}}`).
+- **Validation**: Run `npm run validate:translations` pre-commit to ensure key parity and no missing strings.
+- **Dev-only exceptions**: Edge cases and dev-only strings must be confined to dev components or clearly commented.
+
 ## Developer workflows
 - **Build & release**: EAS Build configured in `[eas.json](mdc:eas.json)`. OTA via `expo-updates`.
   - Common commands: `npm run android`, `npm run ios`, `npm run start`, `npm run prebuild`
@@ -84,7 +93,18 @@
 - **Internationalization**: Prefer `react-i18next`. All production UI must use `useTranslation()` keys; validate keys with the translation script.
 
 ## Monitoring and analytics
-- **Error monitoring**: Sentry RN configured as dependency. Prefer central logger `[lib/utils/logger.ts](mdc:lib/utils/logger.ts)` over raw `console.log`.
+- **Error monitoring (Sentry React Native)**:
+  - **SDK/Plugin**: `@sentry/react-native` (^6.18.x) with Expo plugin configured in `[app.config.js](mdc:app.config.js)` under `plugins: ['@sentry/react-native/expo', ...]`.
+  - **Initialization**: `Sentry.init(...)` runs early in `[app/_layout.tsx](mdc:app/_layout.tsx)`.
+    - Current options include `sendDefaultPii: true`, `mobileReplayIntegration`, and `feedbackIntegration`.
+    - Recommendation: move DSN to an env-driven value (e.g., `process.env.EXPO_PUBLIC_SENTRY_DSN`) instead of hardcoding.
+  - **Release mapping & source maps**: handled via `[metro.config.js](mdc:metro.config.js)` using `getSentryExpoConfig` and the Expo Sentry plugin. Ensure EAS secrets: `SENTRY_AUTH_TOKEN` (required), and optionally `SENTRY_ORG`, `SENTRY_PROJECT` if not set in `app.config.js`.
+  - **User context**: set/unset on auth changes (e.g., inside `[lib/contexts/AuthProvider.tsx](mdc:lib/contexts/AuthProvider.tsx)`) using `Sentry.setUser({ id, email })` and `Sentry.setTag('role', ...)`.
+  - **Sampling & privacy**: tune replay and tracing rates for production (e.g., `replaysSessionSampleRate: 0.01`, `replaysOnErrorSampleRate: 1`). Review `sendDefaultPii` based on GDPR/consent.
+  - **Verification**:
+    - Dev throw: `Sentry.captureException(new Error('Sentry test'))` from a dev-only button.
+    - Build-time: run EAS build and confirm uploaded source maps in Sentry release.
+  - **Preferred logging**: Use `[lib/utils/logger.ts](mdc:lib/utils/logger.ts)` for app logs; reserve `Sentry.captureException` for noteworthy errors.
 
 ## Build/Release references and CI
 - **EAS Build profiles**: development/preview/production in `[eas.json](mdc:eas.json)`.
@@ -96,6 +116,9 @@
 - **Do**: Use semantic color tokens and NativeWind classes; keep styles in JSX className, not inline.
 - **Do**: Break features into reusable modules with clear names and strict types.
 - **Do**: Reference files with `mdc:` links in rules and docs.
+- **Do**: Fetch fresh info via Brave Search + Context7 MCP when recency matters.
+
+- **Don’t**: Guess about current versions/APIs; verify with MCP first.
 - **Don't**: Hardcode colors/styles, duplicate logic, or access Reanimated shared values off the UI thread.
 - **Don't**: Assume APIs—verify with current docs (see below).
 

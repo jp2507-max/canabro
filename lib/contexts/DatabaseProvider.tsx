@@ -17,6 +17,7 @@ import { registerBackgroundSyncAsync, setLastActiveUserId } from '../tasks/syncT
 import { deltaSyncStrains } from '../services/sync';
 // Import data integrity service for cleanup on startup
 import { DataIntegrityService } from '../services/data-integrity';
+import { strainIndexService } from '../services/strain-index.service';
 
 type DatabaseContextType = {
   database: Database;
@@ -306,7 +307,18 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       syncSetupDoneRef.current = true;
 
       // Perform initial sync
-      sync();
+      sync().then(() => {
+        // Prewarm strain index and start AutoSync subscription after initial sync
+        (async () => {
+          try {
+            console.log('[StrainIndex] Ensuring local index is fresh and starting AutoSync');
+            await strainIndexService.ensureFresh();
+            strainIndexService.startAutoSync();
+          } catch (e) {
+            console.warn('[StrainIndex] Prewarm/AutoSync startup failed', e);
+          }
+        })();
+      });
 
       // Set up periodic sync with a reasonable interval (5 minutes = 300,000ms)
       console.log('[DatabaseProvider] Setting up periodic sync interval (5 minutes)...');

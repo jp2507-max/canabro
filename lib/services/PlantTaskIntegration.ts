@@ -21,6 +21,9 @@ import { TaskSchedulingAdapter } from './TaskSchedulingAdapter';
 import { GrowthStage } from '../types/plant';
 import { TaskType } from '../types/taskTypes';
 import { database } from '../models';
+import { StrainTaskGenerator } from './StrainTaskGenerator';
+import { FEATURE_FLAGS } from '../config/featureFlags';
+import * as Sentry from '@sentry/react-native';
 
 export interface TaskSchedulingOptions {
   useTemplate?: boolean;
@@ -72,7 +75,7 @@ export class PlantTaskIntegration {
         }
       }
 
-      // Step 2: Generate tasks based on growth stage
+      // Step 2: Generate tasks based on growth stage + strain anchors
       try {
         let template: ScheduleTemplate | undefined;
         
@@ -88,10 +91,20 @@ export class PlantTaskIntegration {
         
         result.tasks.push(...growthStageTasks);
         log.info(`[PlantTaskIntegration] Generated ${growthStageTasks.length} growth stage tasks`);
+
+        // Strain-anchored tasks (Task 4.1)
+        const anchorTasks = await StrainTaskGenerator.generateAnchoredTasks(plant, {
+          templateVersion: FEATURE_FLAGS.templateVersion,
+          enableFlush: FEATURE_FLAGS.flushTask,
+          enableDarkPeriod: FEATURE_FLAGS.darkPeriodTask,
+        });
+        result.tasks.push(...anchorTasks);
+        log.info(`[PlantTaskIntegration] Generated ${anchorTasks.length} strain-anchored tasks`);
       } catch (error) {
         const errorMsg = `Failed to generate growth stage tasks: ${error}`;
         result.errors.push(errorMsg);
         log.error(`[PlantTaskIntegration] ${errorMsg}`);
+        try { Sentry.captureException(error); } catch (_) {}
       }
 
       // Step 3: Generate recurring tasks if requested

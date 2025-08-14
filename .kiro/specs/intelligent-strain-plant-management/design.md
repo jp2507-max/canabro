@@ -297,48 +297,20 @@ graph LR
     PRED --> TASKS[Create Tasks]
 ```
 
-### Database Schema Extensions
+### Database Schema Alignment (current phase)
 
-#### strain_profiles table
-```sql
-CREATE TABLE strain_profiles (
-  id TEXT PRIMARY KEY,
-  api_id TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
-  genetics TEXT,
-  flowering_time_min INTEGER,
-  flowering_time_max INTEGER,
-  harvest_time_outdoor TEXT,
-  yield_indoor TEXT,
-  yield_outdoor TEXT,
-  grow_difficulty TEXT,
-  thc_level TEXT,
-  cbd_level TEXT,
-  effects TEXT[], -- JSON array
-  flavors TEXT[], -- JSON array
-  cultivation_data TEXT, -- JSON object
-  learning_data TEXT, -- JSON object
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+- Use existing `public.strains` for strain sources; avoid introducing new profile tables in this phase.
+- Normalize and store predictions on `public.plants` (system-owned):
+  - `plant_type` enum, `baseline_kind` enum + `baseline_date` (date)
+  - `environment` enum, `hemisphere` enum
+  - `predicted_flower_min_days`, `predicted_flower_max_days` (int)
+  - `predicted_harvest_start`, `predicted_harvest_end` (date)
+  - `schedule_confidence` (numeric)
+  - `yield_unit` enum, `yield_min`, `yield_max`, `yield_category` enum
+- Seasonal harvest windows should be parsed to a normalized range (month/day window + hemisphere) during processing; persisted outcome is the per-plant harvest start/end dates.
 
-#### plant_strain_data table
-```sql
-CREATE TABLE plant_strain_data (
-  id TEXT PRIMARY KEY,
-  plant_id TEXT REFERENCES plants(id),
-  strain_profile_id TEXT REFERENCES strain_profiles(id),
-  expected_flowering_weeks INTEGER,
-  expected_harvest_date TIMESTAMP,
-  yield_expectation_min REAL,
-  yield_expectation_max REAL,
-  customizations TEXT, -- JSON object
-  actual_vs_predicted TEXT, -- JSON object
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+Future (optional) tables:
+- `strain_profiles` and `plant_strain_data` can be added later if per-field confidence/versioning and override history warrant first-class storage.
 
 ## Error Handling
 

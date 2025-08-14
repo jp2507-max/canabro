@@ -124,10 +124,13 @@
       "cannabisType": "Cannabis-Typ",
       "growthStage": "Wachstumsstadium",
       "location": "Standort",
+      "hemisphere": "Hemisphäre",
+      "environment": "Umgebung (optional)",
       "lightConditions": "Lichtverhältnisse",
       "growingMedium": "Anbaumedium",
       "notes": "Notizen (Optional)",
-      "plantedDate": "Pflanzdatum"
+       "plantedDate": "Pflanzdatum",
+       "experienceLevel": "Erfahrungsstufe"
     },
     "buttons": {
       "camera": "Kamera",
@@ -165,7 +168,31 @@
       "basement": "Keller",
       "garage": "Garage",
       "closet": "Schrank"
+    },
+    "confirm": {
+      "plantTypeTitle": "Pflanzentyp auswählen",
+      "plantTypeMessage": "Wir konnten den Pflanzentyp für diese Sorte nicht erkennen. Bitte wählen Sie einen:",
+        "plantTypeHelp": "Photoperioden-Pflanzen beginnen zu blühen, nachdem Sie den Lichtzyklus (12/12) umstellen. Autoflower blühen automatisch unabhängig von der Beleuchtung.",
+      "photoperiod": "Photoperiode",
+      "autoflower": "Autoflower",
+      "baselineTitle": "Basisdatum",
+      "baselineMessage": "Für Photoperioden-Sorten basiert der Zeitplan auf dem Umstellungsdatum (Flip). Wir verwenden vorerst das Pflanzdatum, bis Sie es später anpassen."
     }
+    ,
+    "preview": {
+      "title": "Zeitplanvorschau",
+      "flowering": "Blüte: {{min}}-{{max}}T",
+      "harvest": "Ernte: ~{{start}} → {{end}}",
+      "yieldM2": "Ertrag: {{min}}-{{max}} g/m²",
+      "yieldPlant": "Ertrag: {{min}}-{{max}} g/Pflanze",
+      "confidence": "Konfidenz: {{c}}"
+    },
+    "experience": {
+      "beginner": "Anfänger",
+      "intermediate": "Fortgeschritten",
+      "advanced": "Experte"
+    }
+    
   },
   "metricsForm": {
     "healthStep": {
@@ -388,6 +415,28 @@
       "flushing": "Spülung"
     }
   },
+  "calendar": {
+    "screen": {
+      "no_tasks_scheduled": "Keine Aufgaben geplant",
+      "tap_to_add_task": "Tippen Sie auf die + Schaltfläche, um Ihre erste Aufgabe für diesen Tag hinzuzufügen",
+      "loading_tasks": "Aufgaben werden geladen...",
+      "add_task_button": "Aufgabe hinzufügen",
+      "group_by_strain": "Nach Sorte gruppieren",
+      "group_on": "Gruppierung: Sorte (aus)",
+      "group_off": "Gruppierung: Sorte (ein)",
+      "open_analytics": "Analytik öffnen",
+      "analytics": "Analytik",
+      "compare_strains": "Sorten vergleichen"
+    },
+    "strain_banner": {
+      "title": "Sorten-Meilensteine heute",
+      "within_window": "{{countStrains}} Sorte(n) im Fenster • {{countTasks}} zugehörige Aufgabe(n)"
+    },
+    "analytics": {
+      "title": "Kalender-Analytik",
+      "close": "Schließen"
+    }
+  },
   "forms": {
     "placeholders": {
       "selectStrain": "Wählen Sie eine Sorte zum Testen",
@@ -525,7 +574,46 @@
     "searchStrain": "Sorte suchen",
     "typeToSearch": "Zum Suchen tippen..."
   },
-  "diagnosis": {
+  "guidance": {
+    "preview": {
+      "difficulty": "Schwierigkeit: {{d}}"
+    },
+    "genetics": {
+      "indica": {
+        "default": "Indica: kompakter Wuchs; Kronendach für Luftstrom offen halten.",
+        "flowering": "Indica: Luftfeuchtigkeit überwachen, um Schimmel an dichten Blüten zu verhindern."
+      },
+      "sativa": {
+        "default": "Sativa: höhere Lichttoleranz; Höhe und Abstand überwachen.",
+        "pre_flower": "Sativa: mit Stretch rechnen; Training/Stützen früh planen."
+      },
+      "hybrid": {
+        "default": "Hybrid: Training und Düngung ausbalancieren; Elterneigenschaften beobachten."
+      },
+      "cbd": {
+        "default": "CBD-dominant: gesundes Wachstum priorisieren statt hoher EC-Werte."
+      }
+    },
+    "difficulty": {
+      "easy": {
+        "watering": "Anfänger: erst gießen, wenn die obere Erdschicht trocken ist.",
+        "feeding": "Anfänger: mit 50% Nährstoffstärke starten; auf Verbrennungen achten.",
+        "inspection": "Anfänger: täglicher Kurzcheck auf Schädlinge oder Schlappheit genügt.",
+        "default": "Anfänger: Schritte einfach halten und Pflanze nicht überarbeiten."
+      },
+      "medium": {
+        "training": "Fortgeschritten: LST/SCROG schrittweise anwenden, um Stress zu vermeiden.",
+        "default": "Fortgeschritten: Plan befolgen und anhand der Pflanzenreaktion anpassen."
+      },
+      "hard": {
+        "feeding": "Experte: EC/PPM und pH bei jeder Düngung exakt nachverfolgen.",
+        "inspection": "Experte: Trichome, VPD prüfen und auf Mikro-Stress achten.",
+        "defoliation": "Experte: konservativ entlauben, um Ertragsverluste zu vermeiden.",
+        "default": "Experte: Toleranzen verengen; Änderungen protokollieren, um Drift zu vermeiden."
+      }
+    }
+  },
+  "diagnosis_intro": {
     "title": "Pflanzenarzt",
     "takePhotoDescription": "Mache ein klares Foto deiner Pflanze und lasse die KI es analysieren.",
     "aiDiagnosis": "KI-Diagnose",
@@ -587,137 +675,6 @@
         "high": "Hoch",
         "critical": "Kritisch"
       }
-    }
-  },
-  "community": {
-    "segment": {
-      "all": "Alle Beiträge",
-      "questions": "Fragen",
-      "plant_shares": "Pflanzenteilungen"
-    },
-    "accessibility": {
-      "filterBy": "Filtern nach {{segment}}"
-    },
-    "emptyState": {
-      "offlineTitle": "Community ist offline",
-      "offlineDescription": "Verbinde dich mit dem Internet, um Beiträge zu sehen und mit der Community zu interagieren.",
-      "noPostsTitle": "Noch keine Beiträge",
-      "noPostsDescription": "Sei der Erste, der seine Pflanzen teilt oder eine Frage stellt!"
-    },
-    "createPostModal": {
-      "title": "Erstellen",
-      "sharePlantTitle": "Pflanze teilen",
-      "sharePlantDescription": "Teile Fotos und Updates deiner Pflanzen",
-      "askQuestionTitle": "Frage stellen",
-      "askQuestionDescription": "Hole dir Hilfe von der Community bei Anbauproblemen"
-    },
-    "deletePostModal": {
-      "title": "{{type}} löschen?",
-      "message": "Dieser {{type}} wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-      "cancel": "Abbrechen",
-      "delete": "Löschen",
-      "deleting": "Wird gelöscht...",
-      "types": {
-        "post": "Beitrag",
-        "comment": "Kommentar",
-        "question": "Frage",
-        "plantShare": "Pflanzenteilung"
-      }
-    },
-    "postTypeHeader": {
-      "question": "Frage",
-      "plantShare": "Pflanzenteilung",
-      "post": "Beitrag",
-      "answered": "Beantwortet",
-      "unanswered": "Unbeantwortet",
-      "careTips": "Pflegetipps"
-    },
-    "postAuthorRow": {
-      "you": "Du",
-      "privacyOptions": {
-        "everyone": "Jeder",
-        "followers": "Follower",
-        "private": "Privat"
-      },
-      "accessibility": {
-        "userAvatar": "{{userName}}s Avatar",
-        "privacySetting": "Privatsphäre-Einstellung: {{privacy}}",
-        "privacyHint": "Tippen, um Privatsphäre-Einstellungen zu ändern",
-        "setPrivacy": "Privatsphäre auf {{privacy}} setzen"
-      }
-    },
-    "postItem": {
-      "unknownUser": "Unbekannter Benutzer",
-      "userFallback": "Benutzer {{id}}"
-    },
-    "commentItem": {
-      "unknownUser": "Unbekannter Benutzer",
-      "you": "Du",
-      "reply": "Antworten",
-      "deleteDialogTitle": "Kommentar löschen?",
-      "deleteDialogMessage": "Dieser Kommentar wird dauerhaft gelöscht.",
-      "deleteError": "Der Kommentar konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
-    },
-    "time": {
-      "unknown": "Unbekannte Zeit",
-      "invalid": "Ungültige Zeit",
-      "s": "s",
-      "m": "m",
-      "h": "h",
-      "d": "t",
-      "w": "w",
-      "y": "j"
-    },
-    "communitySegmentedControl": {
-      "all": "Alle",
-      "questions": "Fragen",
-      "plant_shares": "Pflanzenteilungen",
-      "accessibility": {
-        "filterLabel": "Beiträge nach Kategorie filtern"
-      }
-    },
-    "questionPostItem": {
-      "anonymousUser": "Anonymer Benutzer",
-      "solved": "Gelöst",
-      "urgent": "Dringend",
-      "answers": "{{count}} Antworten",
-      "answers_one": "{{count}} Antwort",
-      "accessibility": {
-        "questionBy": "Frage: {{title}} von {{displayName}}",
-        "viewQuestion": "Frage ansehen: {{title}}",
-        "viewProfile": "Profil von {{name}} ansehen",
-        "viewProfileHint": "Doppeltippen, um das Benutzerprofil anzuzeigen",
-        "viewImage": "Fragebild ansehen",
-        "viewImageHint": "Doppeltippen, um das Bild im Vollbildmodus anzuzeigen",
-        "viewAnswers": "Antworten ansehen",
-        "deleteQuestion": "Frage löschen"
-      }
-    },
-    "growthStage": {
-      "seedling": "Sämling",
-      "vegetative": "Wachstum",
-      "flowering": "Blüte",
-      "fruiting": "Fruchtbildung",
-      "harvest": "Ernte",
-      "dormant": "Ruhend"
-    },
-    "commentModal": {
-      "inputPlaceholder": "Kommentar hinzufügen...",
-      "attachPhotoTitle": "Foto anhängen",
-      "attachPhotoMessage": "Wähle eine Option:",
-      "takePhoto": "Foto aufnehmen...",
-      "chooseFromLibrary": "Aus Bibliothek wählen...",
-      "cancel": "Abbrechen",
-      "removeImage": "Bild entfernen",
-      "attachPhoto": "Foto anhängen",
-      "sendComment": "Kommentar senden",
-      "failedToTakePhoto": "Foto konnte nicht aufgenommen werden. Bitte versuchen Sie es erneut.",
-      "failedToPickImage": "Bild konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
-      "failedToAddComment": "Kommentar konnte nicht hinzugefügt werden. Bitte versuchen Sie es erneut.",
-      "failedToAddCommentPostMissing": "Kommentar konnte nicht hinzugefügt werden. Der zugehörige Beitrag existiert möglicherweise nicht mehr.",
-      "commentAddedWarning": "Kommentar hinzugefügt, konnte aber nicht sofort angezeigt werden.",
-      "commentPotentialWarningTitle": "Warnung",
-      "commentPotentialWarningMessage": "Kommentar wurde möglicherweise erstellt, konnte aber nicht sofort angezeigt werden."
     }
   },
   "auth": {

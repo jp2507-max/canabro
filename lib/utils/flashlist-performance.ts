@@ -35,8 +35,9 @@ const warnedProps = new Set<string>();
 /**
  * Detects deprecated FlashList v1 props and returns migration warnings
  */
-export function detectDeprecatedFlashListProps(props: Record<string, unknown>): DeprecatedPropWarning[] {
+export function detectDeprecatedFlashListProps(props: Record<string, unknown> | null | undefined): DeprecatedPropWarning[] {
   const warnings: DeprecatedPropWarning[] = [];
+  if (!props || typeof props !== 'object') return warnings;
 
   // Size estimation props (no longer needed in v2)
   if ('estimatedItemSize' in props) {

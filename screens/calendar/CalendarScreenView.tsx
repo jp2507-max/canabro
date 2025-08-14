@@ -1,10 +1,13 @@
-import React, { useCallback } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, View, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DateSelector from '../../components/calendar/DateSelector';
 import TaskActions from '../../components/calendar/TaskActions';
 import TaskItem from '../../components/calendar/TaskItem';
+import { StrainMilestoneBanner } from '../../components/calendar/StrainMilestoneBanner';
+import { CalendarAnalyticsModal } from '../../components/calendar/CalendarAnalyticsModal';
+import { StrainScheduleComparison } from '../../components/calendar/StrainScheduleComparison';
 import FloatingActionButton from '../../components/ui/FloatingActionButton';
 import ThemedText from '../../components/ui/ThemedText';
 import ThemedView from '../../components/ui/ThemedView';
@@ -47,6 +50,10 @@ function CalendarScreenView({
   const { t } = useTranslation();
   const { database } = useWatermelon();
 
+  const [groupByStrain, setGroupByStrain] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+
   // FAB direct add-task logic (skip modal)
   const handleFabPress = useCallback(() => {
     onAddTaskPlant();
@@ -68,6 +75,49 @@ function CalendarScreenView({
 
   // 🎯 Performance optimized render functions
   const keyExtractor = useCallback((item: PlantTask) => item.id, []);
+
+  const sortedTasks = useMemo(() => {
+    if (!groupByStrain) return tasks;
+
+    // Group by strainId from strainMetadata, fallback to plantId to keep stable grouping
+    const groupKey = (t: PlantTask) => t.strainMetadata?.strainId || `plant:${t.plantId}`;
+    const groups: Record<string, PlantTask[]> = {};
+    for (const task of tasks) {
+      const key = groupKey(task);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(task);
+    }
+
+    // Flatten groups, preserving group order by first due date
+    const orderedGroupKeys = Object.keys(groups).sort((a, b) => {
+      const aArr = groups[a] ?? [];
+      const bArr = groups[b] ?? [];
+      const aTimes = aArr.length > 0 ? aArr.map(t => new Date(t.dueDate).getTime()) : [Number.MAX_SAFE_INTEGER];
+      const bTimes = bArr.length > 0 ? bArr.map(t => new Date(t.dueDate).getTime()) : [Number.MAX_SAFE_INTEGER];
+      const aMin = Math.min(...aTimes);
+      const bMin = Math.min(...bTimes);
+      return aMin - bMin;
+    });
+
+    const flattened: PlantTask[] = [];
+    for (const key of orderedGroupKeys) {
+      // Simple insertion of group items (could add section headers later)
+      const items = groups[key] ?? [];
+      flattened.push(...items);
+    }
+    return flattened;
+  }, [groupByStrain, tasks]);
+
+  const uniqueStrainIds = useMemo<string[]>(() => {
+    const ids = new Set<string>();
+    for (const t of sortedTasks) {
+      const sid = t.strainMetadata?.strainId;
+      if (sid && typeof sid === 'string') ids.add(sid);
+    }
+    return Array.from(ids);
+  }, [sortedTasks]);
+
+  const [strainIdA = '', strainIdB = ''] = uniqueStrainIds;
 
   const renderTaskItem = useCallback(
     ({ item }: { item: PlantTask }) => {
@@ -129,9 +179,52 @@ function CalendarScreenView({
           renderLoadingState()
         ) : (
           <FlatList
-            data={tasks}
+            data={sortedTasks}
             keyExtractor={keyExtractor}
             renderItem={renderTaskItem}
+            ListHeaderComponent={
+              <>
+                {/* Strain milestone banner for selected date */}
+                <StrainMilestoneBanner date={selectedDate} tasks={sortedTasks} />
+
+                {/* Toolbar */}
+                <View className="px-4 pb-2 flex-row items-center justify-between">
+                  <Pressable
+                    onPress={() => setGroupByStrain(v => !v)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('calendar.screen.group_by_strain', 'Group by strain')}
+                    className="px-3 py-2 rounded-md bg-neutral-100 dark:bg-neutral-800"
+                  >
+                    <ThemedText className="text-sm text-neutral-800 dark:text-neutral-200">
+                      {groupByStrain ? t('calendar.screen.group_on', 'Grouping: strain (on)') : t('calendar.screen.group_off', 'Grouping: strain (off)')}
+                    </ThemedText>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setShowAnalytics(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('calendar.screen.open_analytics', 'Open analytics')}
+                    className="px-3 py-2 rounded-md bg-primary/10 dark:bg-primary-dark/10"
+                  >
+                    <ThemedText className="text-sm text-primary dark:text-primary-dark">
+                      {t('calendar.screen.analytics', 'Analytics')}
+                    </ThemedText>
+                  </Pressable>
+                  {uniqueStrainIds.length >= 2 && (
+                    <Pressable
+                      onPress={() => setShowCompare(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('calendar.screen.compare_strains', 'Compare strains')}
+                      className="ml-2 px-3 py-2 rounded-md bg-neutral-100 dark:bg-neutral-800"
+                    >
+                      <ThemedText className="text-sm text-neutral-800 dark:text-neutral-200">
+                        {t('calendar.screen.compare_strains', 'Compare strains')}
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                </View>
+              </>
+            }
             ListEmptyComponent={renderEmptyState}
             refreshControl={
               <RefreshControl
@@ -174,6 +267,20 @@ function CalendarScreenView({
           navigateToAddTaskPlant={onAddTaskPlant}
           navigateToAddTaskAll={onAddTaskAll}
         />
+
+        {/* Analytics Modal */}
+        <CalendarAnalyticsModal visible={showAnalytics} onClose={() => setShowAnalytics(false)} />
+
+        {/* Strain Comparison Modal (simple two-strain case for now) */}
+        {showCompare && uniqueStrainIds.length >= 2 && (
+          <Modal visible={showCompare} animationType="slide" onRequestClose={() => setShowCompare(false)}>
+            <StrainScheduleComparison
+              strainIdA={strainIdA}
+              strainIdB={strainIdB}
+              onClose={() => setShowCompare(false)}
+            />
+          </Modal>
+        )}
       </ThemedView>
     </SafeAreaView>
   );

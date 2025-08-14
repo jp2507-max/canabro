@@ -850,6 +850,61 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 35: Add normalized strain-based scheduling fields to plants
+    {
+      toVersion: 35,
+      steps: [
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'plant_type', type: 'string', isOptional: true },
+            { name: 'baseline_kind', type: 'string', isOptional: true },
+            { name: 'baseline_date', type: 'number', isOptional: true },
+            { name: 'environment', type: 'string', isOptional: true },
+            { name: 'hemisphere', type: 'string', isOptional: true },
+            { name: 'predicted_flower_min_days', type: 'number', isOptional: true },
+            { name: 'predicted_flower_max_days', type: 'number', isOptional: true },
+            { name: 'predicted_harvest_start', type: 'number', isOptional: true },
+            { name: 'predicted_harvest_end', type: 'number', isOptional: true },
+            { name: 'schedule_confidence', type: 'number', isOptional: true },
+            { name: 'yield_unit', type: 'string', isOptional: true },
+            { name: 'yield_min', type: 'number', isOptional: true },
+            { name: 'yield_max', type: 'number', isOptional: true },
+            { name: 'yield_category', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 36: Add idempotency & strain metadata fields to plant_tasks
+    {
+      toVersion: 36,
+      steps: [
+        addColumns({
+          table: 'plant_tasks',
+          columns: [
+            { name: 'source', type: 'string', isOptional: true },
+            { name: 'locked', type: 'boolean', isOptional: true },
+            { name: 'template_version', type: 'number', isOptional: true },
+            { name: 'strain_metadata', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
+    // Migration to version 37: Unify date storage to numeric timestamps
+    {
+      toVersion: 37,
+      steps: [
+        // Add new numeric timestamp columns alongside existing string columns
+        // Data migration will be handled separately at runtime
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'planted_date_ts', type: 'number', isOptional: true },
+            { name: 'expected_harvest_date_ts', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

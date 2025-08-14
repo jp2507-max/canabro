@@ -3,6 +3,7 @@ import type { TaskType } from '../types/taskTypes';
 import { Associations } from '@nozbe/watermelondb/Model';
 import { date, readonly, text, relation, writer, field, json } from '@nozbe/watermelondb/decorators';
 import { log } from '../utils/logger';
+import { cancelTaskReminder } from '../services/NotificationService';
 
 import { Plant } from './Plant';
 import { ScheduleTemplate, TemplateTaskData } from './ScheduleTemplate';
@@ -48,6 +49,7 @@ export class PlantTask extends Model {
   @text('status') status!: string;
   @text('notification_id') notificationId?: string;
   @text('user_id') userId!: string;
+  @field('is_deleted') isDeleted?: boolean;
   
   // New task management fields
   @text('priority') priority?: 'low' | 'medium' | 'high' | 'critical';
@@ -60,6 +62,16 @@ export class PlantTask extends Model {
   @field('sequence_number') sequenceNumber?: number;
   @json('environmental_conditions', (json) => json) environmentalConditions?: EnvironmentalConditions;
   @text('escalation_start_time') escalationStartTime?: string; // ISO string for escalation tracking
+  // Idempotency & strain metadata
+  @text('source') source?: 'auto' | 'manual';
+  @field('locked') locked?: boolean;
+  @field('template_version') templateVersion?: number;
+  @json('strain_metadata', (json) => json)
+  strainMetadata?: {
+    difficulty?: 'easy' | 'medium' | 'hard';
+    harvestWindow?: { start?: string; end?: string }; // ISO strings
+    strainId?: string;
+  };
   
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
@@ -186,6 +198,37 @@ export class PlantTask extends Model {
   @writer async updateEstimatedDuration(minutes: number) {
     await this.update((task) => {
       task.estimatedDuration = minutes;
+    });
+  }
+
+  @writer async markAsDeleted() {
+    // Idempotent: if already deleted, do nothing
+    if (this.isDeleted || this.status === 'deleted') {
+      return;
+    }
+
+    // Respect lock: do not modify locked tasks
+    if (this.locked) {
+      log.warn('[PlantTask] Skipping deletion of locked task', { taskId: this.id });
+      return;
+    }
+
+    // Best-effort: cancel any OS notifications associated with this task
+    try {
+      await cancelTaskReminder(this.id);
+    } catch (error) {
+      log.error('[PlantTask] Error cancelling task notification during delete', { taskId: this.id, error });
+    }
+
+    await this.update((task) => {
+      // Double-check idempotency and lock within the transactional update
+      if (task.isDeleted || task.status === 'deleted') return;
+      if (task.locked) return;
+
+      task.isDeleted = true;
+      task.status = 'deleted';
+      task.notificationId = undefined;
+      // Note: no deleted_at column on PlantTask schema; skip timestamp field
     });
   }
 
