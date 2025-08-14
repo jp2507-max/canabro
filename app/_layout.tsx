@@ -25,7 +25,9 @@ import '../global.css';
 import * as Sentry from '@sentry/react-native';
 // Ensure dayjs timezone plugin is initialized early in the app lifecycle
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+dayjs.extend(utc);
 dayjs.extend(timezone);
 
 Sentry.init({

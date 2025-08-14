@@ -1079,12 +1079,26 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
   const [manualScheduleEnabled, setManualScheduleEnabled] = useState(false);
   const [manualMinDays, setManualMinDays] = useState<string>('');
   const [manualMaxDays, setManualMaxDays] = useState<string>('');
+
   const manualDays = React.useMemo(() => {
-    const min = parseInt(manualMinDays, 10);
-    const max = parseInt(manualMaxDays, 10);
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    // Trim inputs and reject empty values
+    const trimmedMin = manualMinDays.trim();
+    const trimmedMax = manualMaxDays.trim();
+    
+    if (trimmedMin === '' || trimmedMax === '') return null;
+    
+    // Parse with parseInt and verify as integers
+    const min = parseInt(trimmedMin, 10);
+    const max = parseInt(trimmedMax, 10);
+    
+    // Verify both values are valid integers (not NaN and are integers)
+    if (!Number.isInteger(min) || Number.isNaN(min)) return null;
+    if (!Number.isInteger(max) || Number.isNaN(max)) return null;
+    
+    // Enforce non-negative range and min <= max
     if (min < 0 || max < 0) return null;
     if (min > max) return null;
+    
     return { min, max };
   }, [manualMinDays, manualMaxDays]);
 
@@ -1165,6 +1179,15 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
       if (inferredType === 'unknown') {
         // Await the user's choice to improve UX and ensure schedule preview uses the selected type
         const chosenType: PlantType = await new Promise((resolve) => {
+          let isSettled = false;
+          
+          const safeResolve = (type: PlantType) => {
+            if (!isSettled) {
+              isSettled = true;
+              resolve(type);
+            }
+          };
+
           const message = `${t(
             'addPlantForm.confirm.plantTypeMessage',
             'We could not detect the plant type for this strain. Please select one:'
@@ -1172,6 +1195,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
             'addPlantForm.confirm.plantTypeHelp',
             'Photoperiod plants flower after you change light schedule (12/12). Autoflowers switch to flowering on their own regardless of light.'
           )}`;
+          
           Alert.alert(
             t('addPlantForm.confirm.plantTypeTitle', 'Select plant type'),
             message,
@@ -1179,17 +1203,22 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
               {
                 text: t('addPlantForm.confirm.photoperiod', 'Photoperiod'),
                 style: 'default',
-                onPress: () => resolve('photoperiod'),
+                onPress: () => safeResolve('photoperiod'),
               },
               {
                 text: t('addPlantForm.confirm.autoflower', 'Autoflower'),
                 style: 'default',
-                onPress: () => resolve('autoflower'),
+                onPress: () => safeResolve('autoflower'),
+              },
+              {
+                text: t('common.cancel', 'Cancel'),
+                style: 'cancel',
+                onPress: () => safeResolve('photoperiod'), // default to photoperiod on cancel
               },
             ],
             {
               cancelable: true,
-              onDismiss: () => resolve('photoperiod'), // sensible default
+              onDismiss: () => safeResolve('photoperiod'), // sensible default
             }
           );
         });
@@ -1726,7 +1755,7 @@ export function AddPlantForm({ onSuccess }: { onSuccess?: () => void }) {
                       </ThemedView>
                       {!manualDays && (manualMinDays.length > 0 || manualMaxDays.length > 0) && (
                         <ThemedText className="mt-1 text-xs text-status-danger">
-                          {t('addPlantForm.manualSchedule.validation', 'Enter valid non-negative numbers where min ≤ max.')}
+                          {t('addPlantForm.manualSchedule.validation', 'Both min and max must be integers (whole numbers) with min ≤ max and non-negative values.')}
                         </ThemedText>
                       )}
                     </ThemedView>

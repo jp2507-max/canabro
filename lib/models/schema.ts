@@ -7,7 +7,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 36, // Bumped to 36 to add idempotency & strain metadata fields on plant_tasks
+  version: 37, // Bumped to 37 to add numeric timestamp columns for date unification
   tables: [
     tableSchema({
       name: 'profiles',
@@ -71,7 +71,7 @@ export default appSchema({
         { name: 'wet_weight', type: 'number', isOptional: true },
         { name: 'dry_weight', type: 'number', isOptional: true },
         { name: 'trim_weight', type: 'number', isOptional: true },
-        { name: 'harvest_date', type: 'number', isOptional: true },
+        { name: 'harvest_date', type: 'number', isOptional: true, isIndexed: true },
         // Normalized strain-based scheduling fields
         { name: 'plant_type', type: 'string', isOptional: true, isIndexed: true }, // 'photoperiod' | 'autoflower' | 'unknown'
         { name: 'baseline_kind', type: 'string', isOptional: true }, // 'flip' | 'germination'
@@ -80,13 +80,16 @@ export default appSchema({
         { name: 'hemisphere', type: 'string', isOptional: true }, // 'N' | 'S'
         { name: 'predicted_flower_min_days', type: 'number', isOptional: true },
         { name: 'predicted_flower_max_days', type: 'number', isOptional: true },
-        { name: 'predicted_harvest_start', type: 'number', isOptional: true }, // date as timestamp
-        { name: 'predicted_harvest_end', type: 'number', isOptional: true },   // date as timestamp
+        { name: 'predicted_harvest_start', type: 'number', isOptional: true, isIndexed: true }, // date as timestamp
+        { name: 'predicted_harvest_end', type: 'number', isOptional: true, isIndexed: true },   // date as timestamp
         { name: 'schedule_confidence', type: 'number', isOptional: true },
         { name: 'yield_unit', type: 'string', isOptional: true }, // 'g_per_plant' | 'g_per_m2'
         { name: 'yield_min', type: 'number', isOptional: true },
         { name: 'yield_max', type: 'number', isOptional: true },
         { name: 'yield_category', type: 'string', isOptional: true }, // 'low' | 'medium' | 'high' | 'unknown'
+        // Date unification: numeric timestamp columns (migration v37)
+        { name: 'planted_date_ts', type: 'number', isOptional: true },
+        { name: 'expected_harvest_date_ts', type: 'number', isOptional: true },
         { name: 'is_deleted', type: 'boolean', isOptional: true },
         { name: 'last_synced_at', type: 'number', isOptional: true },
         { name: 'created_at', type: 'number' },

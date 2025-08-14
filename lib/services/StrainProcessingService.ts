@@ -484,11 +484,15 @@ export function parseSeasonalHarvestWindow(value?: string | null): SeasonalWindo
     };
   }
 
+  // Clamp endDay to the actual number of days in the month
+  const referenceYear = new Date().getUTCFullYear();
+  const clampedEndDay = Math.min(dayRange.end, getLastDayOfMonth(referenceYear, first));
+  
   return {
     startMonth: first,
     startDay: dayRange.start,
     endMonth: first,
-    endDay: dayRange.end,
+    endDay: clampedEndDay,
     confidence: 0.6,
   };
 }

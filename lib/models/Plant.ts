@@ -98,6 +98,10 @@ export class Plant extends Model {
   @field('yield_max') yieldMax?: number;
   @text('yield_category') yieldCategory?: YieldCategory; // 'low' | 'medium' | 'high' | 'unknown'
 
+  // Date unification: numeric timestamp fields (migration v37)
+  @field('planted_date_ts') plantedDateTs?: number;
+  @field('expected_harvest_date_ts') expectedHarvestDateTs?: number;
+
   @readonly @date('created_at') createdAt!: Date;
   @readonly @date('updated_at') updatedAt!: Date;
   @date('last_synced_at') lastSyncedAt?: Date;

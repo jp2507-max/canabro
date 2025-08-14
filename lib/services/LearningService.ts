@@ -141,9 +141,9 @@ export class LearningService {
     // Normalize to day boundary if available and valid to avoid timezone off-by-one
     const startDay = predictedStart && isValidDate(predictedStart) ? startOfDay(predictedStart) : undefined;
     const endDay = predictedEnd && isValidDate(predictedEnd) ? startOfDay(predictedEnd) : undefined;
-    const actualDay = startOfDay(actualDate);
+    const actualDay = actualDate && isValidDate(actualDate) ? startOfDay(actualDate) : undefined;
 
-    if (startDay && endDay) {
+    if (startDay && endDay && actualDay) {
       if (actualDay < startDay) {
         errorDaysFromWindow = differenceInDays(startDay, actualDay);
       } else if (actualDay > endDay) {

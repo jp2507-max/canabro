@@ -51,6 +51,29 @@ describe('StrainProcessingService parsing', () => {
     const w = parseSeasonalHarvestWindow('End of September/October');
     expect(w).toMatchObject({ startMonth: 9, endMonth: 10, startDay: 21, endDay: 31 });
   });
+
+  it('clamps endDay to actual days in April (30 days)', () => {
+    const w = parseSeasonalHarvestWindow('End of April');
+    expect(w).toMatchObject({ 
+      startMonth: 4, 
+      endMonth: 4, 
+      startDay: 21, 
+      endDay: 30 // Should be clamped from 31 to 30
+    });
+  });
+
+  it('clamps endDay for February (28 or 29 days)', () => {
+    const w = parseSeasonalHarvestWindow('End of February');
+    expect(w).toMatchObject({ 
+      startMonth: 2, 
+      endMonth: 2, 
+      startDay: 21
+    });
+    // endDay should be either 28 or 29 depending on current year
+    expect(w?.endDay).toBeGreaterThanOrEqual(28);
+    expect(w?.endDay).toBeLessThanOrEqual(29);
+    expect(w?.endDay).toBeLessThan(31); // Should not be the original 31
+  });
 });
 
 describe('StrainProcessingService integration', () => {

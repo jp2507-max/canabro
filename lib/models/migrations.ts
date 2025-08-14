@@ -890,6 +890,21 @@ const migrations = schemaMigrations({
         }),
       ],
     },
+    // Migration to version 37: Unify date storage to numeric timestamps
+    {
+      toVersion: 37,
+      steps: [
+        // Add new numeric timestamp columns alongside existing string columns
+        // Data migration will be handled separately at runtime
+        addColumns({
+          table: 'plants',
+          columns: [
+            { name: 'planted_date_ts', type: 'number', isOptional: true },
+            { name: 'expected_harvest_date_ts', type: 'number', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });
 

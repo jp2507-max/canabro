@@ -36,20 +36,41 @@ export function aggregateYieldExpectations(
   // 3) Filter by the determined unit for aggregation
   const filtered = envFiltered.filter((p) => p.yieldUnit === unit);
   if (filtered.length === 0 || !unit) return null;
-  let totalMin: number | undefined;
-  let totalMax: number | undefined;
+  
+  let seenMin = false;
+  let seenMax = false;
+  let sumMin = 0;
+  let sumMax = 0;
   let plantsCounted = 0;
 
   for (const plant of filtered) {
     const min = plant.yieldMin ?? undefined;
     const max = plant.yieldMax ?? undefined;
     if (min == null && max == null) continue;
+    
     plantsCounted += 1;
-    totalMin = (totalMin ?? 0) + (min ?? 0);
-    totalMax = (totalMax ?? 0) + (max ?? (min ?? 0));
+    
+    // Track min values only if actually present
+    if (min != null) {
+      sumMin += min;
+      seenMin = true;
+    }
+    
+    // Track max values with fallback logic
+    if (max != null) {
+      sumMax += max;
+      seenMax = true;
+    } else if (min != null) {
+      // Use min as fallback contribution to max when max is null but min is present
+      sumMax += min;
+      seenMax = true;
+    }
   }
 
   if (plantsCounted === 0) return null;
+
+  const totalMin = seenMin ? sumMin : undefined;
+  const totalMax = seenMax ? sumMax : undefined;
 
   return { unit, totalMin, totalMax, plantsCounted };
 }

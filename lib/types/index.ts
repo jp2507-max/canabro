@@ -13,7 +13,7 @@ export * from './diary';
 
 // Community related types
 // Avoid re-exporting Environment to prevent conflict with plant.Environment
-export { COMMUNITY_ANIMATION_CONFIG, COMMUNITY_SCALE_VALUES } from './community';
+export { COMMUNITY_ANIMATION_CONFIG, COMMUNITY_SCALE_VALUES, ActivityType } from './community';
 export type {
   PostAuthor,
   PostData,
@@ -48,7 +48,6 @@ export type {
   PostActionState,
   BasePostItemProps,
 } from './community';
-export type { ActivityType } from './community';
 
 // Strain related types
 export * from './strain';

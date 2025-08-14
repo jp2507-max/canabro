@@ -191,7 +191,7 @@
       "beginner": "Anfänger",
       "intermediate": "Fortgeschritten",
       "advanced": "Experte"
-    },
+    }
     
   },
   "metricsForm": {
@@ -677,7 +677,6 @@
       }
     }
   },
-  // Merged duplicate community blocks below into the comprehensive one at the end of the file
   "auth": {
     "login": {
       "emailPlaceholder": "E-Mail",

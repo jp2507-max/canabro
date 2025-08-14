@@ -82,23 +82,24 @@ async function searchWithBreadthFirst(
     const indexed = await strainIndexService.search(query, localLimit).catch(() => []);
     indexed.forEach((s) => {
       if (s.api_id && !foundApiIds.has(s.api_id) && combinedResults.length < localLimit) {
-        combinedResults.push(s);
+        const strainWithSource = { ...s, _source: 'local' as const };
+        combinedResults.push(strainWithSource);
         foundApiIds.add(s.api_id);
         sources.local++;
       }
     });
 
-    // B) Top up with WatermelonDB exact/partial
-    const wdbResults = await searchStrainsInWatermelonDB(query).catch((error) => {
-      log.warn(`[StrainSearchService] WatermelonDB search failed:`, error);
-      return [] as WDBStrainModel[];
-    });
-
-    // C) Search Supabase
-    const supabaseResults = await searchStrainsInSupabase(query, localLimit).catch((error) => {
-      log.warn(`[StrainSearchService] Supabase search failed:`, error);
-      return [] as SupabaseStrain[];
-    });
+    // B) & C) Run WatermelonDB and Supabase searches in parallel
+    const [wdbResults, supabaseResults] = await Promise.all([
+      searchStrainsInWatermelonDB(query).catch((error) => {
+        log.warn(`[StrainSearchService] WatermelonDB search failed:`, error);
+        return [] as WDBStrainModel[];
+      }),
+      searchStrainsInSupabase(query, localLimit).catch((error) => {
+        log.warn(`[StrainSearchService] Supabase search failed:`, error);
+        return [] as SupabaseStrain[];
+      })
+    ]);
     // Add local results with dynamic quota allocation
     let remaining = localLimit - sources.local;
     wdbResults.slice(0, Math.max(0, remaining)).forEach((wdbStrain) => {
@@ -183,7 +184,8 @@ async function searchWithLocalFirst(
     const indexed = await strainIndexService.search(query, limit).catch(() => []);
     indexed.forEach((s) => {
       if (s.api_id && !foundApiIds.has(s.api_id) && combinedResults.length < limit) {
-        combinedResults.push(s);
+        const strainWithSource = { ...s, _source: 'local' as const };
+        combinedResults.push(strainWithSource);
         foundApiIds.add(s.api_id);
         sources.local++;
       }

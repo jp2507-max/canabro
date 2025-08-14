@@ -219,6 +219,10 @@ export const ACTIVITY_TYPE = {
   ACHIEVEMENT: 'achievement',
 } as const;
 
+// Runtime alias for backward compatibility - allows ActivityType.POST etc.
+export const ActivityType = ACTIVITY_TYPE;
+
+// Type alias for the union of activity type values
 export type ActivityType = typeof ACTIVITY_TYPE[keyof typeof ACTIVITY_TYPE];
 
 /**
